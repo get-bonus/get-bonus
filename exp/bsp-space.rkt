@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/function
          racket/match
+         racket/math
          tests/eli-tester)
 
 (struct posn (x y) #:transparent)
@@ -105,17 +106,20 @@
  (posn 0 0))
 
 (define (bsp-min <= t)
+  (bsp-min* <= 0 0 t))
+
+(define (bsp-min* <= dx dy t)
   (match t
     [(dun:room _ _ s)
-     s]
+     (space-adjust (posn dx dy) s)]
     [(dun:split:vert _ _ _ l r x)
      (min-of <=
-             (bsp-min <= l)
-             (space-adjust (posn x 0) (bsp-min <= r)))]
+             (bsp-min* <= dx dy l)
+             (bsp-min* <= (+ x dx) dy r))]
     [(dun:split:horiz _ _ _ l r y)
      (min-of <=
-             (bsp-min <= l)
-             (space-adjust (posn 0 y) (bsp-min <= r)))]))
+             (bsp-min* <= dx dy l)
+             (bsp-min* <= dx (+ y dy) r))]))
 
 (define (space-lift <= corner)
   (λ (x y)
@@ -212,16 +216,36 @@
       (posn+ (space-ul sr)
              (posn (random-in-range 0 (space-w sr)) 0)))]))
 
+(define (posn-distance p1 p2)
+  (sqrt (+ (sqr (- (posn-x p2) (posn-x p1)))
+           (sqr (- (posn-y p2) (posn-y p1))))))
+
 (define (horiz-connect dis l r)
-  (define sl (bsp-min (space-lift posn-below? space-ll) l))
-  (define sr (bsp-min (space-lift posn-above? space-ul) r))
-  (horiz-connect-spaces dis sl sr))
+  (define sl (bsp-min* (space-lift posn-below? space-ll) 0 0 l))
+  (define sl-ll (space-ll sl))
+  (define sr (bsp-min* 
+              (space-lift
+               (λ (p1 p2)
+                 (<= (posn-distance sl-ll p1)
+                     (posn-distance sl-ll p2)))
+               space-ul)
+              #;(space-lift posn-above? space-ul)
+              0 dis r))
+  (horiz-connect-spaces* sl sr))
 
 (define (vert-connect dis l r)  
-  (define sl (bsp-min (space-lift posn-right? space-ur) l))
-  (define sr (bsp-min (space-lift posn-left? space-ul) r))
+  (define sl (bsp-min* (space-lift posn-right? space-ur) 0 0 l))
+  (define sl-ur (space-ur sl))
+  (define sr (bsp-min* 
+              (space-lift
+               (λ (p1 p2)
+                 (<= (posn-distance sl-ur p1)
+                     (posn-distance sl-ur p2)))
+               space-ul)
+              #;(space-lift posn-left? space-ul)
+              dis 0 r))
   (segment-transpose
-   (horiz-connect-spaces dis (space-transpose sl) (space-transpose sr))))
+   (horiz-connect-spaces* (space-transpose sl) (space-transpose sr))))
 
 (define (random-dungeon w h)
   (define (vertical)
