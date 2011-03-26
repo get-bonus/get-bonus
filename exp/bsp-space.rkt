@@ -57,13 +57,15 @@
      (dun:room h w (space-transpose s))]
     [(dun:split:vert w h c l r x)
      (dun:split:horiz 
-      h w c 
+      h w 
+      (segment-transpose c) 
       (dungeon-transpose l)
       (dungeon-transpose r)
       x)]
     [(dun:split:horiz w h c l r y)
      (dun:split:vert
-      h w c 
+      h w 
+      (segment-transpose c) 
       (dungeon-transpose l)
       (dungeon-transpose r)
       y)]))
@@ -80,21 +82,6 @@
       min
       (+ min (random size))))
 
-(define (posn-left? p1 p2)
-  (<= (posn-x p1) (posn-x p2)))
-(define posn-right?
-  (negate posn-left?))
-(define (posn-above? p1 p2)
-  (<= (posn-y p1) (posn-y p2)))
-(define posn-below?
-  (negate posn-above?))
-
-(test
- (posn-left? (posn 0 0) (posn 1 0))
- (posn-right? (posn 1 0) (posn 0 0))
- (posn-above? (posn 0 0) (posn 0 1))
- (posn-below? (posn 0 1) (posn 0 0)))
-
 (define (posn+ p1 p2)
   (posn (+ (posn-x p1) (posn-x p2))
         (+ (posn-y p1) (posn-y p2))))
@@ -109,100 +96,6 @@
 (test
  (space-adjust (posn 1 1) (space (posn 0 0) 5 5))
  => (space (posn 1 1) 5 5))
-
-(define (min-of <= x y)
-  (if (<= x y)
-      x
-      y))
-
-(test
- (min-of posn-left?
-         (posn 0 0)
-         (posn 1 1))
- =>
- (posn 0 0))
-
-(define (bsp-min <= t)
-  (bsp-min* <= 0 0 t))
-
-(define (bsp-min* <= dx dy t)
-  (match t
-    [(dun:room _ _ s)
-     (space-adjust (posn dx dy) s)]
-    [(dun:split:vert _ _ _ l r x)
-     (min-of <=
-             (bsp-min* <= dx dy l)
-             (bsp-min* <= (+ x dx) dy r))]
-    [(dun:split:horiz _ _ _ l r y)
-     (min-of <=
-             (bsp-min* <= dx dy l)
-             (bsp-min* <= dx (+ y dy) r))]))
-
-(define (space-lift <= corner)
-  (λ (x y)
-    (<= (corner x) (corner y))))
-
-(test
- (bsp-min (space-lift posn-left? space-ul)
-          (dun:split:vert 10 10 #f 
-                          (dun:room 5 10 (space (posn 0 0) 5 10))
-                          (dun:room 5 10 (space (posn 0 0) 5 10))
-                          5))
- =>
- (space (posn 0 0) 5 10)
- 
- (bsp-min (space-lift posn-right? space-ur)
-          (dun:split:vert 10 10 #f 
-                          (dun:room 5 10 (space (posn 0 0) 5 10))
-                          (dun:room 5 10 (space (posn 0 0) 5 10))
-                          5))
- =>
- (space (posn 5 0) 5 10)
- 
- (bsp-min (space-lift posn-right? space-ur)
-          (dun:split:horiz 20 20 #f
-                           (dun:split:vert 10 10 #f 
-                                           (dun:room 5 10 (space (posn 0 0) 5 10))
-                                           (dun:room 5 10 (space (posn 0 0) 5 10))
-                                           5)
-                           (dun:split:vert 10 10 #f 
-                                           (dun:room 5 10 (space (posn 0 0) 5 10))
-                                           (dun:room 5 10 (space (posn 0 0) 5 10))
-                                           5)
-                           10))
- =>
- (space (posn 5 10) 5 10)
- 
- (bsp-min (space-lift posn-above? space-ul)
-          (dun:split:horiz 10 10 #f 
-                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                           5))
- =>
- (space (posn 0 0) 10 5)
- 
- (bsp-min (space-lift posn-below? space-ll)
-          (dun:split:horiz 10 10 #f 
-                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                           5))
- =>
- (space (posn 0 5) 10 5)
- 
- (bsp-min (space-lift posn-below? space-ll)
-          (dun:split:vert 20 20 #f
-                          (dun:split:horiz 10 10 #f 
-                                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                                           5)
-                          
-                          (dun:split:horiz 10 10 #f 
-                                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                                           (dun:room 10 5 (space (posn 0 0) 10 5))
-                                           5)
-                          10))
- =>
- (space (posn 10 5) 10 5))
 
 (define (horiz-connect-spaces sl sr)
   (define x-pos-min
@@ -234,17 +127,29 @@
   (sqrt (+ (sqr (- (posn-x p2) (posn-x p1)))
            (sqr (- (posn-y p2) (posn-y p1))))))
 
+(define (absolute-rooms dx dy d)
+  (match d
+    [(dun:room _ _ s)
+     (list (space-adjust (posn dx dy) s))]
+    [(dun:split:vert _ _ _ l r x)
+     (append (absolute-rooms dx dy l)
+             (absolute-rooms (+ x dx) dy r))]
+    [(dun:split:horiz _ _ _ l r y)
+     (append (absolute-rooms dx dy l)
+             (absolute-rooms dx (+ y dy) r))]))
+
 (define (horiz-connect dis l r)
-  (define sl (bsp-min* (space-lift posn-below? space-ll) 0 0 l))
-  (define sl-ll (space-ll sl))
-  (define sr (bsp-min* 
-              (space-lift
-               (λ (p1 p2)
-                 (<= (posn-distance sl-ll p1)
-                     (posn-distance sl-ll p2)))
-               space-ul)
-              #;(space-lift posn-above? space-ul)
-              0 dis r))
+  (define-values
+    (sl sr)
+    (for*/fold ([sl #f] [sr #f])
+      ([l (in-list (absolute-rooms 0 0 l))]
+       [r (in-list (absolute-rooms 0 dis r))])
+      (if
+       (and sl sr
+            (> (posn-distance (space-ll l) (space-ul r))
+               (posn-distance (space-ll sl) (space-ul sr))))
+       (values sl sr)
+       (values l r))))
   (horiz-connect-spaces sl sr))
 
 (define (vert-connect dis l r)
@@ -329,8 +234,7 @@
       s "blue"
       (rectangle w h "solid" "white"))]))
 
-; XXX Find the closest rooms in two sections, rather than rightmost/leftmost
 (scale 2 
        (parameterize ([max-room-width 50]
                       [max-room-height 50])
-         (render (random-dungeon 200 200))))
+         (render (random-dungeon 250 250))))
