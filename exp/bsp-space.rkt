@@ -184,16 +184,33 @@
  (space (posn 10 5) 10 5))
 
 (define (horiz-connect-spaces dis sl sr)
-  (segment
-   ; Pick a point on the bottom wall of sl
-   (posn+
-    (space-ll sl)
-    (posn (random-in-range 0 (space-w sl)) 0))
-   
-   ; Pick a point on the top wall of sr
-   (posn+ (space-ul sr)
-          (posn (random-in-range 0 (space-w sr))
-                dis))))
+  (horiz-connect-spaces* sl (space-adjust (posn 0 dis) sr)))
+
+(define (horiz-connect-spaces* sl sr)
+  (define x-pos-min
+    (max (posn-x (space-ll sl))
+         (posn-x (space-ul sr))))
+  (define x-pos-max
+    (min (posn-x (space-lr sl))
+         (posn-x (space-ur sr))))
+  (cond
+    [(x-pos-min . <= . x-pos-max)
+     (define x-pos
+       (random-in-range
+        x-pos-min
+        x-pos-max))
+     (segment (posn x-pos (posn-y (space-ll sl)))
+              (posn x-pos (posn-y (space-ul sr))))]
+    [else     
+     (segment
+      ; Pick a point on the bottom wall of sl
+      (posn+
+       (space-ll sl)
+       (posn (random-in-range 0 (space-w sl)) 0))
+      
+      ; Pick a point on the top wall of sr
+      (posn+ (space-ul sr)
+             (posn (random-in-range 0 (space-w sr)) 0)))]))
 
 (define (horiz-connect dis l r)
   (define sl (bsp-min (space-lift posn-below? space-ll) l))
@@ -284,7 +301,6 @@
       s "blue"
       (rectangle w h "solid" "white"))]))
 
-; XXX Prefer straight cooridors
 ; XXX Find the closest rooms in two sections, rather than rightmost/leftmost
 (scale 2 
        (parameterize ([max-room-width 50]
