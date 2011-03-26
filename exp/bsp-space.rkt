@@ -51,6 +51,23 @@
 (struct dun:split:horiz dun:split (y))
 (struct dun:room dungeon (space))
 
+(define dungeon-transpose
+  (match-lambda
+    [(dun:room w h s)
+     (dun:room h w (space-transpose s))]
+    [(dun:split:vert w h c l r x)
+     (dun:split:horiz 
+      h w c 
+      (dungeon-transpose l)
+      (dungeon-transpose r)
+      x)]
+    [(dun:split:horiz w h c l r y)
+     (dun:split:vert
+      h w c 
+      (dungeon-transpose l)
+      (dungeon-transpose r)
+      y)]))
+
 (define max-room-width (make-parameter 25))
 (define (min-room-width) (* (max-room-width) (min-room-percentage)))
 (define max-room-height (make-parameter 25))
@@ -233,19 +250,9 @@
               0 dis r))
   (horiz-connect-spaces* sl sr))
 
-(define (vert-connect dis l r)  
-  (define sl (bsp-min* (space-lift posn-right? space-ur) 0 0 l))
-  (define sl-ur (space-ur sl))
-  (define sr (bsp-min* 
-              (space-lift
-               (λ (p1 p2)
-                 (<= (posn-distance sl-ur p1)
-                     (posn-distance sl-ur p2)))
-               space-ul)
-              #;(space-lift posn-left? space-ul)
-              dis 0 r))
+(define (vert-connect dis l r)
   (segment-transpose
-   (horiz-connect-spaces* (space-transpose sl) (space-transpose sr))))
+   (horiz-connect dis (dungeon-transpose l) (dungeon-transpose r))))
 
 (define (random-dungeon w h)
   (define (vertical)
