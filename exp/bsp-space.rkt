@@ -204,10 +204,7 @@
  =>
  (space (posn 10 5) 10 5))
 
-(define (horiz-connect-spaces dis sl sr)
-  (horiz-connect-spaces* sl (space-adjust (posn 0 dis) sr)))
-
-(define (horiz-connect-spaces* sl sr)
+(define (horiz-connect-spaces sl sr)
   (define x-pos-min
     (max (posn-x (space-ll sl))
          (posn-x (space-ul sr))))
@@ -248,7 +245,7 @@
                space-ul)
               #;(space-lift posn-above? space-ul)
               0 dis r))
-  (horiz-connect-spaces* sl sr))
+  (horiz-connect-spaces sl sr))
 
 (define (vert-connect dis l r)
   (segment-transpose
