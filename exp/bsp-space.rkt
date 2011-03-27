@@ -156,24 +156,24 @@
   (segment-transpose
    (horiz-connect dis (dungeon-transpose l) (dungeon-transpose r))))
 
-(define (random-dungeon w h)
+(define (random-dungeon d w h)
   (define (vertical)
     (define split-w
       (random-in-range (min-room-width)
                        (- w (min-room-width))))
     (define left
-      (random-dungeon split-w h))
+      (random-dungeon (sub1 d) split-w h))
     (define right
-      (random-dungeon (- w split-w) h))
+      (random-dungeon (sub1 d) (- w split-w) h))
     (dun:split:vert w h (vert-connect split-w left right) left right split-w))
   (define (horizontal)
     (define split-h
       (random-in-range (min-room-height)
                        (- h (min-room-height))))
     (define left
-      (random-dungeon w split-h))
+      (random-dungeon (sub1 d) w split-h))
     (define right
-      (random-dungeon w (- h split-h)))
+      (random-dungeon (sub1 d) w (- h split-h)))
     (dun:split:horiz w h (horiz-connect split-h left right) left right split-h))
   (define (room)
     (define rw (random-in-range (* w (min-room-percentage)) w))
@@ -189,6 +189,8 @@
   (define can-horizontal?
     (not (h . <= . (max-room-height))))
   (cond
+    [(and (<= d 0) (zero? (random 2)))
+     (room)]
     [(and can-horizontal? can-vertical?)
      (case (random 2)
        [(0) (horizontal)]
@@ -217,24 +219,24 @@
   (match-lambda
     [(dun:split:vert _ h s left right y)
      (render-segment
-      s "black"
+      s "red"
       (beside/align 
        "top"
        (render left)
        (render right)))]
     [(dun:split:horiz w _ s left right x)
      (render-segment
-      s "black"
+      s "red"
       (above/align
        "left"
        (render left)
        (render right)))]
     [(dun:room w h s)
      (render-space
-      s "blue"
+      s "black"
       (rectangle w h "solid" "white"))]))
 
 (scale 2 
        (parameterize ([max-room-width 50]
                       [max-room-height 50])
-         (render (random-dungeon 250 250))))
+         (render (random-dungeon 6 250 250))))
