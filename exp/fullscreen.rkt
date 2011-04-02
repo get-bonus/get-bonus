@@ -1,4 +1,6 @@
 #lang racket/gui
+(require "joystick.rkt")
+(go!)
 
 (define (make-fullscreen-canvas/ratio LABEL W H ON-PAINT ON-CHAR)
   (define-values (w h) (get-display-size #t))
@@ -89,3 +91,4 @@
    (send dc draw-point 16 9))
  (λ (k)
    (void)))
+

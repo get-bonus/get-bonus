@@ -68,13 +68,13 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 323460197;
-			PBXWorkspaceStateSaveDate = 323460197;
+			PBXPerProjectTemplateStateSaveDate = 323466220;
+			PBXWorkspaceStateSaveDate = 323466220;
 		};
 		perUserProjectItems = {
-			698154E413479C1A00E2986D /* PBXTextBookmark */ = 698154E413479C1A00E2986D /* PBXTextBookmark */;
-			698154F113479C4700E2986D /* PlistBookmark */ = 698154F113479C4700E2986D /* PlistBookmark */;
-			69D3D40813479CAD002926D5 /* PlistBookmark */ = 69D3D40813479CAD002926D5 /* PlistBookmark */;
+			698154E413479C1A00E2986D = 698154E413479C1A00E2986D /* PBXTextBookmark */;
+			698154F113479C4700E2986D = 698154F113479C4700E2986D /* PlistBookmark */;
+			69D3D40813479CAD002926D5 = 69D3D40813479CAD002926D5 /* PlistBookmark */;
 		};
 		sourceControlManager = 698154DC13479BE500E2986D /* Source Control */;
 		userBuildSettings = {
@@ -101,6 +101,13 @@
 			sepNavSelRange = "{0, 0}";
 			sepNavVisRange = "{0, 67}";
 			sepNavWindowFrame = "{{15, 4}, {1084, 874}}";
+		};
+	};
+	55FD66D40B5DDC3F00325FEF /* DDHidJoystick.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 8281}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{0, 1187}";
 		};
 	};
 	6981537113479BAB00E2986D /* HIDBrowser */ = {
@@ -204,7 +211,7 @@
 		);
 		name = "/Users/jay/Dev/scm/github.jeapostrophe/get-bonus/dist/DDHidLib-1.1/DDHidLib-Info.plist";
 		rLen = 0;
-		rLoc = 9223372036854775807;
+		rLoc = 9223372036854775808;
 	};
 	8D1107260486CEB800E47090 /* HIDBrowser */ = {
 		activeExec = 0;
