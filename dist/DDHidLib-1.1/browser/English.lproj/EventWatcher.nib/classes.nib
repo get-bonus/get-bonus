@@ -1,0 +1,13 @@
+{
+    IBClasses = (
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {clearHistory = id; }; 
+            CLASS = WatcherWindowController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {mEventHistoryController = NSArrayController; }; 
+            SUPERCLASS = NSWindowController; 
+        }
+    ); 
+    IBVersion = 1; 
+}

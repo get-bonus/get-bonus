@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "vendor"))
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "lib"))
+
+require 'pp'
+require 'plist'
+
+usb_hid_usages = ARGV[0]
+
+usage_tables = {}
+current_usage = 0;
+current_usage_table = nil
+
+File.open(usb_hid_usages).each_line do |line|
+  next if line =~ /^\s*#/
+  next if line =~ /^\s*$/
+  
+  if (line =~ /^(\d+)\s+(.*)\s*$/)
+    current_usage = $1.to_i
+    usage_description = $2
+    current_usage_table = {'usages' => {}, 'ranges' => {}}
+    current_usage_table['description'] = usage_description
+    usage_tables[current_usage] = current_usage_table
+  elsif (line =~ /^\s+(\S+)\s+(.*)\s*$/)
+    usage_page = $1
+    usage_page_description = $2
+    
+    if (usage_page =~ /^0x((?:\d|[a-fA-F])+)$/)
+      usage_page = $1.hex
+      current_usage_table['usages'][usage_page] = usage_page_description
+    elsif (usage_page =~ /^0x((?:\d|[a-fA-F])+)-((?:\d|[a-fA-F])+)$/)
+      range_start = $1.hex
+      range_end = $2.hex
+      range = "{#{range_start}, #{range_end}}";
+      current_usage_table['ranges'][range] = usage_page_description
+    elsif (usage_page == '*')
+      current_usage_table['default'] = usage_page_description
+    else
+      puts "Uknown page: #{usage_page}"
+    end
+
+  end
+end
+
+puts Plist.dump(usage_tables)

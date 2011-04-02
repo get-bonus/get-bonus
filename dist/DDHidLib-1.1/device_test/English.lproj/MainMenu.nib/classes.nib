@@ -1,0 +1,52 @@
+{
+    IBClasses = (
+        {
+            ACTIONS = {toggleListening = id; }; 
+            CLASS = AppleRemotePaneController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                mFeedbackText = NSTextField; 
+                mFeedbackView = RemoteFeedbackView; 
+                mStartStopButton = NSButton; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = BoolFormatter; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {labels = id; }; 
+            SUPERCLASS = NSFormatter; 
+        }, 
+        {
+            CLASS = DeviceTestController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {mMousePaneController = MousePaneController; mWindow = NSWindow; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            CLASS = JoystickPaneController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {mJoysticksController = NSArrayController; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = KeyboardPaneController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                mKeyboardEventsController = NSArrayController; 
+                mKeyboardsController = NSArrayController; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = MousePaneController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {mMiceController = NSArrayController; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = NSLevelIndicator; LANGUAGE = ObjC; SUPERCLASS = NSControl; }, 
+        {CLASS = RemoteFeedbackView; LANGUAGE = ObjC; SUPERCLASS = NSView; }
+    ); 
+    IBVersion = 1; 
+}

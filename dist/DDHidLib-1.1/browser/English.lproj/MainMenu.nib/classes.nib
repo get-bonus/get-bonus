@@ -1,0 +1,19 @@
+{
+    IBClasses = (
+        {CLASS = DDHidElement; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {CLASS = HexFormatter; LANGUAGE = ObjC; SUPERCLASS = NSFormatter; }, 
+        {
+            ACTIONS = {exportPlist = id; watchSelected = id; }; 
+            CLASS = HidBrowserController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                mDevicesController = NSArrayController; 
+                mElementsController = NSTreeController; 
+                mWindow = NSWindow; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }
+    ); 
+    IBVersion = 1; 
+}
