@@ -70,6 +70,7 @@
          [min-width cw]
          [min-height ch]
          [horiz-margin hm]
+         ; XXX Make this GL and make a OpenGL 2D monad-drawing library
          [style '()]))
   (define right-border (make-horizontal-border))
   (define bot-border (make-vertical-border))
