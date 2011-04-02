@@ -70,11 +70,36 @@
          [min-width cw]
          [min-height ch]
          [horiz-margin hm]
-         [style '(gl)]))
+         [style '()]))
   (define right-border (make-horizontal-border))
   (define bot-border (make-vertical-border))
   
-  (send frame show #t))
+  (send frame show #t)
+  
+  canvas)
+
+(define PX 8)
+(define PY 4.5)
+
+(define the-canvas
+  (make-fullscreen-canvas/ratio 
+   "Example"
+   16 9 
+   (λ (c)
+     (define dc (send c get-dc))
+     (send dc set-background "white")     
+     (send dc clear)     
+     
+     (send dc set-pen "blue" 1 'solid)
+     (send dc draw-point PX PY)
+     
+     (send dc set-pen "red" 1 'solid)
+     (send dc draw-point 0 0)
+     (send dc draw-point 16 9))
+   (λ (k)
+     (void))))
+
+(define RATE 1/60)
 
 (thread
  (λ ()
@@ -82,22 +107,13 @@
    (let loop ()
      (for ([js (in-list jss)]
            [i (in-naturals)])
-       (printf "~a: ~a\n" i (js)))
-     (sleep 1)
+       (define s (js))
+       (set! PX
+             (+ PX
+                (* RATE 16/2 (mvector-ref (joystick-state-sticks s) 0 0 0))))
+       (set! PY
+             (+ PY
+                (* RATE 9/2 (mvector-ref (joystick-state-sticks s) 0 0 1)))))
+     (send the-canvas refresh-now)
+     (sleep RATE)
      (loop))))
-
-(make-fullscreen-canvas/ratio 
- "Example"
- 16 9 
- (λ (c)
-   (define dc (send c get-dc))
-   (send dc set-background "white")
-   
-   (send dc clear)
-   
-   (send dc set-pen "red" 1 'solid)
-   (send dc draw-point 0 0)
-   (send dc draw-point 16 9))
- (λ (k)
-   (void)))
-
