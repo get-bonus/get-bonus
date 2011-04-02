@@ -72,9 +72,16 @@
 			PBXWorkspaceStateSaveDate = 323466220;
 		};
 		perUserProjectItems = {
-			698154E413479C1A00E2986D = 698154E413479C1A00E2986D /* PBXTextBookmark */;
-			698154F113479C4700E2986D = 698154F113479C4700E2986D /* PlistBookmark */;
-			69D3D40813479CAD002926D5 = 69D3D40813479CAD002926D5 /* PlistBookmark */;
+			6907A9921347D0AB008E63BE /* PlistBookmark */ = 6907A9921347D0AB008E63BE /* PlistBookmark */;
+			6907A9931347D0AB008E63BE /* PBXTextBookmark */ = 6907A9931347D0AB008E63BE /* PBXTextBookmark */;
+			6907A9941347D0AB008E63BE /* PBXTextBookmark */ = 6907A9941347D0AB008E63BE /* PBXTextBookmark */;
+			6907A9951347D0AB008E63BE /* PBXTextBookmark */ = 6907A9951347D0AB008E63BE /* PBXTextBookmark */;
+			6907A9961347D0AB008E63BE /* PBXTextBookmark */ = 6907A9961347D0AB008E63BE /* PBXTextBookmark */;
+			6907A9971347D0AB008E63BE /* PBXTextBookmark */ = 6907A9971347D0AB008E63BE /* PBXTextBookmark */;
+			6907A9981347D0AB008E63BE /* PBXTextBookmark */ = 6907A9981347D0AB008E63BE /* PBXTextBookmark */;
+			6907A9991347D0AB008E63BE /* PBXTextBookmark */ = 6907A9991347D0AB008E63BE /* PBXTextBookmark */;
+			6907A99A1347D0AB008E63BE /* PBXTextBookmark */ = 6907A99A1347D0AB008E63BE /* PBXTextBookmark */;
+			698154E413479C1A00E2986D /* PBXTextBookmark */ = 698154E413479C1A00E2986D /* PBXTextBookmark */;
 		};
 		sourceControlManager = 698154DC13479BE500E2986D /* Source Control */;
 		userBuildSettings = {
@@ -86,6 +93,27 @@
 	55193E4F0B93F2EE004C0C98 /* DDHidLib */ = {
 		activeExec = 0;
 	};
+	55917E6F0B5413E7005308AC /* DDHidElement.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 858}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{1398, 590}";
+		};
+	};
+	55917E700B5413E7005308AC /* DDHidElement.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 2418}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{4208, 690}";
+		};
+	};
+	559181A50B576149005308AC /* DDHidEvent.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 780}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{0, 1150}";
+		};
+	};
 	559CBAE00B5B313000C8FD74 /* HIDDeviceTest */ = {
 		activeExec = 0;
 		executables = (
@@ -95,6 +123,13 @@
 	559CBBCB0B5B336600C8FD74 /* ddhid */ = {
 		activeExec = 0;
 	};
+	55CA60E30BA0F2530012CF7B /* DDHidKeyboard.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 741}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{0, 1149}";
+		};
+	};
 	55D592200BAE2E4500364849 /* versions.xcconfig */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {678, 356}}";
@@ -103,12 +138,117 @@
 			sepNavWindowFrame = "{{15, 4}, {1084, 874}}";
 		};
 	};
+	55FD66D30B5DDC3F00325FEF /* DDHidJoystick.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 1729}}";
+			sepNavSelRange = "{2792, 77}";
+			sepNavVisRange = "{2710, 778}";
+		};
+	};
 	55FD66D40B5DDC3F00325FEF /* DDHidJoystick.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {678, 8281}}";
-			sepNavSelRange = "{0, 0}";
-			sepNavVisRange = "{0, 1187}";
+			sepNavIntBoundsRect = "{{0, 0}, {678, 8060}}";
+			sepNavSelRange = "{11172, 0}";
+			sepNavVisRange = "{10810, 863}";
 		};
+	};
+	55FD66FC0B5DDD2100325FEF /* JoystickPaneController.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {678, 2288}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{4482, 551}";
+		};
+	};
+	6907A9921347D0AB008E63BE /* PlistBookmark */ = {
+		isa = PlistBookmark;
+		fRef = 55193E510B93F2EE004C0C98 /* DDHidLib-Info.plist */;
+		fallbackIsa = PBXBookmark;
+		isK = 0;
+		kPath = (
+		);
+		name = "/Users/jay/Dev/scm/github.jeapostrophe/get-bonus/dist/DDHidLib-1.1/DDHidLib-Info.plist";
+		rLen = 0;
+		rLoc = 9223372036854775807;
+	};
+	6907A9931347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55917E6F0B5413E7005308AC /* DDHidElement.h */;
+		name = "DDHidElement.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 590;
+		vrLoc = 1398;
+	};
+	6907A9941347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55917E700B5413E7005308AC /* DDHidElement.m */;
+		name = "DDHidElement.m: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 690;
+		vrLoc = 4208;
+	};
+	6907A9951347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 559181A50B576149005308AC /* DDHidEvent.m */;
+		name = "DDHidEvent.m: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1150;
+		vrLoc = 0;
+	};
+	6907A9961347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55CA60E30BA0F2530012CF7B /* DDHidKeyboard.h */;
+		name = "DDHidKeyboard.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1149;
+		vrLoc = 0;
+	};
+	6907A9971347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55FD66D30B5DDC3F00325FEF /* DDHidJoystick.h */;
+		name = "DDHidJoystick.h: 103";
+		rLen = 77;
+		rLoc = 2792;
+		rType = 0;
+		vrLen = 778;
+		vrLoc = 2710;
+	};
+	6907A9981347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55FD66D40B5DDC3F00325FEF /* DDHidJoystick.m */;
+		name = "DDHidJoystick.m: 360";
+		rLen = 0;
+		rLoc = 11172;
+		rType = 0;
+		vrLen = 863;
+		vrLoc = 10810;
+	};
+	6907A9991347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55FD66FC0B5DDD2100325FEF /* JoystickPaneController.m */;
+		name = "JoystickPaneController.m: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1210;
+		vrLoc = 0;
+	};
+	6907A99A1347D0AB008E63BE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 55FD66FC0B5DDD2100325FEF /* JoystickPaneController.m */;
+		name = "JoystickPaneController.m: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 551;
+		vrLoc = 4482;
 	};
 	6981537113479BAB00E2986D /* HIDBrowser */ = {
 		isa = PBXExecutable;
@@ -190,28 +330,6 @@
 		rType = 0;
 		vrLen = 67;
 		vrLoc = 0;
-	};
-	698154F113479C4700E2986D /* PlistBookmark */ = {
-		isa = PlistBookmark;
-		fRef = 55193E510B93F2EE004C0C98 /* DDHidLib-Info.plist */;
-		fallbackIsa = PBXBookmark;
-		isK = 0;
-		kPath = (
-		);
-		name = "/Users/jay/Dev/scm/github.jeapostrophe/get-bonus/dist/DDHidLib-1.1/DDHidLib-Info.plist";
-		rLen = 0;
-		rLoc = 9223372036854775808;
-	};
-	69D3D40813479CAD002926D5 /* PlistBookmark */ = {
-		isa = PlistBookmark;
-		fRef = 55193E510B93F2EE004C0C98 /* DDHidLib-Info.plist */;
-		fallbackIsa = PBXBookmark;
-		isK = 0;
-		kPath = (
-		);
-		name = "/Users/jay/Dev/scm/github.jeapostrophe/get-bonus/dist/DDHidLib-1.1/DDHidLib-Info.plist";
-		rLen = 0;
-		rLoc = 9223372036854775808;
 	};
 	8D1107260486CEB800E47090 /* HIDBrowser */ = {
 		activeExec = 0;
