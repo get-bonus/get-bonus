@@ -1,6 +1,5 @@
 #lang racket/gui
 (require "joystick.rkt")
-(go!)
 
 (define (make-fullscreen-canvas/ratio LABEL W H ON-PAINT ON-CHAR)
   (define-values (w h) (get-display-size #t))
@@ -76,6 +75,16 @@
   (define bot-border (make-vertical-border))
   
   (send frame show #t))
+
+(thread
+ (λ ()
+   (define jss (get-all-joystick-snapshot-thunks))
+   (let loop ()
+     (for ([js (in-list jss)]
+           [i (in-naturals)])
+       (printf "~a: ~a\n" i (js)))
+     (sleep 1)
+     (loop))))
 
 (make-fullscreen-canvas/ratio 
  "Example"

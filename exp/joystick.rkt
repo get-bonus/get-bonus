@@ -9,6 +9,12 @@
 
 (import-class NSObject DDHidJoystick)
 
+(define DDHID_JOYSTICK_VALUE_MIN -65536)
+(define DDHID_JOYSTICK_VALUE_MAX 65536)
+(define (normalize n)
+  (exact->inexact
+     (/ n DDHID_JOYSTICK_VALUE_MAX)))
+
 (define-syntax mvector-ref
   (syntax-rules ()
     [(_ v i) (vector-ref v i)]
@@ -23,60 +29,65 @@
     ; XXX build-immutable-vector should exist
     (apply vector-immutable
            (for/list ([i (in-vector v)])
-             (deep-vector->immutable v)))]
+             (deep-vector->immutable i)))]
    [x x]))
 
 ; A joystick-state is a
 ;  sticks : stick -> (axis 0 / pov 1) -> which -> int
 ;  buttons : button -> boolean
-(struct joystick-state (sticks buttons))
+(struct joystick-state (sticks buttons) #:transparent)
 
 (define-objc-class JoystickWatcher NSObject
-  [sticks buttons]
-  (- _void (startWatching: js)
-     
+  [js sticks buttons]
+  (- _void (startWatching: [_id the-js])
+     (set! js the-js)
      (set! sticks 
            (build-vector
-            (get-ivar js countOfSticks)
+            (tell #:type _uint js countOfSticks)
             (λ (sn)
-              (define s (tell js objectInSticksAtIndex: sn))
+              (define s (tell js objectInSticksAtIndex: #:type _uint sn))
               (vector
-               (make-vector (get-ivar s countOfStickElements) 0)
-               (make-vector (get-ivar s countOfPovElements) 0)))))
-     (set! buttons (make-vector (get-ivar js numberOfButtons) #f))
+               (make-vector (+ 2 (tell #:type _uint s countOfStickElements)) 0)
+               (make-vector (tell #:type _uint s countOfPovElements) 0)))))
+     (set! buttons (make-vector (tell #:type _uint js numberOfButtons) #f))
      
+     (retain js)
      (tell js startListening)
      (tell js setDelegate: self))
-  (-a _racket (snapshot)
-      (joystick-state (deep-vector->immutable sticks) 
-                      (deep-vector->immutable buttons)))
+  (- _void (dealloc)
+     (release js))
   
-  (- _void (ddhidJoystick: [_id joystick] stick: [_uint stick-n] xChanged: [_int v])
-     (mvector-set! sticks stick-n 0 0 v))
-  (- _void (ddhidJoystick: [_id joystick] stick: [_uint stick-n] yChanged: [_int v])
-     (mvector-set! sticks stick-n 0 1 v))
-  (- _void (ddhidJoystick: [_id joystick] stick: [_uint stick-n] otherAxis: [_uint axis] valueChanged: [_int v])
-     (mvector-set! sticks stick-n 0 axis v))
-  (- _void (ddhidJoystick: [_id joystick] stick: [_uint stick-n] povNumber: [_uint pov] valueChanged: [_int v])
-     (mvector-set! sticks stick-n 1 pov v))
-  (- _void (ddhidJoystick: [_id joystick] buttonDown: [_uint button-n])
+  (- _racket (snapshot)
+     (joystick-state (deep-vector->immutable sticks) 
+                     (deep-vector->immutable buttons)))
+  
+  (- _void (ddhidJoystick: js stick: [_uint sn] xChanged: [_int v])
+     (mvector-set! sticks sn 0 0 (normalize v)))
+  (- _void (ddhidJoystick: js stick: [_uint sn] yChanged: [_int v])
+     (mvector-set! sticks sn 0 1 (normalize v)))
+  (- _void (ddhidJoystick: js stick: [_uint sn] otherAxis: [_uint axis] valueChanged: [_int v])
+     (mvector-set! sticks sn 0 axis (normalize v)))
+  (- _void (ddhidJoystick: js stick: [_uint sn] povNumber: [_uint pov] valueChanged: [_int v])
+     (mvector-set! sticks sn 1 pov v))
+  (- _void (ddhidJoystick: js buttonDown: [_uint button-n])
      (mvector-set! buttons button-n #t))
-  (- _void (ddhidJoystick: [_id joystick] buttonUp: [_uint button-n])
+  (- _void (ddhidJoystick: js buttonUp: [_uint button-n])
      (mvector-set! buttons button-n #f)))
   
-(define (get-all-joystick-snapshots)
+(define (get-all-joystick-snapshot-thunks)
   (with-autorelease
       (define js (tell DDHidJoystick allJoysticks))
-    (for/list ([i (in-range (tell #:type _uint js count))])
-      (define w (tell JoystickWatcher alloc))
-      (tell w startWatching:
-            (tell js objectAtIndex: i))
-      (λ () (tell w snapshot)))
-    (tell js dealloc)))
-
-#;(thread-wait (go!))
+    (retain js)
+    (begin0
+      (for/list ([i (in-range (tell #:type _uint js count))])
+        (define w (tell JoystickWatcher alloc))
+        (retain w)
+        (tell w startWatching:
+              (tell js objectAtIndex: #:type _uint i))
+        (λ () (tell #:type _racket w snapshot)))
+      (release js))))
 
 (provide
  mvector-ref
- get-all-joystick-snapshots
+ get-all-joystick-snapshot-thunks
  (struct-out joystick-state))
