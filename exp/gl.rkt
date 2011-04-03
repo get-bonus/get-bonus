@@ -143,6 +143,7 @@
       (send bmp-mask get-argb-pixels 0 0 width height argb #t))
     argb))
 
+; XXX Register a finalizer that will run glDeleteTextures
 (struct texture* atomic (w h bs r))
 (define (load-texture! t)
   (match-define (texture* _ w h bs r) t)
@@ -175,8 +176,9 @@
 
 (define (display-texture t tx1 ty1 tw th w h)
   (load-texture! t)
-  ; XXX
-  (glBindTexture GL_TEXTURE_2D (unbox (texture*-r t)))
+  (unless (equal? t (unbox (current-texture)))
+    (glBindTexture GL_TEXTURE_2D (unbox (texture*-r t)))
+    (set-box! (current-texture) t))
   (display-rectangle/texture tx1 ty1 tw th w h))
   
 (define (display-rectangle/texture tx1 ty1 tw th w h)
@@ -232,6 +234,7 @@
        y2p
        (+ y2p (- y1p y1)))))
 
+(define current-texture (make-parameter #f))
 (define (draw mw mh
               vw vh 
               cx cy
@@ -249,7 +252,8 @@
   (gl-matrix-mode 'modelview)
   (gl-load-identity)
   (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
-  (run cmd)
+  (parameterize ([current-texture (box #f)])
+    (run cmd))
   (gl-flush))
 
 ;; Contracts + provides
