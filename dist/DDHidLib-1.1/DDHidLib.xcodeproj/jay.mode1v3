@@ -267,6 +267,7 @@
 							<array>
 								<string>29B97314FDCFA39411CA2CEA</string>
 								<string>559CBAE80B5B31AB00C8FD74</string>
+								<string>5547B9D20B8E1C02003C6ADE</string>
 								<string>559CBBA20B5B31FD00C8FD74</string>
 								<string>55917B4C0B533C53005308AC</string>
 								<string>29B97323FDCFA39411CA2CEA</string>
@@ -277,8 +278,8 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>8</integer>
-									<integer>4</integer>
+									<integer>6</integer>
+									<integer>2</integer>
 									<integer>1</integer>
 									<integer>0</integer>
 								</array>
@@ -319,7 +320,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>JoystickPaneController.m</string>
+								<string>MousePaneController.m</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -327,11 +328,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>JoystickPaneController.m</string>
+										<string>MousePaneController.m</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>6907A99A1347D0AB008E63BE</string>
+										<string>69FBDFD413490AF400EA64CE</string>
 										<key>history</key>
 										<array>
 											<string>698154E413479C1A00E2986D</string>
@@ -342,7 +343,14 @@
 											<string>6907A9961347D0AB008E63BE</string>
 											<string>6907A9971347D0AB008E63BE</string>
 											<string>6907A9981347D0AB008E63BE</string>
-											<string>6907A9991347D0AB008E63BE</string>
+											<string>69FBDFCC13490AF400EA64CE</string>
+											<string>69FBDFCD13490AF400EA64CE</string>
+											<string>69FBDFCE13490AF400EA64CE</string>
+											<string>69FBDFCF13490AF400EA64CE</string>
+											<string>69FBDFD013490AF400EA64CE</string>
+											<string>69FBDFD113490AF400EA64CE</string>
+											<string>69FBDFD213490AF400EA64CE</string>
+											<string>69FBDFD313490AF400EA64CE</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -354,14 +362,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 0}, {739, 359}}</string>
+								<string>{{0, 0}, {739, 352}}</string>
 								<key>RubberWindowFrame</key>
 								<string>326 199 947 600 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
 							<key>Proportion</key>
-							<string>359pt</string>
+							<string>352pt</string>
 						</dict>
 						<dict>
 							<key>ContentConfiguration</key>
@@ -374,14 +382,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 364}, {739, 195}}</string>
+								<string>{{0, 357}, {739, 202}}</string>
 								<key>RubberWindowFrame</key>
 								<string>326 199 947 600 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
 							<key>Proportion</key>
-							<string>195pt</string>
+							<string>202pt</string>
 						</dict>
 					</array>
 					<key>Proportion</key>
@@ -400,9 +408,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>6907A99B1347D0AB008E63BE</string>
+				<string>69FBDFD513490AF400EA64CE</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>6907A99C1347D0AB008E63BE</string>
+				<string>69FBDFD613490AF400EA64CE</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -540,7 +548,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>6981538713479BB700E2986D</string>
 		<string>/Users/jay/Dev/scm/github.jeapostrophe/get-bonus/dist/DDHidLib-1.1/DDHidLib.xcodeproj</string>
 	</array>
@@ -622,7 +629,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>6981538713479BB700E2986D</string>
-				<string>6907A98E1347B448008E63BE</string>
+				<string>69FBDFD713490AF400EA64CE</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>

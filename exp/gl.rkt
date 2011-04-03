@@ -118,6 +118,10 @@
 (define (seqn . cs)
   (wrap void cs void))
 
+;; Textures
+; XXX
+
+;; Top-level
 (define (gl-viewport/restrict mw mh
                               vw vh 
                               cx cy)
@@ -167,9 +171,6 @@
   (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
   (run cmd)
   (gl-flush))
-
-;; Textures
-; XXX
 
 ;; Contracts + provides
 (define mode/c
