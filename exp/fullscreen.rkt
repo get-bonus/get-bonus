@@ -1,5 +1,6 @@
 #lang racket/gui
-(require "joystick.rkt")
+(require (prefix-in gl: "gl.rkt")
+         "joystick.rkt")
 
 (define (make-fullscreen-canvas/ratio LABEL W H ON-PAINT ON-CHAR)
   (define-values (w h) (get-display-size #t))
@@ -58,8 +59,7 @@
   (define this-canvas%
     (class canvas% 
       (define/override (on-paint)
-        (send (send this get-dc) set-scale c-scale c-scale)
-        (ON-PAINT this))
+        (ON-PAINT this c-scale))
       (define/override (on-char k)
         (ON-CHAR k))
       
@@ -70,8 +70,7 @@
          [min-width cw]
          [min-height ch]
          [horiz-margin hm]
-         ; XXX Make this GL and make a OpenGL 2D monad-drawing library
-         [style '()]))
+         [style '(gl no-autoclear)]))
   (define right-border (make-horizontal-border))
   (define bot-border (make-vertical-border))
   
@@ -86,17 +85,37 @@
   (make-fullscreen-canvas/ratio 
    "Example"
    16 9 
-   (λ (c)
+   (λ (c c-scale)
      (define dc (send c get-dc))
-     (send dc set-background "white")     
-     (send dc clear)     
-     
-     (send dc set-pen "blue" 1 'solid)
-     (send dc draw-point PX PY)
-     
-     (send dc set-pen "red" 1 'solid)
-     (send dc draw-point 0 0)
-     (send dc draw-point 16 9))
+     (define glctx (send dc get-gl-context))
+     (send glctx call-as-current
+           (λ () 
+             (gl:draw 
+              (* 2 16) (* 2 9) 16 9 PX PY
+              (gl:background
+               255 255 0 0
+               (gl:color 0 0 255 0
+                         (gl:translate PX PY
+                                       (gl:scale 1 1
+                                                 (gl:circle))))
+               (gl:color 255 0 0 0
+                         (gl:translate 0 0
+                                       (gl:scale 1 1
+                                                 (gl:circle)))
+                         (gl:translate 16 9
+                                       (gl:scale 1 1
+                                                 (gl:circle))))))
+             (send glctx swap-buffers)))
+     #;(begin
+         (send dc set-background "white")     
+         (send dc clear)     
+         
+         (send dc set-pen "blue" 1 'solid)
+         (send dc draw-point PX PY)
+         
+         (send dc set-pen "red" 1 'solid)
+         (send dc draw-point 0 0)
+         (send dc draw-point 16 9)))
    (λ (k)
      (void))))
 

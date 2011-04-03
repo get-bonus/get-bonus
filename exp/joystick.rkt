@@ -57,6 +57,8 @@
   (- _void (dealloc)
      (release js))
   
+  ; XXX Ideally this would be atomic
+  ; XXX Ideally we would expose a high-level view of this information
   (- _racket (snapshot)
      (joystick-state (deep-vector->immutable sticks) 
                      (deep-vector->immutable buttons)))
@@ -64,7 +66,7 @@
   (- _void (ddhidJoystick: js stick: [_uint sn] xChanged: [_int v])
      (mvector-set! sticks sn 0 0 (normalize v)))
   (- _void (ddhidJoystick: js stick: [_uint sn] yChanged: [_int v])
-     (mvector-set! sticks sn 0 1 (normalize v)))
+     (mvector-set! sticks sn 0 1 (* -1 (normalize v))))
   (- _void (ddhidJoystick: js stick: [_uint sn] otherAxis: [_uint axis] valueChanged: [_int v])
      (mvector-set! sticks sn 0 axis (normalize v)))
   (- _void (ddhidJoystick: js stick: [_uint sn] povNumber: [_uint pov] valueChanged: [_int v])
@@ -80,7 +82,7 @@
     (retain js)
     (begin0
       (for/list ([i (in-range (tell #:type _uint js count))])
-        (define w (tell JoystickWatcher alloc))
+        (define w (tell (tell JoystickWatcher alloc) init))
         (retain w)
         (tell w startWatching:
               (tell js objectAtIndex: #:type _uint i))
