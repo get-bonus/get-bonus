@@ -1,7 +1,12 @@
 #lang racket/gui
-(require (prefix-in gl: "gl.rkt")
+(require racket/runtime-path
+         (prefix-in gl: "gl.rkt")
          "fullscreen.rkt"
          "joystick.rkt")
+
+(define-runtime-path resource-path "../resources")
+(define sprite-sheet-text (gl:texture (build-path resource-path "SMB-Tiles.png")))
+(define tile-texture (gl:sprite-sheet sprite-sheet-text 16 1))
 
 (define PX 8)
 (define PY 4.5)
@@ -19,17 +24,19 @@
               (* 2 16) (* 2 9) 16 9 PX PY
               (gl:background
                255 255 0 0
-               (gl:color 0 0 255 0
-                         (gl:translate PX PY
-                                       (gl:scale 1 1
-                                                 (gl:circle))))
-               (gl:color 255 0 0 0
+               (gl:color 1 1 1 1
                          (gl:translate 0 0
-                                       (gl:scale 1 1
-                                                 (gl:circle)))
+                                       (tile-texture 0 1))
+                         (gl:translate 8 4.5
+                                       (gl:texture/scale sprite-sheet-text 1 1))
+                         (gl:translate 10 7
+                                       (gl:scale 0.05 0.05
+                                                 sprite-sheet-text))
                          (gl:translate 16 9
-                                       (gl:scale 1 1
-                                                 (gl:circle))))))
+                                       (tile-texture 1 0)))
+               (gl:color 1 1 1 1
+                         (gl:translate PX PY
+                                       (tile-texture 0 0)))))
              (send glctx swap-buffers))))
    (λ (k)
      (void))))
