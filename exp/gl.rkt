@@ -236,24 +236,18 @@
   (gl-flush))
 
 ;; Syntax
-(define-syntax (for/gl stx) 
-  (syntax-case stx ()
-    [(_ (clause ...) body ...)
-     (syntax/loc stx
-       (for/fold/derived stx
-                         ([cmd blank])
-                         (clause ...)
-                         (seqn cmd
-                               (let () body ...))))]))
-(define-syntax (for*/gl stx) 
-  (syntax-case stx ()
-    [(_ (clause ...) body ...)
-     (syntax/loc stx
-       (for*/fold/derived stx
-                         ([cmd blank])
-                         (clause ...)
-                         (seqn cmd
-                               (let () body ...))))]))
+(define-syntax-rule (define-for/gl for/gl for/fold/derived)
+  (define-syntax (for/gl stx) 
+    (syntax-case stx ()
+      [(_ (clause (... ...)) body (... ...))
+       (syntax/loc stx
+         (for/fold/derived stx
+                           ([cmd blank])
+                           (clause (... ...))
+                           (seqn cmd
+                                 (let () body (... ...)))))])))
+(define-for/gl for/gl for/fold/derived)
+(define-for/gl for*/gl for*/fold/derived)
 
 ;; Contracts + provides
 (define mode/c

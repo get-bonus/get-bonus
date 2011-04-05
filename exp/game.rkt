@@ -11,7 +11,7 @@
 (define map-text 
   (gl:path->texture (build-path resource-path "IMB" "mapsheet.png")))
 (define map-sprites
-  (sprite-sheet/array map-text 16))
+  (sprite-sheet/row-major map-text 16))
 (define width 320)
 (define height 40)
 (define map-bytes
@@ -19,6 +19,18 @@
 
 (define PX 8)
 (define PY 4.5)
+
+(define the-background
+  (gl:for*/gl 
+   ([r (in-range height)]
+    [c (in-range width)])
+   (define b
+     (bytes-ref map-bytes
+                (+ (* height c) r)))
+   (if (zero? b)
+       gl:blank
+       (gl:translate c (- height r 1)
+                     (map-sprites b)))))
 
 (define the-canvas
   (make-fullscreen-canvas/ratio 
@@ -36,16 +48,7 @@
               PX PY
               (gl:background
                255 255 255 0
-               (gl:for*/gl ([r (in-range height)]
-                         [c (in-range width)])
-                        (define b
-                          (bytes-ref map-bytes
-                                     (+ (* height c) r)))
-                        (if (zero? b)
-                            gl:blank
-                            (gl:translate c (- height r 1)
-                                          (map-sprites b))))
-               
+               the-background
                (gl:translate PX PY
                              (map-sprites 5))))
              (send glctx swap-buffers))))
