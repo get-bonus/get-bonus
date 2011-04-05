@@ -1,12 +1,15 @@
 #lang racket/gui
 (require racket/runtime-path
          (prefix-in gl: "gl.rkt")
+         "sprites.rkt"
+         "mvector.rkt"
          "fullscreen.rkt"
          "joystick.rkt")
 
 (define-runtime-path resource-path "../resources")
-(define sprite-sheet-text (gl:texture (build-path resource-path "SMB-Tiles.png")))
-(define tile-texture (gl:sprite-sheet sprite-sheet-text 16 1))
+(define sprite-sheet-text 
+  (gl:path->texture (build-path resource-path "SMB-Tiles.png")))
+(define tile-texture (sprite-sheet/grid sprite-sheet-text 16 1))
 
 (define PX 8)
 (define PY 4.5)
@@ -15,7 +18,7 @@
   (make-fullscreen-canvas/ratio 
    "Example"
    16 9 
-   (λ (c c-scale)
+   (λ (c)
      (define dc (send c get-dc))
      (define glctx (send dc get-gl-context))
      (send glctx call-as-current
@@ -28,10 +31,10 @@
                          (gl:translate 0 0
                                        (tile-texture 0 1))
                          (gl:translate 8 4.5
-                                       (gl:texture/scale sprite-sheet-text 1 1))
+                                       (gl:texture sprite-sheet-text 1 1))
                          (gl:translate 10 7
                                        (gl:scale 0.05 0.05
-                                                 sprite-sheet-text))
+                                                 (gl:texture sprite-sheet-text)))
                          (gl:translate 16 9
                                        (tile-texture 1 0)))
                (gl:color 1 1 1 1

@@ -56,7 +56,7 @@
   (define this-canvas%
     (class canvas% 
       (define/override (on-paint)
-        (ON-PAINT this c-scale))
+        (ON-PAINT this))
       (define/override (on-char k)
         (ON-CHAR k))
       
@@ -75,5 +75,10 @@
   
   canvas)
 
-(provide
- make-fullscreen-canvas/ratio)
+(provide/contract
+ [make-fullscreen-canvas/ratio
+  (string? integer? integer? 
+           ((is-a?/c canvas<%>) . -> . void)
+           ((is-a?/c key-event%) . -> . void)
+           . -> .
+           (is-a?/c canvas<%>))])

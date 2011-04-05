@@ -123,30 +123,28 @@
          racket/class)
 
 (define (argb->rgba argb)
-  (let* ((length (bytes-length argb))
-         (rgba (make-gl-ubyte-vector length)))
-    (let loop ((i 0))
-      (when (< i length)
-        (gl-vector-set! rgba (+ i 0) (bytes-ref argb (+ i 1)))
-        (gl-vector-set! rgba (+ i 1) (bytes-ref argb (+ i 2)))
-        (gl-vector-set! rgba (+ i 2) (bytes-ref argb (+ i 3)))
-        (gl-vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0)))
-        (loop (+ i 4))))
-    rgba))
+  (define length (bytes-length argb))
+  (define rgba (make-gl-ubyte-vector length))
+  (for ([i (in-range 0 length 4)])
+    (gl-vector-set! rgba (+ i 0) (bytes-ref argb (+ i 1)))
+    (gl-vector-set! rgba (+ i 1) (bytes-ref argb (+ i 2)))
+    (gl-vector-set! rgba (+ i 2) (bytes-ref argb (+ i 3)))
+    (gl-vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0))))
+  rgba)
 
 (define (bitmap->argb bmp bmp-mask)
-  (let* ((width (send bmp get-width))
-         (height (send bmp get-height))
-         (argb (make-bytes (* 4 width height) 255)))
-    (send bmp get-argb-pixels 0 0 width height argb #f)
-    (when bmp-mask
-      (send bmp-mask get-argb-pixels 0 0 width height argb #t))
-    argb))
+  (define width (send bmp get-width))
+  (define height (send bmp get-height))
+  (define argb (make-bytes (* 4 width height) 255))
+  (send bmp get-argb-pixels 0 0 width height argb #f)
+  (when bmp-mask
+    (send bmp-mask get-argb-pixels 0 0 width height argb #t))
+  argb)
 
 ; XXX Register a finalizer that will run glDeleteTextures
-(struct texture* atomic (w h bs r))
+(struct texture (w h bs r))
 (define (load-texture! t)
-  (match-define (texture* _ w h bs r) t)
+  (match-define (texture w h bs r) t)
   (unless (unbox r)
     (define texts (glGenTextures 1))
     (define text-ref (gl-vector-ref texts 0))
@@ -162,46 +160,32 @@
     (set-box! bs #f)
     (set-box! r text-ref)))
 
-(define (texture p)
+(define (path->texture p)
   (define bm (make-object bitmap% p 'png/mask #f))
   (define mask (send bm get-loaded-mask))
   (define w (send bm get-width))
   (define h (send bm get-height))
   (define rgba (box (argb->rgba (bitmap->argb bm mask))))
   (define ref (box #f))
-  (define (thnk)
-    (display-texture t* 0 0 1 1 w h))
-  (define t* (texture* thnk w h rgba ref))
-  t*)
-
-(define (display-texture t tx1 ty1 tw th w h)
-  (load-texture! t)
-  (unless (equal? t (unbox (current-texture)))
-    (glBindTexture GL_TEXTURE_2D (unbox (texture*-r t)))
-    (set-box! (current-texture) t))
-  (display-rectangle/texture tx1 ty1 tw th w h))
+  (texture w h rgba ref))
   
-(define (display-rectangle/texture tx1 ty1 tw th w h)
-  (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
+(define (texture* t 
+                  [w (texture-w t)] [h (texture-h t)]
+                  [tx1 0] [ty1 0]
+                  [tw 1] [th 1])
+  (λg 
+   (load-texture! t)
+   (unless (equal? t (unbox (current-texture)))
+     (glBindTexture GL_TEXTURE_2D (unbox (texture-r t)))
+     (set-box! (current-texture) t))
+   (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
   (gl-begin 'quads)
   (gl-tex-coord tx1 (+ ty1 th)) (gl-vertex 0 0)
   (gl-tex-coord (+ tx1 tw) (+ ty1 th)) (gl-vertex w 0) 
   (gl-tex-coord (+ tx1 tw) ty1) (gl-vertex w h)
   (gl-tex-coord tx1 ty1) (gl-vertex 0 h)
   (gl-end)
-  (glBlendFunc GL_ONE GL_ZERO))
-  
-(define (texture/scale t w h)
-  (λg (display-texture t 0 0 1 1 w h)))
-(define (sprite-sheet t size margin)
-  (λ (r c)
-    (match-define (texture* _ w h _ _) t)
-    (define x (* (+ margin size) c))
-    (define y (* (+ margin size) r))
-    (λg (display-texture t 
-                         (/ x w) (/ y h) 
-                         (/ size w) (/ size h)
-                         1 1))))
+  (glBlendFunc GL_ONE GL_ZERO)))
 
 ;; Top-level
 (define (gl-viewport/restrict mw mh
@@ -260,6 +244,9 @@
 (define mode/c
   (symbols 'solid 'outline))
 
+(define unit-integer?
+  (between/c 0 1))
+
 (provide/contract
  [draw (real? real? real? real? real? real? cmd? . -> . void?)]
  [cmd? contract?]
@@ -275,9 +262,11 @@
  [rectangle ((real? real?) (mode/c) . ->* . cmd?)]
  [line (real? real? real? real? . -> . cmd?)] 
  [point (real? real? . -> . cmd?)]
- [rename texture*? texture? contract?]
- [texture (path? . -> . texture*?)]
- [sprite-sheet (texture*? real? real? . -> . 
-                          (integer? integer? . -> .  cmd?))]
- [texture/scale (texture*? real? real? . -> . cmd?)])
-
+ [path->texture (path? . -> . texture?)]
+ [texture? contract?]
+ [texture-w (texture? . -> . real?)]
+ [texture-h (texture? . -> . real?)]
+ [rename texture* texture 
+         ((texture?) 
+          (real? real? unit-integer? unit-integer? unit-integer? unit-integer?)
+          . ->* . cmd?)])

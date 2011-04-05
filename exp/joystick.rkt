@@ -1,8 +1,10 @@
 #lang racket/base
 (require racket/match
-         ffi/unsafe
+         racket/contract
+         (except-in ffi/unsafe ->)
          ffi/unsafe/objc
-         mred/private/wx/cocoa/utils)
+         mred/private/wx/cocoa/utils
+         "mvector.rkt")
 
 (define DDHidLib
   (ffi-lib "DDHidLib.framework/DDHidLib"))
@@ -15,14 +17,6 @@
   (exact->inexact
      (/ n DDHID_JOYSTICK_VALUE_MAX)))
 
-(define-syntax mvector-ref
-  (syntax-rules ()
-    [(_ v i) (vector-ref v i)]
-    [(_ v i j ...) (mvector-ref (vector-ref v i) j ...)]))
-(define-syntax mvector-set!
-  (syntax-rules ()
-    [(_ v i e) (vector-set! v i e)]
-    [(_ v i j ... e) (mvector-set! (vector-ref v i) j ... e)]))
 (define deep-vector->immutable
   (match-lambda
    [(? vector? v)
@@ -89,7 +83,15 @@
         (λ () (tell #:type _racket w snapshot)))
       (release js))))
 
-(provide
- mvector-ref
- get-all-joystick-snapshot-thunks
- (struct-out joystick-state))
+(provide/contract
+ [get-all-joystick-snapshot-thunks
+  (-> (listof (-> joystick-state?)))]
+ [struct joystick-state
+         ([sticks 
+           (vector-immutableof
+            (vector/c
+             #:immutable #t
+             (vector-immutableof number?)
+             (vector-immutableof number?)))]
+          [buttons
+           (vector-immutableof boolean?)])])
