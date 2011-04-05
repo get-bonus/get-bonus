@@ -7,9 +7,15 @@
          "joystick.rkt")
 
 (define-runtime-path resource-path "../resources")
-(define sprite-sheet-text 
-  (gl:path->texture (build-path resource-path "SMB-Tiles.png")))
-(define tile-texture (sprite-sheet/grid sprite-sheet-text 16 1))
+
+(define map-text 
+  (gl:path->texture (build-path resource-path "IMB" "mapsheet.png")))
+(define map-sprites
+  (sprite-sheet/array map-text 16))
+(define width 320)
+(define height 40)
+(define map-bytes
+  (file->bytes (build-path resource-path "IMB" "out.lvl")))
 
 (define PX 8)
 (define PY 4.5)
@@ -24,22 +30,24 @@
      (send glctx call-as-current
            (λ () 
              (gl:draw 
-              (* 2 16) (* 2 9) 16 9 PX PY
+              ; Show whole map
+              ;width height (* 16 20) (* 9 20)
+              width height (* 16 4) (* 9 4)
+              PX PY
               (gl:background
-               255 255 0 0
-               (gl:color 1 1 1 1
-                         (gl:translate 0 0
-                                       (tile-texture 0 1))
-                         (gl:translate 8 4.5
-                                       (gl:texture sprite-sheet-text 1 1))
-                         (gl:translate 10 7
-                                       (gl:scale 0.05 0.05
-                                                 (gl:texture sprite-sheet-text)))
-                         (gl:translate 16 9
-                                       (tile-texture 1 0)))
-               (gl:color 1 1 1 1
-                         (gl:translate PX PY
-                                       (tile-texture 0 0)))))
+               255 255 255 0
+               (gl:for*/gl ([r (in-range height)]
+                         [c (in-range width)])
+                        (define b
+                          (bytes-ref map-bytes
+                                     (+ (* height c) r)))
+                        (if (zero? b)
+                            gl:blank
+                            (gl:translate c (- height r 1)
+                                          (map-sprites b))))
+               
+               (gl:translate PX PY
+                             (map-sprites 5))))
              (send glctx swap-buffers))))
    (λ (k)
      (void))))

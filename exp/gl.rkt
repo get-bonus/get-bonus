@@ -115,6 +115,9 @@
   (gl-clear 'color-buffer-bit))
 
 ;; Combiners
+(define blank
+  (λg (void)))
+
 (define (seqn . cs)
   (wrap void cs void))
 
@@ -131,15 +134,6 @@
     (gl-vector-set! rgba (+ i 2) (bytes-ref argb (+ i 3)))
     (gl-vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0))))
   rgba)
-
-(define (bitmap->argb bmp bmp-mask)
-  (define width (send bmp get-width))
-  (define height (send bmp get-height))
-  (define argb (make-bytes (* 4 width height) 255))
-  (send bmp get-argb-pixels 0 0 width height argb #f)
-  (when bmp-mask
-    (send bmp-mask get-argb-pixels 0 0 width height argb #t))
-  argb)
 
 ; XXX Register a finalizer that will run glDeleteTextures
 (struct texture (w h bs r))
@@ -161,11 +155,12 @@
     (set-box! r text-ref)))
 
 (define (path->texture p)
-  (define bm (make-object bitmap% p 'png/mask #f))
-  (define mask (send bm get-loaded-mask))
+  (define bm (make-object bitmap% p 'png/alpha #f #t))
   (define w (send bm get-width))
   (define h (send bm get-height))
-  (define rgba (box (argb->rgba (bitmap->argb bm mask))))
+  (define argb (make-bytes (* 4 w h) 255))
+  (send bm get-argb-pixels 0 0 w h argb #f)
+  (define rgba (box (argb->rgba argb)))
   (define ref (box #f))
   (texture w h rgba ref))
   
@@ -179,13 +174,13 @@
      (glBindTexture GL_TEXTURE_2D (unbox (texture-r t)))
      (set-box! (current-texture) t))
    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
-  (gl-begin 'quads)
-  (gl-tex-coord tx1 (+ ty1 th)) (gl-vertex 0 0)
-  (gl-tex-coord (+ tx1 tw) (+ ty1 th)) (gl-vertex w 0) 
-  (gl-tex-coord (+ tx1 tw) ty1) (gl-vertex w h)
-  (gl-tex-coord tx1 ty1) (gl-vertex 0 h)
-  (gl-end)
-  (glBlendFunc GL_ONE GL_ZERO)))
+   (gl-begin 'quads)
+   (gl-tex-coord tx1 (+ ty1 th)) (gl-vertex 0 0)
+   (gl-tex-coord (+ tx1 tw) (+ ty1 th)) (gl-vertex w 0) 
+   (gl-tex-coord (+ tx1 tw) ty1) (gl-vertex w h)
+   (gl-tex-coord tx1 ty1) (gl-vertex 0 h)
+   (gl-end)
+   (glBlendFunc GL_ONE GL_ZERO)))
 
 ;; Top-level
 (define (gl-viewport/restrict mw mh
@@ -229,7 +224,7 @@
   (gl-disable 'depth-test)
   (gl-disable 'lighting)
   (gl-disable 'dither)
-  (gl-disable 'blend)
+  (gl-enable 'blend)
   (gl-viewport/restrict mw mh
                         vw vh 
                         cx cy)
@@ -240,6 +235,26 @@
     (run cmd))
   (gl-flush))
 
+;; Syntax
+(define-syntax (for/gl stx) 
+  (syntax-case stx ()
+    [(_ (clause ...) body ...)
+     (syntax/loc stx
+       (for/fold/derived stx
+                         ([cmd blank])
+                         (clause ...)
+                         (seqn cmd
+                               (let () body ...))))]))
+(define-syntax (for*/gl stx) 
+  (syntax-case stx ()
+    [(_ (clause ...) body ...)
+     (syntax/loc stx
+       (for*/fold/derived stx
+                         ([cmd blank])
+                         (clause ...)
+                         (seqn cmd
+                               (let () body ...))))]))
+
 ;; Contracts + provides
 (define mode/c
   (symbols 'solid 'outline))
@@ -247,6 +262,9 @@
 (define unit-integer?
   (between/c 0 1))
 
+(provide
+ for/gl
+ for*/gl)
 (provide/contract
  [draw (real? real? real? real? real? real? cmd? . -> . void?)]
  [cmd? contract?]
@@ -258,6 +276,7 @@
  [color ((real? real? real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [background ((real? real? real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [mode/c contract?]
+ [blank cmd?]
  [circle (() (mode/c) . ->* . cmd?)]
  [rectangle ((real? real?) (mode/c) . ->* . cmd?)]
  [line (real? real? real? real? . -> . cmd?)] 
