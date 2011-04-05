@@ -1,4 +1,8 @@
-#lang racket/gui
+#lang racket/base
+(require racket/class
+         racket/contract
+         racket/gui/base)
+
 (define (make-fullscreen-canvas/ratio LABEL W H ON-PAINT ON-CHAR)
   (define-values (w h) (get-display-size #t))
   (define-values (x y) (get-display-left-top-inset #t))
@@ -72,7 +76,9 @@
   (define bot-border (make-vertical-border))
   
   (send frame show #t)
-  
+  ; XXX Figure out why this doesn't work.
+  (send canvas focus)
+    
   canvas)
 
 (provide/contract

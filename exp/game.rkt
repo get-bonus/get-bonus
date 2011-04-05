@@ -4,6 +4,9 @@
          "sprites.rkt"
          "mvector.rkt"
          "fullscreen.rkt"
+         "keyboard.rkt"
+         "mapping.rkt"
+         "controller.rkt"
          "joystick.rkt")
 
 (define-runtime-path resource-path "../resources")
@@ -32,6 +35,9 @@
        (gl:translate c (- height r 1)
                      (map-sprites b)))))
 
+(define km
+  (keyboard-monitor))
+
 (define the-canvas
   (make-fullscreen-canvas/ratio 
    "Example"
@@ -53,23 +59,26 @@
                              (map-sprites 5))))
              (send glctx swap-buffers))))
    (λ (k)
-     (void))))
+     (keyboard-monitor-submit! km k))))
 
 (define RATE 1/60)
 
 (thread
  (λ ()
-   (define jss (get-all-joystick-snapshot-thunks))
+   (define cs 
+     (cons (keyboard-monitor->controller-snapshot km)
+           (map joystick-snapshot->controller-snapshot
+                (get-all-joystick-snapshot-thunks))))
    (let loop ()
-     (for ([js (in-list jss)]
+     (for ([c (in-list cs)]
            [i (in-naturals)])
-       (define s (js))
+       (define s (c))
        (set! PX
-             (+ PX
-                (* RATE 16/2 (mvector-ref (joystick-state-sticks s) 0 0 0))))
+             (+ PX 
+                (stick-x (controller-dpad s))))
        (set! PY
              (+ PY
-                (* RATE 9/2 (mvector-ref (joystick-state-sticks s) 0 0 1)))))
+                (stick-y (controller-dpad s)))))
      (send the-canvas refresh-now)
      (sleep RATE)
      (loop))))
