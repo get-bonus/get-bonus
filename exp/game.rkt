@@ -48,8 +48,7 @@
      (send glctx call-as-current
            (λ () 
              (gl:draw 
-              ; Show whole map
-              ;width height (* 16 20) (* 9 20)
+              ;width height (* 16 20) (* 9 20) ; Show whole map
               width height (* 16 4) (* 9 4)
               PX PY
               (gl:background

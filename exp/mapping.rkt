@@ -6,6 +6,8 @@
          "joystick.rkt"
          "mvector.rkt")
 
+; XXX the joystick state should get the hid name from ddhid to use for this mapping
+; XXX But also make it customizable
 (define (joystick-snapshot->controller-snapshot js)
   (λ ()
     (define s (js))
@@ -21,6 +23,7 @@
      #f #f
      #f #f)))
 
+; XXX Make this customizable
 (define (keyboard-monitor->controller-snapshot km)
   (λ ()
     (define ks (keyboard-monitor-snapshot km))
