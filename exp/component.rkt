@@ -98,14 +98,9 @@
     (when l
       (expand-obj x y l)))
   
-  objs)
+  (list->vector
+   (for/list ([o (in-hash-values objs)])
+     o)))
 
-; Usage
-(require racket/runtime-path)
-(define-runtime-path resource-path "../resources")
-(define p (build-path resource-path "generalsprites.png"))
-(define bm (make-object bitmap% p 'png/alpha #f #t))
-  
-(define objs (components bm (λ (p) (zero? (pixel-a p)))))
-
-objs
+; XXX contracts
+(provide (all-defined-out))
