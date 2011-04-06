@@ -1,6 +1,7 @@
 #lang racket/base
 ; Thanks to Bryan Morse!
 (require racket/set
+         racket/function
          racket/match
          racket/class
          racket/list
@@ -29,6 +30,8 @@
                         (bytes-ref bs (+ offset 0)))))
   m)
 
+(struct aabb (x1 y1 x2 y2) #:transparent)
+
 (define (components bm background?)
   (define w (send bm get-width))
   (define h (send bm get-height))
@@ -50,9 +53,7 @@
     s)
     
   (define (set-choose l)
-    (if (empty? l)
-        #f
-        (apply min l)))
+    (apply min l))
   (define (neighbor-labels x y)
     (for*/fold ([ls empty])
       ([dx (in-list (list -1 0 +1))]
@@ -67,72 +68,44 @@
     (hash-set! labels e f)
     (unless (eq? old e)
       (is-equivalent! f old)))
-  (define (equivalent! f ls)
-    (for ([e (in-list ls)])
-      (is-equivalent! f e)))
-    
+  
   (for* ([x (in-range w)]
          [y (in-range h)])
     (define p (matrix-ref pixels x y))
     (unless (background? p)
-      (define ls (neighbor-labels x y))
+      (define ls (cons (new-label) (neighbor-labels x y)))
       (define l (set-choose ls))
-      (if l
-          (begin
-            (matrix-set! labeling x y l)
-            (equivalent! l ls))
-          (matrix-set! labeling x y (new-label)))))
+      (matrix-set! labeling x y l)
+      (for-each (λ (e) (is-equivalent! l e)) ls)))
   
-  (define new-labels (make-hasheq))
-  (define new-label-i 0)
-  (define (get-new-label r)
-    (hash-ref! new-labels r
-               (λ ()
-                 (begin0 new-label-i
-                         (set! new-label-i (add1 new-label-i))))))
-    
-  (define (label-fixpoint s)
+  (define objs (make-hasheq))
+  (define (expand-obj x y s)
     (define r (hash-ref labels s))
     (if (eq? r s)
-        (get-new-label r)
-        (label-fixpoint r)))
+        (hash-update! objs r
+                  (λ (a)
+                    (match-define (aabb x1 y1 x2 y2) a)
+                    (aabb (min x1 x)
+                          (min y1 y)
+                          (max x2 x)
+                          (max y2 y)))
+                  (aabb x y x y))
+        (expand-obj x y r)))
   
-  (define relabeling (matrix w h))
   (for* ([x (in-range w)]
          [y (in-range h)])
     (define l (matrix-ref labeling x y))
     (when l
-      (matrix-set! relabeling x y
-                   (label-fixpoint l))))
+      (expand-obj x y l)))
   
-  ; XXX As I go through the relabeling, find the min and max x and y for each label
-  ;     those are the sprites
-  
-  relabeling)
+  objs)
 
 ; Usage
 (require racket/runtime-path)
 (define-runtime-path resource-path "../resources")
 (define p (build-path resource-path "generalsprites.png"))
-(define p-l (build-path resource-path "generalsprites-labeled.png"))
 (define bm (make-object bitmap% p 'png/alpha #f #t))
-(define w (send bm get-width))
-(define h (send bm get-height))
   
-(define l (components bm (λ (p) (zero? (pixel-a p)))))
+(define objs (components bm (λ (p) (zero? (pixel-a p)))))
 
-(define nbm (make-object bitmap% w h))
-(define argb (make-bytes (* 4 w h) 0))
-
-(for* ([x (in-range w)]
-       [y (in-range h)])
-  (define n (matrix-ref l x y))
-  (when n
-    (define offset (+ (* 4 y w) (* 4 x)))
-    (bytes-set! argb (+ offset 0) 1)
-    (bytes-set! argb (+ offset 1) (modulo n 255))
-    (bytes-set! argb (+ offset 2) (modulo (expt n 2) 255))
-    (bytes-set! argb (+ offset 3) (modulo (expt n 3) 255))))
-
-(send nbm set-argb-pixels 0 0 w h argb #f)
-(send nbm save-file p-l 'png 100)
+objs
