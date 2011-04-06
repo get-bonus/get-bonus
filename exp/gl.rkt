@@ -7,7 +7,11 @@
          sgl/gl
          sgl/gl-vectors)
 
+; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL
 ; XXX Do something to compile commands into lists with glNewList (maybe?)
+; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
+; XXX Register a finalizer that will run glDeleteTextures
+; XXX The matrix stack can only be 32 deep
 
 ;; Basic data structures
 (struct cmd ())
@@ -29,7 +33,6 @@
   (atomic (λ () e ...)))
 
 ;; Basic shapes
-; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
 (define (point x y)
   (λg (gl-begin 'points)
       (gl-vertex x y)
@@ -78,7 +81,6 @@
       (gl-end)))
 
 ;; Transformations
-; XXX The matrix stack can only be 32 deep
 (define-syntax-rule
   (define-stateful define-state pre post)
   (define-syntax-rule 
@@ -135,7 +137,6 @@
     (gl-vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0))))
   rgba)
 
-; XXX Register a finalizer that will run glDeleteTextures
 (struct texture (w h bs r))
 (define (load-texture! t)
   (match-define (texture w h bs r) t)

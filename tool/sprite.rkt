@@ -4,6 +4,7 @@
          "../exp/component.rkt"
          "../exp/sprites.rkt")
 (define-runtime-path resource-path "../resources")
+(current-directory resource-path)
 
 (define canvas-w 800)
 (define canvas-h 600)
@@ -24,12 +25,16 @@
   (define h (- y2 y1 -1))
   
   (define ratio (/ canvas-w canvas-h))
+  (define w* (max w 100))
+  (define h* (* (/ h w) w*))
   
   (define glctx (send cdc get-gl-context))
   (send glctx call-as-current
         (λ () 
           (gl:draw 
-           w (* h ratio) w (* h ratio) 0 0
+           w* (* h* ratio)
+           w* (* h* ratio)
+           0 0
            (gl:background 255 0 255 0
                           (gl:texture tex w h (/ x1 tw) (/ y1 th) (/ w tw) (/ h th))))
           (send glctx swap-buffers)))

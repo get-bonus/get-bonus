@@ -20,8 +20,7 @@
 (define map-bytes
   (file->bytes (build-path resource-path "IMB" "out.lvl")))
 
-(define PX 8)
-(define PY 4.5)
+(define P (make-rectangular 8 4.5))
 
 (define the-background
   (gl:for*/gl 
@@ -45,6 +44,8 @@
    (λ (c)
      (define dc (send c get-dc))
      (define glctx (send dc get-gl-context))
+     (define PX (real-part P))
+     (define PY (imag-part P))
      (send glctx call-as-current
            (λ () 
              (gl:draw 
@@ -72,12 +73,7 @@
      (for ([c (in-list cs)]
            [i (in-naturals)])
        (define s (c))
-       (set! PX
-             (+ PX 
-                (stick-x (controller-dpad s))))
-       (set! PY
-             (+ PY
-                (stick-y (controller-dpad s)))))
+       (set! P (+ P (controller-dpad s))))
      (send the-canvas refresh-now)
      (sleep RATE)
      (loop))))

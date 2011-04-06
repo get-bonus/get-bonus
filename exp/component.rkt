@@ -99,8 +99,29 @@
       (expand-obj x y l)))
   
   (list->vector
-   (for/list ([o (in-hash-values objs)])
-     o)))
+   (sort
+    (for/list ([o (in-hash-values objs)])
+      o)
+    (cmp-<= (cmp-seqn (cmp < = #:key aabb-y1)
+                      (cmp < = #:key aabb-x1))))))
+
+(define (cmp < = #:key k)
+  (λ (x y)
+    (define kx (k x))
+    (define ky (k y))
+    (cond
+      [(= kx ky) 'eq]
+      [(< kx ky) 'lt]
+      [else 'gt])))
+(define (cmp-seqn c1 c2)
+  (λ (x y)
+    (case (c1 x y)
+      [(lt) 'lt]
+      [(eq) (c2 x y)]
+      [(gt) 'gt])))
+(define (cmp-<= c)
+  (λ (x y)
+    (not (eq? 'gt (c x y)))))
 
 ; XXX contracts
 (provide (all-defined-out))

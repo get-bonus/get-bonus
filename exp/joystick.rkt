@@ -52,7 +52,6 @@
      (release js))
   
   ; XXX Ideally this would be atomic
-  ; XXX Ideally we would expose a high-level view of this information
   (- _racket (snapshot)
      (joystick-state (deep-vector->immutable sticks) 
                      (deep-vector->immutable buttons)))
