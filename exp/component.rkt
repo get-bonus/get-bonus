@@ -1,5 +1,5 @@
 #lang racket/base
-; Thanks to Bryan Morse!
+; Based on an email from Bryan Morse on 2011/04/05 and http://homepages.inf.ed.ac.uk/rbf/HIPR2/label.htm; presumably fairly standard implementation of a connect component algorithm on pixels
 (require racket/set
          racket/function
          racket/match
