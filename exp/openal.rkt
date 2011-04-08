@@ -37,7 +37,7 @@
 
 (define-cpointer-type _ALCcontext)
 (define-openal alcCreateContext
-  (_fun [device : _ALCdevice]
+  (_fun [d : _ALCdevice]
         [p : _pointer = #f]
         -> [c : _ALCcontext/null]
         -> (or c
@@ -116,12 +116,26 @@
 (define AL_BUFFER #x1009)
 (define AL_GAIN #x100A)
 
+(define AL_SOURCE_RELATIVE                        #x202)
+(define AL_SOURCE_STATE                           #x1010)
+(define AL_INITIAL                                #x1011)
+(define AL_PLAYING                                #x1012)
+(define AL_PAUSED                                 #x1013)
+(define AL_STOPPED                                #x1014)
+
 (define-openal alSourcei
   (_fun [source : _ALsource]
         [param : _uint]
         [value : _int]
         -> _void
         -> (check-error 'alSourcei)))
+(define-openal alGetSourcei
+  (_fun [source : _ALsource]
+        [param : _uint]
+        [value : (_ptr o _int)]
+        -> _void
+        -> (begin (check-error 'alGetSourcei)
+                  value)))
 (define-openal* (alSourceb alSourcei)
   (_fun [source : _ALsource]
         [param : _uint]
@@ -153,48 +167,15 @@
   (_fun [source : _ALsource]
         -> _void))
 
-;; Example
+(define-openal alListener3f
+  (_fun [param : _uint]
+        [v1 : _float]
+        [v2 : _float]
+        [v3 : _float]
+        -> _void
+        -> (check-error 'alListener3f)))
 
-; XXX Deal with listeners
 ; XXX Figure out how to handle the "scale", because the defaults may not be right for a game
-; XXX Figure out a functional interface
 
-(require racket/runtime-path)
-(define-runtime-path resource-path "../resources")
-
-(define d (alcOpenDevice #f))
-(define ctxt (alcCreateContext d))
-(alcMakeContextCurrent ctxt)
-
-(define b (alGenBuffers 2))
-(alBufferData/path 
- (vector-ref b 0)
- (build-path resource-path 
-             "SMB-1-1.mp3"))
-(alBufferData/path
- (vector-ref b 1)
- (build-path resource-path 
-             "SMB-SE-Jump.wav"))
-
-(define s (alGenSources 2))
-
-(alSourcef (vector-ref s 0) AL_GAIN 0.8)
-(alSourceb (vector-ref s 0) AL_LOOPING #t)
-(alSourcei (vector-ref s 0) AL_BUFFER (vector-ref b 0))
-
-(alSourcei (vector-ref s 1) AL_BUFFER (vector-ref b 1))
-
-(alSourcePlay (vector-ref s 0))
-
-(for ([i (in-range 10)])
-  (alSource3f (vector-ref s 1) AL_POSITION
-              (+ -5.0 i) 0.0 0.0)
-  (alSourcePlay (vector-ref s 1))
-  (sleep 5))
-
-(alSourceStop (vector-ref s 0))
-
-(alDeleteSources s)
-(alDeleteBuffers b)
-(alcDestroyContext ctxt)
-(alcCloseDevice d)
+; xxx contracts
+(provide (all-defined-out))
