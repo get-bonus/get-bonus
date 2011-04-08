@@ -1,5 +1,7 @@
 #lang racket/base
-(require ffi/unsafe
+(require (except-in racket/contract ->)
+         (prefix-in c: racket/contract)
+         ffi/unsafe
          ffi/unsafe/objc
          mred/private/wx/cocoa/types)
 
@@ -177,5 +179,29 @@
 
 ; XXX Figure out how to handle the "scale", because the defaults may not be right for a game
 
-; xxx contracts
-(provide (all-defined-out))
+; XXX These could be stricter with the allowable property names
+(provide/contract
+ [alGenBuffers (c:-> integer? (vectorof integer?))]
+ [alBufferData/path (c:-> integer? path? void)]
+ [alGenSources (c:-> integer? (vectorof integer?))]
+ [alListener3f (c:-> integer? inexact? inexact? inexact? void)]
+ [alGetSourcei (c:-> integer? integer? integer?)]
+ [alSourceStop (c:-> integer? void)]
+ [alSourcePlay (c:-> integer? void)]
+ [alSourcePause (c:-> integer? void)]
+ [alDeleteSources (c:-> (vectorof integer?) void)]
+ [alSourceb (c:-> integer? integer? boolean? void)]
+ [alSourcef (c:-> integer? integer? inexact? void)]
+ [alSourcei (c:-> integer? integer? integer? void)]
+ [alSource3f (c:-> integer? integer? inexact? inexact? inexact? void)]
+ [alcOpenDevice (c:-> (or/c #f string?) ALCdevice?)]
+ [alcCreateContext (c:-> ALCdevice? ALCcontext?)]
+ [alcMakeContextCurrent (c:-> ALCcontext? void)]
+ [AL_POSITION integer?]
+ [AL_SOURCE_STATE integer?]
+ [AL_SOURCE_RELATIVE integer?]
+ [AL_STOPPED integer?]
+ [AL_LOOPING integer?]
+ [AL_PLAYING integer?]
+ [AL_GAIN integer?]
+ [AL_BUFFER integer?])

@@ -9,6 +9,8 @@
          "controller.rkt"
          "joystick.rkt")
 
+; XXX integrate 3s
+
 (define-runtime-path resource-path "../resources")
 
 (define map-text 
