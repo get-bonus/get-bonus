@@ -240,9 +240,9 @@
                #:weight weight
                #:underlined? underline?
                #:smoothing 'smoothed))
-  (λg
-   (define-values (bm w h)
+  (define-values (bm w h)
      (string->bitmap f str))
+  (λg
    (define text-ref
      (bytes->text-ref 
       w h
