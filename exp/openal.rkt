@@ -1,12 +1,16 @@
 #lang racket/base
 (require (except-in racket/contract ->)
+         (for-syntax racket/base)
          (prefix-in c: racket/contract)
+         racket/runtime-path
          ffi/unsafe
          ffi/unsafe/objc
          mred/private/wx/cocoa/types)
 
 (define openal (ffi-lib "OpenAL.framework/OpenAL"))
-(define openal-support (ffi-lib "libOpenALSupport"))
+(define-runtime-path support-lib 
+  "../dist/OpenALSupport/build/Release/libOpenALSupport")
+(define openal-support (ffi-lib support-lib))
 
 (define-syntax-rule (define-ffi-definer define-openal define-openal* openal)
   (begin

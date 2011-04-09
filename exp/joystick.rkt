@@ -1,13 +1,16 @@
 #lang racket/base
 (require racket/match
          racket/contract
+         racket/runtime-path
          (except-in ffi/unsafe ->)
          ffi/unsafe/objc
          mred/private/wx/cocoa/utils
          "mvector.rkt")
 
+(define-runtime-path ddhid-lib
+  "../dist/DDHidLib-1.1/build/Release/DDHidLib.framework/DDHidLib")
 (define DDHidLib
-  (ffi-lib "DDHidLib.framework/DDHidLib"))
+  (ffi-lib ddhid-lib))
 
 (import-class NSObject DDHidJoystick)
 
