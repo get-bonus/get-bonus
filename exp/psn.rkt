@@ -3,8 +3,8 @@
 
 (define psn? inexact?)
 (define psn make-rectangular)
-(define psn-x real-part)
-(define psn-y imag-part)
+(define psn-x (compose exact->inexact real-part))
+(define psn-y (compose exact->inexact imag-part))
 
 (provide/contract
  [psn? contract?]
