@@ -4,6 +4,7 @@
 (require (for-syntax racket/base)
          racket/math
          racket/match
+         racket/contract
          "psn.rkt"
          tests/eli-tester)
 
@@ -282,3 +283,34 @@
  =>
  1.)
 
+;; Shapes
+(define (circle->aabb c)
+  (match-define (circle p r) c)
+  (aabb p r r))
+
+(define (colliding? s1 s2 #:depth? [depth? #f])
+  (cond
+    [(and (aabb? s1) (aabb? s2))
+     (if depth?
+         (aabb-vs-aabb s1 s2)
+         (aabb-vs-aabb? s1 s2))]
+    [(and (circle? s1) (circle? s2))
+     (if depth?
+         (circle-vs-circle s1 s2)
+         (circle-vs-circle? s1 s2))]
+    [(circle? s1)
+     (colliding? (circle->aabb s1) s2 #:depth? depth?)]
+    [(circle? s2)
+     (colliding? s1 (circle->aabb s2) #:depth? depth?)]))
+
+(define shape/c
+  (or/c circle? aabb?))
+
+(provide/contract
+ [struct aabb ([p psn?] [xw real?] [yw real?])]
+ [struct circle ([p psn?] [r real?])]
+ [shape/c contract?]
+ [colliding?
+  (->* (shape/c shape/c)
+       (#:depth? boolean?)
+       (or/c #t #f psn?))])
