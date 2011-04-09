@@ -7,11 +7,20 @@
          "keyboard.rkt"
          "mapping.rkt"
          "controller.rkt"
-         "joystick.rkt")
-
-; XXX integrate 3s
+         "joystick.rkt"
+         "3s.rkt"
+         "psn.rkt")
 
 (define-runtime-path resource-path "../resources")
+
+(define bgm 
+  (path->audio 
+   (build-path resource-path 
+               "SMB-1-1.mp3")))
+(define jump-se
+  (path->audio
+   (build-path resource-path 
+               "SMB-SE-Jump.wav")))
 
 (define map-text 
   (gl:path->texture (build-path resource-path "IMB" "mapsheet.png")))
@@ -73,11 +82,21 @@
      (cons (keyboard-monitor->controller-snapshot km)
            (map joystick-snapshot->controller-snapshot
                 (get-all-joystick-snapshot-thunks))))
-   (let loop ()
+   (let loop ([frame 0]
+              [st (initial-system-state (λ (w) (psn 0.0 0.0)))])
      (for ([c (in-list cs)]
            [i (in-naturals)])
        (define s (c))
        (set! P (+ P (controller-dpad s))))
      (send the-canvas refresh-now)
      (sleep RATE)
-     (loop))))
+     (loop (add1 frame)
+           (render-sound st 
+                         (if (zero? frame)
+                             (list (background (λ (w) bgm) #:gain 0.8)
+                                   (sound-on jump-se
+                                             #:looping? #t
+                                             (λ (w) (+ (psn -5.0 0.0)
+                                                       (modulo (floor (/ w 30)) 11)))))
+                             empty)
+                         frame)))))
