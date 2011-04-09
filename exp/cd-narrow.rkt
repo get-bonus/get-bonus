@@ -17,8 +17,10 @@
 (define (distance p1 p2)
   (- p1 p2))
 
+(define (length-sqr v)
+  (+ (sqr (psn-x v)) (sqr (psn-y v))))
 (define (length v)
-  (sqrt (+ (sqr (psn-x v)) (sqr (psn-y v)))))
+  (sqrt (length-sqr v)))
 
 (define (normalize v)
   (define len (length v))
@@ -86,13 +88,13 @@
       ([s
         (if
          ; If o1 is to the left of o2, then we need to subtract the vector from it
-         (and s (<= (psn-x p1) (psn-x p2)))
+         (and (number? s) (<= (psn-x p1) (psn-x p2)))
          (- s)
          s)]
        [s
         (if
          ; If o1 is below o2, then we need to subtract the vector from it
-         (and s (<= (psn-y p1) (psn-y p2)))
+         (and (number? s) (<= (psn-y p1) (psn-y p2)))
          (conjugate s)
          s)])
     s))
@@ -100,6 +102,7 @@
 (define-syntax (separating-axes stx)
   (syntax-case stx ()
     [(_
+      separating-axes**
       o1p o2p o1v o2v
       [axis ...])
      (with-syntax ([(axis-v ...)
@@ -115,26 +118,32 @@
            (adjust-projection-vector
             o1p-v o2p-v
             (separating-axes*
+             separating-axes**
              d-v o1v-v o2v-v
              [axis-v ...]
              [])))))]))
 
 (define-syntax separating-axes*
   (syntax-rules ()
-    [(_ dv o1v o2v [] [(axis axis-overlap) ...])
+    [(_ separating-axes** dv o1v o2v [] [(axis axis-overlap) ...])
      (separating-axes** [(axis axis-overlap) ...])]
-    [(_ dv o1v o2v [axis0 axis1 ...] [(axis axis-overlap) ...])
+    [(_ separating-axes** dv o1v o2v [axis0 axis1 ...] [(axis axis-overlap) ...])
      (let* ([o1v-axis0 (projection o1v axis0)]
             [o2v-axis0 (projection o2v axis0)]
             [dist-axis0 (projection dv axis0)]
             [axis0-overlap
              (overlap o1v-axis0 o2v-axis0 dist-axis0)])
        (if (0 . < . axis0-overlap)
-           (separating-axes* dv o1v o2v 
-                             [axis1 ...]
-                             [(axis0 axis0-overlap)
-                              (axis axis-overlap) ...])
+           (separating-axes* 
+            separating-axes**
+            dv o1v o2v 
+            [axis1 ...]
+            [(axis0 axis0-overlap)
+             (axis axis-overlap) ...])
            #f))]))
+
+(define-syntax-rule (separating-axes**? . _)
+  #t)
 
 (define-syntax separating-axes**
   (syntax-rules ()
@@ -159,65 +168,55 @@
 ; Returns the smallest vector to add to o1 so they no longer collide
 (define (aabb-vs-aabb o1 o2)
   (separating-axes
+   separating-axes**
    (aabb-p o1) (aabb-p o2)
    (aabb-v o1) (aabb-v o2)
    [x-axis y-axis]))
 
-#;(define (aabb-vs-aabb o1 o2)
-  (define d (distance (aabb-p o1) (aabb-p o2)))
-  (define x-overlap
-    (overlap (projection (aabb-v o1) x-axis)
-             (projection (aabb-v o2) x-axis)
-             (projection d x-axis)))
-  (if (0 . < . x-overlap)
-      (let ()
-        (define y-overlap
-          (overlap (projection (aabb-v o1) y-axis)
-                   (projection (aabb-v o2) y-axis)
-                   (projection d y-axis)))
-        (if (0 . < . y-overlap)
-            (if (x-overlap . <= . y-overlap)
-                (* x-overlap x-axis)
-                (* y-overlap y-axis))
-            #f))
-        #f))
+(define (aabb-vs-aabb? o1 o2)
+  (separating-axes
+   separating-axes**?
+   (aabb-p o1) (aabb-p o2)
+   (aabb-v o1) (aabb-v o2)
+   [x-axis y-axis]))
+
+(define (test-aabb-vs-aabb o1 o2 ans)
+  (define s (aabb-vs-aabb o1 o2))
+  (test s => ans
+        (aabb-vs-aabb? o1 o2) => (if ans #t #f)))
 
 (test
  ; The unit square vs the two-unit square
  ; Clearly these overlap and we need to push them apart by 1.5 in some direction
- (aabb-vs-aabb (aabb (psn 0. 0.) .5 .5)
-               (aabb (psn 0. 0.) 1. 1.))
- =>
- (psn -0. 1.5)
- (aabb-vs-aabb (aabb (psn 0. 0.) 1. 1.)
-               (aabb (psn 0. 0.) .5 .5))
- =>
- (psn -0. 1.5)
-
+ (test-aabb-vs-aabb (aabb (psn 0. 0.) .5 .5)
+                    (aabb (psn 0. 0.) 1. 1.)
+                    (psn -0. 1.5))
+ 
+ (test-aabb-vs-aabb (aabb (psn 0. 0.) 1. 1.)
+                    (aabb (psn 0. 0.) .5 .5)
+                    (psn -0. 1.5))
+ 
  ; Two unit squares, one at (.5,.5) and one at (1.5,.5)
  ; They shouldn't overlap
  (projection (psn 1. 1.) x-axis) => (psn 1. 0.)
  (projection (psn 2. 1.) x-axis) => (psn 2. 0.)
  (distance (psn .5 .5) (psn 1.5 .5)) => (psn -1. .0)
  (overlap .5 .5 1.) => 0.
- (aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
-               (aabb (psn 1.5 .5) .5 .5))
- =>
- #f
+ (test-aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
+                    (aabb (psn 1.5 .5) .5 .5)
+                    #f)
  
  ; Two unit squares, one at (.5,.5) and one at (1.5,1.5)
  ; They shouldn't overlap
- (aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
-               (aabb (psn 1.5 1.5) .5 .5))
- =>
- #f 
+ (test-aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
+                    (aabb (psn 1.5 1.5) .5 .5)
+                    #f) 
  
  ; Two unit squares, one at (.5,.5) and one at (3.,3.)
  ; They shouldn't overlap
- (aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
-               (aabb (psn 3. 3.) .5 .5))
- =>
- #f
+ (test-aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
+                    (aabb (psn 3. 3.) .5 .5)
+                    #f)
  
  ; Two unit squares, one at (.5, .5) and one at (.5, .25)
  ; Should be pushed down/up by .75
@@ -226,29 +225,60 @@
           .25)
  => .75
  (projection (distance (psn .5 .5) (psn .5 .25)) y-axis) => (psn 0. .25)
- (aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
-               (aabb (psn .5 .25) .5 .5))
- =>
- (psn -.0 -.75)
- (aabb-vs-aabb (aabb (psn .5 .25) .5 .5)
-               (aabb (psn .5 .5) .5 .5))
- =>
- (psn -.0 .75)
+ (test-aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
+                    (aabb (psn .5 .25) .5 .5)
+                    (psn -.0 -.75))
+ (test-aabb-vs-aabb (aabb (psn .5 .25) .5 .5)
+                    (aabb (psn .5 .5) .5 .5)
+                    (psn -.0 .75))
  
  ; Two unit squares, one at (.5, .5) and one at (.25, .5)
  ; Should be pushed left/right by .75
- (aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
-               (aabb (psn .25 .5) .5 .5))
- =>
- (psn .75 -.0)
- (aabb-vs-aabb (aabb (psn .25 .5) .5 .5)
-               (aabb (psn .5 .5) .5 .5))
- =>
- (psn -.75 .0)
+ (test-aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
+                    (aabb (psn .25 .5) .5 .5)
+                    (psn .75 -.0))
+ (test-aabb-vs-aabb (aabb (psn .25 .5) .5 .5)
+                    (aabb (psn .5 .5) .5 .5)
+                    (psn -.75 .0))
  
  ; A unit square at (.5,.5) and a 2x1 rectangle at (1.5,.5)
- (aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
-               (aabb (psn 1.5 .5) 1. .5))
+ (test-aabb-vs-aabb (aabb (psn .5 .5) .5 .5)
+                    (aabb (psn 1.5 .5) 1. .5)
+                    (psn -.5 .0)))
+
+; XXX I didn't really understand how to do the other things in the article and the code was a bit too opaque for me. I should support them eventually.
+
+;; Circles
+(struct circle (p r))
+
+(define (circle-vs-circle? c1 c2)
+  (match-define (circle p1 r1) c1)
+  (match-define (circle p2 r2) c2)
+  (define min-distance (+ r1 r2))
+  (define delta (- p2 p1))
+  (define dist-sq (length-sqr delta))
+  (dist-sq . < . (sqr min-distance)))
+
+(define (circle-vs-circle c1 c2)
+  (match-define (circle p1 r1) c1)
+  (match-define (circle p2 r2) c2)
+  (define min-distance (+ r1 r2))
+  (define delta (- p2 p1))
+  (if (zero? delta)
+      (make-polar (max r1 r2)
+                  pi)
+      (let ()
+        (define dist-sq (length delta))
+        (if (dist-sq . < . min-distance)
+            (* (- dist-sq min-distance)
+               (normalize delta))
+            #f))))
+
+; XXX tests
+(test
+ (magnitude
+  (circle-vs-circle (circle (psn 0. 0.) 1.)
+                    (circle (psn 0. 0.) 1.)))
  =>
- (psn -.5 .0))
+ 1.)
 
