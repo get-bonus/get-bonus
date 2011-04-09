@@ -137,21 +137,32 @@
     (gl-vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0))))
   rgba)
 
+(define (bytes->text-ref w h bs)
+  (define texts (glGenTextures 1))
+  (define text-ref (gl-vector-ref texts 0))
+  
+  (glBindTexture GL_TEXTURE_2D text-ref)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
+  (glTexImage2D GL_TEXTURE_2D 0 GL_RGBA w h 0
+                GL_RGBA GL_UNSIGNED_BYTE bs)
+  
+  text-ref)
+
+(define (bm->rgba-bytes bm)
+  (define w (send bm get-width))
+  (define h (send bm get-height))
+  (define argb (make-bytes (* 4 w h) 255))
+  (send bm get-argb-pixels 0 0 w h argb #f)
+  (argb->rgba argb))
+
 (struct texture (w h bs r))
 (define (load-texture! t)
   (match-define (texture w h bs r) t)
   (unless (unbox r)
-    (define texts (glGenTextures 1))
-    (define text-ref (gl-vector-ref texts 0))
-    
-    (glBindTexture GL_TEXTURE_2D text-ref)
-    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR)
-    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
-    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
-    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
-    (glTexImage2D GL_TEXTURE_2D 0 GL_RGBA w h 0
-                  GL_RGBA GL_UNSIGNED_BYTE (unbox bs))
-    
+    (define text-ref (bytes->text-ref w h (unbox bs)))
     (set-box! bs #f)
     (set-box! r text-ref)))
 
@@ -159,11 +170,23 @@
   (define bm (make-object bitmap% p 'png/alpha #f #t))
   (define w (send bm get-width))
   (define h (send bm get-height))
-  (define argb (make-bytes (* 4 w h) 255))
-  (send bm get-argb-pixels 0 0 w h argb #f)
-  (define rgba (box (argb->rgba argb)))
+  (define rgba (box (bm->rgba-bytes bm)))
   (define ref (box #f))
   (texture w h rgba ref))
+
+(define (bind-texture-ref! t)
+  (unless (equal? t (unbox (current-texture)))
+    (glBindTexture GL_TEXTURE_2D t)
+    (set-box! (current-texture) t)))
+
+(define (draw-texture! text-ref w h tx1 ty1 tw th)
+  (bind-texture-ref! text-ref)
+  (gl-begin 'quads)
+  (gl-tex-coord tx1 (+ ty1 th)) (gl-vertex 0 0)
+  (gl-tex-coord (+ tx1 tw) (+ ty1 th)) (gl-vertex w 0) 
+  (gl-tex-coord (+ tx1 tw) ty1) (gl-vertex w h)
+  (gl-tex-coord tx1 ty1) (gl-vertex 0 h)
+  (gl-end))
   
 (define (texture* t 
                   [w (texture-w t)] [h (texture-h t)]
@@ -171,17 +194,64 @@
                   [tw 1] [th 1])
   (λg 
    (load-texture! t)
-   (unless (equal? t (unbox (current-texture)))
-     (glBindTexture GL_TEXTURE_2D (unbox (texture-r t)))
-     (set-box! (current-texture) t))
    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
-   (gl-begin 'quads)
-   (gl-tex-coord tx1 (+ ty1 th)) (gl-vertex 0 0)
-   (gl-tex-coord (+ tx1 tw) (+ ty1 th)) (gl-vertex w 0) 
-   (gl-tex-coord (+ tx1 tw) ty1) (gl-vertex w h)
-   (gl-tex-coord tx1 ty1) (gl-vertex 0 h)
-   (gl-end)
-   (glBlendFunc GL_ONE GL_ZERO)))
+   (draw-texture! 
+    (unbox (texture-r t)) 
+    w h
+    tx1 ty1
+    tw th)
+  (glBlendFunc GL_ONE GL_ZERO)))
+
+;; Text
+(define (string->bitmap f str)
+  (define bdc
+    (new bitmap-dc% [bitmap (make-object bitmap% 1 1 #f #t)]))
+  (define transparent-c (make-object color% 0 0 0 0))
+  (send bdc set-font f)
+  (send bdc set-text-mode 'solid)
+  
+  (define-values (w h bot vert) 
+    (send bdc get-text-extent str f #t))
+  (define (floor* x)
+    (inexact->exact (floor x)))
+  (define w* (floor* w))
+  (define h* (floor* h))
+  
+  (define bm (make-object bitmap% w* h* #f #t))
+  (send bdc set-bitmap bm)    
+  (send bdc clear)
+  (send bdc draw-text str 0 0 #t)
+  (send bdc flush)
+  
+  (values bm w* h*))
+
+(define (text str 
+              #:size [size 12]
+              #:face [face #f]
+              #:family [family 'default]
+              #:style [style 'normal]
+              #:weight [weight 'normal]
+              #:underlined? [underline? #f])
+  (define f 
+    (make-font #:size size
+               #:face face
+               #:family family
+               #:style style
+               #:weight weight
+               #:underlined? underline?
+               #:smoothing 'smoothed))
+  (λg
+   (define-values (bm w h)
+     (string->bitmap f str))
+   (define text-ref
+     (bytes->text-ref 
+      w h
+      (bm->rgba-bytes bm)))
+   (glBlendFunc GL_DST_COLOR GL_ONE_MINUS_SRC_ALPHA)
+   (draw-texture! text-ref (/ w h) 1 0 0 1 1)
+   (glDeleteTextures (gl-uint-vector text-ref))
+   (glBlendFunc GL_ONE GL_ZERO)
+   (set-box! (current-texture) #f)))
 
 ;; Top-level
 (define (gl-viewport/restrict mw mh
@@ -283,4 +353,14 @@
  [rename texture* texture 
          ((texture?) 
           (real? real? unit-integer? unit-integer? unit-integer? unit-integer?)
-          . ->* . cmd?)])
+          . ->* . cmd?)]
+ [text 
+  (->* (string?)
+       (#:size (integer-in 1 255)
+               #:face (or/c string? #f)
+               #:family (one-of/c 'default 'decorative 'roman 'script
+                                  'swiss 'modern 'symbol 'system)
+               #:style (one-of/c 'normal 'italic 'slant) 
+               #:weight (one-of/c 'normal 'bold 'light)
+               #:underlined? boolean?)
+       cmd?)])

@@ -58,7 +58,9 @@
                255 255 255 0
                the-background
                (gl:translate PX PY
-                             (map-sprites 5))))
+                             (map-sprites 5))
+               (gl:translate 0 0
+                             (gl:text "Test text"))))
              (send glctx swap-buffers))))
    (λ (k)
      (keyboard-monitor-submit! km k))))
