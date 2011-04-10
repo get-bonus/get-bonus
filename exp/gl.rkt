@@ -284,11 +284,25 @@
        y2p
        (+ y2p (- y1p y1)))))
 
+(struct focused (go))
+(define (focus mw mh
+               vw vh 
+               cx cy
+               cmd)
+  (focused
+   (λ () 
+     (draw* mw mh
+            vw vh 
+            cx cy
+            cmd))))
+(define (draw f)
+  ((focused-go f)))
+
 (define current-texture (make-parameter #f))
-(define (draw mw mh
-              vw vh 
-              cx cy
-              cmd)
+(define (draw* mw mh
+               vw vh 
+               cx cy
+               cmd)
   (gl-matrix-mode 'projection)
   (gl-load-identity)
   (gl-enable 'texture-2d)
@@ -331,7 +345,9 @@
  for/gl
  for*/gl)
 (provide/contract
- [draw (real? real? real? real? real? real? cmd? . -> . void?)]
+ [focused? contract?]
+ [focus (real? real? real? real? real? real? cmd? . -> . focused?)]
+ [draw (focused? . -> . void?)]
  [cmd? contract?]
  [seqn (() () #:rest (listof cmd?) . ->* . cmd?)]
  [rotate ((real?) () #:rest (listof cmd?) . ->* . cmd?)]

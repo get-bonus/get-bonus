@@ -1,5 +1,6 @@
 #lang racket/gui
 (require racket/runtime-path
+         "loop.rkt"
          (prefix-in gl: "gl.rkt")
          "sprites.rkt"
          "mvector.rkt"
@@ -31,8 +32,6 @@
 (define map-bytes
   (file->bytes (build-path resource-path "IMB" "out.lvl")))
 
-(define P (make-rectangular 8 4.5))
-
 (define the-background
   (gl:for*/gl 
    ([r (in-range height)]
@@ -45,58 +44,44 @@
        (gl:translate c (- height r 1)
                      (map-sprites b)))))
 
-(define km
-  (keyboard-monitor))
+(struct world (frame p))
 
-(define the-canvas
-  (make-fullscreen-canvas/ratio 
-   "Example"
-   16 9 
-   (λ (c)
-     (define dc (send c get-dc))
-     (define glctx (send dc get-gl-context))
-     (define PX (real-part P))
-     (define PY (imag-part P))
-     (send glctx call-as-current
-           (λ () 
-             (gl:draw 
-              ;width height (* 16 20) (* 9 20) ; Show whole map
-              width height (* 16 4) (* 9 4)
-              PX PY
-              (gl:background
-               255 255 255 0
-               the-background
-               (gl:translate PX PY
-                             (map-sprites 5))
-               (gl:translate 0 0
-                             (gl:text "Test text"))))
-             (send glctx swap-buffers))))
-   (λ (k)
-     (keyboard-monitor-submit! km k))))
-
-(define RATE 1/60)
-
-(thread
- (λ ()
-   (define cs 
-     (cons (keyboard-monitor->controller-snapshot km)
-           (map joystick-snapshot->controller-snapshot
-                (get-all-joystick-snapshot-thunks))))
-   (let loop ([frame 0]
-              [st (initial-system-state (λ (w) (psn 0.0 0.0)))])
-     (for ([c (in-list cs)]
-           [i (in-naturals)])
-       (define s (c))
-       (set! P (+ P (controller-dpad s))))
-     (send the-canvas refresh-now)
-     (sleep RATE)
-     (loop (add1 frame)
-           (render-sound st 
-                         (if (zero? frame)
-                             (list (background (λ (w) bgm) #:gain 0.8)
-                                   (sound-on jump-se
-                                             #:looping? #t
-                                             (λ (w) (+ (psn -5.0 0.0)
-                                                       (modulo (floor (/ w 30)) 11)))))
-                             empty)
-                         frame)))))
+(big-bang
+ (world 0 (make-rectangular 8 4.5))
+ #:tick
+ (λ (w cs)
+   (match-define (world frame p*) w)
+   (define p
+     (for/fold ([p p*])
+       ([s (in-list cs)])
+       (+ p (controller-dpad s))))
+   
+   (define PX (real-part p))
+   (define PY (imag-part p))
+   
+   (values (world (add1 frame) p)
+           (gl:focus 
+            ;width height (* 16 20) (* 9 20) ; Show whole map
+            width height (* 16 4) (* 9 4)
+            PX PY
+            (gl:background
+             255 255 255 0
+             the-background
+             (gl:translate PX PY
+                           (map-sprites 5))
+             (gl:translate 0 0
+                           (gl:text "Test text"))))
+           (if (zero? frame)
+               (list (background (λ (w) bgm) #:gain 0.8)
+                     (sound-on jump-se
+                               #:looping? #t
+                               (λ (w) (+ (psn -5.0 0.0)
+                                         (modulo (floor (/ (world-frame w) 30)) 11)))))
+               empty)))
+ #:listener
+ (λ (w)
+   (world-p w))
+ #:done?
+ (λ (w)
+   (printf "F: ~a\n" (world-frame w))
+   ((world-frame w) . > . 360)))
