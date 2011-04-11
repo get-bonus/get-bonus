@@ -165,13 +165,26 @@
 
 (define-openal alSourcePlay
   (_fun [source : _ALsource]
-        -> _void))
+        -> _void
+        -> (check-error 'alSourcePlay)))
+(define-openal alSourcePlayv
+  (_fun [n : _uint = (vector-length b)]
+        [b : (_vector i _ALsource)]
+        -> _void
+        -> (check-error 'alSourcePlayv)))
 (define-openal alSourceStop
   (_fun [source : _ALsource]
-        -> _void))
+        -> _void
+        -> (check-error 'alSourceStop)))
 (define-openal alSourcePause
   (_fun [source : _ALsource]
-        -> _void))
+        -> _void
+        -> (check-error 'alSourcePause)))
+(define-openal alSourcePausev
+  (_fun [n : _uint = (vector-length b)]
+        [b : (_vector i _ALsource)]
+        -> _void
+        -> (check-error 'alSourcePausev)))
 
 (define-openal alListener3f
   (_fun [param : _uint]
@@ -193,6 +206,8 @@
  [alSourceStop (c:-> integer? void)]
  [alSourcePlay (c:-> integer? void)]
  [alSourcePause (c:-> integer? void)]
+ [alSourcePlayv (c:-> (vectorof integer?) void)]
+ [alSourcePausev (c:-> (vectorof integer?) void)]
  [alDeleteSources (c:-> (vectorof integer?) void)]
  [alSourceb (c:-> integer? integer? boolean? void)]
  [alSourcef (c:-> integer? integer? inexact? void)]

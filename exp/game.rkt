@@ -60,6 +60,16 @@
    (define PX (real-part p))
    (define PY (imag-part p))
    
+   (when (controller-start (first cs))
+     (big-bang 0
+               #:tick (λ (i cs)
+                        (values (add1 i)
+                                (gl:focus 1 1 1 1 0 0
+                                          (gl:background 255 0 255 0))
+                                empty))
+               #:listener (λ (i) (psn 0. 0.))
+               #:done? (λ (i) (i . > . 360))))
+   
    (values (world (add1 frame) p)
            (gl:focus 
             ;width height (* 16 20) (* 9 20) ; Show whole map

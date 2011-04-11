@@ -43,12 +43,31 @@
         (s w))))
 
 (struct source (srci old-state update-f))
-(struct system-state (listener-posn-f srcs))
+(struct system-state (dead?-box listener-posn-f srcs))
 (define (initial-system-state lpf)
-  (system-state lpf empty))
+  (system-state (box #f) lpf empty))
 
+(define (sound->source-vector s)
+  (list->vector (map source-srci (system-state-srcs s))))
+(define (sound-pause! s)
+  (sound-dead-error s 'sound-pause!)
+  (alSourcePausev (sound->source-vector s)))
+(define (sound-unpause! s)
+  (sound-dead-error s 'sound-unpause!)
+  (alSourcePlayv (sound->source-vector s)))
+(define (sound-destroy! s)
+  (match-define (system-state dead-box _ _) s)
+  (sound-dead-error s 'sound-destroy!)
+  (set-box! dead-box #t)
+  (alDeleteSources (sound->source-vector s)))
+
+(define (sound-dead-error s sym)
+  (when (unbox (system-state-dead?-box s))
+    (error sym "Sound already dead")))
+  
 (define (render-sound sst cmds w)
-  (match-define (system-state lpf srcs) sst)
+  (match-define (system-state db lpf srcs) sst)
+  (sound-dead-error sst 'render-sound)
   (define all-srcs
     (append 
      (map (λ (f) 
@@ -99,9 +118,7 @@
          (alDeleteSources (vector srci))
          srcs*])))
   
-  (system-state lpf srcs*))
-
-; xxx have a way to destroy the system-state
+  (system-state db lpf srcs*))
 
 (provide/contract
  [audio? contract?]
@@ -135,6 +152,9 @@
  [initial-system-state 
   (-> (-> any/c psn?)
       system-state?)]
+ [sound-pause! (-> system-state? void)]
+ [sound-unpause! (-> system-state? void)]
+ [sound-destroy! (-> system-state? void)]
  [render-sound
   (-> system-state? sound-scape/c any/c
       system-state?)])
