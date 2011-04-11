@@ -46,6 +46,7 @@
 
 (struct world (frame p))
 
+(define start-time (current-seconds))
 (big-bang
  (world 0 (make-rectangular 8 4.5))
  #:tick
@@ -69,8 +70,13 @@
              the-background
              (gl:translate PX PY
                            (map-sprites 5))
-             (gl:translate 0 0
-                           (gl:text "Test text"))))
+             (gl:translate PX (+ PY 5)
+                           (gl:text 
+                            (format "~a FPS" 
+                                    (with-handlers ([exn? (λ (x) "n/a")])
+                                      (real->decimal-string
+                                       (/ frame
+                                          (- (current-seconds) start-time)))))))))
            (if (zero? frame)
                (list (background (λ (w) bgm) #:gain 0.8)
                      (sound-on jump-se
@@ -83,4 +89,5 @@
    (world-p w))
  #:done?
  (λ (w)
-   ((world-frame w) . > . 60)))
+   #f
+   #;((world-frame w) . > . 60)))

@@ -13,7 +13,6 @@
 
 (define RATE 1/60)
 
-; XXX compute the real frame-rate
 ; XXX nested big-bangs (including pausing all the sounds)
 ; XXX have the final one kill the canvas, etc.
 
