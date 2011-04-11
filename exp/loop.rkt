@@ -14,7 +14,6 @@
 (define RATE 1/60)
 
 ; XXX nested big-bangs (including pausing all the sounds)
-; XXX have the final one kill the canvas, etc.
 
 (define (big-bang initial-world
                   #:tick tick
@@ -44,23 +43,32 @@
           (map joystick-snapshot->controller-snapshot
                (get-all-joystick-snapshot-thunks))))
   
+  (define done-ch (make-channel))
+  (define ticker
+    (thread
+     (λ ()
+       (channel-put
+        done-ch
+        (let loop ([next-tick (+ (current-inexact-milliseconds) RATE)]
+                   [w initial-world]
+                   [st (initial-system-state world->listener)])
+          (define-values (wp cmd ss)
+            (tick w 
+                  (map (λ (c) (c)) cs)))
+          (set! last-cmd cmd)
+          (send the-canvas refresh-now)
+          (if (done? wp)
+              (let ()
+                ; XXX destroy the st
+                wp)
+              (let ()
+                (define stp
+                  (render-sound st ss wp))
+                (sync (alarm-evt next-tick))
+                (loop (+ next-tick RATE) wp stp))))))))
+  
   (begin0
-    (let loop ([w initial-world]
-               [st (initial-system-state world->listener)])
-      (define-values (wp cmd ss)
-        (tick w 
-              (map (λ (c) (c)) cs)))
-      (set! last-cmd cmd)
-      (send the-canvas refresh-now)
-      (if (done? wp)
-          (let ()
-            ; XXX destroy the st
-            wp)
-          (let ()
-            (define stp
-              (render-sound st ss wp))
-            (sleep/yield RATE)
-            (loop wp stp))))
+    (yield done-ch)
     (send the-frame show #f)))
 
 (provide/contract
