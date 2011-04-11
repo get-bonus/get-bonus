@@ -79,7 +79,7 @@
   ; XXX Figure out why this doesn't work.
   (send canvas focus)
     
-  canvas)
+  (values frame canvas))
 
 (provide/contract
  [make-fullscreen-canvas/ratio
@@ -87,4 +87,5 @@
            ((is-a?/c canvas<%>) . -> . void)
            ((is-a?/c key-event%) . -> . void)
            . -> .
-           (is-a?/c canvas<%>))])
+           (values (is-a?/c frame%)
+                   (is-a?/c canvas<%>)))])

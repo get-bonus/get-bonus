@@ -13,7 +13,8 @@
 
 (define RATE 1/60)
 
-; XXX nested big-bangs
+; XXX compute the real frame-rate
+; XXX nested big-bangs (including pausing all the sounds)
 ; XXX have the final one kill the canvas, etc.
 
 (define (big-bang initial-world
@@ -24,7 +25,8 @@
     (keyboard-monitor))
   
   (define last-cmd #f)
-  (define the-canvas
+  (define-values
+    (the-frame the-canvas)
     (make-fullscreen-canvas/ratio 
      ""
      16 9 
@@ -43,20 +45,24 @@
           (map joystick-snapshot->controller-snapshot
                (get-all-joystick-snapshot-thunks))))
   
-  (let loop ([w initial-world]
-             [st (initial-system-state world->listener)])
-    
-    (define-values (wp cmd ss)
-      (tick w 
-            (map (λ (c) (c)) cs)))
-    (set! last-cmd cmd)
-    (send the-canvas refresh-now)
-    (define stp
-      (render-sound st ss wp))
-    (if (done? wp)
-        wp
-        (begin (sleep/yield RATE)
-               (loop wp stp)))))
+  (begin0
+    (let loop ([w initial-world]
+               [st (initial-system-state world->listener)])
+      (define-values (wp cmd ss)
+        (tick w 
+              (map (λ (c) (c)) cs)))
+      (set! last-cmd cmd)
+      (send the-canvas refresh-now)
+      (if (done? wp)
+          (let ()
+            ; XXX destroy the st
+            wp)
+          (let ()
+            (define stp
+              (render-sound st ss wp))
+            (sleep/yield RATE)
+            (loop wp stp))))
+    (send the-frame show #f)))
 
 (provide/contract
  [big-bang

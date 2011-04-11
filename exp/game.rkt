@@ -83,5 +83,4 @@
    (world-p w))
  #:done?
  (λ (w)
-   (printf "F: ~a\n" (world-frame w))
-   ((world-frame w) . > . 360)))
+   ((world-frame w) . > . 60)))
