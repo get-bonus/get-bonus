@@ -14,23 +14,14 @@
 ; XXX The matrix stack can only be 32 deep
 
 ;; Basic data structures
-(struct cmd ())
-(struct atomic cmd (thnk))
-(struct wrap cmd (pre in post))
+(struct cmd (t) #:property prop:procedure (struct-field-index t))
 
-(define run
-  (match-lambda
-    [(atomic t)
-     (t)]
-    [(wrap pre in post)
-     (pre)
-     (for-each run in)
-     (post)]))
+(define (run t) (t))
 
-(define-syntax-rule (c pre in post)
-  (wrap (λ () pre) in (λ () post)))
 (define-syntax-rule (λg e ...)
-  (atomic (λ () e ...)))
+  (cmd (λ () e ...)))
+(define-syntax-rule (c pre in post)
+  (λg pre (for-each run in) post))
 
 ;; Basic shapes
 (define (point x y)
@@ -121,7 +112,7 @@
   (λg (void)))
 
 (define (seqn . cs)
-  (wrap void cs void))
+  (λg (for-each run cs)))
 
 ;; Textures
 (require racket/draw
@@ -321,18 +312,12 @@
   (gl-flush))
 
 ;; Syntax
-(define-syntax-rule (define-for/gl for/gl for/fold/derived)
-  (define-syntax (for/gl stx) 
-    (syntax-case stx ()
-      [(_ (clause (... ...)) body (... ...))
-       (syntax/loc stx
-         (for/fold/derived stx
-                           ([cmd blank])
-                           (clause (... ...))
-                           (seqn cmd
-                                 (let () body (... ...)))))])))
-(define-for/gl for/gl for/fold/derived)
-(define-for/gl for*/gl for*/fold/derived)
+(define-syntax-rule (for/gl (clause ...) body ...)
+  (apply seqn
+         (for/list (clause ...) body ...)))
+(define-syntax-rule (for*/gl (clause ...) body ...)
+  (apply seqn
+         (for*/list (clause ...) body ...)))
 
 ;; Contracts + provides
 (define mode/c
