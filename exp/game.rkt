@@ -56,7 +56,7 @@
    (define p
      (for/fold ([p p*])
        ([s (in-list cs)])
-       (+ p (controller-dpad s))))
+       (+ p (/ (controller-dpad s) 5))))
    
    (define PX (real-part p))
    (define PY (imag-part p))
@@ -72,23 +72,23 @@
                #:done? (λ (i) (i . > . 360))))
    
    (values (world (add1 frame) p)
-           (gl:focus 
-            ;width height (* 16 20) (* 9 20) ; Show whole map
-            width height (* 16 4) (* 9 4)
-            PX PY
-            (gl:background
-             255 255 255 0
-             the-background
-             (gl:translate PX PY
-                           (map-sprites 5))
-             ; XXX Make an absolute gl cmd
-             (gl:translate PX (+ PY 5)
-                           (gl:text 
-                            (format "~a FPS" 
-                                    (with-handlers ([exn? (λ (x) "n/a")])
-                                      (real->decimal-string
-                                       (/ frame
-                                          (- (current-seconds) start-time)))))))))
+           (gl:seqn
+            (gl:focus 
+             ;width height (* 16 20) (* 9 20) ; Show whole map
+             width height (* 16 4) (* 9 4)
+             PX PY
+             (gl:background
+              255 255 255 0
+              the-background
+              (gl:translate PX PY
+                            (map-sprites 5))))
+            (gl:focus 16 9 16 9 0 0
+                      (gl:text 
+                       (format "~a FPS" 
+                               (with-handlers ([exn? (λ (x) "n/a")])
+                                 (real->decimal-string
+                                  (/ frame
+                                     (- (current-seconds) start-time))))))))
            (if (zero? frame)
                (list (background (λ (w) bgm) #:gain 0.8)
                      (sound-on jump-se

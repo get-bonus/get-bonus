@@ -254,13 +254,16 @@
    (if the-list
        (glCallList the-list)
        (let ()
+         ; By resetting the current texture, we ensure that the binding will be 
+         ; in the call list.
+         (set-box! (current-texture) #f)
          (define n (glGenLists 1))
          (set! the-list n)
          (glNewList the-list GL_COMPILE_AND_EXECUTE)
          (run cmd)
          (glEndList)))))
 
-;; Top-level
+;; Focus
 (define (gl-viewport/restrict mw mh
                               vw vh 
                               cx cy)
@@ -291,25 +294,21 @@
        y2p
        (+ y2p (- y1p y1)))))
 
-(struct focused (go))
 (define (focus mw mh
                vw vh 
                cx cy
                cmd)
-  (focused
-   (λ () 
-     (draw* mw mh
-            vw vh 
-            cx cy
-            cmd))))
-(define (draw f)
-  ((focused-go f)))
+  (λg
+   (gl-push-matrix)
+   (gl-viewport/restrict mw mh
+                        vw vh 
+                        cx cy)
+   (run cmd)
+   (gl-pop-matrix)))
 
+;; Top Level
 (define current-texture (make-parameter #f))
-(define (draw* mw mh
-               vw vh 
-               cx cy
-               cmd)
+(define (draw cmd)
   (gl-matrix-mode 'projection)
   (gl-load-identity)
   (gl-enable 'texture-2d)
@@ -317,9 +316,6 @@
   (gl-disable 'lighting)
   (gl-disable 'dither)
   (gl-enable 'blend)
-  (gl-viewport/restrict mw mh
-                        vw vh 
-                        cx cy)
   (gl-matrix-mode 'modelview)
   (gl-load-identity)
   (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
@@ -345,9 +341,8 @@
  for/gl
  for*/gl)
 (provide/contract
- [focused? contract?]
- [focus (real? real? real? real? real? real? cmd? . -> . focused?)]
- [draw (focused? . -> . void?)]
+ [focus (real? real? real? real? real? real? cmd? . -> . cmd?)]
+ [draw (cmd? . -> . void?)]
  [cmd? contract?]
  [seqn (() () #:rest (listof cmd?) . ->* . cmd?)]
  [rotate ((real?) () #:rest (listof cmd?) . ->* . cmd?)]

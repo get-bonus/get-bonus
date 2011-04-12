@@ -106,7 +106,7 @@
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)
-            (values any/c gl:focused? sound-scape/c)))
+            (values any/c gl:cmd? sound-scape/c)))
        (#:listener (-> any/c psn?)
         #:done? (-> any/c boolean?))
        any/c)])
