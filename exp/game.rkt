@@ -47,6 +47,7 @@
 
 (struct world (frame p))
 
+; XXX Use cd-broad
 (define start-time (current-seconds))
 (big-bang
  (world 0 (make-rectangular 8 4.5))

@@ -161,6 +161,19 @@
 
 ;; AABBs
 (struct aabb (p xw yw))
+(define aabb-ul 
+  (match-lambda
+    [(aabb p xw yw)
+     (- p (psn xw (- yw)))]))
+(define aabb-ur
+  (match-lambda
+    [(aabb p xw yw)
+     (+ p (psn xw yw))]))
+(define aabb-ll 
+  (match-lambda
+    [(aabb p xw yw)
+     (- p (psn xw yw))]))
+     
 (define (aabb-v o1)
   (match-define (aabb p1 xw1 yw1) o1)
   (psn xw1 yw1))
@@ -306,10 +319,20 @@
 (define shape/c
   (or/c circle? aabb?))
 
+(define (shape->aabb s)
+  (if (circle? s)
+      (circle->aabb s)
+      s))
+
 (provide/contract
  [struct aabb ([p psn?] [xw real?] [yw real?])]
+ [aabb-ul (-> aabb? psn?)]
+ [aabb-ur (-> aabb? psn?)]
+ [aabb-ll (-> aabb? psn?)]
  [struct circle ([p psn?] [r real?])]
  [shape/c contract?]
+ [shape->aabb
+  (-> shape/c aabb?)]
  [colliding?
   (->* (shape/c shape/c)
        (#:depth? boolean?)
