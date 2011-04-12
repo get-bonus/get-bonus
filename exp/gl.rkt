@@ -205,10 +205,10 @@
   
   (define-values (w h bot vert) 
     (send bdc get-text-extent str f #t))
-  (define (floor* x)
-    (inexact->exact (floor x)))
-  (define w* (floor* w))
-  (define h* (floor* h))
+  (define (ceiling* x)
+    (inexact->exact (ceiling x)))
+  (define w* (ceiling* w))
+  (define h* (ceiling* h))
   
   (define bm (make-object bitmap% w* h* #f #t))
   (send bdc set-bitmap bm)    

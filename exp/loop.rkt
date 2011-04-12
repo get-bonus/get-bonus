@@ -35,12 +35,19 @@
 (define (unpause-last-sound)
   (sound-unpause! (current-sound)))
 
-(define (next-tick-time current-tick)
-  (+ current-tick (* RATE 1000)))
+; All the worlds share the same tick time so that the
+; framerate is consistent across sub-world interactions
+; Otherwise, the "outer world" has to "catch up" due to
+; the delay cause by the "inner world"
+(define next-ticker (make-parameter #f))
+(define (make-next-ticker start-time)
+  (λ ()
+    (set! start-time
+          (+ start-time (* RATE 1000)))
+    start-time))
 
 (define (nested-big-bang initial-world tick world->listener done?)
-  (let loop ([next-tick (next-tick-time (current-inexact-milliseconds))]
-             [w initial-world]
+  (let loop ([w initial-world]
              [st (initial-system-state world->listener)])
     (parameterize ([current-sound st])
       (define-values (wp cmd ss)
@@ -56,8 +63,8 @@
             ;     sound... which is bad.
             (define stp
               (render-sound st ss wp))
-            (sync (alarm-evt next-tick))
-            (loop (next-tick-time next-tick) wp stp))))))
+            (sync (alarm-evt ((next-ticker))))
+            (loop wp stp))))))
 
 (define (outer-big-bang initial-world tick world->listener done?)
   (define km
@@ -94,6 +101,7 @@
        (channel-put
         done-ch
         (parameterize ([nested? #t]
+                       [next-ticker (make-next-ticker (current-inexact-milliseconds))]
                        [current-controllers cs]
                        [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick world->listener done?))))))
