@@ -33,16 +33,17 @@
   (file->bytes (build-path resource-path "IMB" "out.lvl")))
 
 (define the-background
-  (gl:for*/gl 
-   ([r (in-range height)]
-    [c (in-range width)])
-   (define b
-     (bytes-ref map-bytes
-                (+ (* height c) r)))
-   (if (zero? b)
-       gl:blank
-       (gl:translate c (- height r 1)
-                     (map-sprites b)))))
+  (gl:remember
+   (gl:for*/gl 
+    ([r (in-range height)]
+     [c (in-range width)])
+    (define b
+      (bytes-ref map-bytes
+                 (+ (* height c) r)))
+    (if (zero? b)
+        gl:blank
+        (gl:translate c (- height r 1)
+                      (map-sprites b))))))
 
 (struct world (frame p))
 
@@ -80,6 +81,7 @@
              the-background
              (gl:translate PX PY
                            (map-sprites 5))
+             ; XXX Make an absolute gl cmd
              (gl:translate PX (+ PY 5)
                            (gl:text 
                             (format "~a FPS" 
@@ -92,7 +94,7 @@
                      (sound-on jump-se
                                #:looping? #t
                                (λ (w) (+ (psn -5.0 0.0)
-                                         (modulo (floor (/ (world-frame w) 30)) 11)))))
+                                         (modulo (floor (/ (world-frame w) 60)) 11)))))
                empty)))
  #:listener
  (λ (w)

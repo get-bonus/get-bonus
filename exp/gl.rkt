@@ -8,7 +8,8 @@
          sgl/gl-vectors)
 
 ; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL
-; XXX Do something to compile commands into lists with glNewList (maybe?)
+; XXX Maybe dynamically detect a cmd that has been rendered many times and automatically put it in a list, being careful not to do it for all of them. (ie all the way down)
+; XXX Send fewer GL functions generally
 ; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
 ; XXX Register a finalizer that will run glDeleteTextures
 ; XXX The matrix stack can only be 32 deep
@@ -59,6 +60,7 @@
 (define-compile-time-vector circle-coss
   (for/list ([angle (in-range 0 360 circle-step)]) (cos angle)))
 
+; XXX Make it so circle is a constant, so it will be efficient re: list detection
 (define (circle [mode 'solid])
   (λg (gl-begin (case mode
                   [(solid) 'triangle-fan]
@@ -244,6 +246,20 @@
    (glBlendFunc GL_ONE GL_ZERO)
    (set-box! (current-texture) #f)))
 
+;; Display list
+; XXX gc the list
+(define (remember cmd)
+  (define the-list #f)
+  (λg
+   (if the-list
+       (glCallList the-list)
+       (let ()
+         (define n (glGenLists 1))
+         (set! the-list n)
+         (glNewList the-list GL_COMPILE_AND_EXECUTE)
+         (run cmd)
+         (glEndList)))))
+
 ;; Top-level
 (define (gl-viewport/restrict mw mh
                               vw vh 
@@ -308,8 +324,7 @@
   (gl-load-identity)
   (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
   (parameterize ([current-texture (box #f)])
-    (run cmd))
-  (gl-flush))
+    (run cmd)))
 
 ;; Syntax
 (define-syntax-rule (for/gl (clause ...) body ...)
@@ -364,4 +379,6 @@
                #:style (one-of/c 'normal 'italic 'slant) 
                #:weight (one-of/c 'normal 'bold 'light)
                #:underlined? boolean?)
-       cmd?)])
+       cmd?)]
+ [remember
+  (-> cmd? cmd?)])

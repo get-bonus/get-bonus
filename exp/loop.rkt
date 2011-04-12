@@ -35,8 +35,11 @@
 (define (unpause-last-sound)
   (sound-unpause! (current-sound)))
 
+(define (next-tick-time current-tick)
+  (+ current-tick (* RATE 1000)))
+
 (define (nested-big-bang initial-world tick world->listener done?)
-  (let loop ([next-tick (+ (current-inexact-milliseconds) RATE)]
+  (let loop ([next-tick (next-tick-time (current-inexact-milliseconds))]
              [w initial-world]
              [st (initial-system-state world->listener)])
     (parameterize ([current-sound st])
@@ -54,7 +57,7 @@
             (define stp
               (render-sound st ss wp))
             (sync (alarm-evt next-tick))
-            (loop (+ next-tick RATE) wp stp))))))
+            (loop (next-tick-time next-tick) wp stp))))))
 
 (define (outer-big-bang initial-world tick world->listener done?)
   (define km

@@ -65,18 +65,25 @@
         (ON-CHAR k))
       
       (super-new)))
+  
+  (define config
+    (new gl-config%))
+  (send config set-double-buffered #t)
+  
   (define canvas
     (new this-canvas%
          [parent horiz-pane]
          [min-width cw]
          [min-height ch]
          [horiz-margin hm]
+         [gl-config config]
          [style '(gl no-autoclear)]))
   (define right-border (make-horizontal-border))
   (define bot-border (make-vertical-border))
   
   (send frame show #t)
-  ; XXX Figure out why this doesn't work.
+  ; XXX Figure out why this doesn't work, meaning why I have to click on the canvas
+  ;     before keys will be picked up
   (send canvas focus)
     
   (values frame canvas))
