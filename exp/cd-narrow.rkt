@@ -309,61 +309,30 @@
  =>
  #f)
 
-; point-at-distance-on-line : psn? psn? [0,1] -> psn?
-(define (point-at-distance-on-line start end d)
-  (define from-origin (- end start))  
-  (make-polar
-   (* d (magnitude from-origin))
-   (angle from-origin)))
-
-(define (close-enough? p1 p2)
-  (define p3 (- p1 p2))
-  (and (<= (abs (psn-x p3)) .001)
-       (<= (abs (psn-y p3)) .001)))
-(test
- (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 1. 1.) 1.) (psn 1. 1.))
- (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 1. 1.) .5) (psn .5 .5))
- (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 10. 10.) .5) (psn 5. 5.)))
-
-; Based on http://mathworld.wolfram.com/Circle-LineIntersection.html
-; Dumb! This is for an INFINITE line
-(define (sgn* x)
-  (if (x . < . 0)
-      -1
-      1))
-(define +- +)
-(define (circle-vs-line c start end)
-  (match-define (circle p r) c)
-  (define a (- start p))
-  (define b (- end p))
-  (match-define (psn* x1 y1) a)
-  (match-define (psn* x2 y2) b)
-  (define dx (- x2 x1))
-  (define dy (- y2 y1))
-  (define dr (sqrt (+ (sqr dx) (sqr dy))))
-  (define D (- (* x1 y2) (* x2 y1)))  
-  (define dis
-    (- (* (sqr r) (sqr dr)) (sqr D)))
-  (printf "~a\n" (list p r a b dx dy dr D dis))
-  (cond
-    [(dis . < . 0)
-     #f]
-    [(dis . = . 0)
-     #f]
-    [(dis . > . 0)
-     (define x
-       (/ (+- (* D dy) (* (sgn* dy) dx (sqrt dis)))
-          (sqr dr)))
-     (define y
-       (/ (+- (* -1 D dx) (* (abs dy) (sqrt dis)))
-          (sqr dr)))
-     (psn x y)]))
+; Based on http://doswa.com/blog/2009/07/13/circle-segment-intersectioncollision/
+(define (circle-vs-line c seg_a seg_b)
+  (match-define (circle c_pos c_rad) c)
+  (define seg_v (- seg_b seg_a))
+  (define pt_v (- c_pos seg_a))
+  (define len-proj_v (dot-product pt_v (normalize seg_v)))
+  (define closest 
+    (cond
+      [(len-proj_v . < . 0)
+       seg_a]
+      [(len-proj_v . > . (length seg_v))
+       seg_b]
+      [else
+       (define proj_v
+         (* len-proj_v (normalize seg_v)))
+       (+ seg_a proj_v)]))
+  (define dist_v (- c_pos closest))
+  (define len-dist_v (length dist_v))
+  ; XXX I'd like to find out the point on the circle
+  (len-dist_v . < .  c_rad))
 (test
  (circle-vs-line (circle (psn 10. 10.) .5) (psn 0. 0.) (psn 1. 1.)) => #f
- (circle-vs-line (circle (psn 1. 1.) .5) (psn 0. 0.) (psn 1. 1.)) => (psn .5 .5)
- (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.)) => (psn 5. 5.)
- (close-enough? (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.))
-                (psn 5. 5.)))
+ (circle-vs-line (circle (psn 1. 1.) .5) (psn 0. 0.) (psn 1. 1.)) => #t
+ (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.)) => #t)
 
 ;; Collisions
 (define (circle->aabb c)
@@ -396,7 +365,9 @@
 (define (shape-vs-line s start end)
   (cond
     [(circle? s)
-     (circle-vs-line s start end)]))
+     (circle-vs-line s start end)]
+    [(aabb? s)
+     (aabb-vs-line s start end)]))
 
 (provide/contract
  [struct aabb ([p psn?] [xw real?] [yw real?])]
@@ -413,4 +384,4 @@
        (or/c #t #f psn?))]
  [shape-vs-line
   (-> shape/c psn? psn?
-      (or/c #f psn?))])
+      boolean?)])
