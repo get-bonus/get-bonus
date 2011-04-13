@@ -260,6 +260,86 @@
                     (aabb (psn 1.5 .5) 1. .5)
                     (psn -.5 .0)))
 
+; Based on http://tog.acm.org/resources/GraphicsGems/gems/RayBox.c
+(require racket/function)
+(define != (negate =))
+(define (aabb-vs-line s start end)
+  ; Args
+  (define NUMDIM 2)
+  (match-define (aabb p xw yw) s)
+  (define minB 
+    (vector (- (psn-x p) xw)
+            (- (psn-y p) yw)))
+  (define maxB 
+    (vector (+ (psn-x p) xw)
+            (+ (psn-y p) yw)))
+  (define origin
+    (vector (psn-x start)
+            (psn-y start)))
+  (define dir 
+    (vector (psn-x end)
+            (psn-y end)))
+  (define coord
+    (vector #f #f))
+  ; Code
+  (let/ec return
+    (define inside #t)
+    (define quadrant (vector 'right 'right))
+    (define which-plane 0)
+    (define maxT (vector 0. 0.))
+    (define candidate-plane (vector 0. 0.))
+    (for ([i (in-range NUMDIM)])
+      (cond
+        [((vector-ref origin i) . < . (vector-ref minB i))
+         (vector-set! quadrant i 'left)
+         (vector-set! candidate-plane i (vector-ref minB i))
+         (set! inside #f)]
+        [((vector-ref origin i) . > . (vector-ref maxB i))
+         (vector-set! quadrant i 'right)
+         (vector-set! candidate-plane i (vector-ref maxB i))
+         (set! inside #f)]
+        [else
+         (vector-set! quadrant i 'middle)]))
+    (when inside
+      (set! coord origin)
+      (return #t))
+    (for ([i (in-range NUMDIM)])
+      (if (and (not (equal? (vector-ref quadrant i) 'middle))
+               (!= (vector-ref dir i) 0.))
+          (vector-set! maxT i (/ (- (vector-ref candidate-plane i)
+                                    (vector-ref origin i))
+                                 (vector-ref dir i)))
+          (vector-set! maxT i -1.)))
+    (set! which-plane 0)
+    (for ([i (in-range 1 NUMDIM)])
+      (when ((vector-ref maxT which-plane) . < . (vector-ref maxT i))
+        (set! which-plane i)))
+    
+    (when ((vector-ref maxT which-plane) . < . 0.)
+      (return #f))
+    
+    (for ([i (in-range NUMDIM)])
+      (if (!= which-plane i)
+          (begin (vector-set! coord i
+                              (+ (vector-ref origin i)
+                                 (* (vector-ref maxT which-plane)
+                                    (vector-ref dir i))))
+                 (when (or ((vector-ref coord i) . < . (vector-ref minB i))
+                           ((vector-ref coord i) . > . (vector-ref maxB i)))
+                   (return #f)))
+          (vector-set! coord i (vector-ref candidate-plane i))))
+    
+    (return #t)))
+
+(test
+ (aabb-vs-line (aabb (psn .5 .5) .5 .5) (psn 0. 0.) (psn 1. 1.))
+ (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn 1. 1.))
+ (aabb-vs-line (aabb (psn 10. 10.) .5 .5) (psn 0. 0.) (psn 1. 1.)) => #f
+ (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn .5 .5))
+ (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn .25 .25)) => #f
+ 
+ )
+
 ; XXX I didn't really understand how to do the other things in the article and the code was a bit too opaque for me. I should support them eventually.
 
 ;; Circles
