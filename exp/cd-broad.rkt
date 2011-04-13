@@ -43,9 +43,9 @@
   (define ll (aabb-ll r))
   (in-generator
    (for* ([row (in-range (space-row g (psn-y ul))
-                         (space-row g (psn-y ll)))]
+                         (add1 (space-row g (psn-y ll))))]
           [col (in-range (space-col g (psn-x ul))
-                         (space-col g (psn-x ur)))])
+                         (add1 (space-col g (psn-x ur))))])
      (yield row col))))
 
 (struct iobj (shape obj))
@@ -93,7 +93,7 @@
    (λ (s1 s2) (colliding? s1 s2))
    (λ (v o) o)))
 
-(define (space-ray g x0 y0 x1 y1)
+(define (space-ray g start end)
   (error 'space-ray "XXX Implement this function and a line test in cd-narrow"))
 
 (provide/contract
@@ -121,9 +121,8 @@
       shape/c
       (sequence/c collision?))]
  [space-ray
-  (-> space?
-      real? real?
-      real? real?
+  (-> space? 
+      psn? psn?
       (sequence/c collision?))])
 
 ; XXX Write tests
