@@ -1,25 +1,25 @@
 #lang racket/base
-(require racket/match
+(require "fvector.rkt"
+         racket/match
          racket/contract)
-; This is a functional matrix. 
-; XXX Do a lit review and find something better.
-; XXX This is bad because it doesn't use the fact that the size of the matrix is fixed.
+; This is a functional matrix.
 
-(struct fmatrix (ht))
+; XXX Maybe use row-column vector rather than nested?
+(struct fmatrix (fv mt))
 (define (make-fmatrix rs cs)
-  (fmatrix (hasheq)))
+  (fmatrix (fvector rs) (fvector cs)))
 
-(define mt-hasheq (hasheq))
+(define mt-fvector (hasheq))
 (define (fmatrix-update f r c u a)
-  (match-define (fmatrix ht) f)
-  (hash-update ht r
-               (λ (r-ht)
-                 (hash-update r-ht c u a))
-               mt-hasheq))
+  (match-define (fmatrix fv mt-fvector) f)
+  (fvector-update fv r
+                  (λ (rv)
+                    (fvector-update rv c u a))
+                  mt-fvector))
 
 (define (fmatrix-ref f r c a)
-  (match-define (fmatrix ht) f)
-  (hash-ref (hash-ref ht r mt-hasheq) c a))
+  (match-define (fmatrix fv mt-fvector) f)
+  (hash-ref (hash-ref fv r mt-fvector) c a))
 
 (provide/contract
  [fmatrix? contract?]
