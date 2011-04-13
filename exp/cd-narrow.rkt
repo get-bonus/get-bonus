@@ -325,35 +325,42 @@
  (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 1. 1.) .5) (psn .5 .5))
  (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 10. 10.) .5) (psn 5. 5.)))
 
-; Based on http://www.google.com/codesearch/p?hl=en#OkpJT1T0YPk/trunk/src/cpShape.c&q=segmentQuery%20package:http://chipmunk-physics%5C.googlecode%5C.com&sa=N&cd=2&ct=rc&l=150 > circleSegmentQuery
+; Based on http://mathworld.wolfram.com/Circle-LineIntersection.html
+; Dumb! This is for an INFINITE line
+(define (sgn* x)
+  (if (x . < . 0)
+      -1
+      1))
+(define +- +)
 (define (circle-vs-line c start end)
   (match-define (circle p r) c)
-  ; Offset to relative circle
   (define a (- start p))
   (define b (- end p))
-  (define qa 
-    (+ (dot-product a a)
-       (* -2. (dot-product a b))
-       (dot-product b b)))
-  (define qb
-    (+ (* -2. (dot-product a a))
-       (* 2. (dot-product a b))))
-  (define qc
-    (- (dot-product a a)
-       (sqr r)))
-  (define det
-    (- (sqr qb)
-       (* 4. qa qc)))
-  (and (det . >= . 0.)
-       (let ()
-         (define t 
-           (/ (- (- qb)
-                 (sqrt det))
-              (* 2. qa)))
-         (if (<= 0. t 1.)
-             (point-at-distance-on-line start end t)
-             #f))))
+  (match-define (psn* x1 y1) a)
+  (match-define (psn* x2 y2) b)
+  (define dx (- x2 x1))
+  (define dy (- y2 y1))
+  (define dr (sqrt (+ (sqr dx) (sqr dy))))
+  (define D (- (* x1 y2) (* x2 y1)))  
+  (define dis
+    (- (* (sqr r) (sqr dr)) (sqr D)))
+  (printf "~a\n" (list p r a b dx dy dr D dis))
+  (cond
+    [(dis . < . 0)
+     #f]
+    [(dis . = . 0)
+     #f]
+    [(dis . > . 0)
+     (define x
+       (/ (+- (* D dy) (* (sgn* dy) dx (sqrt dis)))
+          (sqr dr)))
+     (define y
+       (/ (+- (* -1 D dx) (* (abs dy) (sqrt dis)))
+          (sqr dr)))
+     (psn x y)]))
 (test
+ (circle-vs-line (circle (psn 10. 10.) .5) (psn 0. 0.) (psn 1. 1.)) => #f
+ (circle-vs-line (circle (psn 1. 1.) .5) (psn 0. 0.) (psn 1. 1.)) => (psn .5 .5)
  (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.)) => (psn 5. 5.)
  (close-enough? (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.))
                 (psn 5. 5.)))
