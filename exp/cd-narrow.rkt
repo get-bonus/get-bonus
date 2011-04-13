@@ -173,6 +173,10 @@
   (match-lambda
     [(aabb p xw yw)
      (- p (psn xw yw))]))
+(define aabb-lr
+  (match-lambda
+    [(aabb p xw yw)
+     (+ p (psn xw (- yw)))]))
      
 (define (aabb-v o1)
   (match-define (aabb p1 xw1 yw1) o1)
@@ -260,85 +264,51 @@
                     (aabb (psn 1.5 .5) 1. .5)
                     (psn -.5 .0)))
 
-; Based on http://tog.acm.org/resources/GraphicsGems/gems/RayBox.c
-(require racket/function)
-(define != (negate =))
+; Based on http://stackoverflow.com/questions/99353/how-to-test-if-a-line-segment-intersects-an-axis-aligned-rectange-in-2d
+(define-syntax all-same?
+  (syntax-rules ()
+    [(_) #t]
+    [(_ last) #t]
+    [(_ last e r ...)
+     (let ([fst last]
+           [snd e])
+       (and (= fst snd)
+            (all-same? snd r ...)))]))
 (define (aabb-vs-line s start end)
-  ; Args
-  (define NUMDIM 2)
-  (match-define (aabb p xw yw) s)
-  (define minB 
-    (vector (- (psn-x p) xw)
-            (- (psn-y p) yw)))
-  (define maxB 
-    (vector (+ (psn-x p) xw)
-            (+ (psn-y p) yw)))
-  (define origin
-    (vector (psn-x start)
-            (psn-y start)))
-  (define dir 
-    (vector (psn-x end)
-            (psn-y end)))
-  (define coord
-    (vector #f #f))
-  ; Code
-  (let/ec return
-    (define inside #t)
-    (define quadrant (vector 'right 'right))
-    (define which-plane 0)
-    (define maxT (vector 0. 0.))
-    (define candidate-plane (vector 0. 0.))
-    (for ([i (in-range NUMDIM)])
-      (cond
-        [((vector-ref origin i) . < . (vector-ref minB i))
-         (vector-set! quadrant i 'left)
-         (vector-set! candidate-plane i (vector-ref minB i))
-         (set! inside #f)]
-        [((vector-ref origin i) . > . (vector-ref maxB i))
-         (vector-set! quadrant i 'right)
-         (vector-set! candidate-plane i (vector-ref maxB i))
-         (set! inside #f)]
-        [else
-         (vector-set! quadrant i 'middle)]))
-    (when inside
-      (set! coord origin)
-      (return #t))
-    (for ([i (in-range NUMDIM)])
-      (if (and (not (equal? (vector-ref quadrant i) 'middle))
-               (!= (vector-ref dir i) 0.))
-          (vector-set! maxT i (/ (- (vector-ref candidate-plane i)
-                                    (vector-ref origin i))
-                                 (vector-ref dir i)))
-          (vector-set! maxT i -1.)))
-    (set! which-plane 0)
-    (for ([i (in-range 1 NUMDIM)])
-      (when ((vector-ref maxT which-plane) . < . (vector-ref maxT i))
-        (set! which-plane i)))
-    
-    (when ((vector-ref maxT which-plane) . < . 0.)
-      (return #f))
-    
-    (for ([i (in-range NUMDIM)])
-      (if (!= which-plane i)
-          (begin (vector-set! coord i
-                              (+ (vector-ref origin i)
-                                 (* (vector-ref maxT which-plane)
-                                    (vector-ref dir i))))
-                 (when (or ((vector-ref coord i) . < . (vector-ref minB i))
-                           ((vector-ref coord i) . > . (vector-ref maxB i)))
-                   (return #f)))
-          (vector-set! coord i (vector-ref candidate-plane i))))
-    
-    (return #t)))
-
+  (match-define (psn* x1 y1) start)
+  (match-define (psn* x2 y2) end)
+  (define (F p)
+    (match-define (psn* x y) p)
+    (sgn
+     (+ (* (- y2 y1) x)
+        (* (- x1 x2) y)
+        (- (* x2 y1)
+           (* x1 y2)))))
+  (and
+   (not
+    (all-same?
+     (F (aabb-ul s))
+     (F (aabb-ur s))
+     (F (aabb-ll s))
+     (F (aabb-lr s))))
+   (not
+    (or
+     (let ()
+       (match-define (psn* xTR yTR) (aabb-ur s))
+       (or
+        (and (x1 . > . xTR) (x2 . > . xTR) 'right)
+        (and (y1 . > . yTR) (y2 . > . yTR) 'above)))
+     (let ()
+       (match-define (psn* xBL yBL) (aabb-ll s))
+       (or
+        (and (x1 . < . xBL) (x2 . < . xBL) 'left)
+        (and (y1 . < . yBL) (y2 . < . yBL) 'below)))))))
 (test
  (aabb-vs-line (aabb (psn .5 .5) .5 .5) (psn 0. 0.) (psn 1. 1.))
  (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn 1. 1.))
  (aabb-vs-line (aabb (psn 10. 10.) .5 .5) (psn 0. 0.) (psn 1. 1.)) => #f
  (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn .5 .5))
- (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn .25 .25)) => #f
- 
- )
+ (aabb-vs-line (aabb (psn 1. 1.) .5 .5) (psn 0. 0.) (psn .25 .25)) => #f)
 
 ; XXX I didn't really understand how to do the other things in the article and the code was a bit too opaque for me. I should support them eventually.
 
@@ -407,7 +377,6 @@
        (+ seg_a proj_v)]))
   (define dist_v (- c_pos closest))
   (define len-dist_v (length dist_v))
-  ; XXX I'd like to find out the point on the circle
   (len-dist_v . < .  c_rad))
 (test
  (circle-vs-line (circle (psn 10. 10.) .5) (psn 0. 0.) (psn 1. 1.)) => #f
