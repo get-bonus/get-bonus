@@ -288,20 +288,82 @@
                (normalize delta))
             #f))))
 
-; XXX tests
 (test
  (magnitude
   (circle-vs-circle (circle (psn 0. 0.) 1.)
                     (circle (psn 0. 0.) 1.)))
  =>
- 1.)
+ 1.
+ 
+ (circle-vs-circle
+  (circle (psn 0. 0.) 1.)
+  (circle (psn 1. 1.) 1.))
+ 
+ (circle-vs-circle
+  (circle (psn 0. 0.) 1.)
+  (circle (psn 0. 1.) 1.))
+ 
+ (circle-vs-circle
+  (circle (psn 0. 0.) 1.)
+  (circle (psn 2. 2.) 1.))
+ =>
+ #f)
 
-;; Shapes
+; point-at-distance-on-line : psn? psn? [0,1] -> psn?
+(define (point-at-distance-on-line start end d)
+  (define from-origin (- end start))  
+  (make-polar
+   (* d (magnitude from-origin))
+   (angle from-origin)))
+
+(define (close-enough? p1 p2)
+  (define p3 (- p1 p2))
+  (and (<= (abs (psn-x p3)) .001)
+       (<= (abs (psn-y p3)) .001)))
+(test
+ (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 1. 1.) 1.) (psn 1. 1.))
+ (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 1. 1.) .5) (psn .5 .5))
+ (close-enough? (point-at-distance-on-line (psn 0. 0.) (psn 10. 10.) .5) (psn 5. 5.)))
+
+; Based on http://www.google.com/codesearch/p?hl=en#OkpJT1T0YPk/trunk/src/cpShape.c&q=segmentQuery%20package:http://chipmunk-physics%5C.googlecode%5C.com&sa=N&cd=2&ct=rc&l=150 > circleSegmentQuery
+(define (circle-vs-line c start end)
+  (match-define (circle p r) c)
+  ; Offset to relative circle
+  (define a (- start p))
+  (define b (- end p))
+  (define qa 
+    (+ (dot-product a a)
+       (* -2. (dot-product a b))
+       (dot-product b b)))
+  (define qb
+    (+ (* -2. (dot-product a a))
+       (* 2. (dot-product a b))))
+  (define qc
+    (- (dot-product a a)
+       (sqr r)))
+  (define det
+    (- (sqr qb)
+       (* 4. qa qc)))
+  (and (det . >= . 0.)
+       (let ()
+         (define t 
+           (/ (- (- qb)
+                 (sqrt det))
+              (* 2. qa)))
+         (if (<= 0. t 1.)
+             (point-at-distance-on-line start end t)
+             #f))))
+(test
+ (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.)) => (psn 5. 5.)
+ (close-enough? (circle-vs-line (circle (psn 10. 10.) 5.) (psn 0. 0.) (psn 10. 10.))
+                (psn 5. 5.)))
+
+;; Collisions
 (define (circle->aabb c)
   (match-define (circle p r) c)
   (aabb p r r))
 
-(define (colliding? s1 s2 #:depth? [depth? #f])
+(define (shape-vs-shape s1 s2 #:depth? [depth? #f])
   (cond
     [(and (aabb? s1) (aabb? s2))
      (if depth?
@@ -312,9 +374,9 @@
          (circle-vs-circle s1 s2)
          (circle-vs-circle? s1 s2))]
     [(circle? s1)
-     (colliding? (circle->aabb s1) s2 #:depth? depth?)]
+     (shape-vs-shape (circle->aabb s1) s2 #:depth? depth?)]
     [(circle? s2)
-     (colliding? s1 (circle->aabb s2) #:depth? depth?)]))
+     (shape-vs-shape s1 (circle->aabb s2) #:depth? depth?)]))
 
 (define shape/c
   (or/c circle? aabb?))
@@ -323,6 +385,11 @@
   (if (circle? s)
       (circle->aabb s)
       s))
+
+(define (shape-vs-line s start end)
+  (cond
+    [(circle? s)
+     (circle-vs-line s start end)]))
 
 (provide/contract
  [struct aabb ([p psn?] [xw real?] [yw real?])]
@@ -333,7 +400,10 @@
  [shape/c contract?]
  [shape->aabb
   (-> shape/c aabb?)]
- [colliding?
+ [shape-vs-shape
   (->* (shape/c shape/c)
        (#:depth? boolean?)
-       (or/c #t #f psn?))])
+       (or/c #t #f psn?))]
+ [shape-vs-line
+  (-> shape/c psn? psn?
+      (or/c #f psn?))])

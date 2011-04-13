@@ -84,13 +84,13 @@
 
 (define space-collisions
   (make-space-collisions 
-   (λ (s1 s2) (colliding? s1 s2 #:depth? #t))
+   (λ (s1 s2) (shape-vs-shape s1 s2 #:depth? #t))
    collision))
 
 ; These functions just return the object... no vector.
 (define space-collisions?
   (make-space-collisions 
-   (λ (s1 s2) (colliding? s1 s2))
+   (λ (s1 s2) (shape-vs-shape s1 s2))
    (λ (v o) o)))
 
 (define (space-ray g start end)
