@@ -11,9 +11,11 @@
 
 (define (fvector-update f n u a)
   (match-define (fvector s) f)
+  ; XXX Implement update in skal
   (define e (skal:list-ref s n))
-  (skal:list-set s n e
-            (u (or e a))))
+  (fvector
+   (skal:list-set s n 
+                  (u (or e a)))))
 
 (define (fvector-ref f n a)
   (match-define (fvector s) f)
@@ -28,7 +30,7 @@
   (-> fvector? 
       exact-nonnegative-integer?
       (-> any/c any/c) any/c
-      any/c)]
+      fvector?)]
  [fvector-ref
   (-> fvector?
       exact-nonnegative-integer?

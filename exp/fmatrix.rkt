@@ -12,14 +12,15 @@
 (define mt-fvector (hasheq))
 (define (fmatrix-update f r c u a)
   (match-define (fmatrix fv mt-fvector) f)
-  (fvector-update fv r
-                  (λ (rv)
-                    (fvector-update rv c u a))
-                  mt-fvector))
+  (fmatrix (fvector-update fv r
+                           (λ (rv)
+                             (fvector-update rv c u a))
+                           mt-fvector)
+           mt-fvector))
 
 (define (fmatrix-ref f r c a)
   (match-define (fmatrix fv mt-fvector) f)
-  (hash-ref (hash-ref fv r mt-fvector) c a))
+  (fvector-ref (fvector-ref fv r mt-fvector) c a))
 
 (provide/contract
  [fmatrix? contract?]
@@ -30,7 +31,7 @@
   (-> fmatrix? 
       exact-nonnegative-integer? exact-nonnegative-integer?
       (-> any/c any/c) any/c
-      any/c)]
+      fmatrix?)]
  [fmatrix-ref
   (-> fmatrix?
       exact-nonnegative-integer? exact-nonnegative-integer?

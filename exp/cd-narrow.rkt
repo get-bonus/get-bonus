@@ -410,6 +410,17 @@
     [(circle? s2)
      (shape-vs-shape s1 (circle->aabb s2) #:depth? depth?)]))
 
+(test
+ (shape-vs-shape
+  (circle (psn 0. 0.) 1.)
+  (aabb (psn 1. 1.) .5 .5))
+ 
+ (shape-vs-shape
+  (circle (psn 5. 5.) 1.)
+  (aabb (psn 1. 1.) .5 .5))
+ =>
+ #f)
+
 (define shape/c
   (or/c circle? aabb?))
 

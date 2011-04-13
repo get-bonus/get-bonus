@@ -27,14 +27,15 @@
   (define rows (ceiling (/ h cell-h)))
   (space
    cell-w cell-h
-   (fmatrix rows cols)))
+   (fmatrix (add1 rows) (add1 cols))))
 (define (space-row g y)
   (inexact->exact (floor (/ y (space-ch g)))))
 (define (space-col g x)
   (inexact->exact (floor (/ x (space-cw g)))))
   
 (define (space-update g r c f a)
-  (fmatrix-update (space-fm g) r c f a))
+  (struct-copy space g
+               [fm (fmatrix-update (space-fm g) r c f a)]))
 (define (space-ref g r c)
   (fmatrix-ref (space-fm g) r c mt-set))
 
@@ -44,8 +45,8 @@
   (define ur (aabb-ur r))
   (define ll (aabb-ll r))
   (in-generator
-   (for* ([row (in-range (space-row g (psn-y ul))
-                         (add1 (space-row g (psn-y ll))))]
+   (for* ([row (in-range (space-row g (psn-y ll))
+                         (add1 (space-row g (psn-y ul))))]
           [col (in-range (space-col g (psn-x ul))
                          (add1 (space-col g (psn-x ur))))])
      ; XXX Remove cons
@@ -76,13 +77,16 @@
 
 ; A collision means that the shape (for which this code assigns no semantics) has 
 ; collided with the object with a certain separating vector.
-(struct collision (v o2))
+(struct collision (v o2) #:transparent)
 
 (define ((make-space-collisions colliding? collision) g shape)
+  (define seen? (make-hasheq))
   (in-generator
    (for ([r*c (in-space g shape)])
      (match-define (cons row col) r*c)
-     (for ([io (in-set (space-ref g row col))])
+     (for ([io (in-set (space-ref g row col))]
+           #:when (not (hash-has-key? seen? io)))
+       (hash-set! seen? io #t)
        (match-define (iobj o-shape obj) io)
        (define v (colliding? shape o-shape))
        (when v
@@ -146,10 +150,13 @@
              (9 . 10) (10 . 10))))
 
 (define (space-ray g start end)
+  (define seen? (make-hasheq))
   (in-generator
    (for ([r*c (in-space/ray g start end)])
      (match-define (cons row col) r*c)
-     (for ([io (in-set (space-ref g row col))])
+     (for ([io (in-set (space-ref g row col))]
+           #:when (not (hash-has-key? seen? io)))
+       (hash-set! seen? io #t)
        (match-define (iobj o-shape obj) io)
        (when (shape-vs-line o-shape start end)
          (yield obj))))))
@@ -183,4 +190,96 @@
       psn? psn?
       (sequence/c collision?))])
 
-; XXX Write tests
+(let ()
+  (define s
+    (space-insert (make-space 10 10 1 1)
+                  (circle (psn 1. 1.) .5) 
+                  'circle))
+  (test
+   (space-row s 10) => 10
+   (space-row s 0) => 0
+   (space-row s 5) => 5
+   (space-col s 10) => 10
+   (space-col s 0) => 0
+   (space-col s 5) => 5
+   
+   (sequence->list
+    (space-collisions?
+     (space-insert (make-space 10 10 1 1)
+                   (aabb (psn 1.5 1.5) .5 .5)
+                   'box)
+     (aabb (psn 1.5 1.25) .5 .5)))
+   =>
+   (list 'box)
+   
+   (sequence->list
+    (space-collisions?
+     (space-insert (make-space 10 10 1 1)
+                   (aabb (psn 3.5 3.5) .5 .5)
+                   'box)
+     (aabb (psn 1.5 1.25) .5 .5)))
+   =>
+   (list)
+   
+   (sequence->list
+    (space-collisions
+     (space-insert (make-space 10 10 1 1)
+                   (aabb (psn 1.5 1.5) .5 .5)
+                   'box)
+     (aabb (psn 1.5 1.25) .5 .5)))
+   =>
+   (list (collision -0.0+0.75i 'box))
+   
+   (sequence->list
+    (space-collisions?
+     (space-insert (make-space 10 10 1 1)
+                   (circle (psn 1. 1.) 1.)
+                   'circle)
+     (circle (psn 1. 1.) 1.)))
+   =>
+   (list 'circle)
+   
+   (sequence->list
+    (space-collisions
+     (space-insert (make-space 10 10 1 1)
+                   (circle (psn 1. 1.) 1.)
+                   'circle)
+     (circle (psn 1. 1.) 1.)))
+   =>
+   (list (collision -1.0+1.2246467991473532e-16i 'circle))
+   
+   (sequence->list
+    (space-collisions?
+     (space-insert (make-space 10 10 1 1)
+                   (circle (psn 1. 1.) 1.)
+                   'circle)
+     (aabb (psn 2. 2.) .5 .5)))
+   =>
+   (list 'circle)
+   
+   (sequence->list
+    (space-collisions?
+     (space-insert (make-space 10 10 1 1)
+                   (aabb (psn 2. 2.) .5 .5)
+                   'box)
+     (circle (psn 1. 1.) 1.)))
+   =>
+   (list 'box)
+   
+   (sequence->list
+    (space-ray 
+     (space-insert (make-space 10 10 1 1)
+                   (circle (psn 1. 1.) .5) 
+                   'circle)
+     (psn 0. 0.) (psn 1. 1.)))
+   =>
+   (list 'circle)
+   
+   (sequence->list
+    (space-ray
+     (space-insert (make-space 10 10 1 1)
+                   (aabb (psn .5 .5) .5 .5)
+                   'box)
+     (psn 0. 0.) (psn 1. 1.)))
+   =>
+   (list 'box)))
