@@ -58,7 +58,7 @@
   (define i (iobj shape obj))
   (for/fold ([g g])
     ([r*c (in-space g shape)])
-    (match-define (cons r c) r*c)
+    (match-define (cons row col) r*c)
     (space-update g row col
                     (curryr set-add i)
                     mt-set)))
@@ -69,7 +69,7 @@
 (define (space-remove g shape obj)
   (for/fold ([g g])
     ([r*c (in-space g shape)])
-    (match-define (cons r c) r*c)   
+    (match-define (cons row col) r*c) 
     (space-update g row col
                   (curry set-filter (compose (curry equal? obj) iobj-obj))
                   mt-set)))
@@ -80,12 +80,13 @@
 
 (define ((make-space-collisions colliding? collision) g shape)
   (in-generator
-   (for* ([(row col) (in-space g shape)]
-          [io (in-set (space-ref g row col))])
-     (match-define (iobj o-shape obj) io)
-     (define v (colliding? shape o-shape))
-     (when v
-       (yield (collision v obj))))))
+   (for ([r*c (in-space g shape)])
+     (match-define (cons row col) r*c)
+     (for ([io (in-set (space-ref g row col))])
+       (match-define (iobj o-shape obj) io)
+       (define v (colliding? shape o-shape))
+       (when v
+         (yield (collision v obj)))))))
 
 (define space-collisions
   (make-space-collisions 
@@ -107,8 +108,6 @@
   (define y1 (space-row g ey))
   (define dx (abs (- x1 x0)))
   (define dy (abs (- y1 y0)))
-  (define x x0)
-  (define y y0)
   (define n (+ 1 dx dy))
   (define x-inc
     (if (x1 . > . x0)
@@ -118,21 +117,20 @@
     (if (y1 . > . y0)
         1
         -1))
-  (define error
-    (- dx dy))
-  (set! dx (* 2 dx))
-  (set! dy (* 2 dy))
   
   (in-generator
-   (for ([i (in-range n)])
+   (for/fold ([x x0] [y y0] [error (- dx dy)])
+     ([i (in-range n)])
      ; XXX Remove extra cons
      (yield (cons x y))
      
      (if (error . > . 0)
-         (begin (set! x (+ x x-inc))
-                (set! error (- error dy)))
-         (begin (set! y (+ y y-inc))
-                (set! error (+ error dx)))))))
+         (values (+ x x-inc)
+                 y
+                 (- error (* 2 dy)))
+         (values x
+                 (+ y y-inc)
+                 (+ error (* 2 dx)))))))
 
 (let ()
   (test
@@ -145,7 +143,7 @@
 (define (space-ray g start end)
   (in-generator
    (for ([r*c (in-space/ray g start end)])
-     (match-define (cons r c) r*c)
+     (match-define (cons row col) r*c)
      (for ([io (in-set (space-ref g row col))])
        (match-define (iobj o-shape obj) io)
        (when (shape-vs-line o-shape start end)
