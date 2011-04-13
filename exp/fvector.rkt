@@ -1,21 +1,23 @@
 #lang racket/base
-(require racket/contract
+(require (prefix-in skal: "../lib/untyped/skewbinaryrandomaccesslist.rkt")
+         racket/contract
          racket/match)
-; XXX Do a lit review and find something better.
 ; XXX This is bad because it doesn't use the fact that the size of the vector is fixed.
 
-(struct fvector (ht))
+(struct fvector (s))
 (define (make-fvector n)
-  (fvector (hasheq)))
+  (fvector 
+   (skal:make-list n #f)))
 
-(define mt-hasheq (hasheq))
 (define (fvector-update f n u a)
-  (match-define (fvector ht) f)
-  (hash-update ht n u a))
+  (match-define (fvector s) f)
+  (define e (skal:list-ref s n))
+  (skal:list-set s n e
+            (u (or e a))))
 
 (define (fvector-ref f n a)
-  (match-define (fvector ht) f)
-  (hash-ref ht n a))
+  (match-define (fvector s) f)
+  (or (skal:list-ref s n) a))
 
 (provide/contract
  [fvector? contract?]

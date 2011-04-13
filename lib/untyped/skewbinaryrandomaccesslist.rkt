@@ -1,4 +1,5 @@
-#lang typed/racket/base
+#lang typed/racket/base/no-check
+; Copied from krhari/pfds
 (require (prefix-in rk: racket/base))
 (provide filter remove reverse
          list ->list empty? cons empty head tail
