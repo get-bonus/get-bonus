@@ -1,10 +1,12 @@
 #lang racket/base
 ; Based on http://www.metanetsoftware.com/technique/tutorialB.html
 (require racket/generator
+         racket/sequence
          racket/contract
          racket/function
          racket/match
          unstable/contract
+         tests/eli-tester
          "psn.rkt"
          "cd-narrow.rkt")
 
@@ -27,9 +29,9 @@
    cell-w cell-h
    (fmatrix rows cols)))
 (define (space-row g y)
-  (floor (/ y (space-ch g))))
+  (inexact->exact (floor (/ y (space-ch g)))))
 (define (space-col g x)
-  (floor (/ x (space-cw g))))
+  (inexact->exact (floor (/ x (space-cw g)))))
   
 (define (space-update g r c f a)
   (fmatrix-update (space-fm g) r c f a))
@@ -46,7 +48,8 @@
                          (add1 (space-row g (psn-y ll))))]
           [col (in-range (space-col g (psn-x ul))
                          (add1 (space-col g (psn-x ur))))])
-     (yield row col))))
+     ; XXX Remove cons
+     (yield (cons row col)))))
 
 (struct iobj (shape obj))
 
@@ -54,7 +57,8 @@
 (define (space-insert g shape obj)
   (define i (iobj shape obj))
   (for/fold ([g g])
-    ([(row col) (in-space g shape)])
+    ([r*c (in-space g shape)])
+    (match-define (cons r c) r*c)
     (space-update g row col
                     (curryr set-add i)
                     mt-set)))
@@ -64,7 +68,8 @@
            e))
 (define (space-remove g shape obj)
   (for/fold ([g g])
-    ([(row col) (in-space g shape)])
+    ([r*c (in-space g shape)])
+    (match-define (cons r c) r*c)   
     (space-update g row col
                   (curry set-filter (compose (curry equal? obj) iobj-obj))
                   mt-set)))
@@ -93,8 +98,58 @@
    (λ (s1 s2) (shape-vs-shape s1 s2))
    (λ (v o) o)))
 
+(define (in-space/ray g start end)
+  (match-define (psn* sx sy) start)
+  (define x0 (space-col g sx))
+  (define y0 (space-row g sy))
+  (match-define (psn* ex ey) end)
+  (define x1 (space-col g ex))
+  (define y1 (space-row g ey))
+  (define dx (abs (- x1 x0)))
+  (define dy (abs (- y1 y0)))
+  (define x x0)
+  (define y y0)
+  (define n (+ 1 dx dy))
+  (define x-inc
+    (if (x1 . > . x0)
+        1
+        -1))
+  (define y-inc
+    (if (y1 . > . y0)
+        1
+        -1))
+  (define error
+    (- dx dy))
+  (set! dx (* 2 dx))
+  (set! dy (* 2 dy))
+  
+  (in-generator
+   (for ([i (in-range n)])
+     ; XXX Remove extra cons
+     (yield (cons x y))
+     
+     (if (error . > . 0)
+         (begin (set! x (+ x x-inc))
+                (set! error (- error dy)))
+         (begin (set! y (+ y y-inc))
+                (set! error (+ error dx)))))))
+
+(let ()
+  (test
+   (sequence->list (in-space/ray (make-space 10 10 1 1) (psn 0. 0.) (psn 10. 10.)))
+   =>
+   '((0 . 0) (0 . 1) (1 . 1) (1 . 2) (2 . 2) (2 . 3) (3 . 3) (3 . 4) (4 . 4) (4 . 5)
+             (5 . 5) (5 . 6) (6 . 6) (6 . 7) (7 . 7) (7 . 8) (8 . 8) (8 . 9) (9 . 9)
+             (9 . 10) (10 . 10))))
+
 (define (space-ray g start end)
-  (error 'space-ray "XXX Implement this function and a line test in cd-narrow"))
+  (in-generator
+   (for ([r*c (in-space/ray g start end)])
+     (match-define (cons r c) r*c)
+     (for ([io (in-set (space-ref g row col))])
+       (match-define (iobj o-shape obj) io)
+       (when (shape-vs-line o-shape start end)
+         (yield obj))))))
 
 (provide/contract
  [space? contract?]
