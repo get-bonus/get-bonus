@@ -338,22 +338,29 @@
                (normalize delta))
             #f))))
 
+(define (test-circle-vs-circle c1 c2)
+  (define ? (circle-vs-circle? c1 c2))
+  (define v (circle-vs-circle c1 c2))
+  (if ? (test v) (test v => #f))
+  v)
+
 (test
  (magnitude
-  (circle-vs-circle (circle (psn 0. 0.) 1.)
-                    (circle (psn 0. 0.) 1.)))
+  (test-circle-vs-circle 
+   (circle (psn 0. 0.) 1.)
+   (circle (psn 0. 0.) 1.)))
  =>
  1.
  
- (circle-vs-circle
+ (test-circle-vs-circle
   (circle (psn 0. 0.) 1.)
   (circle (psn 1. 1.) 1.))
  
- (circle-vs-circle
+ (test-circle-vs-circle
   (circle (psn 0. 0.) 1.)
   (circle (psn 0. 1.) 1.))
  
- (circle-vs-circle
+ (test-circle-vs-circle
   (circle (psn 0. 0.) 1.)
   (circle (psn 2. 2.) 1.))
  =>

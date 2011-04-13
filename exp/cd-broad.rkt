@@ -99,6 +99,7 @@
    (λ (s1 s2) (shape-vs-shape s1 s2))
    (λ (v o) o)))
 
+; Based on http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
 (define (in-space/ray g start end)
   (match-define (psn* sx sy) start)
   (define x0 (space-col g sx))
@@ -134,6 +135,10 @@
 
 (let ()
   (test
+   (sequence->list (in-space/ray (make-space 4 5 1 1) (psn .5 .5) (psn 2.5 3.5)))
+   =>
+   '((0 . 0) (0 . 1) (1 . 1) (1 . 2) (2 . 2) (2 . 3))
+   
    (sequence->list (in-space/ray (make-space 10 10 1 1) (psn 0. 0.) (psn 10. 10.)))
    =>
    '((0 . 0) (0 . 1) (1 . 1) (1 . 2) (2 . 2) (2 . 3) (3 . 3) (3 . 4) (4 . 4) (4 . 5)
