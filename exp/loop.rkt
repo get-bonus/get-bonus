@@ -111,6 +111,7 @@
     (send the-frame show #f)))
 
 (provide/contract
+ [RATE number?]
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)

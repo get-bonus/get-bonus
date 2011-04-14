@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract
          racket/set
+         "psn.rkt"
          "controller.rkt"
          "keyboard.rkt"
          "joystick.rkt"
@@ -13,10 +14,10 @@
     (define s (js))
     ; XXX Specialized for NES
     (controller
-     (make-rectangular (mvector-ref (joystick-state-sticks s) 0 0 0)
-                       (mvector-ref (joystick-state-sticks s) 0 0 1))
-     0
-     0
+     (psn (mvector-ref (joystick-state-sticks s) 0 0 0)
+          (mvector-ref (joystick-state-sticks s) 0 0 1))
+     0.
+     0.
      #t #t ; a b
      #f #f
      #t #t ; select start
@@ -30,16 +31,16 @@
     (define (on? k)
       (set-member? ks k))
     (controller
-     (make-rectangular 
+     (psn 
       (cond
-        [(on? 'left) -1]
-        [(on? 'right) 1]
-        [else 0])
+        [(on? 'left) -1.]
+        [(on? 'right) 1.]
+        [else 0.])
       (cond
-        [(on? 'up) 1]
-        [(on? 'down) -1]
-        [else 0]))
-     0 0
+        [(on? 'up) 1.]
+        [(on? 'down) -1.]
+        [else 0.]))
+     0. 0.
      (on? #\x) (on? #\c)
      (on? #\s) (on? #\d)
      (on? #\space) (on? #\return)

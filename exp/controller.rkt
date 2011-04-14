@@ -14,7 +14,8 @@
         #:transparent)
 
 (define (stick-state? n)
-  (and (<= -1 (real-part n) 1)
+  (and (inexact? n)
+       (<= -1 (real-part n) 1)
        (<= -1 (imag-part n) 1)))
 
 (define stick-x real-part)
