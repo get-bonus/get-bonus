@@ -123,6 +123,7 @@
      (cd:circle ball-pos-m ball-r))
    (define lhs-shape
      (cd:aabb (psn lhs-x lhs-y-n) paddle-hw paddle-hh))
+   ; XXX This seems too far to the left
    (define rhs-shape
      (cd:aabb (psn rhs-x rhs-y-n) paddle-hw paddle-hh))
    

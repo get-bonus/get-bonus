@@ -14,8 +14,8 @@
     (define s (js))
     ; XXX Specialized for NES
     (controller
-     (psn (mvector-ref (joystick-state-sticks s) 0 0 0)
-          (mvector-ref (joystick-state-sticks s) 0 0 1))
+     (psn (exact->inexact (mvector-ref (joystick-state-sticks s) 0 0 0))
+          (exact->inexact (mvector-ref (joystick-state-sticks s) 0 0 1)))
      0.
      0.
      #t #t ; a b
