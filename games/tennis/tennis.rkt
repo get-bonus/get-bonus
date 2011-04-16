@@ -217,11 +217,11 @@
                        (gl:string->texture #:size 30 (real->decimal-string (current-rate)))))
       ; XXX Place the scores better
       (gl:translate (* width 1/4) (* height 8/9)
-                              (gl:texture
-                               (gl:string->texture #:size 30 (format "~a" lhs-score-n))))
-                (gl:translate (* width 3/4) (* height 8/9)
-                              (gl:texture
-                               (gl:string->texture #:size 30 (format "~a" rhs-score-n))))
+                    (gl:texture
+                     (gl:string->texture #:size 30 (format "~a" lhs-score-n))))
+      (gl:translate (* width 3/4) (* height 8/9)
+                    (gl:texture
+                     (gl:string->texture #:size 30 (format "~a" rhs-score-n))))
       ; XXX Change the paddle graphics
       (gl:translate lhs-x (- lhs-y-n paddle-hh)
                     (gl:color 255 0 0 0

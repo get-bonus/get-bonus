@@ -15,12 +15,34 @@
 ; XXX The matrix stack can only be 32 deep
 
 ;; Basic data structures
-(struct cmd (t) #:property prop:procedure (struct-field-index t))
+; XXX gc lists
+(struct cmd (count-box list-ref-box t) #:property prop:procedure (struct-field-index t))
 
-(define (run t) (t))
+(define compiling? (make-parameter #f))
+(define THRESHOLD 10)
+(define run
+  (match-lambda
+    [(cmd (and cb (box count)) (and lrb (box #f)) t)
+     (define ncount (add1 count))
+     (set-box! cb ncount)
+     (if (and (ncount . >= . THRESHOLD)
+              (not (compiling?)))
+         (parameterize ([compiling? #t])
+           (printf "Compiling command... ~a\n" t)
+           ; By resetting the current texture, we ensure that the binding will be 
+           ; in the call list.
+           (set-box! (current-texture) #f)
+           (define n (glGenLists 1))
+           (set-box! lrb n)
+           (glNewList n GL_COMPILE_AND_EXECUTE)
+           (t)
+           (glEndList))
+         (t))]
+    [(cmd _ (box the-list) _)
+     (glCallList the-list)]))
 
 (define-syntax-rule (λg e ...)
-  (cmd (λ () e ...)))
+  (cmd (box 0) (box #f) (λ () e ...)))
 (define-syntax-rule (c pre in post)
   (λg pre (for-each run in) post))
 
@@ -274,23 +296,6 @@
                             [dw (/ w h)]
                             [dh 1]))))
 
-;; Display list
-; XXX gc the list
-(define (remember cmd)
-  (define the-list #f)
-  (λg
-   (if the-list
-       (glCallList the-list)
-       (let ()
-         ; By resetting the current texture, we ensure that the binding will be 
-         ; in the call list.
-         (set-box! (current-texture) #f)
-         (define n (glGenLists 1))
-         (set! the-list n)
-         (glNewList the-list GL_COMPILE_AND_EXECUTE)
-         (run cmd)
-         (glEndList)))))
-
 ;; Focus
 (define (gl-viewport/restrict mw mh
                               vw vh 
@@ -402,6 +407,4 @@
                #:style (one-of/c 'normal 'italic 'slant) 
                #:weight (one-of/c 'normal 'bold 'light)
                #:underlined? boolean?)
-       texture?)]
- [remember
-  (-> cmd? cmd?)])
+       texture?)])

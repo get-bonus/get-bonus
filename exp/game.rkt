@@ -33,17 +33,16 @@
   (file->bytes (build-path resource-path "IMB" "out.lvl")))
 
 (define the-background
-  (gl:remember
-   (gl:for*/gl 
-    ([r (in-range height)]
-     [c (in-range width)])
-    (define b
-      (bytes-ref map-bytes
-                 (+ (* height c) r)))
-    (if (zero? b)
-        gl:blank
-        (gl:translate c (- height r 1)
-                      (map-sprites b))))))
+  (gl:for*/gl 
+   ([r (in-range height)]
+    [c (in-range width)])
+   (define b
+     (bytes-ref map-bytes
+                (+ (* height c) r)))
+   (if (zero? b)
+       gl:blank
+       (gl:translate c (- height r 1)
+                     (map-sprites b)))))
 
 (struct world (frame p))
 
@@ -84,12 +83,13 @@
               (gl:translate PX PY
                             (map-sprites 5))))
             (gl:focus 16 9 16 9 0 0
-                      (gl:text 
-                       (format "~a FPS" 
-                               (with-handlers ([exn? (λ (x) "n/a")])
-                                 (real->decimal-string
-                                  (/ frame
-                                     (- (current-seconds) start-time))))))))
+                      (gl:texture
+                       (gl:string->texture
+                        (format "~a FPS" 
+                                (with-handlers ([exn? (λ (x) "n/a")])
+                                  (real->decimal-string
+                                   (/ frame
+                                      (- (current-seconds) start-time)))))))))
            (if (zero? frame)
                (list (background (λ (w) bgm) #:gain 0.8)
                      (sound-on jump-se
