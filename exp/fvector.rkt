@@ -1,5 +1,5 @@
-#lang racket/base
-(require (prefix-in skal: "../lib/untyped/skewbinaryrandomaccesslist.rkt")
+#lang s-exp "tr-cheat.rkt"
+(require (prefix-in skal: "../lib/skal.rkt")
          racket/contract
          racket/match)
 ; XXX This is bad because it doesn't use the fact that the size of the vector is fixed.
