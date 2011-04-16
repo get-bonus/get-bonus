@@ -36,16 +36,26 @@
       (gl-vertex x2 y2)
       (gl-end)))
 
+(define-syntax-rule (no-texture e ...)
+  (begin (gl-push-attrib 'enable-bit)
+         (gl-disable 'texture-2d)
+         e ...
+         (gl-pop-attrib)))
+  
 (define (rectangle w h [mode 'solid])
-  (λg (gl-begin (case mode
-                  [(solid) 'quads]
-                  [(outline) 'line-loop]))
-      (begin
-        (gl-vertex 0 0)
-        (gl-vertex w 0)
-        (gl-vertex w h)
-        (gl-vertex 0 h))
-      (gl-end)))
+  (λg 
+   (no-texture
+    (case mode
+      [(solid)
+       (glRectf 0 0 w h)]
+      [(outline)
+       (gl-begin 'line-loop)
+       (begin
+         (gl-vertex 0 0)
+         (gl-vertex w 0)
+         (gl-vertex w h)
+         (gl-vertex 0 h))
+       (gl-end)]))))
 
 (define-syntax-rule (define-compile-time-vector i e)
   (begin
@@ -61,17 +71,30 @@
   (for/list ([angle (in-range 0 360 circle-step)]) (cos angle)))
 
 ; XXX Make it so circle is a constant, so it will be efficient re: list detection
+(define circle:solid
+  (λg 
+   (no-texture
+    (gl-begin 'triangle-fan)
+    (begin
+      (gl-vertex 0 0)
+      (for ([s (in-vector circle-sins)]
+            [c (in-vector circle-coss)])
+        (gl-vertex s c)))
+    (gl-end))))
+(define circle:outline
+  (λg 
+   (no-texture
+    (gl-begin 'line-strip)
+    (begin
+      (for ([s (in-vector circle-sins)]
+            [c (in-vector circle-coss)])
+        (gl-vertex s c)))
+    (gl-end))))
+  
 (define (circle [mode 'solid])
-  (λg (gl-begin (case mode
-                  [(solid) 'triangle-fan]
-                  [(outline) 'line-strip]))
-      (begin
-        (when (symbol=? mode 'solid)
-          (gl-vertex 0 0))
-        (for ([s (in-vector circle-sins)]
-              [c (in-vector circle-coss)])
-          (gl-vertex s c)))
-      (gl-end)))
+  (case mode
+    [(solid) circle:solid]
+    [(outline) circle:outline]))
 
 ;; Transformations
 (define-syntax-rule
@@ -134,6 +157,7 @@
   (define texts (glGenTextures 1))
   (define text-ref (gl-vector-ref texts 0))
   
+  (set-box! (current-texture) text-ref)
   (glBindTexture GL_TEXTURE_2D text-ref)
   (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR)
   (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
@@ -151,21 +175,24 @@
   (send bm get-argb-pixels 0 0 w h argb #f)
   (argb->rgba argb))
 
-(struct texture (w h bs r))
+(struct texture (w h bs r dw dh st))
 (define (load-texture! t)
-  (match-define (texture w h bs r) t)
+  (match-define (texture w h bs r _ _ _) t)
   (unless (unbox r)
     (define text-ref (bytes->text-ref w h (unbox bs)))
     (set-box! bs #f)
     (set-box! r text-ref)))
 
-(define (path->texture p)
-  (define bm (make-object bitmap% p 'png/alpha #f #t))
+(define (bm->texture bm style)
   (define w (send bm get-width))
   (define h (send bm get-height))
   (define rgba (box (bm->rgba-bytes bm)))
   (define ref (box #f))
-  (texture w h rgba ref))
+  (texture w h rgba ref w h style))
+
+(define (path->texture p)
+  (define bm (make-object bitmap% p 'png/alpha #f #t))
+  (bm->texture bm GL_SRC_ALPHA))
 
 (define (bind-texture-ref! t)
   (unless (equal? t (unbox (current-texture)))
@@ -182,18 +209,19 @@
   (gl-end))
   
 (define (texture* t 
-                  [w (texture-w t)] [h (texture-h t)]
+                  [w (texture-dw t)] [h (texture-dh t)]
                   [tx1 0] [ty1 0]
                   [tw 1] [th 1])
   (λg 
    (load-texture! t)
-   (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
+   (gl-push-attrib 'color-buffer-bit)
+   (glBlendFunc (texture-st t) GL_ONE_MINUS_SRC_ALPHA)
    (draw-texture! 
     (unbox (texture-r t)) 
     w h
     tx1 ty1
     tw th)
-  (glBlendFunc GL_ONE GL_ZERO)))
+   (gl-pop-attrib)))
 
 ;; Text
 (define (string->bitmap f str)
@@ -218,33 +246,33 @@
   
   (values bm w* h*))
 
-(define (text str 
-              #:size [size 12]
-              #:face [face #f]
-              #:family [family 'default]
-              #:style [style 'normal]
-              #:weight [weight 'normal]
-              #:underlined? [underline? #f])
-  (define f 
-    (make-font #:size size
-               #:face face
-               #:family family
-               #:style style
-               #:weight weight
-               #:underlined? underline?
-               #:smoothing 'smoothed))
-  (define-values (bm w h)
-     (string->bitmap f str))
-  (λg
-   (define text-ref
-     (bytes->text-ref 
-      w h
-      (bm->rgba-bytes bm)))
-   (glBlendFunc GL_DST_COLOR GL_ONE_MINUS_SRC_ALPHA)
-   (draw-texture! text-ref (/ w h) 1 0 0 1 1)
-   (glDeleteTextures (gl-uint-vector text-ref))
-   (glBlendFunc GL_ONE GL_ZERO)
-   (set-box! (current-texture) #f)))
+; XXX gc cache
+(define string-texture-cache (make-hash))
+(define 
+  (string->texture
+   str 
+   #:size [size 12]
+   #:face [face #f]
+   #:family [family 'default]
+   #:style [style 'normal]
+   #:weight [weight 'normal]
+   #:underlined? [underline? #f])
+  (hash-ref! string-texture-cache
+             (vector str size face family style weight underline?)
+             (λ ()
+               (define f 
+                 (make-font #:size size
+                            #:face face
+                            #:family family
+                            #:style style
+                            #:weight weight
+                            #:underlined? underline?
+                            #:smoothing 'smoothed))
+               (define-values (bm w h)
+                 (string->bitmap f str))
+               (struct-copy texture (bm->texture bm GL_DST_COLOR)
+                            [dw (/ w h)]
+                            [dh 1]))))
 
 ;; Display list
 ; XXX gc the list
@@ -365,7 +393,7 @@
          ((texture?) 
           (real? real? unit-integer? unit-integer? unit-integer? unit-integer?)
           . ->* . cmd?)]
- [text 
+ [string->texture
   (->* (string?)
        (#:size (integer-in 1 255)
                #:face (or/c string? #f)
@@ -374,6 +402,6 @@
                #:style (one-of/c 'normal 'italic 'slant) 
                #:weight (one-of/c 'normal 'bold 'light)
                #:underlined? boolean?)
-       cmd?)]
+       texture?)]
  [remember
   (-> cmd? cmd?)])
