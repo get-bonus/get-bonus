@@ -66,6 +66,9 @@
             (sync (alarm-evt ((next-ticker))))
             (loop wp stp))))))
 
+(define current-rate-finder (make-parameter (λ () (error 'current-rate "Not in big-bang"))))
+(define (current-rate)
+  ((current-rate-finder)))
 (define (outer-big-bang initial-world tick world->listener done?)
   (define km
     (keyboard-monitor))
@@ -90,7 +93,10 @@
     (cons (keyboard-monitor->controller-snapshot km)
           (map joystick-snapshot->controller-snapshot
                (get-all-joystick-snapshot-thunks))))
+  (define start-secs (current-seconds))
+  (define frames 0)
   (define (this-update-canvas cmd)
+    (set! frames (add1 frames))
     (set! last-cmd cmd)
     (send the-canvas refresh-now))
   
@@ -102,6 +108,10 @@
         done-ch
         (parameterize ([nested? #t]
                        [next-ticker (make-next-ticker (current-inexact-milliseconds))]
+                       [current-rate-finder
+                        (λ () 
+                          (with-handlers ([exn:fail? (λ (x) 0.)])
+                            (exact->inexact (/ frames (- (current-seconds) start-secs)))))]
                        [current-controllers cs]
                        [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick world->listener done?))))))
@@ -112,6 +122,7 @@
 
 (provide/contract
  [RATE number?]
+ [current-rate (-> number?)]
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)

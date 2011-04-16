@@ -212,6 +212,8 @@
      (psn-x center-pos) (psn-y center-pos)
      (gl:background
       255 255 255 0
+      #;(gl:translate 0. 0.
+                    (gl:text #:size 30 (real->decimal-string (current-rate))))
       ; XXX Place the scores better
       (gl:translate (* width 1/4) (* height 8/9)
                     (gl:text #:size 30 (format "~a" lhs-score-n)))
