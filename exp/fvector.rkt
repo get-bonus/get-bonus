@@ -1,5 +1,6 @@
 #lang s-exp "tr-cheat.rkt"
 (require (prefix-in skal: "../lib/skal.rkt")
+         tests/eli-tester
          racket/contract
          racket/match)
 ; XXX This is bad because it doesn't use the fact that the size of the vector is fixed.
@@ -11,15 +12,18 @@
 
 (define (fvector-update f n u a)
   (match-define (fvector s) f)
-  ; XXX Implement update in skal
-  (define e (skal:list-ref s n))
   (fvector
-   (skal:list-set s n 
-                  (u (or e a)))))
+   (skal:list-update s n
+                     (λ (e)
+                       (u (or e a))))))
 
 (define (fvector-ref f n a)
   (match-define (fvector s) f)
   (or (skal:list-ref s n) a))
+
+(test
+ (fvector-ref (make-fvector 4) 1 #f) => #f
+ (fvector-ref (fvector-update (make-fvector 4) 1 add1 0) 1 #f) => 1)
 
 (provide/contract
  [fvector? contract?]

@@ -12,7 +12,7 @@
                      [list-eighth eighth] [list-ninth ninth]
                      [list-tenth tenth] [list-last last]
                      [list-length length]) build-list make-list
-         list-ref list-set drop List)
+         list-ref list-set list-update drop List)
 
 (struct: (A) Leaf ([elem  : A]) #:transparent)
 (struct: (A) Node ([elem  : A]
@@ -88,8 +88,8 @@
 
 
 ;; Helper for list-set
-(: tree-update : (All (A) (Integer (Tree A) Integer A -> (Tree A))))
-(define (tree-update weight tree pos elem)
+(: tree-set : (All (A) (Integer (Tree A) Integer A -> (Tree A))))
+(define (tree-set weight tree pos elem)
   (let ([pos0? (zero? pos)])
     (: tu-help : (All (A) Integer (Node A) -> (Tree A)))
     (define (tu-help new-weight tree)
@@ -99,15 +99,33 @@
         (cond
           [pos0? (Node elem left right)]
           [(<= pos new-weight)
-           (Node first (tree-update new-weight left (sub1 pos) elem) right)]
-          [else (Node first left (tree-update new-weight right
+           (Node first (tree-set new-weight left (sub1 pos) elem) right)]
+          [else (Node first left (tree-set new-weight right
                                               (- pos 1 new-weight) elem))])))
     (cond
       [(and (Leaf? tree) pos0?) (Leaf elem)]
       [(Node? tree) (tu-help (arithmetic-shift weight -1) tree)]
       [else (error 'list-set "given index out of bounds")])))
 
-
+(: tree-update : (All (A) (Integer (Tree A) Integer (A -> A) -> (Tree A))))
+(define (tree-update weight tree pos update)
+  (let ([pos0? (zero? pos)])
+    (: tu-help : (All (A) Integer (Node A) -> (Tree A)))
+    (define (tu-help new-weight tree)
+      (let ([left  (Node-left tree)]
+            [right (Node-right tree)]
+            [first (Node-elem tree)])
+        (cond
+          [pos0? (Node (update first) left right)]
+          [(<= pos new-weight)
+           (Node first (tree-update new-weight left (sub1 pos) update) right)]
+          [else (Node first left (tree-update new-weight right
+                                              (- pos 1 new-weight) 
+                                              update))])))
+    (cond
+      [(and (Leaf? tree) pos0?) (Leaf (update (Leaf-elem tree)))]
+      [(Node? tree) (tu-help (arithmetic-shift weight -1) tree)]
+      [else (error 'list-set "given index out of bounds")])))
 
 
 ;; Similar to list list-ref function
@@ -126,13 +144,29 @@
     [(null? ralist) (error 'list-set "given index out of bounds")]
     [(< pos (car (car ralist)))
      (rk:cons (rk:cons (car (car ralist)) 
-                    (tree-update (car (car ralist))
+                    (tree-set (car (car ralist))
                                  (cdr (car ralist)) pos elem)) 
               (cdr ralist))]
     [else (rk:cons (car ralist)
                    (list-set (cdr ralist)
                              (- pos (car (car ralist)))
                              elem))]))
+
+(: list-update : (All (A) ((List A) Integer (A -> A) -> (List A))))
+(define (list-update ralist pos update)
+  (cond
+    [(null? ralist) (error 'list-set "given index out of bounds")]
+    [(< pos (car (car ralist)))
+     (rk:cons (rk:cons (car (car ralist)) 
+                    (tree-update (car (car ralist))
+                                 (cdr (car ralist))
+                                 pos
+                                 update)) 
+              (cdr ralist))]
+    [else (rk:cons (car ralist)
+                   (list-update (cdr ralist)
+                                (- pos (car (car ralist)))
+                                update))]))
 
 ;; Helper for drop
 (: tree-drop : (All (A) (Integer (Tree A) Integer (List A) -> (List A))))
