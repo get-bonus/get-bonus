@@ -34,20 +34,19 @@
 
 (define the-background
   (gl:for*/gl 
-   ([r (in-range height)]
-    [c (in-range width)])
-   (define b
-     (bytes-ref map-bytes
-                (+ (* height c) r)))
-   (if (zero? b)
-       gl:blank
-       (gl:translate c (- height r 1)
-                     (map-sprites b)))))
+    ([r (in-range height)]
+     [c (in-range width)])
+    (define b
+      (bytes-ref map-bytes
+                 (+ (* height c) r)))
+    (if (zero? b)
+        gl:blank
+        (gl:translate c (- height r 1)
+                      (map-sprites b)))))
 
 (struct world (frame p))
 
 ; XXX Use cd-broad
-(define start-time (current-seconds))
 (big-bang
  (world 0 (make-rectangular 8 4.5))
  #:tick
@@ -72,24 +71,20 @@
                #:done? (λ (i) (i . > . 360))))
    
    (values (world (add1 frame) p)
-           (gl:seqn
+           (gl:background
+            255 255 255 0
             (gl:focus 
              ;width height (* 16 20) (* 9 20) ; Show whole map
              width height (* 16 4) (* 9 4)
              PX PY
-             (gl:background
-              255 255 255 0
+             (gl:seqn
               the-background
               (gl:translate PX PY
                             (map-sprites 5))))
             (gl:focus 16 9 16 9 0 0
                       (gl:texture
                        (gl:string->texture
-                        (format "~a FPS" 
-                                (with-handlers ([exn? (λ (x) "n/a")])
-                                  (real->decimal-string
-                                   (/ frame
-                                      (- (current-seconds) start-time)))))))))
+                        (format "~a FPS" (real->decimal-string (current-rate) 1))))))
            (if (zero? frame)
                (list (background (λ (w) bgm) #:gain 0.8)
                      (sound-on jump-se

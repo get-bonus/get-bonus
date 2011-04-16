@@ -8,7 +8,6 @@
          sgl/gl-vectors)
 
 ; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL
-; XXX Maybe dynamically detect a cmd that has been rendered many times and automatically put it in a list, being careful not to do it for all of them. (ie all the way down)
 ; XXX Send fewer GL functions generally
 ; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
 ; XXX Register a finalizer that will run glDeleteTextures
@@ -28,7 +27,6 @@
      (if (and (ncount . >= . THRESHOLD)
               (not (compiling?)))
          (parameterize ([compiling? #t])
-           (printf "Compiling command... ~a\n" t)
            ; By resetting the current texture, we ensure that the binding will be 
            ; in the call list.
            (set-box! (current-texture) #f)
@@ -236,14 +234,16 @@
                   [tw 1] [th 1])
   (λg 
    (load-texture! t)
-   (gl-push-attrib 'color-buffer-bit)
+   ; I thought it would be more elegant to use glPushAttrib before this, but it turns out
+   ; that that is *really* slow. My frame-rate dropped from 60 to 5. Yikes. I hope I am
+   ; not doing other stupid things like that.
    (glBlendFunc (texture-st t) GL_ONE_MINUS_SRC_ALPHA)
    (draw-texture! 
     (unbox (texture-r t)) 
     w h
     tx1 ty1
     tw th)
-   (gl-pop-attrib)))
+   (glBlendFunc GL_ONE GL_ZERO)))
 
 ;; Text
 (define (string->bitmap f str)
