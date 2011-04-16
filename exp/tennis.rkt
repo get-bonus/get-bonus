@@ -31,6 +31,9 @@
   (psn (/ width 2.) (/ height 2.)))
 (define speed 
   (* 4. RATE))
+; XXX Anything faster and the ball can get off the screen
+(define ball-speed
+  (* 1. speed))
 
 (define paddle-w
   .5)
@@ -101,7 +104,7 @@
               (controller (psn 0. 
                                ; XXX This is too hard
                                ; Goes towards the ball's y position
-                               (* 1. (sgn (- (psn-y ball-pos) rhs-y))))
+                               (clamp -1. (/ (- (psn-y ball-pos) rhs-y) speed) 1.))
                           0. 0.
                           #f #f #f #f 
                           #f #f #f #f #f #f))))
@@ -117,7 +120,7 @@
      (+ rhs-y (* rhs-dy speed))
       max-paddle-y))
    (define ball-pos-m
-     (+ ball-pos (make-polar speed ball-dir)))
+     (+ ball-pos (make-polar ball-speed ball-dir)))
    
    (define ball-shape
      (cd:circle ball-pos-m ball-r))
@@ -127,6 +130,7 @@
    (define rhs-shape
      (cd:aabb (psn rhs-x rhs-y-n) paddle-hw paddle-hh))
    
+   ; XXX I can tell if it is the top/bot of the ball by the centers
    (define-values
      (ball-pos-n ball-dir-n)
      (cond
@@ -137,7 +141,7 @@
          (cd:shape-vs-shape ball-shape lhs-shape)
          ; The ball has bounced off the rhs
          (cd:shape-vs-shape ball-shape rhs-shape))
-        (values ball-pos
+        (values ball-pos-m
                 ; XXX Bounce better
                 (+ ball-dir pi (* (random) 1/2 pi)))]
        ; The ball is inside the frame
@@ -174,10 +178,10 @@
                     (gl:text #:size 30 (format "~a" lhs-score-n)))
       (gl:translate (* width 3/4) (* height 8/9)
                     (gl:text #:size 30 (format "~a" rhs-score-n)))
-      (gl:translate lhs-x (- lhs-y paddle-hh)
+      (gl:translate lhs-x (- lhs-y-n paddle-hh)
                     (gl:color 255 0 0 0
                               paddle))
-      (gl:translate rhs-x (- rhs-y paddle-hh)
+      (gl:translate rhs-x (- rhs-y-n paddle-hh)
                     (gl:color 0 0 255 0
                               paddle))
       ; XXX Animate the ball
