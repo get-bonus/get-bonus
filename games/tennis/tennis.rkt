@@ -47,13 +47,51 @@
 (define max-paddle-y
   (- height paddle-hh))
 
-(define paddle
-  (gl:rectangle paddle-w paddle-h))
+(define paddle-blocks
+  (gl:path->texture (build-path resource-path "tetrispiecess.png")))
+(define blocks-in-a-paddle 5)
+(define (stack n gap cmd)
+  (gl:for/gl ([i (in-range n)])
+             (gl:translate 0. (* gap i) cmd)))
+
+(define (paddle-at px)
+  (define block-h
+    (/ paddle-h blocks-in-a-paddle))
+  (define block
+    (gl:texture/px paddle-blocks 
+                   paddle-w block-h 
+                   px 44
+                   10 10))
+  (stack blocks-in-a-paddle block-h
+         block))
+
+(define lhs-paddle
+  (paddle-at 4))
+(define rhs-paddle
+  (paddle-at 70))
 
 (define ball-r .25)
+(define ball-hw (* 1.5 ball-r))
+(define ball-hh ball-r)
+
+(define ball-sprites
+  (gl:path->texture 
+   (build-path resource-path "ryu.png")))
 (define ball
-  (gl:color 0 255 0 0
-            (gl:scale ball-r ball-r (gl:circle))))
+  (gl:translate (- ball-r) (- ball-r)
+                (gl:texture/px ball-sprites
+                               (* 2 ball-hw) (* 2 ball-hh)
+                               484 683
+                               36 24)))
+
+(define bgm-img
+  (gl:path->texture 
+   (build-path resource-path "potosvillage.png")))
+(define bgm
+  (gl:texture/px bgm-img
+                 width height
+                 315 265
+                 336 189))
 
 (define lhs-x 
   (- .5 paddle-hw))
@@ -66,9 +104,11 @@
                      rhs-y))
 
 (define frame-top
-  (cd:aabb (+ center-pos (psn 0. height)) (/ width 2.) (/ height 2.)))
+  (cd:aabb (+ center-pos (psn 0. height))
+           (/ width 2.) (/ height 2.)))
 (define frame-bot
-  (cd:aabb (- center-pos (psn 0. height)) (/ width 2.) (/ height 2.)))
+  (cd:aabb (- center-pos (psn 0. height))
+           (/ width 2.) (/ height 2.)))
 
 (define (clamp bot x top)
   (max bot (min x top)))
@@ -116,13 +156,17 @@
                     rhs-dy)))
     (if (= (length cs) 2)
         cs
-        (list (first cs)
-              (controller (psn 0. 
-                               ; Goes towards the ball's y position
-                               (clamp -1. (/ (- (psn-y ball-pos) rhs-y) speed) 1.))
-                          0. 0.
-                          #f #f #f #f 
-                          #f #f #f #f #f #f))))
+        (list
+         (first cs)
+         (controller 
+          (psn 0. 
+               ; Goes towards the ball's y position
+               (clamp -1.
+                      (/ (- (psn-y ball-pos) rhs-y) speed)
+                      1.))
+          0. 0.
+          #f #f #f #f 
+          #f #f #f #f #f #f))))
    
    (define lhs-y-n
      (clamp
@@ -140,13 +184,15 @@
      (ball-in-dir ball-dir))
    
    (define ball-shape
-     (cd:circle ball-pos-m ball-r))
+     (cd:aabb ball-pos-m ball-hw ball-hh)
+     #;(cd:circle ball-pos-m ball-r))
    (define lhs-shape
      (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n) paddle-hw paddle-hh))
    (define rhs-shape
      (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n) paddle-hw paddle-hh))
    
    ; XXX I can tell if it is the top/bot of the ball by the centers
+   ;     I could use that to direct/control the angle of the bounce
    ; XXX The lhs/rhs sounds are too low. This is the openal "scale" problem, so i have faked their distance
    (define-values
      (ball-pos-n+ ball-dir-n ball-tar-n sounds)
@@ -210,29 +256,32 @@
     (gl:focus 
      width height width height
      (psn-x center-pos) (psn-y center-pos)
-     (gl:background
-      255 255 255 0
-      #;(gl:translate 0. 0.
-                      (gl:texture
-                       (gl:string->texture #:size 30 (real->decimal-string (current-rate)))))
+     (gl:seqn
+      bgm
+      #;(gl:translate 
+         0. 0.
+         (gl:texture
+          (gl:string->texture 
+           #:size 30
+           (real->decimal-string (current-rate)))))
       ; XXX Place the scores better
-      (gl:translate (* width 1/4) (* height 8/9)
-                    (gl:texture
-                     (gl:string->texture #:size 30 (format "~a" lhs-score-n))))
-      (gl:translate (* width 3/4) (* height 8/9)
-                    (gl:texture
-                     (gl:string->texture #:size 30 (format "~a" rhs-score-n))))
-      ; XXX Change the paddle graphics
+      #;(gl:color 
+       255 255 255 0
+       (gl:translate 
+        (* width 1/4) (* height 8/9)
+        (gl:texture
+         (gl:string->texture #:size 30 (format "~a" lhs-score-n))))
+       (gl:translate 
+        (* width 3/4) (* height 8/9)
+        (gl:texture
+         (gl:string->texture #:size 30 (format "~a" rhs-score-n)))))
       (gl:translate lhs-x (- lhs-y-n paddle-hh)
-                    (gl:color 255 0 0 0
-                              paddle))
+                    lhs-paddle)
       (gl:translate rhs-x (- rhs-y-n paddle-hh)
-                    (gl:color 0 0 255 0
-                              paddle))
-      ; XXX Change the ball graphic
-      ; XXX Animate the ball
+                    rhs-paddle)
       (gl:translate (psn-x ball-pos-p) (psn-y ball-pos-p)
-                    ball)))
+                    (gl:rotate (* (/ 180 pi) ball-dir-p)
+                               ball))))
     ; XXX Make the ball whoosh
     ; XXX Make scores have calls
     (append

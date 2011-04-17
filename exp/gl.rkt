@@ -27,7 +27,8 @@
      (if (and (ncount . >= . THRESHOLD)
               (not (compiling?)))
          (parameterize ([compiling? #t])
-           ; By resetting the current texture, we ensure that the binding will be 
+           ; By resetting the current texture,
+           ; we ensure that the binding will be 
            ; in the call list.
            (set-box! (current-texture) #f)
            (define n (glGenLists 1))
@@ -245,6 +246,16 @@
     tw th)
    (glBlendFunc GL_ONE GL_ZERO)))
 
+(define (texture/px t 
+                    [w (texture-dw t)] [h (texture-dh t)]
+                    [tx1 0] [ty1 0]
+                    [tw (texture-w t)] [th (texture-h t)])
+  (define atw (texture-w t))
+  (define ath (texture-h t))
+  (texture* t w h
+            (/ tx1 atw) (/ ty1 ath)
+            (/ tw atw) (/ th ath)))
+
 ;; Text
 (define (string->bitmap f str)
   (define bdc
@@ -398,6 +409,10 @@
          ((texture?) 
           (real? real? unit-integer? unit-integer? unit-integer? unit-integer?)
           . ->* . cmd?)]
+ [texture/px 
+  ((texture?) 
+   (real? real? integer? integer? integer? integer?)
+   . ->* . cmd?)]
  [string->texture
   (->* (string?)
        (#:size (integer-in 1 255)
