@@ -30,9 +30,9 @@
 (define center-pos
   (psn width-h (/ height 2.)))
 (define speed 
-  (* 4. RATE))
+  (* 4.5 RATE))
 (define ball-speed
-  (* 1.5 speed))
+  (* 2. speed))
 
 (define paddle-w
   .5)
@@ -194,8 +194,6 @@
    (define rhs-shape
      (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n) paddle-hw paddle-hh))
    
-   ; XXX I can tell if it is the top/bot of the ball by the centers
-   ;     I could use that to direct/control the angle of the bounce
    (define-values
      (ball-pos-n+ ball-dir-n ball-tar-n sounds)
      (cond
@@ -235,7 +233,8 @@
    
    ; XXX Maybe I should implement serving?
    (define-values
-     (ball-pos-p ball-dir-p ball-tar-p lhs-score-n rhs-score-n score?)
+     (ball-pos-p ball-dir-p ball-tar-p
+                 lhs-score-n rhs-score-n score?)
      (cond
        ; The ball has moved to the left of the lhs paddle
        [((psn-x ball-pos-n) . < . lhs-x)
@@ -246,7 +245,8 @@
         (values (start-pos 'left) (random-dir 'left) 'left
                 (add1 lhs-score) rhs-score #t)]
        [else
-        (values ball-pos-n ball-dir-n ball-tar-n lhs-score rhs-score #f)]))
+        (values ball-pos-n ball-dir-n ball-tar-n
+                lhs-score rhs-score #f)]))
    
    (values 
     (world 
