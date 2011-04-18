@@ -21,7 +21,9 @@
 (define sound-scape/c
   (listof sound/c))
 
-(define (background a-f #:gain [gain 1.0] #:pause-f [pause-f (λ (x) #f)])
+(define (background a-f 
+                    #:gain [gain 1.0]
+                    #:pause-f [pause-f (λ (x) #f)])
   (λ (w)
     (sound-state (a-f w) (psn 0.0 0.0) gain #t #t (pause-f w))))
 (define (sound-at a p
@@ -65,7 +67,7 @@
   (when (unbox (system-state-dead?-box s))
     (error sym "Sound already dead")))
   
-(define (render-sound sst cmds w)
+(define (render-sound scale sst cmds w)
   (match-define (system-state db lpf srcs) sst)
   (sound-dead-error sst 'render-sound)
   (define all-srcs
@@ -77,7 +79,10 @@
      srcs))
   
   (define lp (lpf w))
-  (alListener3f AL_POSITION (psn-x lp) (psn-y lp) 0.0)
+  (alListener3f AL_POSITION 
+                (/ (psn-x lp) scale)
+                (/ (psn-y lp) scale)
+                0.0)
   
   (define srcs*
     (for/fold ([srcs* empty])
@@ -87,13 +92,16 @@
         (alGetSourcei srci AL_SOURCE_STATE))
       (match
           (and 
-           ; This causes sources to be stopped and deleted once the stop naturally
+           ; This causes sources to be stopped and 
+           ; deleted once the stop naturally
            ; or the function returns #f
            (not (= src-st AL_STOPPED))
            (f w))
         [(and new (sound-state a p gain relative? looping? paused?))
          (alSource3f srci AL_POSITION
-                     (psn-x p) (psn-y p) 0.0)
+                     (/ (psn-x p) scale)
+                     (/ (psn-y p) scale)
+                     0.0)
          (alSourcef srci AL_GAIN gain)
          (alSourceb srci AL_LOOPING looping?)
          (alSourceb srci AL_SOURCE_RELATIVE relative?)
@@ -102,8 +110,9 @@
            (match-define (audio b) a)
            (alSourcei srci AL_BUFFER b))
          
-         ; If the pause signal occurs, we should pause it; otherwise it is either 
-         ; AL_INITIAL, AL_PLAYING, or AL_PAUSED, in all but the middle cause, we 
+         ; If the pause signal occurs, we should pause it;
+         ; otherwise it is either AL_INITIAL, AL_PLAYING, or
+         ; AL_PAUSED, in all but the middle cause, we 
          ; should start playing
          (if paused?
              (alSourcePause srci)
@@ -156,7 +165,7 @@
  [sound-unpause! (-> system-state? void)]
  [sound-destroy! (-> system-state? void)]
  [render-sound
-  (-> system-state? sound-scape/c any/c
+  (-> real? system-state? sound-scape/c any/c
       system-state?)])
 
 ; -----------------------------------

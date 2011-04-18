@@ -25,9 +25,10 @@
 (define-sound se:bump-wall "bump-wall.wav")
 
 (define width 16.)
+(define width-h (/ width 2.))
 (define height 9.)
 (define center-pos
-  (psn (/ width 2.) (/ height 2.)))
+  (psn width-h (/ height 2.)))
 (define speed 
   (* 4. RATE))
 (define ball-speed
@@ -105,10 +106,10 @@
 
 (define frame-top
   (cd:aabb (+ center-pos (psn 0. height))
-           (/ width 2.) (/ height 2.)))
+           width-h (/ height 2.)))
 (define frame-bot
   (cd:aabb (- center-pos (psn 0. height))
-           (/ width 2.) (/ height 2.)))
+           width-h (/ height 2.)))
 
 (define (clamp bot x top)
   (max bot (min x top)))
@@ -137,8 +138,11 @@
    (world 0
           0 0
           4.5
-          (start-pos first-target) (random-dir first-target) first-target
+          (start-pos first-target)
+          (random-dir first-target) first-target
           4.5))
+ #:sound-scale
+ width-h
  #:tick
  (λ (w cs)
    (match-define (world 
@@ -184,8 +188,7 @@
      (ball-in-dir ball-dir))
    
    (define ball-shape
-     (cd:aabb ball-pos-m ball-hw ball-hh)
-     #;(cd:circle ball-pos-m ball-r))
+     (cd:aabb ball-pos-m ball-hw ball-hh))
    (define lhs-shape
      (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n) paddle-hw paddle-hh))
    (define rhs-shape
@@ -193,7 +196,6 @@
    
    ; XXX I can tell if it is the top/bot of the ball by the centers
    ;     I could use that to direct/control the angle of the bounce
-   ; XXX The lhs/rhs sounds are too low. This is the openal "scale" problem, so i have faked their distance
    (define-values
      (ball-pos-n+ ball-dir-n ball-tar-n sounds)
      (cond
@@ -217,12 +219,12 @@
         (cd:shape-vs-shape ball-shape lhs-shape)
         (values ball-pos
                 (random-dir 'right) 'right
-                (list (sound-at se:bump-lhs (- center-pos 1.))))]
+                (list (sound-at se:bump-lhs ball-pos-m)))]
        [; The ball has bounced off the rhs
         (cd:shape-vs-shape ball-shape rhs-shape)
         (values ball-pos
                 (random-dir 'left) 'left
-                (list (sound-at se:bump-rhs (+ center-pos 1.))))]
+                (list (sound-at se:bump-rhs ball-pos-m)))]
        ; The ball is inside the frame
        [else
         (values ball-pos-m ball-dir ball-tar empty)]))
@@ -258,12 +260,6 @@
      (psn-x center-pos) (psn-y center-pos)
      (gl:seqn
       bgm
-      #;(gl:translate 
-         0. 0.
-         (gl:texture
-          (gl:string->texture 
-           #:size 30
-           (real->decimal-string (current-rate)))))
       ; XXX Place the scores better
       #;(gl:color 
        255 255 255 0
@@ -275,6 +271,7 @@
         (* width 3/4) (* height 8/9)
         (gl:texture
          (gl:string->texture #:size 30 (format "~a" rhs-score-n)))))
+      ; XXX Add a collision animation
       (gl:translate lhs-x (- lhs-y-n paddle-hh)
                     lhs-paddle)
       (gl:translate rhs-x (- rhs-y-n paddle-hh)

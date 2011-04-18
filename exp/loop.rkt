@@ -19,15 +19,18 @@
 
 (define (big-bang initial-world
                   #:tick tick
+                  #:sound-scale [sound-scale 1.0]
                   #:listener [world->listener (λ (w) (psn 0. 0.))]
                   #:done? [done? (λ (w) #f)])
   (if (nested?)
       (dynamic-wind
        pause-last-sound
        (λ ()
-         (nested-big-bang initial-world tick world->listener done?))
+         (nested-big-bang initial-world tick sound-scale
+                          world->listener done?))
        unpause-last-sound)
-      (outer-big-bang initial-world tick world->listener done?)))
+      (outer-big-bang initial-world tick sound-scale
+                      world->listener done?)))
 
 (define current-sound (make-parameter #f))
 (define (pause-last-sound)
@@ -46,7 +49,8 @@
           (+ start-time (* RATE 1000)))
     start-time))
 
-(define (nested-big-bang initial-world tick world->listener done?)
+(define (nested-big-bang initial-world tick sound-scale
+                         world->listener done?)
   (let loop ([w initial-world]
              [st (initial-system-state world->listener)])
     (parameterize ([current-sound st])
@@ -59,17 +63,17 @@
             (sound-destroy! st)
             wp)
           (let ()
-            ; XXX This is implies that we could switch sounds while rendering the next
-            ;     sound... which is bad.
+            ; XXX This is implies that we could switch sounds while rendering the next sound... which is bad.
             (define stp
-              (render-sound st ss wp))
+              (render-sound sound-scale st ss wp))
             (sync (alarm-evt ((next-ticker))))
             (loop wp stp))))))
 
 (define current-rate-finder (make-parameter (λ () (error 'current-rate "Not in big-bang"))))
 (define (current-rate)
   ((current-rate-finder)))
-(define (outer-big-bang initial-world tick world->listener done?)
+(define (outer-big-bang initial-world tick sound-scale
+                        world->listener done?)
   (define km
     (keyboard-monitor))
   
@@ -106,15 +110,22 @@
      (λ ()
        (channel-put
         done-ch
-        (parameterize ([nested? #t]
-                       [next-ticker (make-next-ticker (current-inexact-milliseconds))]
-                       [current-rate-finder
-                        (λ () 
-                          (with-handlers ([exn:fail? (λ (x) 0.)])
-                            (exact->inexact (/ frames (- (current-seconds) start-secs)))))]
-                       [current-controllers cs]
-                       [current-update-canvas this-update-canvas])
-          (nested-big-bang initial-world tick world->listener done?))))))
+        (parameterize 
+            ([nested? #t]
+             [next-ticker 
+              (make-next-ticker
+               (current-inexact-milliseconds))]
+             [current-rate-finder
+              (λ () 
+                (with-handlers ([exn:fail? (λ (x) 0.)])
+                  (exact->inexact
+                   (/ frames 
+                      (- (current-seconds)
+                         start-secs)))))]
+             [current-controllers cs]
+             [current-update-canvas this-update-canvas])
+          (nested-big-bang initial-world tick sound-scale
+                           world->listener done?))))))
   
   (begin0
     (yield done-ch)
@@ -127,6 +138,7 @@
   (->* (any/c
         #:tick (-> any/c (listof controller?)
             (values any/c gl:cmd? sound-scape/c)))
-       (#:listener (-> any/c psn?)
+       (#:sound-scale real?
+        #:listener (-> any/c psn?)
         #:done? (-> any/c boolean?))
        any/c)])
