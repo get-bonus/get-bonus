@@ -363,6 +363,7 @@
                         [rhs-games 0])
            (if (won? 6 2 lhs-games rhs-games)
                (lhs-games . > . rhs-games)
+               ; XXX show something after a game
                (match (play-game s g server)
                  [(and (app game-st-lhs-score lhs)
                        (app game-st-rhs-score rhs))
