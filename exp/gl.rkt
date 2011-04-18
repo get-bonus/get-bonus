@@ -405,6 +405,8 @@
  [texture? contract?]
  [texture-w (texture? . -> . real?)]
  [texture-h (texture? . -> . real?)]
+ [texture-dw (texture? . -> . real?)]
+ [texture-dh (texture? . -> . real?)]
  [rename texture* texture 
          ((texture?) 
           (real? real? unit-integer? unit-integer? unit-integer? unit-integer?)
