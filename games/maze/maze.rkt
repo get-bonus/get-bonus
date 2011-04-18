@@ -15,6 +15,8 @@
          "../../exp/psn.rkt"
          (prefix-in cd: "../../exp/cd-narrow.rkt"))
 
+; XXX refer to game as ハングリーマン
+
 (define-runtime-path resource-path "r")
 (define-syntax-rule (define-sound id f)
   (define id (path->audio (build-path resource-path f))))
@@ -61,13 +63,24 @@
    1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
    1 1 1 1 1 1 1 1 1 1 1 1 1 1 1))
 
+; XXX make layouts widescreen (56 width?)
+; XXX randomly generate layouts
+; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded tiles, etc
 ; XXX turn the layout into a set of collision shapes
 ; XXX place the ghosts and pellets into the layout
+; XXX have ghosts spawn and move around (look at pac-man wiki page)
 ; XXX run around the map
 ; XXX get points
 ; XXX kill ghosts / be killed
 ; XXX render ui
+; XXX increase speed with time/score
+; XXX add fruits
+; XXX add music / sound effects
+; XXX respawn pellets / change layout on left/right when pellets gone on other side
+; XXX stationary ghosts that awaken
+; XXX ghost train
+; XXX bomb
 
 #;(define-texture sprites-t "pacman.png")
 (define whole-map
