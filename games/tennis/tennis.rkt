@@ -103,7 +103,7 @@
 
 (struct game-st 
         (frame
-         server
+         serving?
          lhs-score rhs-score
          lhs-y
          ball-pos ball-dir ball-target
@@ -144,21 +144,21 @@
     ['left 'right]
     ['right 'left]))
 
-(define (game first-server)
+; XXX show the overall score
+(define (play-game s g server)
   (big-bang
-   (game-st 0
-            first-server
+   (game-st 0 #t
             0 0
             4.5
-            (start-pos 4.5 4.5 first-server)
-            (start-dir first-server) (opposite first-server)
+            (start-pos 4.5 4.5 server)
+            (start-dir server) (opposite server)
             4.5)
    #:sound-scale
    width-h
    #:tick
    (λ (w cs)
      (match-define (game-st 
-                    frame server
+                    frame serving?
                     lhs-score rhs-score
                     lhs-y
                     ball-pos ball-dir ball-tar
@@ -189,7 +189,7 @@
                         1.))
             0. 0.
             ; Serves immediately
-            (if (eq? server 'right)
+            (if (and serving? (eq? server 'right))
                 #t
                 #f)
             #f #f #f 
@@ -208,7 +208,7 @@
      (define (ball-in-dir dir)
        (+ ball-pos (make-polar ball-speed dir)))
      (define ball-pos-m
-       (if server
+       (if serving?
            (start-pos lhs-y-n rhs-y-n server)
            (ball-in-dir ball-dir)))
      
@@ -222,9 +222,9 @@
                 paddle-hw paddle-hh))
      
      (define-values
-       (ball-pos-n+ ball-dir-n ball-tar-n server-p sounds)
+       (ball-pos-n+ ball-dir-n ball-tar-n serving?-p sounds)
        (cond
-         [server
+         [serving?
           (cond
             [(and (eq? server 'right) rhs-serve?)
              (values ball-pos-m ball-dir ball-tar #f
@@ -233,7 +233,7 @@
              (values ball-pos-m ball-dir ball-tar #f
                      (list (sound-at se:bump-lhs ball-pos-m)))]
             [else
-             (values ball-pos-m ball-dir ball-tar server empty)])]
+             (values ball-pos-m ball-dir ball-tar serving? empty)])]
          [; The ball hit the top
           (cd:shape-vs-shape ball-shape frame-top)
           (values ball-pos
@@ -270,23 +270,23 @@
      
      (define-values
        (ball-pos-p ball-dir-p ball-tar-p
-                   server-n lhs-score-n rhs-score-n score?)
+                   serving?-n lhs-score-n rhs-score-n score?)
        (cond
          ; The ball has moved to the left of the lhs paddle
          [((psn-x ball-pos-n) . < . lhs-x)
-          (values (start-pos lhs-y rhs-y 'right) (start-dir 'left)
-                  'right 'left lhs-score (add1 rhs-score) #t)]
+          (values (start-pos lhs-y rhs-y server) (start-dir server)
+                  (opposite server) #t lhs-score (add1 rhs-score) #t)]
          ; The ball has moved to the right of the rhs paddle
          [((psn-x ball-pos-n) . > . rhs-x)
-          (values (start-pos lhs-y rhs-y 'left) (start-dir 'left)
-                  'left 'right (add1 lhs-score) rhs-score #t)]
+          (values (start-pos lhs-y rhs-y server) (start-dir server)
+                  (opposite server) #t (add1 lhs-score) rhs-score #t)]
          [else
           (values ball-pos-n ball-dir-n ball-tar-n
-                  server-p lhs-score rhs-score #f)]))
+                  serving?-p lhs-score rhs-score #f)]))
      
      (values 
       (game-st 
-       (add1 frame) server-n
+       (add1 frame) serving?-n
        lhs-score-n rhs-score-n
        lhs-y-n
        ball-pos-p ball-dir-p ball-tar-p
@@ -300,7 +300,9 @@
           (define score-t
             (gl:string->texture 
              #:size 30 
-             (format "~a : ~a" lhs-score-n rhs-score-n)))
+             (format "~a.~a (~a:~a)"
+                     (add1 s) (add1 g)
+                     lhs-score-n rhs-score-n)))
           (gl:translate
            (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
            (- height (gl:texture-dh score-t))
@@ -332,18 +334,46 @@
    #:done?
    (λ (w)
      (match-define (game-st 
-                    frame server
+                    frame serving?
                     lhs-score rhs-score
                     lhs-y
                     ball-pos ball-dir ball-tar
                     rhs-y)
                    w)
-     (and ((max lhs-score rhs-score) . >= . 4)
-          ((abs (- lhs-score rhs-score)) . >= . 2)))))
+     (won? 4 2 lhs-score rhs-score))))
 
-; XXX change games to have a single server
-; XXX implement sets (win at least 6 games and 2 more than oppt)
-; XXX implement matches (best of three sets)
+(define (won? at-least over lhs rhs)
+  (and ((max lhs rhs) . >= . at-least)
+       ((abs (- lhs rhs)) . >= . over)))
+
+(define (play-match)
+  (let match-loop ([s 0]
+                   [lhs-sets 0]
+                   [rhs-sets 0])
+    (cond
+      [(= lhs-sets 2)
+       #t]
+      [(= rhs-sets 2)
+       #f]
+      [else
+       (define lhs-won?
+         (let set-loop ([server 'left]
+                        [g 0]
+                        [lhs-games 0]
+                        [rhs-games 0])
+           (if (won? 6 2 lhs-games rhs-games)
+               (lhs-games . > . rhs-games)
+               (match (play-game s g server)
+                 [(and (app game-st-lhs-score lhs)
+                       (app game-st-rhs-score rhs))
+                  (define lhs-won? (lhs . > . rhs))
+                  (set-loop (opposite server)
+                            (add1 g)
+                            (if lhs-won? (add1 lhs-games) lhs-games)
+                            (if lhs-won? rhs-games (add1 rhs-games)))]))))
+       (if lhs-won?
+           (match-loop (add1 s) (add1 lhs-sets) rhs-sets)
+           (match-loop (add1 s) lhs-sets (add1 rhs-sets)))])))
 
 (struct GAME (frame bgm-started? last-game))
 
@@ -355,20 +385,18 @@
  (GAME 0 #f #f)
  #:tick
  (λ (w cs)
-   (match-define (GAME frame bgm-started? last-game) w)
+   (match-define (GAME frame bgm-started? last-winner) w)
    (define start?
      (ormap controller-start cs))
-   (define last-game-n
+   (define last-winner-n
      ; XXX Maybe have a select sound like http://www.freesound.org/samplesViewSingle.php?id=87035
      (if start?
-         (game
-          (case (random 2)
-            [(0) 'left]
-            [(1) 'right]))
-         last-game))
+         (if (play-match)
+             'left 'right)
+         last-winner))
    
    (values 
-    (GAME (add1 frame) #t last-game-n)
+    (GAME (add1 frame) #t last-winner-n)
     (gl:background
      255 255 255 0
      (gl:focus 
@@ -377,22 +405,21 @@
        (gl:center-texture-at
         (psn 8. 6.5)
         (text "Tennis!"))
-       (match last-game-n
-         [#f
-          gl:blank]
-         [(and (app game-st-lhs-score lhs)
-               (app game-st-rhs-score rhs))
-          (gl:center-texture-at
-           (psn 8. 4.5)
-           (text
-            (if (lhs . > . rhs)
-                "Player 1 won!"
-                "Player 2 won!")))])
+       (if last-winner-n
+           (gl:center-texture-at
+            (psn 8. 4.5)
+            (text
+             (case last-winner-n
+               [(left) "Player 1 won!"]
+               [(right) "Player 2 won!"])))
+           gl:blank)
        (if (zero? (modulo frame 10))
            gl:blank
            (gl:center-texture-at
             (psn 8. 2.5)
-            (text "Press START"))))))
+            (if last-winner-n
+                (text "Press START to play again")
+                (text "Press START to play")))))))
     (if bgm-started?
         empty
         (list (background (λ (w) se:title)))))))
