@@ -7,6 +7,7 @@
          sgl/gl
          sgl/gl-vectors)
 
+; XXX Maybe store the bounding box of a cmd for center purposes
 ; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL
 ; XXX Send fewer GL functions generally
 ; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
@@ -246,16 +247,6 @@
     tw th)
    (glBlendFunc GL_ONE GL_ZERO)))
 
-(define (texture/px t 
-                    [w (texture-dw t)] [h (texture-dh t)]
-                    [tx1 0] [ty1 0]
-                    [tw (texture-w t)] [th (texture-h t)])
-  (define atw (texture-w t))
-  (define ath (texture-h t))
-  (texture* t w h
-            (/ tx1 atw) (/ ty1 ath)
-            (/ tw atw) (/ th ath)))
-
 ;; Text
 (define (string->bitmap f str)
   (define bdc
@@ -411,10 +402,6 @@
          ((texture?) 
           (real? real? unit-integer? unit-integer? unit-integer? unit-integer?)
           . ->* . cmd?)]
- [texture/px 
-  ((texture?) 
-   (real? real? integer? integer? integer? integer?)
-   . ->* . cmd?)]
  [string->texture
   (->* (string?)
        (#:size (integer-in 1 255)

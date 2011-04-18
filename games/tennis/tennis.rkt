@@ -1,7 +1,9 @@
 #lang racket/gui
 (require racket/runtime-path
          "../../exp/loop.rkt"
-         (prefix-in gl: "../../exp/gl.rkt")
+         (prefix-in gl: 
+                    (combine-in "../../exp/gl.rkt"
+                                "../../exp/gl-ext.rkt"))
          "../../exp/sprites.rkt"
          "../../exp/mvector.rkt"
          "../../exp/fullscreen.rkt"
@@ -345,6 +347,9 @@
 
 (struct GAME (frame bgm-started? last-game))
 
+(define (text s)
+  (gl:string->texture #:size 45 s))
+
 (define-sound se:title "title.mp3")
 (big-bang
  (GAME 0 #f #f)
@@ -368,29 +373,26 @@
      255 255 255 0
      (gl:focus 
       16 9 16 9 0 0
-      ; XXX generalize center text/texture
       (gl:seqn
-       (gl:translate
-        8 6.5
-        ; XXX This is an ugly pattern too
-        (gl:texture (gl:string->texture #:size 45 "Tennis")))
+       (gl:center-texture-at
+        (psn 8. 6.5)
+        (text "Tennis!"))
        (match last-game-n
          [#f
           gl:blank]
          [(and (app game-st-lhs-score lhs)
                (app game-st-rhs-score rhs))
-          (gl:translate
-           8 4.5
-           (cond 
-             [(lhs . > . rhs)
-              (gl:texture (gl:string->texture #:size 45 "Player 1 won!"))]
-             [else
-              (gl:texture (gl:string->texture #:size 45 "Player 2 won!"))]))])
+          (gl:center-texture-at
+           (psn 8. 4.5)
+           (text
+            (if (lhs . > . rhs)
+                "Player 1 won!"
+                "Player 2 won!")))])
        (if (zero? (modulo frame 10))
            gl:blank
-           (gl:translate
-            8 2.5
-            (gl:texture (gl:string->texture #:size 45 "Press START")))))))
+           (gl:center-texture-at
+            (psn 8. 2.5)
+            (text "Press START"))))))
     (if bgm-started?
         empty
         (list (background (λ (w) se:title)))))))
