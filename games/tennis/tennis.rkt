@@ -99,10 +99,13 @@
 (define rhs-x 
   (- width .5 paddle-hw))
 
-(struct world (frame lhs-score rhs-score
-                     lhs-y
-                     ball-pos ball-dir ball-target
-                     rhs-y))
+(struct world 
+        (frame
+         server
+         lhs-score rhs-score
+         lhs-y
+         ball-pos ball-dir ball-target
+         rhs-y))
 
 (define frame-top
   (cd:aabb (+ center-pos (psn 0. height))
@@ -122,42 +125,62 @@
      (between (* 2/3 pi) (* 4/3 pi))]
     [(right)
      (between (* 5/3 pi) (* 7/3 pi))]))
-(define (start-pos dir)
-  (case dir
-    [(right) (- center-pos (/ width 4))]
-    [(left) (+ center-pos (/ width 4))]))
+(define serve-dist
+  (* 1.2 (+ ball-hw paddle-hw)))
+(define (start-pos lhs-y rhs-y server)
+  (case server
+    [(right) 
+     (psn (- rhs-x serve-dist) rhs-y)]
+    [(left) 
+     (psn (+ lhs-x serve-dist) lhs-y)]))
+(define start-dir
+  (match-lambda
+    ['left 0.]
+    ['right pi]))
+(define opposite
+  (match-lambda
+    ['left 'right]
+    ['right 'left]))
 
 ; XXX Start screen
 ; XXX Pause in between serves?
 (big-bang
  (let ()
-   (define first-target
+   (define first-server
      (case (random 2)
        [(0) 'left]
        [(1) 'right]))
    (world 0
+          first-server
           0 0
           4.5
-          (start-pos first-target)
-          (random-dir first-target) first-target
+          (start-pos 4.5 4.5 first-server)
+          (start-dir first-server) (opposite first-server)
           4.5))
  #:sound-scale
  width-h
  #:tick
  (λ (w cs)
    (match-define (world 
-                  frame lhs-score rhs-score
+                  frame server
+                  lhs-score rhs-score
                   lhs-y
                   ball-pos ball-dir ball-tar
                   rhs-y)
                  w)
    (match-define 
-    (list (app controller-dpad
-               (app psn-y
-                    lhs-dy))
-          (app controller-dpad
-               (app psn-y
-                    rhs-dy)))
+    (list (and
+           (app controller-a
+                lhs-serve?)
+           (app controller-dpad
+                (app psn-y
+                     lhs-dy)))
+          (and
+           (app controller-a
+                rhs-serve?)
+           (app controller-dpad
+                (app psn-y
+                     rhs-dy))))
     (if (= (length cs) 2)
         cs
         (list
@@ -169,7 +192,10 @@
                       (/ (- (psn-y ball-pos) rhs-y) speed)
                       1.))
           0. 0.
-          #f #f #f #f 
+          (if (eq? server 'right)
+              #t
+              #f)
+          #f #f #f 
           #f #f #f #f #f #f))))
    
    (define lhs-y-n
@@ -185,25 +211,39 @@
    (define (ball-in-dir dir)
      (+ ball-pos (make-polar ball-speed dir)))
    (define ball-pos-m
-     (ball-in-dir ball-dir))
+     (if server
+         (start-pos lhs-y-n rhs-y-n server)
+         (ball-in-dir ball-dir)))
    
    (define ball-shape
      (cd:aabb ball-pos-m ball-hw ball-hh))
    (define lhs-shape
-     (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n) paddle-hw paddle-hh))
+     (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n)
+              paddle-hw paddle-hh))
    (define rhs-shape
-     (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n) paddle-hw paddle-hh))
+     (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n)
+              paddle-hw paddle-hh))
    
    (define-values
-     (ball-pos-n+ ball-dir-n ball-tar-n sounds)
+     (ball-pos-n+ ball-dir-n ball-tar-n server-p sounds)
      (cond
+       [server
+        (cond
+          [(and (eq? server 'right) rhs-serve?)
+           (values ball-pos-m ball-dir ball-tar #f
+                   (list (sound-at se:bump-rhs ball-pos-m)))]
+          [(and (eq? server 'left) lhs-serve?)
+           (values ball-pos-m ball-dir ball-tar #f
+                   (list (sound-at se:bump-lhs ball-pos-m)))]
+          [else
+           (values ball-pos-m ball-dir ball-tar server empty)])]
        [; The ball hit the top
         (cd:shape-vs-shape ball-shape frame-top)
         (values ball-pos
                 (case ball-tar
                   [(left) (between 3.2 4.2)]
                   [(right) (between 5.2 6.2)])
-                ball-tar
+                ball-tar #f
                 (list (sound-at se:bump-wall ball-pos-m)))]
        [; The ball hit the bot
         (cd:shape-vs-shape ball-shape frame-bot)
@@ -211,46 +251,45 @@
                 (case ball-tar
                   [(left) (between 2.1 3.0)]
                   [(right) (between 0.2 1.1)])
-                ball-tar
+                ball-tar #f
                 (list (sound-at se:bump-wall ball-pos-m)))]
        [; The ball has bounced off the lhs
         (cd:shape-vs-shape ball-shape lhs-shape)
         (values ball-pos
-                (random-dir 'right) 'right
+                (random-dir 'right) 'right #f
                 (list (sound-at se:bump-lhs ball-pos-m)))]
        [; The ball has bounced off the rhs
         (cd:shape-vs-shape ball-shape rhs-shape)
         (values ball-pos
-                (random-dir 'left) 'left
+                (random-dir 'left) 'left #f
                 (list (sound-at se:bump-rhs ball-pos-m)))]
        ; The ball is inside the frame
        [else
-        (values ball-pos-m ball-dir ball-tar empty)]))
+        (values ball-pos-m ball-dir ball-tar #f empty)]))
    (define ball-pos-n
      (if (= ball-dir-n ball-dir)
          ball-pos-n+
          (ball-in-dir ball-dir-n)))
    
-   ; XXX Maybe I should implement serving?
    (define-values
      (ball-pos-p ball-dir-p ball-tar-p
-                 lhs-score-n rhs-score-n score?)
+                 server-n lhs-score-n rhs-score-n score?)
      (cond
        ; The ball has moved to the left of the lhs paddle
        [((psn-x ball-pos-n) . < . lhs-x)
-        (values (start-pos 'right) (random-dir 'right) 'right
-                lhs-score (add1 rhs-score) #t)]
+        (values (start-pos lhs-y rhs-y 'right) (start-dir 'left)
+                'right 'left lhs-score (add1 rhs-score) #t)]
        ; The ball has moved to the right of the rhs paddle
        [((psn-x ball-pos-n) . > . rhs-x)
-        (values (start-pos 'left) (random-dir 'left) 'left
-                (add1 lhs-score) rhs-score #t)]
+        (values (start-pos lhs-y rhs-y 'left) (start-dir 'left)
+                'left 'right (add1 lhs-score) rhs-score #t)]
        [else
         (values ball-pos-n ball-dir-n ball-tar-n
-                lhs-score rhs-score #f)]))
+                server-p lhs-score rhs-score #f)]))
    
    (values 
     (world 
-     (add1 frame)
+     (add1 frame) server-n
      lhs-score-n rhs-score-n
      lhs-y-n
      ball-pos-p ball-dir-p ball-tar-p
