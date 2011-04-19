@@ -125,6 +125,18 @@
         c
         (- width c 1)))
   (vector-ref layout (+ (* r (add1 mid-point)) vc)))
+(define (r->y r)
+  (- height r 1))
+(define (y->r y)
+  (- height (+ y 1)))
+(define (layout-ref/xy x y)
+  (layout-ref (y->r y) x))
+
+(test
+ (for ([rand (in-range height)])
+   (test
+    (r->y (y->r rand)) => rand
+    (y->r (r->y rand)) => rand)))
 
 (define whole-map
   (gl:color 
@@ -133,7 +145,7 @@
     ([c (in-range width)]
      [r (in-range height)])
     (define x c)
-    (define y (- height r 1))
+    (define y (r->y r))
     (gl:translate 
      x y
      (if (= 1 (layout-ref r c))
@@ -185,66 +197,100 @@
 (define speed
   (* 5. RATE))
 
-(require racket/package)
-(define-package floyd-warshall (find-direction)
+(define left pi)
+(define right 0)
+(define up (* pi 1/2))
+(define down (* pi 3/2))
+(require racket/package
+         racket/set)
+(define-package pathfinding (find-direction)
   (define (->i x)
     (inexact->exact (floor x)))
-  (define (x*y->i x y)
-    (+ (* y width) x))
-  (define (psn->i p)
-    (match-define (psn* (app ->i x) (app ->i y)) p)
-    (x*y->i x y))
-  (define (i->psn i)
-    (define-values (y x) (quotient/remainder i width))
-    (psn (exact->inexact y) (exact->inexact x)))
-    
-  (define (matrix rows cols df)
-    (make-vector (* rows cols) df))
-  (define (matrix-ref rows cols m r c)
-    (vector-ref m (+ (* r cols) c)))
-  (define (matrix-set! rows cols m r c v)
-    (vector-set! m (+ (* r cols) c) v))
-    
-  (define n (* width height))
-  (define path (matrix n n +inf.0))
-  (define next (matrix n n #f))
   
-  ; XXX Incorporate walled-ness
-  (printf "Initializing matrix...\n")
-  (for* ([x (in-range width)]
-         [y (in-range height)])
-    (printf "~a,~a\n" x y)
-    (define i (x*y->i x y))
-    (define-syntax-rule
-      (try dx dy)
-      (let ()
-        (define xp (+ x dx))
-        (when (<= 0 xp (sub1 width))
-          (define yp (+ y dy))
-          (when (<= 0 yp (sub1 height))
-            (unless (= 1 (layout-ref yp xp))
-              (matrix-set! n n path i (x*y->i xp yp) 1))))))
-    (try 1 0) (try -1 0)
-    (try 0 1) (try 0 -1))
+  (define cache (make-hash))
+  (define seen (make-parameter (set)))
+  (define (hash-ref!* h x0 y0 x1 y1 p)
+    (define k (vector x0 y0 x1 y1))
+    (define last-seen (seen))
+    (if (set-member? last-seen k)
+        (cons +inf.0 #f)
+        (parameterize ([seen (set-add last-seen k)])
+          (hash-ref! h k p))))
   
-  (printf "Populating matrix...\n")
-  (for* ([k (in-range n)])
-    (define kp (i->psn k))
-    (for ([i (in-range n)])
-      (define i->k (matrix-ref n n path i k))
-      (define ip (i->psn i))
-      (for ([j (in-range n)])
-        (define i->k->j 
-          (+ i->k
-             (matrix-ref n n path k j)))
-        (when (i->k->j . < . (matrix-ref n n path i j))
-          (matrix-set! n n path i j i->k->j)
-          (matrix-set! n n next i j 
-                       (angle (- ip kp)))))))
+  (define (from x0 y0 x1 y1) 
+    (hash-ref!* 
+     cache x0 y0 x1 y1
+     (λ ()
+       (if (and (= x0 x1) (= y0 y1))
+           (cons 0 0)
+           (let ()
+             (define-syntax-rule
+               (min* [nx ny dir] ...)
+               (let ()
+                 (define min-cost +inf.0)
+                 (define min-dir #f)
+                 (let ([nx* nx] [ny* ny])
+                   ; XXX doesn't go down warp tunnels
+                   (when (and (<= 0 nx* (sub1 width))
+                              (<= 0 ny* (sub1 height))
+                              (not (= 1 (layout-ref/xy nx* ny*))))
+                     (match-define (cons (app add1 this-cost) _) (from nx* ny* x1 y1))
+                     (when (this-cost . < . min-cost)
+                       (set! min-cost this-cost)
+                       (set! min-dir dir))))
+                 ...
+                 (cons min-cost min-dir)))
+             (min* [(+ 1 x0) y0 right]
+                   [(- x0 1) y0 left]
+                   [x0 (+ y0 1) up]
+                   [x0 (- y0 1) down]))))))
   
   (define (find-direction p0 p1)
-    (matrix-ref n n next (psn->i p0) (psn->i p1))))
-(open-package floyd-warshall)
+    (match-define (psn* (app ->i x0) (app ->i y0)) p0)
+    (match-define (psn* (app ->i x1) (app ->i y1)) p1)
+    (match-define (cons dist dir) (from x0 y0 x1 y1))
+    (printf "(~a,~a) -> (~a,~a) costs ~a\n" x0 y0 x1 y1 dist)
+    right
+    #;
+    (if (= dist +inf.0)
+        #f
+        dir))
+  
+  (printf "Computing directions\n")
+  #;(for* ([x0 (in-range width)]
+         [y0 (in-range height)]
+         [x1 (in-range width)]
+         [y1 (in-range height)])
+    (from x0 y0 x1 y1))
+  
+  )
+(open-package pathfinding)
+
+#;(test
+ (for ([i (in-range 25)])
+   (let ()
+     (define x0 (exact->inexact (random width)))
+     (define y0 (exact->inexact (random height)))
+     (unless (= 1 (layout-ref/xy (inexact->exact x0) (inexact->exact y0)))
+       (define x1 (exact->inexact (random width)))
+       (define y1 (exact->inexact (random height)))
+       (test #:failure-prefix (format "~a,~a -> ~a,~a" x0 y0 x1 y1)
+             (if (= 1 (layout-ref/xy (inexact->exact x1) (inexact->exact y1)))
+                 (test
+                  (find-direction (psn x0 y0) (psn x1 y1)) =>
+                  #f)
+                 (test
+                  (find-direction (psn x0 y0) (psn x1 y1))))))))
+ (find-direction (psn 14. 17.) (psn 16. 8.)) => right
+ (find-direction (psn 15. 17.) (psn 15. 8.)) => up
+ (find-direction (psn 14. 17.) (psn 14. 8.)) => right
+ (find-direction (psn 15. 18.) (psn 17. 8.)) => left
+ (find-direction (psn 2. 1.) (psn 3. 1.)) => right
+ (find-direction (psn 2. 1.) (psn 4. 1.)) => right
+ (find-direction (psn 2. 1.) (psn 5. 1.)) => right
+ (find-direction (psn 3. 1.) (psn 2. 1.)) => left
+ (find-direction (psn 2. 1.) (psn 2. 2.)) => up
+ (find-direction (psn 2. 2.) (psn 2. 1.)) => down)
 
 (define (posn-in-dir p mdir)
   (wrap width height (+ p (make-polar speed mdir))))
@@ -276,10 +322,13 @@
           (match v
             [(ghost n p dir)
              (define target
+               (player-pos (hash-ref objs 'player))
+               #;
                (match k
                  ['chaser (player-pos (hash-ref objs 'player))]
                  ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
                  ['fickle (+ (player-pos (hash-ref objs 'player)) (psn 0. 1.))]
+                 ; XXX keep target the same for a while
                  ['stupid (psn (* (random) width) (* (random) height))]))
              (define na
                (find-direction p target))
