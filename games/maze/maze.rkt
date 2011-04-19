@@ -75,10 +75,8 @@
 ; XXX randomly generate layouts
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded tiles, etc
-; XXX turn the layout into a set of collision shapes
 ; XXX place the ghosts and pellets into the layout
 ; XXX have ghosts spawn and move around (look at pac-man wiki page)
-; XXX run around the map
 ; XXX get points
 ; XXX kill ghosts / be killed
 ; XXX render ui
@@ -94,6 +92,20 @@
 
 (define (rate how-many how-often t)
   (modulo (floor (/ t how-often)) how-many))
+
+(define (ghost-animation n frame-n dir)
+  (define dir-n
+    (match dir
+      ['right 0]
+      ['left 1]
+      ['up 2]
+      ['down 3]))
+  (gl:translate 
+   -1 -1
+   (gl:texture/px sprites-t
+                  2 2
+                  (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 dir-n)))) (+ 125 (* 18 n))
+                  14 12)))
   
 (define (player-animation n)
   (gl:translate 
@@ -102,7 +114,7 @@
                   2 2
                   (+ 3 (* 15 (rate 3 10 n))) 90
                   14 14)))
-(define player-r .9)
+(define player-r .98)
 
 (define mid-point 
   (floor (/ width 2)))
@@ -141,23 +153,25 @@
 (define (wrap-at top n)
   (cond
     [(n . < . 0)
-     (+ top n 1)]
+     (+ top n)]
     [(top . < . n)
      (- n top)]
     [else
      n]))
 (test
  (wrap-at width 5) => 5
- (wrap-at width -1) => width
- (wrap-at width (+ width 1)) => 1
- #;#;#;(wrap-at width (+ width .01)) => 0.01)
+ (wrap-at width -1) => (- width 1)
+ (wrap-at width (+ width 1)) => 1)
 
 (define (wrap w h p)
   (psn (wrap-at w (psn-x p))
        (wrap-at h (psn-y p))))
 
+(define jail-pos
+  (psn 14.5 17.))
+
 (struct player (pos dir))
-(struct ghost ())
+(struct ghost (n pos dir))
 (struct game-st (frame objs))
 
 (define speed
@@ -166,10 +180,10 @@
 (big-bang
    (game-st 0 
             (hasheq
-             'chaser (ghost)
-             'ambusher (ghost)
-             'fickle (ghost)
-             'stupid (ghost)
+             'chaser (ghost 0 (- jail-pos 1.5) 'right)
+             'ambusher (ghost 1 jail-pos 'left)
+             'fickle (ghost 2 (+ jail-pos 1.) 'up)
+             'stupid (ghost 3 (+ jail-pos 1.5) 'down)
              'player (player (psn 14.5 8.) 0.)))
    #:sound-scale
    (/ width 2.)
@@ -183,7 +197,7 @@
          (values
           k
           (match v
-            [(ghost)
+            [(? ghost?)
              ; XXX move
              v]
             [(player p dir)
@@ -193,18 +207,23 @@
                (if (= stick 0.+0.i)
                    dir
                    (angle stick)))
-             (define mp (wrap width height (+ p (make-polar speed mdir))))
-             ; XXX The coorridors feel too "tight" and it is easy to get stuck on an edge
-             (define np
+             ; The coorridors used to feel too "tight" and easy to get stuck on an edge, but I think this got fixed
+             (define (try-direction p mdir)
+               (define mp (wrap width height (+ p (make-polar speed mdir))))
                (if (sequence-not-empty? (cd:space-collisions? map-space (cd:circle mp player-r)))
                    p
                    mp))
+             (define np (try-direction p mdir))
              ; Don't change the direction if we couldn't move in it
              (define ndir
                (if (= np p)
                    dir
                    mdir))
-             (player np ndir)]))))
+             (define nnp
+               (if (= np p)
+                   (try-direction p ndir)
+                   np))
+             (player nnp ndir)]))))
      (define objs:post-cd
        objs:post-movement)     
      (define objs:final
@@ -220,9 +239,11 @@
         (gl:for/gl
          ([v (in-hash-values objs:final)])
          (match v
-           [(ghost)
-            ; XXX
-            gl:blank]
+           [(ghost n p dir)
+            ; XXX dead mode
+            (gl:translate 
+             (psn-x p) (psn-y p)
+             (ghost-animation n frame-n dir))]
            [(player p dir)
             (gl:translate 
              (psn-x p) (psn-y p)

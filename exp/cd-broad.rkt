@@ -7,6 +7,7 @@
          racket/match
          unstable/contract
          tests/eli-tester
+         "math.rkt"
          "psn.rkt"
          "cd-narrow.rkt")
 
@@ -21,17 +22,22 @@
 ; http://en.wikipedia.org/wiki/Spatial_index would be better.
 (require racket/set
          "fmatrix.rkt")
-(struct space (cw ch fm))
+(struct space (rows cols cw ch fm))
 (define (make-space w h cell-w cell-h)
-  (define cols (ceiling (/ w cell-w)))
-  (define rows (ceiling (/ h cell-h)))
+  (define cols (inexact->exact (ceiling (/ w cell-w))))
+  (define rows (inexact->exact (ceiling (/ h cell-h))))
   (space
+   rows cols
    cell-w cell-h
    (fmatrix (add1 rows) (add1 cols))))
 (define (space-row g y)
-  (inexact->exact (floor (/ y (space-ch g)))))
+  (clamp 0
+         (inexact->exact (floor (/ y (space-ch g))))
+         (space-rows g)))
 (define (space-col g x)
-  (inexact->exact (floor (/ x (space-cw g)))))
+  (clamp 0
+         (inexact->exact (floor (/ x (space-cw g))))
+         (space-cols g)))
   
 (define (space-update g r c f a)
   (struct-copy space g
@@ -163,7 +169,9 @@
 
 (provide/contract
  [space? contract?]
- [collision? contract?]
+ [struct collision
+         ([v psn?]
+          [o2 any/c])]
  [rename
   make-space space 
   (-> real? real?

@@ -12,6 +12,7 @@
          "../../exp/controller.rkt"
          "../../exp/joystick.rkt"
          "../../exp/3s.rkt"
+         "../../exp/math.rkt"
          "../../exp/psn.rkt"
          (prefix-in cd: "../../exp/cd-narrow.rkt"))
 
@@ -115,9 +116,6 @@
 (define frame-bot
   (cd:aabb (- center-pos (psn 0. height))
            width-h (/ height 2.)))
-
-(define (clamp bot x top)
-  (max bot (min x top)))
 
 (define (between lo hi)
   (+ lo (* (random) (- hi lo))))
