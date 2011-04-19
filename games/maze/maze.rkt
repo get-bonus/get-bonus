@@ -14,6 +14,7 @@
          "../../exp/joystick.rkt"
          "../../exp/3s.rkt"
          "../../exp/psn.rkt"
+         "../../exp/math.rkt"
          (prefix-in cd: 
                     (combine-in "../../exp/cd-narrow.rkt"
                                 "../../exp/cd-broad.rkt")))
@@ -51,9 +52,9 @@
    1 1 1 1 1 1 0 0 1 1 1 1 0 0 1
    1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
    1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
-   1 1 1 1 1 1 0 0 1 0 0 1 1 1 2 ; The gate
-   0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
-   0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
+   1 1 1 1 1 1 0 0 1 0 0 1 1 2 2 ; The gate
+   0 0 0 0 0 0 0 0 0 0 0 1 3 3 3 ; The jail
+   0 0 0 0 0 0 0 0 0 0 0 1 3 3 3
    1 1 1 1 1 1 0 0 1 0 0 1 1 1 1
    1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
    1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
@@ -75,8 +76,8 @@
 ; XXX randomly generate layouts
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded tiles, etc
-; XXX place the ghosts and pellets into the layout
-; XXX have ghosts spawn and move around (look at pac-man wiki page)
+; XXX place pellets into the layout
+; XXX have ghosts move around (look at pac-man wiki page)
 ; XXX get points
 ; XXX kill ghosts / be killed
 ; XXX render ui
@@ -114,7 +115,7 @@
                   2 2
                   (+ 3 (* 15 (rate 3 10 n))) 90
                   14 14)))
-(define player-r .98)
+(define player-r .99)
 
 (define mid-point 
   (floor (/ width 2)))
@@ -170,21 +171,21 @@
 (define jail-pos
   (psn 14.5 17.))
 
-(struct player (pos dir))
+(struct player (pos dir next-dir))
 (struct ghost (n pos dir))
 (struct game-st (frame objs))
 
 (define speed
-  (* 4. RATE))
+  (* 5. RATE))
 
 (big-bang
    (game-st 0 
             (hasheq
-             'chaser (ghost 0 (- jail-pos 1.5) 'right)
+             'chaser (ghost 0 (+ jail-pos (psn 0. 3.)) 'right)
              'ambusher (ghost 1 jail-pos 'left)
-             'fickle (ghost 2 (+ jail-pos 1.) 'up)
+             'fickle (ghost 2 (- jail-pos 1.5) 'up)
              'stupid (ghost 3 (+ jail-pos 1.5) 'down)
-             'player (player (psn 14.5 8.) 0.)))
+             'player (player (psn 14.5 8.) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
    #:tick
@@ -200,30 +201,30 @@
             [(? ghost?)
              ; XXX move
              v]
-            [(player p dir)
+            [(player p dir next-dir)
              (define stick (controller-dpad c))
-             (define mdir 
+             (define next-dir-n 
                ; If the stick is stable, then don't change the direction
                (if (= stick 0.+0.i)
-                   dir
-                   (angle stick)))
+                   next-dir
+                   (angle (cardinate stick))))
              ; The coorridors used to feel too "tight" and easy to get stuck on an edge, but I think this got fixed
              (define (try-direction p mdir)
                (define mp (wrap width height (+ p (make-polar speed mdir))))
-               (if (sequence-not-empty? (cd:space-collisions? map-space (cd:circle mp player-r)))
+               (if (sequence-not-empty? (cd:space-collisions? map-space (cd:aabb mp player-r player-r)))
                    p
                    mp))
-             (define np (try-direction p mdir))
+             (define np (try-direction p next-dir-n))
              ; Don't change the direction if we couldn't move in it
-             (define ndir
+             (define actual-dir
                (if (= np p)
                    dir
-                   mdir))
+                   next-dir-n))
              (define nnp
                (if (= np p)
-                   (try-direction p ndir)
+                   (try-direction p dir)
                    np))
-             (player nnp ndir)]))))
+             (player nnp actual-dir next-dir-n)]))))
      (define objs:post-cd
        objs:post-movement)     
      (define objs:final
@@ -244,7 +245,7 @@
             (gl:translate 
              (psn-x p) (psn-y p)
              (ghost-animation n frame-n dir))]
-           [(player p dir)
+           [(player p dir _)
             (gl:translate 
              (psn-x p) (psn-y p)
              (gl:rotate
