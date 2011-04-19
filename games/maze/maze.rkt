@@ -15,6 +15,9 @@
          "../../exp/psn.rkt"
          (prefix-in cd: "../../exp/cd-narrow.rkt"))
 
+(define (rad->deg r)
+  (* r (/ 180 pi)))
+
 ; XXX refer to game as ハングリーマン
 
 (define-runtime-path resource-path "r")
@@ -82,35 +85,92 @@
 ; XXX ghost train
 ; XXX bomb
 
-#;(define-texture sprites-t "pacman.png")
+(define-texture sprites-t "pacman.png")
+
+(define (rate how-many how-often t)
+  (modulo (floor (/ t how-often)) how-many))
+  
+(define (player-animation n)
+  (gl:translate 
+   -1 -1
+   (gl:texture/px sprites-t
+                  2 2
+                  (+ 3 (* 15 (rate 3 10 n))) 90
+                  14 14)))
+
+(define mid-point 
+  (floor (/ width 2)))
 (define whole-map
-  (gl:color 0 0 255 0
-            (gl:for*/gl
-             ([c (in-range 29)]
-              [r (in-range 32)])
-             (define vc
-               (if (c . <= . 14)
-                   c
-                   
-                   (- 14 (- c 14))))
-             (gl:translate c (- height r 1)
-                           (if (= 1 (vector-ref layout (+ (* r 15) vc)))
-                               (gl:rectangle 1. 1.)
-                               gl:blank)))))
+  (gl:color 
+   0 0 255 0
+   (gl:for*/gl
+    ([c (in-range width)]
+     [r (in-range height)])
+    (define vc
+      (if (c . <= . mid-point)
+          c
+          (- width c 1)))
+    (gl:translate 
+     c (- height r 1)
+     (if (= 1 (vector-ref layout (+ (* r (add1 mid-point)) vc)))
+         (gl:rectangle 1. 1.)
+         gl:blank)))))
+
+(struct player (pos dir))
+(struct ghost ())
+(struct game-st (frame objs))
+
+(define speed
+  (* 3. RATE))
 
 (big-bang
-   0
+   (game-st 0 
+            (hasheq
+             'chaser (ghost)
+             'ambusher (ghost)
+             'fickle (ghost)
+             'stupid (ghost)
+             'player (player (psn 14.5 8.) 0.)))
    #:sound-scale
    (/ width 2.)
    #:tick
    (λ (w cs)
+     (match-define (cons c _) cs)
+     (match-define (game-st frame objs) w)
+     (define frame-n (add1 frame))
+     (define objs-n
+       (for/hasheq ([(k v) (in-hash objs)])
+         (match v
+           [(ghost)
+            ; XXX move
+            (values k v)]
+           [(player p dir)
+            (values k 
+                    ; XXX wrap around screen
+                    ; XXX collision detection
+                    (player (+ p (* (controller-dpad c) speed))
+                            (angle (controller-dpad c))))])))
      (values 
-      (add1 w)
+      (game-st frame-n objs-n)
       (gl:focus 
        width height width height
        (psn-x center-pos) (psn-y center-pos)
-       (gl:background 0 0 0 0
-                      whole-map))
+       (gl:background 
+        0 0 0 0
+        whole-map
+        (gl:for/gl
+         ([(k v) (in-hash objs-n)])
+         (match v
+           [(ghost)
+            ; XXX
+            gl:blank]
+           [(player p dir)
+            ; XXX have animation frame stick if you haven't moved
+            (gl:translate 
+             (psn-x p) (psn-y p)
+             (gl:rotate
+              (rad->deg dir)
+              (player-animation frame-n)))]))))
       empty))
    #:listener
    (λ (w) center-pos)
