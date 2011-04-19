@@ -1,5 +1,6 @@
 #lang racket/base
 (require "psn.rkt"
+         racket/math
          racket/contract)
 
 (define (clamp bot x top)
@@ -10,7 +11,14 @@
       p
       (psn (psn-x p) 0.)))
 
+(define (distance p1 p2)
+  (sqrt
+   (+ (sqr (- (psn-x p1) (psn-x p2)))
+      (sqr (- (psn-y p1) (psn-y p2))))))
+
 (provide/contract
+ [distance (-> psn? psn?
+               real?)]
  [cardinate (-> psn?
                 psn?)]
  [clamp (-> number? number? number?
