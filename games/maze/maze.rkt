@@ -116,12 +116,24 @@
          (gl:rectangle 1. 1.)
          gl:blank)))))
 
+(define (wrap-at top n)
+  (cond
+    [(n . < . 0)
+     (+ top n)]
+    [(top . < . n)
+     (- n top)]
+    [else
+     n]))
+(define (wrap w h p)
+  (psn (wrap-at w (psn-x p))
+       (wrap-at h (psn-y p))))
+
 (struct player (pos dir))
 (struct ghost ())
 (struct game-st (frame objs))
 
 (define speed
-  (* 3. RATE))
+  (* 4. RATE))
 
 (big-bang
    (game-st 0 
@@ -140,16 +152,21 @@
      (define frame-n (add1 frame))
      (define objs-n
        (for/hasheq ([(k v) (in-hash objs)])
-         (match v
-           [(ghost)
-            ; XXX move
-            (values k v)]
-           [(player p dir)
-            (values k 
-                    ; XXX wrap around screen
-                    ; XXX collision detection
-                    (player (+ p (* (controller-dpad c) speed))
-                            (angle (controller-dpad c))))])))
+         (values
+          k
+          (match v
+            [(ghost)
+             ; XXX move
+             v]
+            [(player p dir)
+             (define stick (controller-dpad c))
+             (define new-dir 
+               (if (= stick 0.+0.i)
+                   dir
+                   (angle stick)))
+             ; XXX collision detection
+             (player (wrap width height (+ p (make-polar speed new-dir)))
+                     new-dir)]))))
      (values 
       (game-st frame-n objs-n)
       (gl:focus 
