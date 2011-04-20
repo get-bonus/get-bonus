@@ -17,12 +17,13 @@
   (zero? (heap-count h)))
 
 ; A graph is a 
-;  - cache : start*goal -> (or/c node #f)
+;  - cache : map start*goal -> (or/c node #f)
+;  - arrays : map goal -> (vector ...)
 ;  - node->neighbors : (node -> listof node)
 ;  - estimate : (node node -> integer)
-(struct graph (cache node->neighbors estimate))
+(struct graph (cache arrays node->neighbors estimate))
 (define (make-graph n->n e)
-  (graph (make-hash) n->n e))
+  (graph (make-hash) (make-hash) n->n e))
 
 ; A node is anything equal?-able
 
@@ -33,7 +34,7 @@
 ; XXX This cache is bad because it does not "link up" with other
 ;     found paths from before
 (define (A* g start goal)
-  (match-define (graph cache node->neighbors estimate) g)
+  (match-define (graph cache arrays node->neighbors estimate) g)
   (cond
     [(hash-ref cache (cons start goal) #f)
      => (λ (ans) ans)]
@@ -43,33 +44,51 @@
          (hash-set! cache (cons start goal) goal)
          (return goal))
        
-       (define g-score (make-hash))
-       (hash-set! g-score start 0)
-       (define h-score (make-hash))
-       (hash-set! h-score start (estimate start goal))
-       (define f-score (make-hash))
-       (hash-set! f-score start (hash-ref h-score start))
+       ; These data structures are always the same for the
+       ; same goal, so we share them across iterations.
+       (match-define
+        (vector g-score h-score f-score
+                closed-set)
+        
+        #;(vector (make-hash) (make-hash) (make-hash)
+                (make-hash))
+        
+        (hash-ref! 
+         arrays goal
+         (λ ()
+           (vector (make-hash) (make-hash) (make-hash)
+                   (make-hash)))))
        
-       ; XXX Is it safe that this can change after the insertion?
-       ;     Can it?
+       ; XXX Is it safe that this can change after
+       ;     the insertion? Can it?
        (define (f-score-<= a b)
          (<= 
           (hash-ref f-score a)
           (hash-ref f-score b)))
+       (define-values
+         (open-set open-queue came-from)
+         (values (make-hash)
+                 (make-heap f-score-<=)
+                 (make-hash)))
        
-       (define closed-set (make-hash))
-       (define open-set (make-hash))
-       (define open-queue (make-heap f-score-<=))    
-       
+       ; 'start' must not be in the structure (accurately)
+       ; because it was not in the cache, ie was not
+       ; previously in a shortest path
+       (hash-set! g-score start 0)
+       (hash-set! h-score start (estimate start goal))
+       (hash-set! f-score start (hash-ref h-score start))       
        (hash-set! open-set start #t)
        (heap-add! open-queue start)
-       (define came-from (make-hash))
+       
        (define (reconstruct current-node)
-         (define next-node (hash-ref came-from current-node))
-         (hash-ref! cache (cons next-node goal) current-node)
-         (if (equal? next-node start)
-             current-node
-             (reconstruct next-node)))
+         (define next-node (hash-ref came-from current-node #f))
+         (if next-node
+             (begin
+               (hash-ref! cache (cons next-node goal) current-node)
+               (if (equal? next-node start)
+                   current-node
+                   (reconstruct next-node)))
+             current-node))
        
        (while 
         (not (heap-empty? open-queue))
