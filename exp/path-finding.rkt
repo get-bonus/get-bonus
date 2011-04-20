@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/list
+         racket/contract
          racket/math
          racket/match
          data/heap
@@ -15,11 +16,9 @@
 (define (heap-empty? h)
   (zero? (heap-count h)))
 
-(define (snoc l x)
-  (append l (list x)))
-
 ; A direction is 'left, 'right, 'up, 'down
 (define dirs '(left right up down))
+(define direction/c (apply symbols dirs))
 
 ; A graph is a 
 ;  - node-in-dir : (node direction -> maybe node)
@@ -31,53 +30,56 @@
 ; shortest-path : graph node node -> maybe direction
 ; Given a graph, finds the direction to move along the shortest
 ; path from start to end
-(define (reconstruct came-from current-node)
-  (define next-node (hash-ref came-from current-node #f))
-  (if next-node
-      (snoc (reconstruct came-from next-node)
-            current-node)
-      (list current-node)))
-  
 (define (A* g start goal)
-  (match-define (graph node-in-dir estimate) g)
-  (define g-score (make-hash))
-  (hash-set! g-score start 0)
-  (define h-score (make-hash))
-  (hash-set! h-score start (estimate start goal))
-  (define f-score (make-hash))
-  (hash-set! f-score start (hash-ref h-score start))
-  
-  ; XXX Is it safe that this can change after the insertion?
-  (define (f-score-<= a b)
-    (<= (hash-ref f-score a
-                  (λ ()
-                    (error 'f-score "No f-score for a = ~a" a)))
-        (hash-ref f-score b
-                  (λ ()
-                    (error 'f-score "No f-score for b = ~a" b)))))
-  
-  (define closed-set (make-hash))
-  (define open-set (make-hash))
-  (define open-queue (make-heap f-score-<=))    
-  
-  (hash-set! open-set start #t)
-  (heap-add! open-queue start)
-  (define came-from (make-hash))
-  
-  (let/ec return
+  (let/ec return    
+    (when (equal? start goal)
+      (return #f))
+    
+    (match-define (graph node-in-dir estimate) g)
+    (define g-score (make-hash))
+    (hash-set! g-score start 0)
+    (define h-score (make-hash))
+    (hash-set! h-score start (estimate start goal))
+    (define f-score (make-hash))
+    (hash-set! f-score start (hash-ref h-score start))
+    
+    ; XXX Is it safe that this can change after the insertion?
+    (define (f-score-<= a b)
+      (<= (hash-ref f-score a
+                    (λ ()
+                      (error 'f-score "No f-score for a = ~a" a)))
+          (hash-ref f-score b
+                    (λ ()
+                      (error 'f-score "No f-score for b = ~a" b)))))
+    
+    (define closed-set (make-hash))
+    (define open-set (make-hash))
+    (define open-queue (make-heap f-score-<=))    
+    
+    (hash-set! open-set start #t)
+    (heap-add! open-queue start)
+    (define came-from (make-hash))
+    (define came-from/dir (make-hash))
+    ; XXX cache all these
+    (define (reconstruct start current-node)
+      (define next-node (hash-ref came-from current-node #f))
+      (cond
+        [(equal? next-node start)
+         current-node]
+        [next-node
+         (reconstruct start next-node)]
+        [else
+         current-node]))
+    
     (while 
      (not (heap-empty? open-queue))
      (define x (heap-min open-queue))
      (heap-remove-min! open-queue)
      (hash-remove! open-set x)
      (when (equal? x goal)
-       (return 
-        (reconstruct 
-         came-from 
-         (hash-ref came-from goal
-                   (λ ()
-                     (error 'came-from "No came-from for goal = ~a"
-                            goal))))))
+       (define last-node
+         (reconstruct start goal))
+       (return (hash-ref came-from/dir last-node)))
      (hash-set! closed-set x #t)
      (for ([dir (in-list dirs)])
        (define y (node-in-dir x dir))
@@ -105,6 +107,7 @@
             (set! tentative-is-better? #f)])
          (when tentative-is-better?
            (hash-set! came-from y x)
+           (hash-set! came-from/dir y dir)
            (hash-set! g-score y tentative-g-score)
            (hash-set! h-score y (estimate y goal))
            (hash-set! f-score y 
@@ -117,6 +120,19 @@
     #f))
 
 (define shortest-path A*)
+
+(provide/contract
+ [direction/c contract?]
+ [struct graph
+         ([node-in-dir
+           (-> any/c direction/c
+               (or/c any/c #f))]
+          [estimate
+           (-> any/c any/c
+               number?)])]
+ [shortest-path
+  (-> graph? any/c any/c
+      (or/c #f direction/c))])
 
 ; A simple macro for encoding simple grid graphs
 (define-syntax simple-graph
@@ -148,12 +164,6 @@
      ; Note, we don't sqrt, because if we uniformly don't,
      ; it doesn't affect the heuristic
      (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))
-
-(define g
-  (simple-graph
-   [0 0]))
-g
-(shortest-path g (cons 0 0) (cons 1 0))
 
 (test
  (let ()
@@ -187,7 +197,7 @@ g
       [0 0 0]
       [0 1 0]))
    (test
-    (shortest-path g (cons 1 0) (cons 2 0)) => 'up
+    (shortest-path g (cons 0 0) (cons 2 0)) => 'up
     (shortest-path g (cons 2 0) (cons 0 0)) => 'up))
  ; From http://en.wikipedia.org/wiki/Pathfinding#Sample_algorithm
  (let ()

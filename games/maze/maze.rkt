@@ -208,74 +208,43 @@
          racket/set)
 (define-package pathfinding (find-direction)
   (define (->i x)
-    (inexact->exact (floor x)))
-  
-  (define cache (make-hash))
-  (define seen (make-parameter (set)))
-  (define (hash-ref!* h x0 y0 x1 y1 p)
-    (define k (vector x0 y0 x1 y1))
-    (define last-seen (seen))
-    (if (set-member? last-seen k)
-        (cons +inf.0 #f)
-        (parameterize ([seen (set-add last-seen k)])
-          (hash-ref! h k p))))
-  
-  (define (from x0 y0 x1 y1)
-    (let loop ([to-visit (set (cons x0 y0))]
-               [seen (set)])
-      (define next
-        (for/or ([e (in-set to-visit)]) e))
-      (if next
-          
-    
-    
-    
-    (hash-ref!* 
-     cache x0 y0 x1 y1
-     (λ ()
-       (if (and (= x0 x1) (= y0 y1))
-           (cons 0 0)
-           (let ()
-             (define-syntax-rule
-               (min* [nx ny dir] ...)
-               (let ()
-                 (define min-cost +inf.0)
-                 (define min-dir #f)
-                 (let ([nx* nx] [ny* ny])
-                   ; XXX doesn't go down warp tunnels
-                   (when (and (<= 0 nx* (sub1 width))
-                              (<= 0 ny* (sub1 height))
-                              (not (= 1 (layout-ref/xy nx* ny*))))
-                     (match-define (cons (app add1 this-cost) _) (from nx* ny* x1 y1))
-                     (when (this-cost . < . min-cost)
-                       (set! min-cost this-cost)
-                       (set! min-dir dir))))
-                 ...
-                 (cons min-cost min-dir)))
-             (min* [(+ 1 x0) y0 right]
-                   [(- x0 1) y0 left]
-                   [x0 (+ y0 1) up]
-                   [x0 (- y0 1) down]))))))
-  
+    (inexact->exact
+     (round x)
+     #;(floor x)))
+  (define layout-graph
+    (graph
+     (λ (n dir)
+       (match-define (cons x y) n)
+       (define-values (nx ny)
+         (match dir
+           ['left (values (sub1 x) y)]
+           ['right (values (add1 x) y)]
+           ['up (values x (add1 y))]
+           ['down (values x (sub1 y))]
+           [_ (error 'node-in-dir "Invalid direction")]))
+       (if (and
+            (<= 0 nx (sub1 width))
+            (<= 0 ny (sub1 height))
+            (not (= 1 (layout-ref/xy nx ny))))
+           (cons nx ny)
+           #f))
+     (λ (n1 n2)
+       (match-define (cons x1 y1) n1)
+       (match-define (cons x2 y2) n2)
+       ; Note, we don't sqrt, because if we uniformly don't,
+       ; it doesn't affect the heuristic
+       (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))
   (define (find-direction p0 p1)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
     (match-define (psn* (app ->i x1) (app ->i y1)) p1)
-    (match-define (cons dist dir) (from x0 y0 x1 y1))
-    (printf "(~a,~a) -> (~a,~a) costs ~a\n" x0 y0 x1 y1 dist)
-    right
-    #;
-    (if (= dist +inf.0)
-        #f
-        dir))
-  
-  (printf "Computing directions\n")
-  #;(for* ([x0 (in-range width)]
-         [y0 (in-range height)]
-         [x1 (in-range width)]
-         [y1 (in-range height)])
-    (from x0 y0 x1 y1))
-  
-  )
+    (match 
+        (shortest-path layout-graph (cons x0 y0) (cons x1 y1))
+      ['left left]
+      ['right right]
+      ['up up]
+      ['down down]
+      ; XXX
+      [#f left])))
 (open-package pathfinding)
 
 #;(test
@@ -305,12 +274,16 @@
  (find-direction (psn 2. 2.) (psn 2. 1.)) => down)
 
 (define (posn-in-dir p mdir)
-  (wrap width height (+ p (make-polar speed mdir))))
+  (if mdir
+      (wrap width height (+ p (make-polar speed mdir)))
+      p))
 (define (try-direction p mdir)
-               (define mp (posn-in-dir p mdir))
-               (if (sequence-not-empty? (cd:space-collisions? map-space (cd:aabb mp player-r player-r)))
-                   p
-                   mp))
+  (define mp (posn-in-dir p mdir))
+  (if (sequence-not-empty? 
+       (cd:space-collisions? 
+        map-space (cd:aabb mp player-r player-r)))
+      p
+      mp))
 
 (big-bang
    (game-st 0 
