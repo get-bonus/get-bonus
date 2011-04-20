@@ -243,8 +243,10 @@
                 (list (cons nx ny))
                 empty))
           ...))
-       (try [(sub1 x) y] [(add1 x) y]
-            [x (sub1 y)] [x (add1 y)]))
+     (try #;left [(sub1 x) y]
+          #;top [x (add1 y)]
+          #;right [(add1 x) y]
+          #;down [x (sub1 y)]))
      (tie-breaker
       manhattan-distance
       (max width height))))

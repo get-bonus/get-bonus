@@ -21,7 +21,7 @@
 ; path from start to end
 
 ; A graph is a 
-  ;  - node->neighbors : (node -> listof node)
+  ;  - node->neighbors : (node -> listof node) [must be in clockwise order]
   ;  - estimate : (node node -> integer)
 
 ; Based on Wikipedia
@@ -113,9 +113,14 @@
          #f)])))
 
 ; Based on http://idm-lab.org/bib/abstracts/Koen09i.html
-(require racket/generator)
+(require racket/generator
+         racket/function)
 (define-package FRA*-pkg 
   (graph? make-graph shortest-path)
+  
+  (define-syntax-rule (hash-ref# h k)
+    (let ([kv k])
+      (hash-ref h kv (λ () (error 'h "No entry for ~a" kv)))))
   
   (struct graph (gen))
   (define (make-graph n->n e)
@@ -128,27 +133,44 @@
   
   (define (main node->neighbors estimate)
     (define g (make-hash))
-    (define start #f)
-    (define goal #f)
-    (define open #f)
-    (define cell #f)
-    (define previous-start #f)
-    (define anchor #f)
-    ; XXX
+    (define start 'start)
+    (define goal 'goal)
+    (define open 'open)
+    (define cell 'cell)
+    (define previous-start 'previous-start)
+    (define anchor 'anchor)
+    ; Finds the nodes in counter-clockwise order starting at start
     (define (counter-clockwise ns start)
-      empty)
-    ; XXX
+      (clockwise (reverse ns) start))
+    ; Finds the nodes in clockwise order starting at start
     (define (clockwise ns start)
-      empty)
-    ; XXX
+      (let loop ([left empty] [right ns])
+        (cond
+          [(empty? right)
+           empty
+           ; XXX should this happen?
+           #;(error 'clockwise "~a not in list" start)]
+          [(equal? start (first right))
+           ; We will start here, then everything else we saw before
+           (append right (reverse left))]
+          [else
+           (loop (cons (first right) left)
+                 (rest right))])))
     (define (search-tree-rooted-at n)
-      error)
+      (in-generator
+       (let loop ([n n])
+         (yield n)
+         (for ([s (in-list (hash-ref children n empty))])
+           (loop s)))))
     ; XXX
     (define (outer-perimeter-of-closed a)
-      error)
-    ; XXX
+      (if a
+          (error 'xxx "~s" (list 'outer-perimeter-of-closed a))
+          empty))
     (define (unblocked? s)
-      error)
+      ; XXX I assume this is asking if the node can be entered. I don't show nodes to the algorithm
+      ;     where this is not the case, so I'm always going to return #t
+      #t)
     (define (initialize-cell s)
       ; 01
       (when (not (equal? (generated-iteration-ref s) iteration))
@@ -165,7 +187,7 @@
                (not (equal? (parent-ref s) #f)))))
     ; From 07
     (define (open-measure s)
-      (+ (hash-ref g s)
+      (+ (hash-ref# g s)
          (estimate s goal)))
     (define (compute-shortest-path)
       (let/ec return
@@ -182,11 +204,11 @@
                    ; 11
                    (initialize-cell sp)
                    ; 12
-                   (when ((hash-ref g sp) . > . (add1 (hash-ref g s)))
+                   (when ((hash-ref# g sp) . > . (add1 (hash-ref# g s)))
                      ; 13
-                     (hash-set! g sp (add1 (hash-ref g s)))
+                     (hash-set! g sp (add1 (hash-ref# g s)))
                      ; 14
-                     (hash-set! parent sp s)
+                     (parent-set! sp s)
                      ; 15
                      (unless (heap-member? open sp)
                        (heap-add! open sp)))))
@@ -200,11 +222,11 @@
         ; 18
         (for ([s (in-list (direction (node->neighbors cell) (parent-ref cell)))])
           ; 19
-          (when (and (equal? (hash-ref g s)
-                             (add1 (hash-ref g cell)))
+          (when (and (equal? (hash-ref# g s)
+                             (add1 (hash-ref# g cell)))
                      (test-closed-list s))
             ; 20
-            (hash-set! parent s cell)
+            (parent-set! s cell)
             ; 21
             (set! cell s)
             ; 22
@@ -222,11 +244,11 @@
       (while (update-parent clockwise)))
     (define (step-3)
       ; 28
-      (hash-ref! parent start #f)
+      (parent-unset! start)
       ; 29
       (for ([s (search-tree-rooted-at previous-start)])
         ; 30
-        (hash-set! parent s #f)
+        (parent-unset! s)
         ; 31
         (heap-remove! open s)))
     (define (step-5)
@@ -246,11 +268,11 @@
         (for ([sp (in-list (node->neighbors s))])
           ; 38
           (when (and (test-closed-list sp)
-                     ((hash-ref g s) . > . (add1 (hash-ref g sp))))
+                     ((hash-ref# g s) . > . (add1 (hash-ref# g sp))))
             ; 39
-            (hash-set! g s (add1 (hash-ref g sp)))
+            (hash-set! g s (add1 (hash-ref# g sp)))
             ; 40
-            (hash-set! parent s sp)))))
+            (parent-set! s sp)))))
     ; 42
     (define generated-iteration (make-hash))
     (define (generated-iteration-ref s)
@@ -261,6 +283,13 @@
       (hash-ref expanded s #f))
     ; 44
     (define parent (make-hash))
+    (define children (make-hash))
+    (define (parent-unset! s)
+      (hash-update! children (parent-ref parent) (curry remove s) empty)
+      (hash-remove! parent s))
+    (define (parent-set! s p)
+      (hash-update! children p (curry cons s) empty)
+      (hash-set! parent s p))
     (define (parent-ref s)
       (hash-ref parent s #f))
     ; 45
@@ -277,47 +306,47 @@
      (set! open (heap open-measure))
      ; 49
      (heap-add! open start)
-     (let/ec return
-       ; 50
-       (while (not (equal? start goal))
-              ; 51
-              (unless (compute-shortest-path) (return #f))
-              ; 52
-              (define openlist-incomplete? #f)
-              ; 53
-              (while (test-closed-list goal)
-                     ; 54
-                     (while (target-not-caught-and-target-is-on-shortest-path-from-start-to-goal)
-                            ; 55
-                            (follow-shortest-path-from-start-to-goal))
-                     ; 56
-                     (when (target-caught) (return #t))
-                     ; 57
-                     (set! previous-start start)
-                     ; 58
-                     (set! start current-hunter)
-                     ; 59
-                     (set! end current-target)
-                     ; 60
-                     (when (not (equal? previous-start start))
-                       ; 61
-                       (step-2)
-                       ; 62
-                       (set! anchor (parent-ref start))
-                       ; 63
-                       (step-3)
-                       ; 64
-                       (set! openlist-incomplete? #t)))
-              ; 65
-              (when openlist-incomplete?
-                ; 66
-                (set! iteration (add1 iteration))
-                ; 67
-                (step-5)))
-       ; 68
-       (return #t)))))
+     ; 50
+     (while (not (equal? start goal))
+            ; 51
+            (unless (compute-shortest-path) 
+              ; XXX allow another search
+              (yield #f))
+            ; 52
+            (define openlist-incomplete? #f)
+            ; 53
+            (while (test-closed-list goal)
+                   ; 54-56
+                   (define-values (current-hunter current-target)
+                     ; XXX actually return the path, is this correct?
+                     (yield 
+                      (first (hash-ref children start))))
+                   ; 57
+                   (set! previous-start start)
+                   ; 58
+                   (set! start current-hunter)
+                   ; 59
+                   (set! goal current-target)
+                   ; 60
+                   (when (not (equal? previous-start start))
+                     ; 61
+                     (step-2)
+                     ; 62
+                     (set! anchor (parent-ref start))
+                     ; 63
+                     (step-3)
+                     ; 64
+                     (set! openlist-incomplete? #t)))
+            ; 65
+            (when openlist-incomplete?
+              ; 66
+              (set! iteration (add1 iteration))
+              ; 67
+              (step-5)))
+     ; 68
+     (error 'shortest-path "Got outside the loop somehow"))))
 
-(open-package FRA*-pkg)
+(open-package A*-pkg)
 
 (provide/contract
  [graph? contract?]
@@ -379,8 +408,10 @@
               (list (cons nx ny))
               empty))
         ...))
-     (try [(sub1 x) y] [(add1 x) y]
-          [x (sub1 y)] [x (add1 y)]))
+     (try #;left [(sub1 x) y]
+          #;top [x (add1 y)]
+          #;right [(add1 x) y]
+          #;down [x (sub1 y)]))
    manhattan-distance))
 
 (test
