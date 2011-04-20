@@ -4,7 +4,8 @@
          racket/math
          racket/match
          "lifo-heap.rkt"
-         tests/eli-tester)
+         tests/eli-tester
+         racket/package)
 
 (define-syntax-rule
   (while c e ...)
@@ -19,14 +20,17 @@
 ; Given a graph, finds the next node to move to along the shortest
 ; path from start to end
 
-(require racket/package)
+; A graph is a 
+  ;  - node->neighbors : (node -> listof node)
+  ;  - estimate : (node node -> integer)
+
+; Based on Wikipedia
 (define-package A*-pkg 
   (graph? make-graph shortest-path)
   
   ; A graph is a 
+  ;  ...
   ;  - cache : map start*goal -> (or/c node #f)
-  ;  - node->neighbors : (node -> listof node)
-  ;  - estimate : (node node -> integer)
   (struct graph (cache node->neighbors estimate))
   (define (make-graph n->n e)
     (graph (make-hash) n->n e))
@@ -108,11 +112,187 @@
          
          #f)])))
 
-(open-package A*-pkg)
+; Based on http://idm-lab.org/bib/abstracts/Koen09i.html
+(require racket/generator)
+(define-package FRA*-pkg 
+  (graph? make-graph shortest-path)
+  
+  (struct graph (gen))
+  (define (make-graph n->n e)
+    (graph (main n->n e)))
+  
+  ; XXX Collect performance numbers
+  (define (shortest-path g start end)
+    (match-define (graph gen) g)
+    (gen start end))
+  
+  (define (main node->neighbors estimate)
+    (define (initialize-cell s)
+      ; 01
+      (when (not (equal? (generated-iteration-ref s) iteration))
+        ; 02
+        (hash-set! g s +inf.0)
+        ; 03
+        (hash-set! generated-iteration s iteration)
+        ; 04
+        (hash-set! expanded s #f)))
+    (define (test-closed-list s)
+      ; 05
+      (or (equal? s start)
+          (and (expanded-ref s)
+               (not (equal? (parent-ref s) #f)))))
+    ; From 07
+    (define (open-measure s)
+      (+ (hash-ref g s)
+         (estimate s goal)))
+    (define (compute-shortest-path)
+      (let/ec return
+        ; 06
+        (while (not (heap-empty? open))
+               ; 07
+               (define s (heap-remove-min! open))
+               ; 08
+               (hash-set! expanded s #t)
+               ; 09
+               (for ([sp (in-list (node->neighbors s))])
+                 ; 10
+                 (when (not (test-closed-list sp))
+                   ; 11
+                   (initialize-cell sp)
+                   ; 12
+                   (when ((hash-ref g sp) . > . (add1 (hash-ref g s)))
+                     ; 13
+                     (hash-set! g sp (add1 (hash-ref g s)))
+                     ; 14
+                     (hash-set! parent sp s)
+                     ; 15
+                     (unless (heap-member? open sp)
+                       (heap-add! open sp)))))
+               ; 16
+               (when (equal? s goal)
+                 (return #t)))
+        ; 17
+        (return #f)))
+    (define (update-parent direction)
+      (let/ec return
+        ; 18
+        (for ([s (in-list (direction (node->neighbors cell) (parent-ref cell)))])
+          ; 19
+          (when (and (equal? (hash-ref g s)
+                             (add1 (hash-ref g cell)))
+                     (test-closed-list s))
+            ; 20
+            (hash-set! parent s cell)
+            ; 21
+            (set! cell s)
+            ; 22
+            (return #t)))
+        ; 23
+        (return #f)))
+    (define (step-2)
+      ; 24
+      (set! cell start)
+      ; 25
+      (while (update-parent counter-clockwise))
+      ; 26
+      (set! cell start)
+      ; 27
+      (while (update-parent clockwise)))
+    (define (step-3)
+      ; 28
+      (hash-ref! parent start #f)
+      ; 29
+      (for ([s (search-tree-rooted-at previous-start)])
+        ; 30
+        (hash-set! parent s #f)
+        ; 31
+        (heap-remove! open s)))
+    (define (step-5)
+      ; 32
+      (for ([s (outer-perimeter-of-closed anchor)])
+        ; 33
+        (when (and (unblocked? s)
+                   (heap-member? open s))
+          (heap-add! open s)))
+      ; 34
+      (for ([s (in-heap open)])
+        ; 35
+        (initialize-cell s))
+      ; 36
+      (for ([s (in-heap open)])
+        ; 37
+        (for ([sp (in-list (node->neighbors s))])
+          ; 38
+          (when (and (test-closed-list sp)
+                     ((hash-ref g s) . > . (add1 (hash-ref g sp))))
+            ; 39
+            (hash-set! g s (add1 (hash-ref g sp)))
+            ; 40
+            (hash-set! parent s sp)))))
+    ; 42
+    (define generated-iteration (make-hash))
+    (define (generated-iteration-ref s)
+      (hash-ref generated-iteration s 0))
+    ; 43
+    (define expanded (make-hash))
+    (define (expanded-ref s)
+      (hash-ref expanded s #f))
+    ; 44
+    (define parent (make-hash))
+    (define (parent-ref s)
+      (hash-ref parent s #f))
+    ; 45
+    (define iteration 1)
+    (generator 
+     (start goal)
+     ; 46
+     (initialize-cell start)
+     ; 47
+     (hash-set! g start 0)
+     ; 48
+     (define open (make-heap open-measure))
+     ; 49
+     (heap-add! open start)
+     ; 50
+     (while (not (equal? start goal))
+            ; 51
+            (unless (compute-shortest-path) (return #f))
+            ; 52
+            (define openlist-incomplete? #f)
+            ; 53
+            (while (test-closed-list goal)
+                   ; 54
+                   (while (target-not-caught-and-target-is-on-shortest-path-from-start-to-goal)
+                          ; 55
+                          (follow-shortest-path-from-start-to-goal))
+                   ; 56
+                   (when (target-caught) (return #t))
+                   ; 57
+                   (define previous-start start)
+                   ; 58
+                   (set! start current-hunter)
+                   ; 59
+                   (set! end current-target)
+                   ; 60
+                   (when (not (equal? previous-start start))
+                     ; 61
+                     (step-2)
+                     ; 62
+                     (set! anchor (parent-ref start))
+                     ; 63
+                     (step-3)
+                     ; 64
+                     (set! openlist-incomplete? #t)))
+            ; 65
+            (when openlist-incomplete?
+              ; 66
+              (set! iteration (add1 iteration))
+              ; 67
+              (step-5)))
+     ; 68
+     (return #t))))
 
-#;(define (FRA* g start goal)
-    (match-define (graph _ node->neighbors estimate) g)
-    #f)
+(open-package FRA*-pkg)
 
 (provide/contract
  [graph? contract?]
@@ -129,7 +309,6 @@
 
 ; XXX look at AlphA*
 ; XXX look at http://webdocs.cs.ualberta.ca/~games/pathfind/publications/cig2005.pdf
-; XXX look at http://idm-lab.org/bib/abstracts/Koen09i.html
 
 (define (manhattan-distance n1 n2)
   (match-define (cons x1 y1) n1)
