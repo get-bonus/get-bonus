@@ -3,7 +3,7 @@
          racket/contract
          racket/math
          racket/match
-         data/heap
+         "lifo-heap.rkt"
          tests/eli-tester)
 
 (define-syntax-rule
@@ -12,9 +12,6 @@
     (when c
       e ...
       (loop))))
-
-(define (heap-empty? h)
-  (zero? (heap-count h)))
 
 ; A graph is a 
 ;  - cache : map start*goal -> (or/c node #f)
@@ -49,29 +46,15 @@
        
        ; XXX Is it safe that this can change after
        ;     the insertion? Can it?
-       (define (f-score-<= a b)
-         (define fa (hash-ref f-score a))
-         (define fb (hash-ref f-score b))
-         (if (= fa fb)
-             ; If the heuristics are identical, prefer the new entry
-             (>= (hash-ref open-set a)
-                 (hash-ref open-set b))
-             (<= fa fb)))
+       (define (f a) (hash-ref f-score a))
        (define-values
-         (open-set open-queue came-from)
-         (values (make-hash)
-                 (make-heap f-score-<=)
+         (open-queue came-from)
+         (values (heap f)
                  (make-hash)))
-       
-       (define n 0)
-       (define (open-set-put! e)
-         (hash-set! open-set e n)
-         (set! n (add1 n)))
        
        (hash-set! g-score start 0)
        (hash-set! h-score start (estimate start goal))
-       (hash-set! f-score start (hash-ref h-score start))       
-       (open-set-put! start)
+       (hash-set! f-score start (hash-ref h-score start))
        (heap-add! open-queue start)
        
        (define (reconstruct current-node later-nodes)
@@ -87,9 +70,7 @@
        
        (while 
         (not (heap-empty? open-queue))
-        (define x (heap-min open-queue))
-        (heap-remove-min! open-queue)
-        (hash-remove! open-set x)
+        (define x (heap-remove-min! open-queue))
         ; If it is in the cache, then we know that there is already a shortest path found.
         (when (hash-has-key? cache (cons x goal)) #;(equal? x goal)
           (define last-node (reconstruct x empty))
@@ -103,7 +84,7 @@
             (define tentative-is-better? #t)
             (define add-to-open-set? #f)
             (cond
-              [(not (hash-has-key? open-set y))
+              [(not (heap-member? open-queue y))
                (set! add-to-open-set? #t)
                (set! tentative-is-better? #t)]
               [(< tentative-g-score
@@ -119,7 +100,6 @@
                          (+ (hash-ref g-score y)
                             (hash-ref h-score y)))
               (when add-to-open-set?
-                (open-set-put! y)
                 (heap-add! open-queue y))))))
        
        #f)]))
