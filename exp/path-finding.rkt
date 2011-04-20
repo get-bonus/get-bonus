@@ -52,30 +52,39 @@
        ; XXX Is it safe that this can change after
        ;     the insertion? Can it?
        (define (f-score-<= a b)
-         (<= 
-          (hash-ref f-score a)
-          (hash-ref f-score b)))
+         (define fa (hash-ref f-score a))
+         (define fb (hash-ref f-score b))
+         (if (= fa fb)
+             ; If the heuristics are identical, prefer the new entry
+             (>= (hash-ref open-set a)
+                 (hash-ref open-set b))
+             (<= fa fb)))
        (define-values
          (open-set open-queue came-from)
          (values (make-hash)
                  (make-heap f-score-<=)
                  (make-hash)))
        
+       (define n 0)
+       (define (open-set-put! e)
+         (hash-set! open-set e n)
+         (set! n (add1 n)))
+       
        (hash-set! g-score start 0)
        (hash-set! h-score start (estimate start goal))
        (hash-set! f-score start (hash-ref h-score start))       
-       (hash-set! open-set start #t)
+       (open-set-put! start)
        (heap-add! open-queue start)
        
-       ; XXX Actually, we learned a lot more because every sub-path is a shortest path
-       (define (reconstruct current-node)
+       (define (reconstruct current-node later-nodes)
          (define next-node (hash-ref came-from current-node #f))
          (if next-node
              (begin
-               (hash-ref! cache (cons next-node goal) current-node)
+               (for ([later-node (in-list later-nodes)])
+                 (hash-ref! cache (cons next-node later-node) current-node))
                (if (equal? next-node start)
                    current-node
-                   (reconstruct next-node)))
+                   (reconstruct next-node (cons current-node later-nodes))))
              current-node))
        
        (while 
@@ -84,7 +93,7 @@
         (heap-remove-min! open-queue)
         (hash-remove! open-set x)
         (when (equal? x goal)
-          (define last-node (reconstruct goal))
+          (define last-node (reconstruct goal empty))
           (return last-node))
         (hash-set! closed-set x #t)
         (for ([y (in-list (node->neighbors x))])
@@ -111,7 +120,7 @@
                          (+ (hash-ref g-score y)
                             (hash-ref h-score y)))
               (when add-to-open-set?
-                (hash-set! open-set y #t)
+                (open-set-put! y)
                 (heap-add! open-queue y))))))
        
        #f)]))
@@ -131,10 +140,30 @@
   (-> graph? any/c any/c
       (or/c #f any/c))])
 
-; XXX I should use manhatten distance, because only 4-way movement is allowed
-; XXX Add a tie-breaker like (* (h x) (+ 1 p)) where p = (/ minimum-cost max-path-len)
-; XXX Get the heap to be last-in-first-out
 ; XXX look at AlphA*
+; XXX look at http://webdocs.cs.ualberta.ca/~games/pathfind/publications/cig2005.pdf
+; XXX look at http://idm-lab.org/bib/abstracts/Koen02g.html
+; XXX look at http://idm-lab.org/bib/abstracts/Koen09i.html
+
+(define (manhattan-distance n1 n2)
+  (match-define (cons x1 y1) n1)
+  (match-define (cons x2 y2) n2)
+  (+ (abs (- x1 x2)) (abs (- y1 y2))))
+(define (euclidian-distance n1 n2)
+  (match-define (cons x1 y1) n1)
+  (match-define (cons x2 y2) n2)
+  (sqrt
+   (+ (sqr (- x2 x1)) (sqr (- y2 y1)))))
+(define (tie-breaker dist max-len)
+  (define p (/ 1 max-len))
+  (define a (+ 1 p))
+  (λ (n1 n2)
+    (* a (dist n1 n2))))
+
+(provide/contract
+ [manhattan-distance ((cons/c integer? integer?) (cons/c integer? integer?) . -> . number?)]
+ [euclidian-distance ((cons/c integer? integer?) (cons/c integer? integer?) . -> . number?)]
+ [tie-breaker ((-> any/c any/c number?) number? . -> . (-> any/c any/c number?))])
 
 ; A simple macro for encoding simple grid graphs
 (define-syntax simple-graph
@@ -162,11 +191,7 @@
         ...))
      (try [(sub1 x) y] [(add1 x) y]
           [x (sub1 y)] [x (add1 y)]))
-   (λ (n1 n2)
-     (match-define (cons x1 y1) n1)
-     (match-define (cons x2 y2) n2)
-     (sqrt
-      (+ (sqr (- x2 x1)) (sqr (- y2 y1)))))))
+   manhattan-distance))
 
 (test
  (let ()
@@ -226,8 +251,9 @@
     (shortest-path g (cons 2 1) (cons 3 1)) => (cons 3 1)
     (shortest-path g (cons 3 1) (cons 3 1)) => (cons 3 1)
     
-    ; XXX Add some more tests for the 3,1 goal from all around the 
-    ;     map
+    (shortest-path g (cons 1 7) (cons 3 1)) => (cons 1 6)
+    (shortest-path g (cons 1 8) (cons 3 1)) => (cons 1 7)
+    (shortest-path g (cons 2 8) (cons 3 1)) => (cons 1 8)
     
     (shortest-path g (cons 1 1) (cons 8 1)) => (cons 2 1)
     (shortest-path g (cons 2 1) (cons 8 1)) => (cons 3 1)

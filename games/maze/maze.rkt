@@ -245,12 +245,9 @@
           ...))
        (try [(sub1 x) y] [(add1 x) y]
             [x (sub1 y)] [x (add1 y)]))
-     (λ (n1 n2)
-       (match-define (cons x1 y1) n1)
-       (match-define (cons x2 y2) n2)
-       (* 2 ; 2 is a weight that makes the path as much as twice
-            ; as bad as optimal
-          (sqrt (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))))
+     (tie-breaker
+      manhattan-distance
+      (max width height))))
   (define (find-direction p0 pn)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
     (match-define (psn* (app ->i xn) (app ->i yn)) pn)
