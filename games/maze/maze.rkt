@@ -15,6 +15,7 @@
          "../../exp/3s.rkt"
          "../../exp/psn.rkt"
          "../../exp/math.rkt"
+         "../../exp/path-finding.rkt"
          (prefix-in cd: 
                     (combine-in "../../exp/cd-narrow.rkt"
                                 "../../exp/cd-broad.rkt")))
@@ -103,10 +104,12 @@
       ['down 3]))
   (gl:translate 
    -1 -1
-   (gl:texture/px sprites-t
-                  2 2
-                  (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 dir-n)))) (+ 125 (* 18 n))
-                  14 12)))
+   (gl:texture/px 
+    sprites-t
+    2 2
+    (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 dir-n))))
+    (+ 125 (* 18 n))
+    14 12)))
   
 (define (player-animation n)
   (gl:translate 
@@ -217,7 +220,16 @@
         (parameterize ([seen (set-add last-seen k)])
           (hash-ref! h k p))))
   
-  (define (from x0 y0 x1 y1) 
+  (define (from x0 y0 x1 y1)
+    (let loop ([to-visit (set (cons x0 y0))]
+               [seen (set)])
+      (define next
+        (for/or ([e (in-set to-visit)]) e))
+      (if next
+          
+    
+    
+    
     (hash-ref!* 
      cache x0 y0 x1 y1
      (λ ()
