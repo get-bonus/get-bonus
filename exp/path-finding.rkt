@@ -13,98 +13,106 @@
       e ...
       (loop))))
 
-; A graph is a 
-;  - cache : map start*goal -> (or/c node #f)
-;  - node->neighbors : (node -> listof node)
-;  - estimate : (node node -> integer)
-(struct graph (cache node->neighbors estimate))
-(define (make-graph n->n e)
-  (graph (make-hash) n->n e))
-
 ; A node is anything equal?-able
 
 ; shortest-path : graph node node -> maybe direction
 ; Given a graph, finds the next node to move to along the shortest
 ; path from start to end
 
-; XXX Collect performance numbers
-(define (A* g start goal)
-  (match-define (graph cache node->neighbors estimate) g)
-  (cond
-    [(hash-ref cache (cons start goal) #f)
-     => (λ (ans) ans)]
-    [else
-     (let/ec return    
-       (hash-set! cache (cons goal goal) goal)
-       (when (equal? start goal)
-         (return goal))
-       
-       (define-values
-        (g-score h-score f-score closed-set)
-        (values (make-hash) (make-hash) (make-hash)
-                (make-hash)))
-       
-       ; XXX Is it safe that this can change after
-       ;     the insertion? Can it?
-       (define (f a) (hash-ref f-score a))
-       (define-values
-         (open-queue came-from)
-         (values (heap f)
-                 (make-hash)))
-       
-       (hash-set! g-score start 0)
-       (hash-set! h-score start (estimate start goal))
-       (hash-set! f-score start (hash-ref h-score start))
-       (heap-add! open-queue start)
-       
-       (define (reconstruct current-node later-nodes)
-         (define next-node (hash-ref came-from current-node #f))
-         (if next-node
-             (begin
-               (for ([later-node (in-list later-nodes)])
-                 (hash-ref! cache (cons next-node later-node) current-node))
-               (if (equal? next-node start)
-                   current-node
-                   (reconstruct next-node (cons current-node later-nodes))))
-             current-node))
-       
-       (while 
-        (not (heap-empty? open-queue))
-        (define x (heap-remove-min! open-queue))
-        ; If it is in the cache, then we know that there is already a shortest path found.
-        (when (hash-has-key? cache (cons x goal)) #;(equal? x goal)
-          (define last-node (reconstruct x empty))
-          (return last-node))
-        (hash-set! closed-set x #t)
-        (for ([y (in-list (node->neighbors x))])
-          (when (not (hash-has-key? closed-set y))
-            (define tentative-g-score 
-              (add1 
-               (hash-ref g-score x)))
-            (define tentative-is-better? #t)
-            (define add-to-open-set? #f)
-            (cond
-              [(not (heap-member? open-queue y))
-               (set! add-to-open-set? #t)
-               (set! tentative-is-better? #t)]
-              [(< tentative-g-score
-                  (hash-ref g-score y))
-               (set! tentative-is-better? #t)]
-              [else
-               (set! tentative-is-better? #f)])
-            (when tentative-is-better?
-              (hash-set! came-from y x)
-              (hash-set! g-score y tentative-g-score)
-              (hash-set! h-score y (estimate y goal))
-              (hash-set! f-score y 
-                         (+ (hash-ref g-score y)
-                            (hash-ref h-score y)))
-              (when add-to-open-set?
-                (heap-add! open-queue y))))))
-       
-       #f)]))
+(require racket/package)
+(define-package A*-pkg 
+  (graph? make-graph shortest-path)
+  
+  ; A graph is a 
+  ;  - cache : map start*goal -> (or/c node #f)
+  ;  - node->neighbors : (node -> listof node)
+  ;  - estimate : (node node -> integer)
+  (struct graph (cache node->neighbors estimate))
+  (define (make-graph n->n e)
+    (graph (make-hash) n->n e))
+  
+  ; XXX Collect performance numbers
+  (define (shortest-path g start goal)
+    (match-define (graph cache node->neighbors estimate) g)
+    (cond
+      [(hash-ref cache (cons start goal) #f)
+       => (λ (ans) ans)]
+      [else
+       (let/ec return    
+         (hash-set! cache (cons goal goal) goal)
+         (when (equal? start goal)
+           (return goal))
+         
+         (define-values
+           (g-score h-score f-score closed-set)
+           (values (make-hash) (make-hash) (make-hash)
+                   (make-hash)))
+         
+         ; XXX Is it safe that this can change after
+         ;     the insertion? Can it?
+         (define (f a) (hash-ref f-score a))
+         (define-values
+           (open-queue came-from)
+           (values (heap f)
+                   (make-hash)))
+         
+         (hash-set! g-score start 0)
+         (hash-set! h-score start (estimate start goal))
+         (hash-set! f-score start (hash-ref h-score start))
+         (heap-add! open-queue start)
+         
+         (define (reconstruct current-node later-nodes)
+           (define next-node (hash-ref came-from current-node #f))
+           (if next-node
+               (begin
+                 (for ([later-node (in-list later-nodes)])
+                   (hash-ref! cache (cons next-node later-node) current-node))
+                 (if (equal? next-node start)
+                     current-node
+                     (reconstruct next-node (cons current-node later-nodes))))
+               current-node))
+         
+         (while 
+          (not (heap-empty? open-queue))
+          (define x (heap-remove-min! open-queue))
+          ; If it is in the cache, then we know that there is already a shortest path found.
+          (when (hash-has-key? cache (cons x goal)) #;(equal? x goal)
+            (define last-node (reconstruct x empty))
+            (return last-node))
+          (hash-set! closed-set x #t)
+          (for ([y (in-list (node->neighbors x))])
+            (when (not (hash-has-key? closed-set y))
+              (define tentative-g-score 
+                (add1 
+                 (hash-ref g-score x)))
+              (define tentative-is-better? #t)
+              (define add-to-open-set? #f)
+              (cond
+                [(not (heap-member? open-queue y))
+                 (set! add-to-open-set? #t)
+                 (set! tentative-is-better? #t)]
+                [(< tentative-g-score
+                    (hash-ref g-score y))
+                 (set! tentative-is-better? #t)]
+                [else
+                 (set! tentative-is-better? #f)])
+              (when tentative-is-better?
+                (hash-set! came-from y x)
+                (hash-set! g-score y tentative-g-score)
+                (hash-set! h-score y (estimate y goal))
+                (hash-set! f-score y 
+                           (+ (hash-ref g-score y)
+                              (hash-ref h-score y)))
+                (when add-to-open-set?
+                  (heap-add! open-queue y))))))
+         
+         #f)])))
 
-(define shortest-path A*)
+(open-package A*-pkg)
+
+#;(define (FRA* g start goal)
+    (match-define (graph _ node->neighbors estimate) g)
+    #f)
 
 (provide/contract
  [graph? contract?]
@@ -243,7 +251,7 @@
     (shortest-path g (cons 6 1) (cons 8 1)) => (cons 7 1)
     (shortest-path g (cons 7 1) (cons 8 1)) => (cons 8 1)
     (shortest-path g (cons 8 1) (cons 8 1)) => (cons 8 1)
-       
+    
     ; To everything again to ensure the cache didn't get messed
     ; up.
     (shortest-path g (cons 1 6) (cons 3 1)) => (cons 1 5)
