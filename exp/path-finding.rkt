@@ -127,6 +127,28 @@
     (gen start end))
   
   (define (main node->neighbors estimate)
+    (define g (make-hash))
+    (define start #f)
+    (define goal #f)
+    (define open #f)
+    (define cell #f)
+    (define previous-start #f)
+    (define anchor #f)
+    ; XXX
+    (define (counter-clockwise ns start)
+      empty)
+    ; XXX
+    (define (clockwise ns start)
+      empty)
+    ; XXX
+    (define (search-tree-rooted-at n)
+      error)
+    ; XXX
+    (define (outer-perimeter-of-closed a)
+      error)
+    ; XXX
+    (define (unblocked? s)
+      error)
     (define (initialize-cell s)
       ; 01
       (when (not (equal? (generated-iteration-ref s) iteration))
@@ -244,53 +266,56 @@
     ; 45
     (define iteration 1)
     (generator 
-     (start goal)
+     (first-start first-goal)
+     (set! start first-start)
+     (set! goal first-goal)
      ; 46
      (initialize-cell start)
      ; 47
      (hash-set! g start 0)
      ; 48
-     (define open (make-heap open-measure))
+     (set! open (heap open-measure))
      ; 49
      (heap-add! open start)
-     ; 50
-     (while (not (equal? start goal))
-            ; 51
-            (unless (compute-shortest-path) (return #f))
-            ; 52
-            (define openlist-incomplete? #f)
-            ; 53
-            (while (test-closed-list goal)
-                   ; 54
-                   (while (target-not-caught-and-target-is-on-shortest-path-from-start-to-goal)
-                          ; 55
-                          (follow-shortest-path-from-start-to-goal))
-                   ; 56
-                   (when (target-caught) (return #t))
-                   ; 57
-                   (define previous-start start)
-                   ; 58
-                   (set! start current-hunter)
-                   ; 59
-                   (set! end current-target)
-                   ; 60
-                   (when (not (equal? previous-start start))
-                     ; 61
-                     (step-2)
-                     ; 62
-                     (set! anchor (parent-ref start))
-                     ; 63
-                     (step-3)
-                     ; 64
-                     (set! openlist-incomplete? #t)))
-            ; 65
-            (when openlist-incomplete?
-              ; 66
-              (set! iteration (add1 iteration))
-              ; 67
-              (step-5)))
-     ; 68
-     (return #t))))
+     (let/ec return
+       ; 50
+       (while (not (equal? start goal))
+              ; 51
+              (unless (compute-shortest-path) (return #f))
+              ; 52
+              (define openlist-incomplete? #f)
+              ; 53
+              (while (test-closed-list goal)
+                     ; 54
+                     (while (target-not-caught-and-target-is-on-shortest-path-from-start-to-goal)
+                            ; 55
+                            (follow-shortest-path-from-start-to-goal))
+                     ; 56
+                     (when (target-caught) (return #t))
+                     ; 57
+                     (set! previous-start start)
+                     ; 58
+                     (set! start current-hunter)
+                     ; 59
+                     (set! end current-target)
+                     ; 60
+                     (when (not (equal? previous-start start))
+                       ; 61
+                       (step-2)
+                       ; 62
+                       (set! anchor (parent-ref start))
+                       ; 63
+                       (step-3)
+                       ; 64
+                       (set! openlist-incomplete? #t)))
+              ; 65
+              (when openlist-incomplete?
+                ; 66
+                (set! iteration (add1 iteration))
+                ; 67
+                (step-5)))
+       ; 68
+       (return #t)))))
 
 (open-package FRA*-pkg)
 

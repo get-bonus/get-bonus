@@ -33,17 +33,35 @@
   (match-define (heap _ ht _) lh)
   (hash-has-key? ht v))
 
+(define (heap-remove! lh v)
+  (match-define (heap _ ht h) lh)
+  (hash-remove! ht v))
+
 (define (heap-remove-min! lh)
   (match-define (heap _ ht h) lh)
-  (define x (h:heap-min h))
-  (h:heap-remove-min! h)
-  (hash-remove! ht x)
-  x)
+  (define (pull)
+    (define x (h:heap-min h))
+    (h:heap-remove-min! h)
+    x)
+  (let loop ()
+    (define x (pull))
+    ; I'm not actually removing things with heap-remove-min!, instead I'm checking here
+    (if (hash-has-key? ht x)
+        (begin
+          (hash-remove! ht x)
+          x)
+        (loop))))
+
+(define (in-heap lh)
+  (match-define (heap _ ht h) lh)
+  (in-hash-keys ht))
 
 (provide
  heap?
  (rename-out [make-heap heap])
  heap-add!
  heap-member?
+ heap-remove!
  heap-remove-min!
- heap-empty?)
+ heap-empty?
+ in-heap)
