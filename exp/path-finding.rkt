@@ -29,6 +29,9 @@
 ; shortest-path : graph node node -> maybe direction
 ; Given a graph, finds the next node to move to along the shortest
 ; path from start to end
+
+; XXX This cache is bad because it does not "link up" with other
+;     found paths from before
 (define (A* g start goal)
   (match-define (graph cache node->neighbors estimate) g)
   (cond

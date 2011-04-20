@@ -231,7 +231,9 @@
        (match-define (cons x2 y2) n2)
        ; Note, we don't sqrt, because if we uniformly don't,
        ; it doesn't affect the heuristic
-       (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))
+       (* 2 ; 2 is a weight that makes the path as much as twice
+            ; as bad as optimal
+          (+ (sqr (- x2 x1)) (sqr (- y2 y1)))))))
   (define (find-direction p0 pn)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
     (match-define (psn* (app ->i xn) (app ->i yn)) pn)
@@ -280,8 +282,6 @@
           (match v
             [(ghost n p dir)
              (define target
-               (player-pos (hash-ref objs 'player))
-               #;
                (match k
                  ['chaser (player-pos (hash-ref objs 'player))]
                  ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
@@ -292,6 +292,8 @@
                (find-direction p target))
              (define np 
                (posn-in-dir p na)
+               ; XXX The directions aren't good enough to avoid
+               ;     the walls
                #;(try-direction p na))
              (define ndir (angle-direction na))
              (ghost n np ndir)]
