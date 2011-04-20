@@ -38,6 +38,9 @@
 (define center-pos
   (psn (/ width 2.) (/ height 2.)))
 
+; Much enligtenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
+
+; XXX compare with http://media.gameinternals.com/pacman-ghosts/tiled-playfield.png
 (define layout
   (vector  
    1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
@@ -89,6 +92,20 @@
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
 ; XXX bomb
+; XXX fruit appears after 70 dots and 170 dots
+; XXX each level has 240 dots and 4 powerups
+; XXX ghost can use the tunnels
+; XXX chase mode (target the pac), scatter mode (target a corner), frightened mode (run, go slower)
+; XXX decrease frightened time with time/score
+; XXX scatter for 7 secs, chase for 20 secs (two times, then scatter for 5, then chase forever)
+; XXX ghosts only decide what to do in the next tile (they never switch direction, except when initiating scatter where they must)
+; XXX ghosts only need to make a decision at intersections, they choose the option that brings them closer (by straight line) to their destination (but never go back)
+; XXX in some tiles, the ghosts don't go up (refer to game internals)
+; XXX scatter mode selects an inaccessible tile, which causes looping behavior
+; XXX chaser targets pacman's tile, starts outside house
+; XXX ambusher exits immediately, targets four tiles ahead of pacman
+; XXX fickle takes the vector from chaser to two tiles infront of pacman and doubles it to get the target, exits after 30 dots
+; XXX stupid leaves after 1/3 of the dots, if over 8 away from pacman, targets him, otherwise targets scatter tile
 
 (define-texture sprites-t "pacman.png")
 
@@ -202,6 +219,8 @@
 
 (require racket/package
          racket/set)
+; XXX Allow using warp tunnels with path finding by duplicating the
+;     map around the target and starting from all sides. (Check out wraparound maps and amitp's site)
 (define-package pathfinding (find-direction)
   (define (->i x)
     (inexact->exact
@@ -229,11 +248,9 @@
      (λ (n1 n2)
        (match-define (cons x1 y1) n1)
        (match-define (cons x2 y2) n2)
-       ; Note, we don't sqrt, because if we uniformly don't,
-       ; it doesn't affect the heuristic
        (* 2 ; 2 is a weight that makes the path as much as twice
             ; as bad as optimal
-          (+ (sqr (- x2 x1)) (sqr (- y2 y1)))))))
+          (sqrt (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))))
   (define (find-direction p0 pn)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
     (match-define (psn* (app ->i xn) (app ->i yn)) pn)

@@ -18,12 +18,11 @@
 
 ; A graph is a 
 ;  - cache : map start*goal -> (or/c node #f)
-;  - arrays : map goal -> (vector ...)
 ;  - node->neighbors : (node -> listof node)
 ;  - estimate : (node node -> integer)
-(struct graph (cache arrays node->neighbors estimate))
+(struct graph (cache node->neighbors estimate))
 (define (make-graph n->n e)
-  (graph (make-hash) (make-hash) n->n e))
+  (graph (make-hash) n->n e))
 
 ; A node is anything equal?-able
 
@@ -32,9 +31,10 @@
 ; path from start to end
 
 ; XXX This cache is bad because it does not "link up" with other
-;     found paths from before
+;     found paths from before. But it is not obvious how to do it correctly
+; XXX Collect performance numbers
 (define (A* g start goal)
-  (match-define (graph cache arrays node->neighbors estimate) g)
+  (match-define (graph cache node->neighbors estimate) g)
   (cond
     [(hash-ref cache (cons start goal) #f)
      => (λ (ans) ans)]
@@ -44,20 +44,10 @@
          (hash-set! cache (cons start goal) goal)
          (return goal))
        
-       ; These data structures are always the same for the
-       ; same goal, so we share them across iterations.
-       (match-define
-        (vector g-score h-score f-score
-                closed-set)
-        
-        #;(vector (make-hash) (make-hash) (make-hash)
-                (make-hash))
-        
-        (hash-ref! 
-         arrays goal
-         (λ ()
-           (vector (make-hash) (make-hash) (make-hash)
-                   (make-hash)))))
+       (define-values
+        (g-score h-score f-score closed-set)
+        (values (make-hash) (make-hash) (make-hash)
+                (make-hash)))
        
        ; XXX Is it safe that this can change after
        ;     the insertion? Can it?
@@ -71,15 +61,13 @@
                  (make-heap f-score-<=)
                  (make-hash)))
        
-       ; 'start' must not be in the structure (accurately)
-       ; because it was not in the cache, ie was not
-       ; previously in a shortest path
        (hash-set! g-score start 0)
        (hash-set! h-score start (estimate start goal))
        (hash-set! f-score start (hash-ref h-score start))       
        (hash-set! open-set start #t)
        (heap-add! open-queue start)
        
+       ; XXX Actually, we learned a lot more because every sub-path is a shortest path
        (define (reconstruct current-node)
          (define next-node (hash-ref came-from current-node #f))
          (if next-node
@@ -103,10 +91,7 @@
           (when (not (hash-has-key? closed-set y))
             (define tentative-g-score 
               (add1 
-               (hash-ref
-                g-score x
-                (λ ()
-                  (error 'g-score "No g-score for x = ~a" x)))))
+               (hash-ref g-score x)))
             (define tentative-is-better? #t)
             (define add-to-open-set? #f)
             (cond
@@ -114,10 +99,7 @@
                (set! add-to-open-set? #t)
                (set! tentative-is-better? #t)]
               [(< tentative-g-score
-                  (hash-ref 
-                   g-score y
-                   (λ ()
-                     (error 'g-score "No g-score for y = ~a" y))))
+                  (hash-ref g-score y))
                (set! tentative-is-better? #t)]
               [else
                (set! tentative-is-better? #f)])
@@ -149,6 +131,11 @@
   (-> graph? any/c any/c
       (or/c #f any/c))])
 
+; XXX I should use manhatten distance, because only 4-way movement is allowed
+; XXX Add a tie-breaker like (* (h x) (+ 1 p)) where p = (/ minimum-cost max-path-len)
+; XXX Get the heap to be last-in-first-out
+; XXX look at AlphA*
+
 ; A simple macro for encoding simple grid graphs
 (define-syntax simple-graph
   (syntax-rules ()
@@ -178,9 +165,8 @@
    (λ (n1 n2)
      (match-define (cons x1 y1) n1)
      (match-define (cons x2 y2) n2)
-     ; Note, we don't sqrt, because if we uniformly don't,
-     ; it doesn't affect the heuristic
-     (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))
+     (sqrt
+      (+ (sqr (- x2 x1)) (sqr (- y2 y1)))))))
 
 (test
  (let ()
@@ -239,6 +225,9 @@
     (shortest-path g (cons 1 1) (cons 3 1)) => (cons 2 1)
     (shortest-path g (cons 2 1) (cons 3 1)) => (cons 3 1)
     (shortest-path g (cons 3 1) (cons 3 1)) => (cons 3 1)
+    
+    ; XXX Add some more tests for the 3,1 goal from all around the 
+    ;     map
     
     (shortest-path g (cons 1 1) (cons 8 1)) => (cons 2 1)
     (shortest-path g (cons 2 1) (cons 8 1)) => (cons 3 1)
