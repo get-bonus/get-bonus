@@ -141,7 +141,7 @@
 
 ; XXX look at AlphA*
 ; XXX look at http://webdocs.cs.ualberta.ca/~games/pathfind/publications/cig2005.pdf
-; XXX look at http://idm-lab.org/bib/abstracts/Koen02g.html
+; XXX look at http://idm-lab.org/bib/abstracts/Koen02g.html (this is for changing maps)
 ; XXX look at http://idm-lab.org/bib/abstracts/Koen09i.html
 
 (define (manhattan-distance n1 n2)
