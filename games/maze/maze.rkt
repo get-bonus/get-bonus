@@ -33,48 +33,47 @@
 (define-syntax-rule (define-texture id f)
   (define id (gl:path->texture (build-path resource-path f))))
              
-(define width 29)
-(define height 32)
+(define width 28)
+(define height 31)
 (define center-pos
   (psn (/ width 2.) (/ height 2.)))
 
 ; Much enligtenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
 
-; XXX compare with http://media.gameinternals.com/pacman-ghosts/tiled-playfield.png
+; Based on http://media.gameinternals.com/pacman-ghosts/tiled-playfield.png
 (define layout
   (vector  
-   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-   1 0 0 1 1 1 0 0 1 1 1 1 0 0 1
-   1 0 0 1 1 1 0 0 1 1 1 1 0 0 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-   1 0 0 1 1 1 0 0 1 0 0 1 1 1 1
-   1 0 0 0 0 0 0 0 1 0 0 0 0 0 1
-   1 0 0 0 0 0 0 0 1 0 0 0 0 0 1
-   1 1 1 1 1 1 0 0 1 1 1 1 0 0 1
-   1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
-   1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
-   1 1 1 1 1 1 0 0 1 0 0 1 1 2 2 ; The gate
-   0 0 0 0 0 0 0 0 0 0 0 1 3 3 3 ; The jail
-   0 0 0 0 0 0 0 0 0 0 0 1 3 3 3
-   1 1 1 1 1 1 0 0 1 0 0 1 1 1 1
-   1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
-   1 1 1 1 1 1 0 0 1 0 0 0 0 0 0
-   1 1 1 1 1 1 0 0 1 0 0 1 1 1 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-   1 0 0 1 1 1 0 0 1 1 1 1 0 0 1
-   1 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-   1 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-   1 1 1 0 0 1 0 0 1 0 0 1 1 1 1
-   1 0 0 0 0 0 0 0 1 0 0 0 0 0 1
-   1 0 0 0 0 0 0 0 1 0 0 0 0 0 1
-   1 0 0 1 1 1 1 1 1 1 1 1 0 0 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1))
+   1 1 1 1 1 1 1 1 1 1 1 1 1 1
+   1 0 0 0 0 0 0 0 0 0 0 0 0 1
+   1 0 1 1 1 1 0 1 1 1 1 1 0 1
+   1 0 1 1 1 1 0 1 1 1 1 1 0 1
+   1 0 1 1 1 1 0 1 1 1 1 1 0 1
+   1 0 0 0 0 0 0 0 0 0 0 0 0 0
+   1 0 1 1 1 1 0 1 1 0 1 1 1 1
+   1 0 1 1 1 1 0 1 1 0 1 1 1 1
+   1 0 0 0 0 0 0 1 1 0 0 0 0 1
+   1 1 1 1 1 1 0 1 1 1 1 1 0 1
+   1 1 1 1 1 1 0 1 1 1 1 1 0 1
+   1 1 1 1 1 1 0 1 1 0 0 0 0 0
+   1 1 1 1 1 1 0 1 1 0 1 1 1 2 ; Gate
+   1 1 1 1 1 1 0 1 1 0 1 3 3 3 ; Jail
+   0 0 0 0 0 0 0 0 0 0 1 3 3 3
+   1 1 1 1 1 1 0 1 1 0 1 3 3 3
+   1 1 1 1 1 1 0 1 1 0 1 1 1 1
+   1 1 1 1 1 1 0 1 1 0 0 0 0 0
+   1 1 1 1 1 1 0 1 1 0 1 1 1 1
+   1 1 1 1 1 1 0 1 1 0 1 1 1 1
+   1 0 0 0 0 0 0 0 0 0 0 0 0 1
+   1 0 1 1 1 1 0 1 1 1 1 1 0 1
+   1 0 1 1 1 1 0 1 1 1 1 1 0 1
+   1 0 0 0 1 1 0 0 0 0 0 0 0 0
+   1 1 1 0 1 1 0 1 1 0 1 1 1 1
+   1 1 1 0 1 1 0 1 1 0 1 1 1 1
+   1 0 0 0 0 0 0 1 1 0 0 0 0 1
+   1 0 1 1 1 1 1 1 1 1 1 1 0 1
+   1 0 1 1 1 1 1 1 1 1 1 1 0 1
+   1 0 0 0 0 0 0 0 0 0 0 0 0 0
+   1 1 1 1 1 1 1 1 1 1 1 1 1 1))
 
 ; XXX make layouts widescreen (56 width?)
 ; XXX randomly generate layouts
@@ -123,7 +122,7 @@
    -1 -1
    (gl:texture/px 
     sprites-t
-    2 2
+    1 1
     (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 dir-n))))
     (+ 125 (* 18 n))
     14 12)))
@@ -132,19 +131,19 @@
   (gl:translate 
    -1 -1
    (gl:texture/px sprites-t
-                  2 2
+                  1 1
                   (+ 3 (* 15 (rate 3 10 n))) 90
                   14 14)))
-(define player-r .99)
+(define player-r .5)
 
 (define mid-point 
-  (floor (/ width 2)))
+  (/ width 2))
 (define (layout-ref r c)
   (define vc
-    (if (c . <= . mid-point)
+    (if (c . < . mid-point)
         c
         (- width c 1)))
-  (vector-ref layout (+ (* r (add1 mid-point)) vc)))
+  (vector-ref layout (+ (* r  mid-point) vc)))
 (define (r->y r)
   (- height r 1))
 (define (y->r y)
@@ -167,9 +166,9 @@
     (define x c)
     (define y (r->y r))
     (gl:translate 
-     x y
+     (+ x .5) (+ y .5)
      (if (= 1 (layout-ref r c))
-         (gl:rectangle 1. 1.)
+         (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
          gl:blank)))))
 (define map-space
   (for*/fold ([s (cd:space width height 1. 1.)])
@@ -253,7 +252,8 @@
   (define (find-direction p0 pn)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
     (match-define (psn* (app ->i xn) (app ->i yn)) pn)
-    (match
+    pi
+    #;(match
         (shortest-path layout-graph (cons x0 y0) (cons xn yn))
       [(cons x1 y1)
        (define p1
@@ -283,7 +283,7 @@
              'ambusher (ghost 1 jail-pos 'left)
              'fickle (ghost 2 (- jail-pos 1.5) 'up)
              'stupid (ghost 3 (+ jail-pos 1.5) 'down)
-             'player (player (psn 14.5 8.) (* .5 pi) (* .5 pi))))
+             'player (player (psn 13.5 8.) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
    #:tick
@@ -298,6 +298,8 @@
           (match v
             [(ghost n p dir)
              (define target
+               (player-pos (hash-ref objs 'player))
+               #;
                (match k
                  ['chaser (player-pos (hash-ref objs 'player))]
                  ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
