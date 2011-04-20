@@ -30,8 +30,6 @@
 ; Given a graph, finds the next node to move to along the shortest
 ; path from start to end
 
-; XXX This cache is bad because it does not "link up" with other
-;     found paths from before. But it is not obvious how to do it correctly
 ; XXX Collect performance numbers
 (define (A* g start goal)
   (match-define (graph cache node->neighbors estimate) g)
@@ -40,8 +38,8 @@
      => (λ (ans) ans)]
     [else
      (let/ec return    
+       (hash-set! cache (cons goal goal) goal)
        (when (equal? start goal)
-         (hash-set! cache (cons start goal) goal)
          (return goal))
        
        (define-values
@@ -92,8 +90,9 @@
         (define x (heap-min open-queue))
         (heap-remove-min! open-queue)
         (hash-remove! open-set x)
-        (when (equal? x goal)
-          (define last-node (reconstruct goal empty))
+        ; If it is in the cache, then we know that there is already a shortest path found.
+        (when (hash-has-key? cache (cons x goal)) #;(equal? x goal)
+          (define last-node (reconstruct x empty))
           (return last-node))
         (hash-set! closed-set x #t)
         (for ([y (in-list (node->neighbors x))])
