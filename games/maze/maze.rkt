@@ -200,10 +200,6 @@
 (define speed
   (* 5. RATE))
 
-(define left pi)
-(define right 0)
-(define up (* pi 1/2))
-(define down (* pi 3/2))
 (require racket/package
          racket/set)
 (define-package pathfinding (find-direction)
@@ -211,67 +207,44 @@
     (inexact->exact
      (round x)
      #;(floor x)))
+  (define (xy-okay? nx ny)
+    (and
+     (<= 0 nx (sub1 width))
+     (<= 0 ny (sub1 height))
+     (not (= 1 (layout-ref/xy nx ny)))))
   (define layout-graph
     (graph
-     (λ (n dir)
+     (λ (n)
        (match-define (cons x y) n)
-       (define-values (nx ny)
-         (match dir
-           ['left (values (sub1 x) y)]
-           ['right (values (add1 x) y)]
-           ['up (values x (add1 y))]
-           ['down (values x (sub1 y))]
-           [_ (error 'node-in-dir "Invalid direction")]))
-       (if (and
-            (<= 0 nx (sub1 width))
-            (<= 0 ny (sub1 height))
-            (not (= 1 (layout-ref/xy nx ny))))
-           (cons nx ny)
-           #f))
+       (define-syntax-rule
+         (try [nx* ny*] ...)
+         (append 
+          (let ([nx nx*] [ny ny*])
+            (if (xy-okay? nx ny)
+                (list (cons nx ny))
+                empty))
+          ...))
+       (try [(sub1 x) y] [(add1 x) y]
+            [x (sub1 y)] [x (add1 y)]))
      (λ (n1 n2)
        (match-define (cons x1 y1) n1)
        (match-define (cons x2 y2) n2)
        ; Note, we don't sqrt, because if we uniformly don't,
        ; it doesn't affect the heuristic
        (+ (sqr (- x2 x1)) (sqr (- y2 y1))))))
-  (define (find-direction p0 p1)
+  (define (find-direction p0 pn)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
-    (match-define (psn* (app ->i x1) (app ->i y1)) p1)
-    (match 
-        (shortest-path layout-graph (cons x0 y0) (cons x1 y1))
-      ['left left]
-      ['right right]
-      ['up up]
-      ['down down]
-      ; XXX
-      [#f left])))
+    (match-define (psn* (app ->i xn) (app ->i yn)) pn)
+    (match
+        (shortest-path layout-graph (cons x0 y0) (cons xn yn))
+      [(cons x1 y1)
+       (define p1
+         (psn (exact->inexact x1) (exact->inexact y1)))
+       (angle (- p1 p0))]
+      [#f
+       ; XXX
+       pi])))
 (open-package pathfinding)
-
-#;(test
- (for ([i (in-range 25)])
-   (let ()
-     (define x0 (exact->inexact (random width)))
-     (define y0 (exact->inexact (random height)))
-     (unless (= 1 (layout-ref/xy (inexact->exact x0) (inexact->exact y0)))
-       (define x1 (exact->inexact (random width)))
-       (define y1 (exact->inexact (random height)))
-       (test #:failure-prefix (format "~a,~a -> ~a,~a" x0 y0 x1 y1)
-             (if (= 1 (layout-ref/xy (inexact->exact x1) (inexact->exact y1)))
-                 (test
-                  (find-direction (psn x0 y0) (psn x1 y1)) =>
-                  #f)
-                 (test
-                  (find-direction (psn x0 y0) (psn x1 y1))))))))
- (find-direction (psn 14. 17.) (psn 16. 8.)) => right
- (find-direction (psn 15. 17.) (psn 15. 8.)) => up
- (find-direction (psn 14. 17.) (psn 14. 8.)) => right
- (find-direction (psn 15. 18.) (psn 17. 8.)) => left
- (find-direction (psn 2. 1.) (psn 3. 1.)) => right
- (find-direction (psn 2. 1.) (psn 4. 1.)) => right
- (find-direction (psn 2. 1.) (psn 5. 1.)) => right
- (find-direction (psn 3. 1.) (psn 2. 1.)) => left
- (find-direction (psn 2. 1.) (psn 2. 2.)) => up
- (find-direction (psn 2. 2.) (psn 2. 1.)) => down)
 
 (define (posn-in-dir p mdir)
   (if mdir
@@ -317,7 +290,9 @@
                  ['stupid (psn (* (random) width) (* (random) height))]))
              (define na
                (find-direction p target))
-             (define np (try-direction p na))
+             (define np 
+               (posn-in-dir p na)
+               #;(try-direction p na))
              (define ndir (angle-direction na))
              (ghost n np ndir)]
             [(player p dir next-dir)
