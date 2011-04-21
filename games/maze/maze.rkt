@@ -216,6 +216,11 @@
 (define speed
   (* 5. RATE))
 
+(define right 0)
+(define left pi)
+(define up (* .5 pi))
+(define down (* 1.5 pi))
+
 (require racket/package
          racket/set)
 ; XXX Allow using warp tunnels with path finding by duplicating the
@@ -223,8 +228,7 @@
 (define-package pathfinding (find-direction)
   (define (->i x)
     (inexact->exact
-     (round x)
-     #;(floor x)))
+     (floor x)))
   (define (xy-okay? nx ny)
     (and
      (<= 0 nx (sub1 width))
@@ -252,24 +256,52 @@
   (define (find-direction p0 pn)
     (match-define (psn* (app ->i x0) (app ->i y0)) p0)
     (match-define (psn* (app ->i xn) (app ->i yn)) pn)
-    pi
-    #;(match
+    (match
         (shortest-path layout-graph (cons x0 y0) (cons xn yn))
       [(cons x1 y1)
-       (define p1
-         (psn (exact->inexact x1) (exact->inexact y1)))
-       (angle (- p1 p0))]
+       (define dir
+         (- (psn (exact->inexact x1) (exact->inexact y1))
+            (psn (exact->inexact x0) (exact->inexact y0))))
+       (define (min* x y)
+         (min (abs x) y))
+       (match dir
+         [(app psn-y 0.)
+          (define dist-to-center
+            (- (+ .5 y0) (psn-y p0)))
+          (if (= 0. dist-to-center)
+              (make-polar speed 
+                          (if (> (psn-x dir) 0)
+                              right
+                              left))
+              (make-polar 
+               (min* dist-to-center speed)
+               (if (dist-to-center . < . 0)
+                   down
+                   up)))]
+         [(app psn-x 0.)
+          (define dist-to-center
+            (- (+ .5 x0) (psn-x p0)))
+          (if (= 0. dist-to-center)
+              (make-polar speed 
+                          (if (> (psn-y dir) 0)
+                              up
+                              down))
+              (make-polar 
+               (min* dist-to-center speed)
+               (if (dist-to-center . < . 0)
+                   left
+                   right)))])]
       [#f
-       ; XXX
-       pi])))
+       (psn 0. 0.)])))
 (open-package pathfinding)
 
 (define (posn-in-dir p mdir)
-  (if mdir
-      (wrap width height (+ p (make-polar speed mdir)))
-      p))
+  (posn->v p (make-polar speed mdir)))
+(define (posn->v p v)
+  (wrap width height (+ p v)))
 (define (try-direction p mdir)
-  (define mp (posn-in-dir p mdir))
+  (try-move p (posn-in-dir p mdir)))
+(define (try-move p mp)
   (if (sequence-not-empty? 
        (cd:space-collisions? 
         map-space (cd:aabb mp player-r player-r)))
@@ -281,8 +313,8 @@
             (hasheq
              'chaser (ghost 0 (+ jail-pos (psn 0. 3.)) 'right)
              'ambusher (ghost 1 jail-pos 'left)
-             'fickle (ghost 2 (- jail-pos 1.5) 'up)
-             'stupid (ghost 3 (+ jail-pos 1.5) 'down)
+             'fickle (ghost 2 (- jail-pos 1.) 'up)
+             'stupid (ghost 3 (+ jail-pos 1.) 'down)
              'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
@@ -299,21 +331,21 @@
             [(ghost n p dir)
              (define target
                (player-pos (hash-ref objs 'player))
-               #;
-               (match k
+               
+               #;(match k
                  ['chaser (player-pos (hash-ref objs 'player))]
                  ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
                  ['fickle (+ (player-pos (hash-ref objs 'player)) (psn 0. 1.))]
                  ; XXX keep target the same for a while
                  ['stupid (psn (* (random) width) (* (random) height))]))
-             (define na
+             (define mv
                (find-direction p target))
-             (define np 
-               (posn-in-dir p na)
-               ; XXX The directions aren't good enough to avoid
-               ;     the walls
-               #;(try-direction p na))
-             (define ndir (angle-direction na))
+             (define mp
+               (posn->v p mv))
+             (define np
+               (try-move p mp))
+             (define ndir 
+               (angle-direction (angle mv)))
              (ghost n np ndir)]
             [(player p dir next-dir)
              (define stick (controller-dpad c))
