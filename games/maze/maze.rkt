@@ -119,7 +119,7 @@
       ['up 2]
       ['down 3]))
   (gl:translate 
-   -1 -1
+   -.5 -.5
    (gl:texture/px 
     sprites-t
     1 1
@@ -129,12 +129,12 @@
   
 (define (player-animation n)
   (gl:translate 
-   -1 -1
+   -.5 -.5
    (gl:texture/px sprites-t
                   1 1
                   (+ 3 (* 15 (rate 3 10 n))) 90
                   14 14)))
-(define player-r .5)
+(define player-r .499)
 
 (define mid-point 
   (/ width 2))
@@ -207,7 +207,7 @@
     [else 'down]))
 
 (define jail-pos
-  (psn 14.5 17.))
+  (psn 14.5 16.5))
 
 (struct player (pos dir next-dir))
 (struct ghost (n pos dir))
@@ -283,7 +283,7 @@
              'ambusher (ghost 1 jail-pos 'left)
              'fickle (ghost 2 (- jail-pos 1.5) 'up)
              'stupid (ghost 3 (+ jail-pos 1.5) 'down)
-             'player (player (psn 13.5 8.) (* .5 pi) (* .5 pi))))
+             'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
    #:tick
@@ -359,7 +359,19 @@
              (psn-x p) (psn-y p)
              (gl:rotate
               (rad->deg dir)
-              (player-animation frame-n)))]))))
+              (player-animation frame-n)))]))
+        ; Draw horizontal lines
+        (gl:color
+         255 255 255 0
+         (gl:for/gl
+          ([y (in-range (add1 height))])
+          (gl:line 0 y width y))
+         (gl:for/gl
+          ([x (in-range (add1 width))])
+          (gl:line x 0 x height)))
+        
+        
+        ))
       empty))
    #:listener
    (λ (w) center-pos)
