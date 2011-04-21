@@ -15,7 +15,8 @@
          "../../exp/3s.rkt"
          "../../exp/psn.rkt"
          "../../exp/math.rkt"
-         "../../exp/path-finding.rkt"
+         (only-in "../../exp/path-finding.rkt"
+                  manhattan-distance)
          (prefix-in cd: 
                     (combine-in "../../exp/cd-narrow.rkt"
                                 "../../exp/cd-broad.rkt")))
@@ -39,48 +40,19 @@
   (psn (/ width 2.) (/ height 2.)))
 
 ; Much enligtenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
-
-; Based on http://media.gameinternals.com/pacman-ghosts/tiled-playfield.png
-(define layout
-  (vector  
-   1 1 1 1 1 1 1 1 1 1 1 1 1 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 1
-   1 0 1 1 1 1 0 1 1 1 1 1 0 1
-   1 0 1 1 1 1 0 1 1 1 1 1 0 1
-   1 0 1 1 1 1 0 1 1 1 1 1 0 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0
-   1 0 1 1 1 1 0 1 1 0 1 1 1 1
-   1 0 1 1 1 1 0 1 1 0 1 1 1 1
-   1 0 0 0 0 0 0 1 1 0 0 0 0 1
-   1 1 1 1 1 1 0 1 1 1 1 1 0 1
-   1 1 1 1 1 1 0 1 1 1 1 1 0 1
-   1 1 1 1 1 1 0 1 1 0 0 0 0 0
-   1 1 1 1 1 1 0 1 1 0 1 1 1 2 ; Gate
-   1 1 1 1 1 1 0 1 1 0 1 3 3 3 ; Jail
-   0 0 0 0 0 0 0 0 0 0 1 3 3 3
-   1 1 1 1 1 1 0 1 1 0 1 3 3 3
-   1 1 1 1 1 1 0 1 1 0 1 1 1 1
-   1 1 1 1 1 1 0 1 1 0 0 0 0 0
-   1 1 1 1 1 1 0 1 1 0 1 1 1 1
-   1 1 1 1 1 1 0 1 1 0 1 1 1 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 1
-   1 0 1 1 1 1 0 1 1 1 1 1 0 1
-   1 0 1 1 1 1 0 1 1 1 1 1 0 1
-   1 0 0 0 1 1 0 0 0 0 0 0 0 0
-   1 1 1 0 1 1 0 1 1 0 1 1 1 1
-   1 1 1 0 1 1 0 1 1 0 1 1 1 1
-   1 0 0 0 0 0 0 1 1 0 0 0 0 1
-   1 0 1 1 1 1 1 1 1 1 1 1 0 1
-   1 0 1 1 1 1 1 1 1 1 1 1 0 1
-   1 0 0 0 0 0 0 0 0 0 0 0 0 0
-   1 1 1 1 1 1 1 1 1 1 1 1 1 1))
+(define-runtime-path default-map "default.map")
+(match-define 
+ (list wall hall gate jail)
+ (bytes->list #"1023"))
+(define (path->layout p)
+  (apply bytes-append (rest (file->bytes-lines p))))
+(define layout (path->layout default-map))
 
 ; XXX make layouts widescreen (56 width?)
 ; XXX randomly generate layouts
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded tiles, etc
 ; XXX place pellets into the layout
-; XXX have ghosts move around (look at pac-man wiki page)
 ; XXX get points
 ; XXX kill ghosts / be killed
 ; XXX render ui
@@ -93,18 +65,15 @@
 ; XXX bomb
 ; XXX fruit appears after 70 dots and 170 dots
 ; XXX each level has 240 dots and 4 powerups
-; XXX ghost can use the tunnels
 ; XXX chase mode (target the pac), scatter mode (target a corner), frightened mode (run, go slower)
 ; XXX decrease frightened time with time/score
 ; XXX scatter for 7 secs, chase for 20 secs (two times, then scatter for 5, then chase forever)
-; XXX ghosts only decide what to do in the next tile (they never switch direction, except when initiating scatter where they must)
-; XXX ghosts only need to make a decision at intersections, they choose the option that brings them closer (by straight line) to their destination (but never go back)
-; XXX in some tiles, the ghosts don't go up (refer to game internals)
+; XXX change directions when entering scatter mode
 ; XXX scatter mode selects an inaccessible tile, which causes looping behavior
-; XXX chaser targets pacman's tile, starts outside house
-; XXX ambusher exits immediately, targets four tiles ahead of pacman
-; XXX fickle takes the vector from chaser to two tiles infront of pacman and doubles it to get the target, exits after 30 dots
-; XXX stupid leaves after 1/3 of the dots, if over 8 away from pacman, targets him, otherwise targets scatter tile
+; XXX chaser starts outside house
+; XXX ambusher exits immediately
+; XXX fickle exits after 30 dots
+; XXX stupid leaves after 1/3 of the dots
 
 (define-texture sprites-t "pacman.png")
 
@@ -143,7 +112,7 @@
     (if (c . < . mid-point)
         c
         (- width c 1)))
-  (vector-ref layout (+ (* r  mid-point) vc)))
+  (bytes-ref layout (+ (* r  mid-point) vc)))
 (define (r->y r)
   (- height r 1))
 (define (y->r y)
@@ -167,7 +136,7 @@
     (define y (r->y r))
     (gl:translate 
      (+ x .5) (+ y .5)
-     (if (= 1 (layout-ref r c))
+     (if (equal? wall (layout-ref r c))
          (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
          gl:blank)))))
 (define map-space
@@ -178,7 +147,7 @@
     (define y (- height r 1))
     (define cx (+ x .5))
     (define cy (+ y .5))
-    (if (= 1 (layout-ref r c))
+    (if (equal? wall (layout-ref r c))
         (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
         s)))
 
@@ -186,13 +155,14 @@
   (cond
     [(n . < . 0)
      (+ top n)]
-    [(top . < . n)
+    [(top . <= . n)
      (- n top)]
     [else
      n]))
 (test
  (wrap-at width 5) => 5
  (wrap-at width -1) => (- width 1)
+ (wrap-at width width) => 0
  (wrap-at width (+ width 1)) => 1)
 
 (define (wrap w h p)
@@ -210,7 +180,7 @@
   (psn 14.5 16.5))
 
 (struct player (pos dir next-dir))
-(struct ghost (n pos dir))
+(struct ghost (n pos dir last-cell))
 (struct game-st (frame objs))
 
 (define speed
@@ -221,80 +191,98 @@
 (define up (* .5 pi))
 (define down (* 1.5 pi))
 
-(require racket/package
-         racket/set)
-; XXX Allow using warp tunnels with path finding by duplicating the
-;     map around the target and starting from all sides. (Check out wraparound maps and amitp's site)
-(define-package pathfinding (find-direction)
-  (define (->i x)
-    (inexact->exact
-     (floor x)))
-  (define (xy-okay? nx ny)
-    (and
-     (<= 0 nx (sub1 width))
-     (<= 0 ny (sub1 height))
-     (not (= 1 (layout-ref/xy nx ny)))))
-  (define layout-graph
-    (graph
-     (λ (n)
-       (match-define (cons x y) n)
-       (define-syntax-rule
-         (try [nx* ny*] ...)
-         (append 
-          (let ([nx nx*] [ny ny*])
-            (if (xy-okay? nx ny)
-                (list (cons nx ny))
-                empty))
-          ...))
-     (try #;left [(sub1 x) y]
-          #;top [x (add1 y)]
-          #;right [(add1 x) y]
-          #;down [x (sub1 y)]))
-     (tie-breaker
-      manhattan-distance
-      (max width height))))
-  (define (find-direction p0 pn)
-    (match-define (psn* (app ->i x0) (app ->i y0)) p0)
-    (match-define (psn* (app ->i xn) (app ->i yn)) pn)
-    (match
-        (shortest-path layout-graph (cons x0 y0) (cons xn yn))
-      [(cons x1 y1)
-       (define dir
-         (- (psn (exact->inexact x1) (exact->inexact y1))
-            (psn (exact->inexact x0) (exact->inexact y0))))
-       (define (min* x y)
-         (min (abs x) y))
-       (match dir
-         [(app psn-y 0.)
-          (define dist-to-center
-            (- (+ .5 y0) (psn-y p0)))
-          (if (= 0. dist-to-center)
-              (make-polar speed 
-                          (if (> (psn-x dir) 0)
-                              right
-                              left))
-              (make-polar 
-               (min* dist-to-center speed)
-               (if (dist-to-center . < . 0)
-                   down
-                   up)))]
-         [(app psn-x 0.)
-          (define dist-to-center
-            (- (+ .5 x0) (psn-x p0)))
-          (if (= 0. dist-to-center)
-              (make-polar speed 
-                          (if (> (psn-y dir) 0)
-                              up
-                              down))
-              (make-polar 
-               (min* dist-to-center speed)
-               (if (dist-to-center . < . 0)
-                   left
-                   right)))])]
-      [#f
-       ; XXX Do something!
-       (psn 0. 0.)])))
-(open-package pathfinding)
+(define (->i x)
+  (inexact->exact
+   (floor x)))
+(define (pos->cell p)
+  (match-define (psn* (app ->i x0) (app ->i y0)) p)
+  (cons x0 y0))
+
+(test 
+ (pos->cell (psn 14.5 7.)) => (cons 14 7)
+ (pos->cell (psn 13.9 6.)) => (cons 13 6))
+
+(define reverse-direction
+  (match-lambda
+    ['left 'right]
+    ['right 'left]
+    ['up 'down]
+    ['down 'up]))
+
+(define (cell-neighbors/no-reverse c last-cell)
+  (match-define (cons x y) c)
+  (define-syntax-rule
+    (try [ndir nx* ny*]
+         ...)
+    (append
+     (let* ([nx (wrap-at width nx*)]
+            [ny (wrap-at height ny*)]
+            [nc (cons nx* ny*)])
+     (if (or (equal? last-cell nc)
+             (not (= hall (layout-ref/xy nx ny))))
+         empty
+         (list nc)))
+     ...))
+  (try [left (sub1 x) y]
+       [up x (add1 y)]
+       [right (add1 x) y]
+       [down x (sub1 y)]))
+
+(test
+ (layout-ref/xy 2 1) => hall
+ (layout-ref/xy 1 1) => hall
+ (wrap-at width 28) => 0
+ (wrap-at height 16) => 16
+ (layout-ref/xy 0 16) => hall
+ (cell-neighbors/no-reverse (cons 27 16) (cons 26 16)) => (list (cons 28 16))
+ (cell-neighbors/no-reverse (cons 28 16) (cons 27 16)) => (list (cons 29 16))
+ (cell-neighbors/no-reverse (cons 0 16) (cons 1 16)) => (list (cons -1 16))
+ (cell-neighbors/no-reverse (cons 10 19) (cons 11 19)) => (list (cons 9 19))
+ (cell-neighbors/no-reverse (cons 9 19) (cons 10 19)) => (list (cons 9 18))
+ (cell-neighbors/no-reverse (cons 9 19) (cons 9 20)) => (list (cons 10 19) (cons 9 18))
+ (cell-neighbors/no-reverse (cons 1 1) (cons 2 1)) => (list (cons 1 2))
+ (cell-neighbors/no-reverse (cons 2 1) (cons 3 1)) => (list (cons 1 1)))
+
+(define (pos->cell-distance p c)
+  (manhattan-distance (pos->cell p) c))
+(define (pos->pos-distance p1 p2)
+  (pos->cell-distance p1 (pos->cell p2)))
+
+(define (movement-vector p0 c)
+  (match-define (psn* (app ->i x0) (app ->i y0)) p0)
+  (match-define (cons x1 y1) c)
+  (define dir
+    (- (psn (exact->inexact x1) (exact->inexact y1))
+       (psn (exact->inexact x0) (exact->inexact y0))))
+  (define (min* x y)
+    (min (abs x) y))
+  (match dir
+    [(app psn-y 0.)
+     (define dist-to-center
+       (- (+ .5 y0) (psn-y p0)))
+     (if (= 0. dist-to-center)
+         (make-polar speed 
+                     (if (> (psn-x dir) 0)
+                         right
+                         left))
+         (make-polar 
+          (min* dist-to-center speed)
+          (if (dist-to-center . < . 0)
+              down
+              up)))]
+    [(app psn-x 0.)
+     (define dist-to-center
+       (- (+ .5 x0) (psn-x p0)))
+     (if (= 0. dist-to-center)
+         (make-polar speed 
+                     (if (> (psn-y dir) 0)
+                         up
+                         down))
+         (make-polar 
+          (min* dist-to-center speed)
+          (if (dist-to-center . < . 0)
+              left
+              right)))]))
 
 (define (posn-in-dir p mdir)
   (posn->v p (make-polar speed mdir)))
@@ -309,13 +297,24 @@
       p
       mp))
 
+; Returns the first without calling the measure
+(define (argmin* m l)
+  (if (pair? (rest l))
+      (argmin m l)
+      (first l)))
+
+(define outside-jail
+  (+ jail-pos (psn 0. 3.)))
+(define outside-jail-right-of
+  (pos->cell
+   (+ outside-jail 1.)))
 (big-bang
    (game-st 0 
             (hasheq
-             'chaser (ghost 0 (+ jail-pos (psn 0. 3.)) 'right)
-             'ambusher (ghost 1 jail-pos 'left)
-             'fickle (ghost 2 (- jail-pos 1.) 'up)
-             'stupid (ghost 3 (+ jail-pos 1.) 'down)
+             'chaser (ghost 0 outside-jail 'left outside-jail-right-of)
+             'ambusher (ghost 1 outside-jail 'left outside-jail-right-of)
+             'fickle (ghost 2 outside-jail 'left outside-jail-right-of)
+             'stupid (ghost 3 outside-jail 'left outside-jail-right-of)
              'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
@@ -329,25 +328,45 @@
          (values
           k
           (match v
-            [(ghost n p dir)
+            [(ghost n p dir lc)
+             (define c (pos->cell p))
+             (define nps
+               (cell-neighbors/no-reverse c lc))
+             (define pp (player-pos (hash-ref objs 'player)))
              (define target
-               (player-pos (hash-ref objs 'player))
-               
-               #;(match k
-                 ['chaser (player-pos (hash-ref objs 'player))]
-                 ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
-                 ['fickle (+ (player-pos (hash-ref objs 'player)) (psn 0. 1.))]
-                 ; XXX keep target the same for a while
-                 ['stupid (psn (* (random) width) (* (random) height))]))
+               (match k
+                 ['chaser 
+                  pp]
+                 ['ambusher
+                  (+ pp
+                     (make-polar 4 (player-dir (hash-ref objs 'player))))]
+                 ['fickle
+                  (define v
+                    (- pp
+                       (ghost-pos (hash-ref objs 'ambusher))))
+                  (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
+                 ['stupid
+                  (if (<= (pos->pos-distance pp p) 8)
+                      ; XXX scatter tile
+                      (psn (* (random) width)
+                           (* (random) height))
+                      pp)]))
+             (define next-cell
+               (argmin* (curry pos->cell-distance target)
+                        nps))
              (define mv
-               (find-direction p target))
-             (define mp
-               (posn->v p mv))
+               (movement-vector p next-cell))
              (define np
-               (try-move p mp))
+               (posn->v p mv))
              (define ndir 
                (angle-direction (angle mv)))
-             (ghost n np ndir)]
+             (struct-copy ghost v
+                          [last-cell 
+                           (if (equal? c (pos->cell np))
+                               lc
+                               c)]
+                          [pos np]
+                          [dir ndir])]
             [(player p dir next-dir)
              (define stick (controller-dpad c))
              (define next-dir-n 
@@ -382,7 +401,7 @@
         (gl:for/gl
          ([v (in-hash-values objs:final)])
          (match v
-           [(ghost n p dir)
+           [(ghost n p dir _)
             ; XXX dead mode
             (gl:translate 
              (psn-x p) (psn-y p)
