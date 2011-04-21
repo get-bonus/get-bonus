@@ -348,7 +348,59 @@
      ; 68
      (error 'shortest-path "Got outside the loop somehow"))))
 
-(open-package FRA*-pkg)
+; Based on http://webdocs.cs.ualberta.ca/~games/pathfind/publications/cig2005.pdf (doesn't work)
+(define-package Fringe-Search-pkg 
+  (graph? make-graph shortest-path)
+  
+  (struct graph (n->n h))
+  (define make-graph graph)
+  
+  (define (shortest-path g start goal)
+    (match-define (graph succs estimate) g)
+    (define (h s) (estimate s goal))
+    (define F (list start))
+    (define C (make-hash))
+    (hash-set! C start (cons 0 start))
+    (define f-limit (h start))
+    (define found? #f)
+    (while 
+     (not (or found? (empty? F)))
+     (define f-min +inf.0)
+     (let/ec break
+       (let iterate ()
+         (let/ec continue
+           (define n (first F))
+           (match-define (cons g _) (hash-ref C n))
+           (define f (+ g (h n)))
+           (when (f . > . f-limit)
+             (set! f-min (min f f-min))
+             (continue))
+           (when (equal? n goal)
+             (set! found? #t)
+             (break))
+           (for ([s (in-list (succs n))])
+             (let/ec continue
+               (define g-s (add1 g))
+               (when (hash-has-key? C s)
+                 (match-define (cons gp _) (hash-ref C s))
+                 (when (g-s . >= . gp)
+                   (continue)))
+               (when (member s F)
+                 (set! F (remove s F)))
+               (set! F (list* n s (rest F)))
+               (hash-set! C s (cons g-s n))))
+           (set! F (rest F))
+           (unless (empty? F)
+             (iterate)))))
+     (set! f-limit f-min))
+    (and found?
+         (let loop ([c goal])
+           (match-define (cons _ n) (hash-ref C c))
+           (if (equal? n start)
+               c
+               (loop n))))))
+
+(open-package A*-pkg)
 
 (provide/contract
  [graph? contract?]
@@ -364,7 +416,6 @@
       (or/c #f any/c))])
 
 ; XXX look at AlphA*
-; XXX look at http://webdocs.cs.ualberta.ca/~games/pathfind/publications/cig2005.pdf
 
 (define (manhattan-distance n1 n2)
   (match-define (cons x1 y1) n1)
