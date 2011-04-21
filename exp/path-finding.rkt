@@ -133,6 +133,8 @@
   
   (define (main node->neighbors estimate)
     (define g (make-hash))
+    (define (g-ref v)
+      (hash-ref g v +inf.0))
     (define start 'start)
     (define goal 'goal)
     (define open 'open)
@@ -187,7 +189,7 @@
                (not (equal? (parent-ref s) #f)))))
     ; From 07
     (define (open-measure s)
-      (+ (hash-ref# g s)
+      (+ (g-ref s)
          (estimate s goal)))
     (define (compute-shortest-path)
       (let/ec return
@@ -204,9 +206,9 @@
                    ; 11
                    (initialize-cell sp)
                    ; 12
-                   (when ((hash-ref# g sp) . > . (add1 (hash-ref# g s)))
+                   (when ((g-ref sp) . > . (add1 (g-ref s)))
                      ; 13
-                     (hash-set! g sp (add1 (hash-ref# g s)))
+                     (hash-set! g sp (add1 (g-ref s)))
                      ; 14
                      (parent-set! sp s)
                      ; 15
@@ -222,8 +224,8 @@
         ; 18
         (for ([s (in-list (direction (node->neighbors cell) (parent-ref cell)))])
           ; 19
-          (when (and (equal? (hash-ref# g s)
-                             (add1 (hash-ref# g cell)))
+          (when (and (equal? (g-ref s)
+                             (add1 (g-ref cell)))
                      (test-closed-list s))
             ; 20
             (parent-set! s cell)
@@ -268,9 +270,9 @@
         (for ([sp (in-list (node->neighbors s))])
           ; 38
           (when (and (test-closed-list sp)
-                     ((hash-ref# g s) . > . (add1 (hash-ref# g sp))))
+                     ((g-ref s) . > . (add1 (g-ref sp))))
             ; 39
-            (hash-set! g s (add1 (hash-ref# g sp)))
+            (hash-set! g s (add1 (g-ref sp)))
             ; 40
             (parent-set! s sp)))))
     ; 42
@@ -346,7 +348,7 @@
      ; 68
      (error 'shortest-path "Got outside the loop somehow"))))
 
-(open-package A*-pkg)
+(open-package FRA*-pkg)
 
 (provide/contract
  [graph? contract?]

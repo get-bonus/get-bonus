@@ -54,7 +54,7 @@
 
 (define (in-heap lh)
   (match-define (heap _ ht h) lh)
-  (in-hash-keys ht))
+  (hash-keys ht))
 
 (provide
  heap?
