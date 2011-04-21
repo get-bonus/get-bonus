@@ -210,7 +210,7 @@
   (psn 14.5 16.5))
 
 (struct player (pos dir next-dir))
-(struct ghost (n p dir target to-target))
+(struct ghost (n pos dir))
 (struct game-st (frame objs))
 
 (define speed
@@ -309,20 +309,14 @@
       p
       mp))
 
-(define player-start
-  (psn 13.5 7.5))
 (big-bang
- (game-st 0 
-          (hasheq
-           'chaser (ghost 0 (+ jail-pos (psn 0. 3.)) 'right
-                          player-start 0)
-           'ambusher (ghost 1 jail-pos 'left
-                            player-start 15)
-           'fickle (ghost 2 (- jail-pos 1.) 'up
-                          player-start 30)
-           'stupid (ghost 3 (+ jail-pos 1.) 'down
-                          player-start 45)
-           'player (player player-start (* .5 pi) (* .5 pi))))
+   (game-st 0 
+            (hasheq
+             'chaser (ghost 0 (+ jail-pos (psn 0. 3.)) 'right)
+             'ambusher (ghost 1 jail-pos 'left)
+             'fickle (ghost 2 (- jail-pos 1.) 'up)
+             'stupid (ghost 3 (+ jail-pos 1.) 'down)
+             'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
    #:tick
@@ -330,37 +324,21 @@
      (match-define (cons c _) cs)
      (match-define (game-st frame objs) w)
      (define frame-n (add1 frame))
-     (define objs:post-thinking
+     (define objs:post-movement
        (for/hasheq ([(k v) (in-hash objs)])
          (values
           k
           (match v
-            [(ghost n p dir target to-target)
-             (if (zero? to-target)
-                 (struct-copy 
-                  ghost v
-                  [target 
-                   (match k
-                     ['chaser
-                      (player-pos (hash-ref objs 'player))]
-                     ['ambusher
-                      (- (player-pos (hash-ref objs 'player)) 1.)]
-                     ['fickle
-                      (+ (player-pos (hash-ref objs 'player)) (psn 0. 1.))]
-                     ; XXX keep target the same for a while
-                     ['stupid
-                      (psn (* (random) width) (* (random) height))])]
-                  [to-target 60])
-                 (struct-copy
-                  ghost v
-                  [to-target (sub1 to-target)]))]
-            [v v]))))
-     (define objs:post-movement
-       (for/hasheq ([(k v) (in-hash objs:post-thinking)])
-         (values
-          k
-          (match v
-            [(ghost n p dir target _)
+            [(ghost n p dir)
+             (define target
+               (player-pos (hash-ref objs 'player))
+               
+               #;(match k
+                 ['chaser (player-pos (hash-ref objs 'player))]
+                 ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
+                 ['fickle (+ (player-pos (hash-ref objs 'player)) (psn 0. 1.))]
+                 ; XXX keep target the same for a while
+                 ['stupid (psn (* (random) width) (* (random) height))]))
              (define mv
                (find-direction p target))
              (define mp
@@ -369,9 +347,7 @@
                (try-move p mp))
              (define ndir 
                (angle-direction (angle mv)))
-             (struct-copy ghost v
-                          [p np]
-                          [dir ndir])]
+             (ghost n np ndir)]
             [(player p dir next-dir)
              (define stick (controller-dpad c))
              (define next-dir-n 
@@ -406,7 +382,7 @@
         (gl:for/gl
          ([v (in-hash-values objs:final)])
          (match v
-           [(ghost n p dir _ _)
+           [(ghost n p dir)
             ; XXX dead mode
             (gl:translate 
              (psn-x p) (psn-y p)
