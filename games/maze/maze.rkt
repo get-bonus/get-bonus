@@ -393,18 +393,16 @@
              (gl:rotate
               (rad->deg dir)
               (player-animation frame-n)))]))
-        ; Draw horizontal lines
         (gl:color
          255 255 255 0
+         ; Draw horizontal lines
          (gl:for/gl
           ([y (in-range (add1 height))])
           (gl:line 0 y width y))
+         ; Draw vertical lines
          (gl:for/gl
           ([x (in-range (add1 width))])
-          (gl:line x 0 x height)))
-        
-        
-        ))
+          (gl:line x 0 x height)))))
       empty))
    #:listener
    (λ (w) center-pos)
