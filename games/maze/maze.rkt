@@ -320,7 +320,7 @@
    (/ width 2.)
    #:tick
    (λ (w cs)
-     (match-define (cons c _) cs)
+     (define c (last cs))
      (match-define (game-st frame objs) w)
      (define frame-n (add1 frame))
      (define objs:post-movement

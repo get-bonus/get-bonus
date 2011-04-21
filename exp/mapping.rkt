@@ -7,6 +7,11 @@
          "joystick.rkt"
          "mvector.rkt")
 
+(define (sensitivity d x)
+  (if ((abs x) . <= . d)
+      0.
+      x))
+
 ; XXX the joystick state should get the hid name from ddhid to use for this mapping
 ; XXX But also make it customizable
 (define (joystick-snapshot->controller-snapshot js)
@@ -14,8 +19,8 @@
     (define s (js))
     ; XXX Specialized for NES
     (controller
-     (psn (exact->inexact (mvector-ref (joystick-state-sticks s) 0 0 0))
-          (exact->inexact (mvector-ref (joystick-state-sticks s) 0 0 1)))
+     (psn (sensitivity 0.1 (exact->inexact (mvector-ref (joystick-state-sticks s) 0 0 0)))
+          (sensitivity 0.1 (exact->inexact (mvector-ref (joystick-state-sticks s) 0 0 1))))
      0.
      0.
      #t #t ; a b
