@@ -332,8 +332,8 @@
             [(ghost n p dir)
              (define target
                (player-pos (hash-ref objs 'player))
-               #;
-               (match k
+               
+               #;(match k
                  ['chaser (player-pos (hash-ref objs 'player))]
                  ['ambusher (- (player-pos (hash-ref objs 'player)) 1.)]
                  ['fickle (+ (player-pos (hash-ref objs 'player)) (psn 0. 1.))]

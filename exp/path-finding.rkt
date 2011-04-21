@@ -65,23 +65,44 @@
          (hash-set! f-score start (hash-ref h-score start))
          (heap-add! open-queue start)
          
-         (define (reconstruct current-node later-nodes)
+         (define (reverse-path current-node)
            (define next-node (hash-ref came-from current-node #f))
            (if next-node
-               (begin
-                 (for ([later-node (in-list later-nodes)])
-                   (hash-ref! cache (cons next-node later-node) current-node))
-                 (if (equal? next-node start)
-                     current-node
-                     (reconstruct next-node (cons current-node later-nodes))))
-               current-node))
+               (cons current-node (reverse-path next-node))
+               (list current-node)))
+         (define (cache-path! r-path)
+           (define (loop later-nodes nodes)
+             (match nodes
+               [(cons this-node earlier-nodes)
+                ; If you are going from the next earlier node
+                ; to any later node, then go through this-node
+                (match earlier-nodes
+                  [(cons next-node _)
+                   (for ([later (in-list later-nodes)])
+                     (hash-set! cache (cons next-node later)
+                                this-node))]
+                  [_ (void)])
+                ; If you are going from the last later node
+                ; to any earlier node, then go through this-node
+                (match later-nodes
+                  [(cons last-node _)
+                   (for ([earlier (in-list earlier-nodes)])
+                     (hash-set! cache (cons last-node earlier)
+                                this-node))]
+                  [_ (void)])
+                (loop (cons this-node later-nodes)
+                      earlier-nodes)]
+               [_
+                (second later-nodes)]))
+           (loop empty r-path))
          
          (while 
           (not (heap-empty? open-queue))
           (define x (heap-remove-min! open-queue))
           ; If it is in the cache, then we know that there is already a shortest path found.
-          (when (hash-has-key? cache (cons x goal)) #;(equal? x goal)
-            (define last-node (reconstruct x empty))
+          (when (hash-has-key? cache (cons x goal))
+            (define last-node 
+              (cache-path! (reverse-path x)))
             (return last-node))
           (hash-set! closed-set x #t)
           (for ([y (in-list (node->neighbors x))])
