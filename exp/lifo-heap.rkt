@@ -6,6 +6,8 @@
          (prefix-in h: data/heap)
          tests/eli-tester)
 
+; XXX Implement my own typed lifo fib heap: https://github.com/evansenter/f_heap/blob/master/lib/f_heap.rb
+
 (struct heap (c ht h) #:mutable)
 
 (define (heap-empty? h)

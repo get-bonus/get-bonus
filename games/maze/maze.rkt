@@ -50,7 +50,7 @@
 
 ; XXX make layouts widescreen (56 width?)
 ; XXX ghosts/pacman are the wrong size
-; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges
+; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded tiles, etc
 ; XXX place pellets into the layout
