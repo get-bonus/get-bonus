@@ -18,6 +18,14 @@
                            mt-fvector)
            mt-fvector))
 
+(define (fmatrix-set f r c v)
+  (match-define (fmatrix fv mt-fvector) f)
+  (fmatrix (fvector-update fv r
+                           (λ (rv)
+                             (fvector-set rv c v))
+                           mt-fvector)
+           mt-fvector))
+
 (define (fmatrix-ref f r c a)
   (match-define (fmatrix fv mt-fvector) f)
   (fvector-ref (fvector-ref fv r mt-fvector) c a))
@@ -36,4 +44,9 @@
   (-> fmatrix?
       exact-nonnegative-integer? exact-nonnegative-integer?
       any/c
-      any/c)])
+      any/c)]
+ [fmatrix-set
+  (-> fmatrix?
+      exact-nonnegative-integer? exact-nonnegative-integer?
+      any/c
+      fmatrix?)])

@@ -1,5 +1,7 @@
 #lang racket/base
 (require racket/contract
+         racket/draw
+         racket/class
          "psn.rkt"
          "gl.rkt")
 
@@ -19,7 +21,22 @@
            (/ tx1 atw) (/ ty1 ath)
            (/ tw atw) (/ th ath)))
 
+(define (color/% c . cs)
+  (apply color
+         (/ (send c red) 255)
+         (/ (send c green) 255)
+         (/ (send c blue) 255)
+         (- 1. (send c alpha)) cs))
+(define (background/% c . cs)
+  (apply background 
+         (/ (send c red) 255)
+         (/ (send c green) 255)
+         (/ (send c blue) 255)
+         (- 1. (send c alpha)) cs))
+
 (provide/contract
+ [color/% (((is-a?/c color%)) () #:rest (listof cmd?) . ->* . cmd?)]
+ [background/% (((is-a?/c color%)) () #:rest (listof cmd?) . ->* . cmd?)]
  [center-texture-at
   (psn? texture? . -> . cmd?)]
  [texture/px 

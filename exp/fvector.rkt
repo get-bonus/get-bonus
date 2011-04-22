@@ -21,6 +21,10 @@
   (match-define (fvector s) f)
   (or (skal:list-ref s n) a))
 
+(define (fvector-set f n v)
+  (match-define (fvector s) f)
+  (fvector (skal:list-set s n v)))
+
 (test
  (fvector-ref (make-fvector 4) 1 #f) => #f
  (fvector-ref (fvector-update (make-fvector 4) 1 add1 0) 1 #f) => 1)
@@ -39,4 +43,9 @@
   (-> fvector?
       exact-nonnegative-integer?
       any/c
-      any/c)])
+      any/c)]
+ [fvector-set
+  (-> fvector?
+      exact-nonnegative-integer?
+      any/c
+      fvector?)])

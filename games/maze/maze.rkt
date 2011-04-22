@@ -15,6 +15,7 @@
          "../../exp/3s.rkt"
          "../../exp/psn.rkt"
          "../../exp/math.rkt"
+         "../../exp/fmatrix.rkt"
          (only-in "../../exp/path-finding.rkt"
                   manhattan-distance)
          (prefix-in cd: 
@@ -39,7 +40,7 @@
 (define center-pos
   (psn (/ width 2.) (/ height 2.)))
 
-; Much enligtenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
+; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
 (define-runtime-path default-map "default.map")
 (match-define 
  (list wall hall gate jail)
@@ -52,9 +53,8 @@
 ; XXX ghosts/pacman are the wrong size
 ; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
-; XXX turn the layout into a nice graphic with rounded tiles, etc
-; XXX place pellets into the layout
-; XXX get points
+; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
+; XXX show points
 ; XXX kill ghosts / be killed
 ; XXX render ui
 ; XXX increase speed with time/score
@@ -102,6 +102,11 @@
                   (+ 3 (* 15 (rate 3 10 n))) 90
                   14 14)))
 (define player-r .499)
+
+(define pellet-r (/ player-r 6))
+(define pellet-img
+  (gl:scale pellet-r pellet-r
+            (gl:circle)))
 
 (define mid-point 
   (/ width 2))
@@ -176,9 +181,6 @@
 
 (define jail-pos
   (psn 14.5 16.5))
-
-(struct player (pos dir next-dir))
-(struct game-st (frame objs))
 
 (define speed
   (* 5. RATE))
@@ -308,6 +310,40 @@
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
+(struct static (count fmatrix display))
+(define (layout->static-objs layout)
+  (define-values
+    (count fm)
+    (for*/fold ([ct 0] [fm (fmatrix width height)])
+      ([x (in-range width)]
+       [y (in-range height)])
+      ; XXX Don't put them close to the ghost house?
+      (if (= hall (layout-ref/xy x y))
+          (values (add1 ct) (fmatrix-set fm x y 'pellet))
+          (values ct fm))))
+  (static count fm (static-fm->display fm)))
+(define (static-fm->display fm)
+  (gl:color/% 
+   (make-object color% 255 161 69)
+   (gl:for*/gl      
+    ([x (in-range width)]
+     [y (in-range height)])
+    (match (fmatrix-ref fm x y #f)
+      ['pellet
+       (gl:translate (+ x .5) (+ y .5) pellet-img)]
+      [#f
+       gl:blank]))))
+(define (static-ref st x y)
+  (fmatrix-ref (static-fmatrix st) x y #f))
+(define (static-chomp st x y)
+  (match-define (static c fm _) st)
+  (define fm-n
+    (fmatrix-set fm x y #f))
+  (static (sub1 c) fm-n 
+          (static-fm->display fm-n)))
+
+(struct game-st (frame score static-objs dyn-objs))
+(struct player (pos dir next-dir))
 (struct ghost (n pos target dir last-cell scatter? frames-to-switch))
 (define (make-ghost n)
   (ghost n outside-jail #f 'left outside-jail-right-of #t TIME-TO-SCATTER))
@@ -317,8 +353,10 @@
   (psn (* (random) width)
        (* (random) height)))
 
+(define pellet-pts 10)
+
 (big-bang
-   (game-st 0 
+   (game-st 0 0 (layout->static-objs layout)
             (hasheq
              'chaser (make-ghost 0)
              'ambusher (make-ghost 1)
@@ -330,10 +368,10 @@
    #:tick
    (λ (w cs)
      (define c (last cs))
-     (match-define (game-st frame objs) w)
+     (match-define (game-st frame score st dyn-objs) w)
      (define frame-n (add1 frame))
-     (define objs:post-movement
-       (for/hasheq ([(k v) (in-hash objs)])
+     (define dyn-objs:post-movement
+       (for/hasheq ([(k v) (in-hash dyn-objs)])
          (values
           k
           (match v
@@ -360,7 +398,7 @@
                (if (not same-mode?)
                    (list* lc nps*)
                    nps*))
-             (define pp (player-pos (hash-ref objs 'player)))
+             (define pp (player-pos (hash-ref dyn-objs 'player)))
              (define target
                (if (and l-target same-mode?
                         (if (not n-scatter?) (= (length nps) 1) #t))
@@ -372,11 +410,11 @@
                           pp]
                          ['ambusher
                           (+ pp
-                             (make-polar 4 (player-dir (hash-ref objs 'player))))]
+                             (make-polar 4 (player-dir (hash-ref dyn-objs 'player))))]
                          ['fickle
                           (define v
                             (- pp
-                               (ghost-pos (hash-ref objs 'ambusher))))
+                               (ghost-pos (hash-ref dyn-objs 'ambusher))))
                           (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
                          ['stupid
                           (if (<= (pos->pos-distance pp p) 8)
@@ -421,20 +459,30 @@
                    (try-direction p dir)
                    np))
              (player nnp actual-dir next-dir-n)]))))
-     (define objs:post-cd
-       objs:post-movement)     
-     (define objs:final
-       objs:post-cd)
+     (define-values
+       (score-n st-n)
+       (let ()
+         (match-define (cons x y) (pos->cell (player-pos (hash-ref dyn-objs:post-movement 'player))))
+         (match (static-ref st x y)
+           ['pellet
+            (values (+ score pellet-pts)
+                    (static-chomp st x y))]
+           [#f
+            (values score st)])))
+     (define dyn-objs:final
+       dyn-objs:post-movement)
      (values 
-      (game-st frame-n objs:final)
+      (game-st frame-n score-n st-n dyn-objs:final)
+      ; XXX Render UI
       (gl:focus 
        width height width height
        (psn-x center-pos) (psn-y center-pos)
        (gl:background 
         0 0 0 0
         whole-map
+        (static-display st)
         (gl:for/gl
-         ([v (in-hash-values objs:final)])
+         ([v (in-hash-values dyn-objs:final)])
          (match v
            [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
             ; XXX dead mode
@@ -442,18 +490,22 @@
              (gl:translate 
               (psn-x p) (psn-y p)
               (ghost-animation n frame-n dir))
-             ; XXX color based on n
              (gl:translate
               (- (psn-x tp) .5) (- (psn-y tp) .5)
-              (gl:color 255 0 255 0
-                        (gl:rectangle 1. 1. 'outline))))]
+              (gl:color/%
+               (match n
+                 [0 (make-object color% 169 16 0)]
+                 [1 (make-object color% 215 182 247)]
+                 [2 (make-object color% 60 189 255)]
+                 [3 (make-object color% 230 93 16)])
+               (gl:rectangle 1. 1. 'outline))))]
            [(player p dir _)
             (gl:translate 
              (psn-x p) (psn-y p)
              (gl:rotate
               (rad->deg dir)
               (player-animation frame-n)))]))
-        (gl:color
+        #;(gl:color
          255 255 255 0
          ; Draw horizontal lines
          (gl:for/gl

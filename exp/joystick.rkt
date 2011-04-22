@@ -7,6 +7,8 @@
          mred/private/wx/cocoa/utils
          "mvector.rkt")
 
+; XXX This probably leaks memory, because sometimes I get crashes and weird error messages
+
 (define-runtime-path ddhid-lib
   "../dist/DDHidLib-1.1/build/Release/DDHidLib.framework/DDHidLib")
 (define DDHidLib
