@@ -49,7 +49,8 @@
 (define layout (path->layout default-map))
 
 ; XXX make layouts widescreen (56 width?)
-; XXX randomly generate layouts
+; XXX ghosts/pacman are the wrong size
+; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded tiles, etc
 ; XXX place pellets into the layout
@@ -180,7 +181,7 @@
   (psn 14.5 16.5))
 
 (struct player (pos dir next-dir))
-(struct ghost (n pos dir last-cell))
+(struct ghost (n pos dir last-cell scatter? frames-to-switch))
 (struct game-st (frame objs))
 
 (define speed
@@ -308,13 +309,15 @@
 (define outside-jail-right-of
   (pos->cell
    (+ outside-jail 1.)))
+(define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
+(define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 (big-bang
    (game-st 0 
             (hasheq
-             'chaser (ghost 0 outside-jail 'left outside-jail-right-of)
-             'ambusher (ghost 1 outside-jail 'left outside-jail-right-of)
-             'fickle (ghost 2 outside-jail 'left outside-jail-right-of)
-             'stupid (ghost 3 outside-jail 'left outside-jail-right-of)
+             'chaser (ghost 0 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
+             'ambusher (ghost 1 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
+             'fickle (ghost 2 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
+             'stupid (ghost 3 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
              'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
@@ -328,7 +331,7 @@
          (values
           k
           (match v
-            [(ghost n p dir lc)
+            [(struct* ghost ([pos p] [last-cell lc]))
              (define c (pos->cell p))
              (define nps
                (cell-neighbors/no-reverse c lc))
@@ -401,7 +404,7 @@
         (gl:for/gl
          ([v (in-hash-values objs:final)])
          (match v
-           [(ghost n p dir _)
+           [(struct* ghost ([n n] [pos p] [dir dir]))
             ; XXX dead mode
             (gl:translate 
              (psn-x p) (psn-y p)
