@@ -66,11 +66,8 @@
 ; XXX bomb
 ; XXX fruit appears after 70 dots and 170 dots
 ; XXX each level has 240 dots and 4 powerups
-; XXX chase mode (target the pac), scatter mode (target a corner), frightened mode (run, go slower)
+; XXX move slower and escape in frightened mode
 ; XXX decrease frightened time with time/score
-; XXX scatter for 7 secs, chase for 20 secs (two times, then scatter for 5, then chase forever)
-; XXX change directions when entering scatter mode
-; XXX scatter mode selects an inaccessible tile, which causes looping behavior
 ; XXX chaser starts outside house
 ; XXX ambusher exits immediately
 ; XXX fickle exits after 30 dots
@@ -181,7 +178,6 @@
   (psn 14.5 16.5))
 
 (struct player (pos dir next-dir))
-(struct ghost (n pos dir last-cell scatter? frames-to-switch))
 (struct game-st (frame objs))
 
 (define speed
@@ -311,13 +307,23 @@
    (+ outside-jail 1.)))
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
+
+(struct ghost (n pos target dir last-cell scatter? frames-to-switch))
+(define (make-ghost n)
+  (ghost n outside-jail #f 'left outside-jail-right-of #t TIME-TO-SCATTER))
+
+; XXX Force it to be in-accessible?
+(define (scatter-tile)
+  (psn (* (random) width)
+       (* (random) height)))
+
 (big-bang
    (game-st 0 
             (hasheq
-             'chaser (ghost 0 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
-             'ambusher (ghost 1 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
-             'fickle (ghost 2 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
-             'stupid (ghost 3 outside-jail 'left outside-jail-right-of #t TIME-TO-SCATTER)
+             'chaser (make-ghost 0)
+             'ambusher (make-ghost 1)
+             'fickle (make-ghost 2)
+             'stupid (make-ghost 3)
              'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
    #:sound-scale
    (/ width 2.)
@@ -331,29 +337,52 @@
          (values
           k
           (match v
-            [(struct* ghost ([pos p] [last-cell lc]))
+            [(struct* ghost 
+                      ([pos p]
+                       [last-cell lc]
+                       [target l-target]
+                       [scatter? scatter?] 
+                       [frames-to-switch switch-n]))
+             (define n-switch-n* (sub1 switch-n))
+             (define-values (n-scatter? n-switch-n) 
+               (if (zero? n-switch-n*)
+                   (if scatter?
+                       (values #f TIME-TO-CHASE)
+                       (values #t TIME-TO-SCATTER))
+                   (values scatter? n-switch-n*)))
+             (define same-mode?
+               (equal? scatter? n-scatter?))
              (define c (pos->cell p))
-             (define nps
+             (define nps*
                (cell-neighbors/no-reverse c lc))
+             (define nps
+               ; This makes them allowed, but not obligated, to switch directions.
+               (if (not same-mode?)
+                   (list* lc nps*)
+                   nps*))
              (define pp (player-pos (hash-ref objs 'player)))
              (define target
-               (match k
-                 ['chaser 
-                  pp]
-                 ['ambusher
-                  (+ pp
-                     (make-polar 4 (player-dir (hash-ref objs 'player))))]
-                 ['fickle
-                  (define v
-                    (- pp
-                       (ghost-pos (hash-ref objs 'ambusher))))
-                  (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
-                 ['stupid
-                  (if (<= (pos->pos-distance pp p) 8)
-                      ; XXX scatter tile
-                      (psn (* (random) width)
-                           (* (random) height))
-                      pp)]))
+               (if (and l-target same-mode?
+                        (if (not n-scatter?) (= (length nps) 1) #t))
+                   l-target
+                   (if n-scatter?
+                       (scatter-tile)
+                       (match k
+                         ['chaser 
+                          pp]
+                         ['ambusher
+                          (+ pp
+                             (make-polar 4 (player-dir (hash-ref objs 'player))))]
+                         ['fickle
+                          (define v
+                            (- pp
+                               (ghost-pos (hash-ref objs 'ambusher))))
+                          (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
+                         ['stupid
+                          (if (<= (pos->pos-distance pp p) 8)
+                              ; XXX This can keep him target the spot where the player WAS
+                              l-target #;(scatter-tile)
+                              pp)]))))
              (define next-cell
                (argmin* (curry pos->cell-distance target)
                         nps))
@@ -364,6 +393,9 @@
              (define ndir 
                (angle-direction (angle mv)))
              (struct-copy ghost v
+                          [target target]
+                          [scatter? n-scatter?]
+                          [frames-to-switch n-switch-n]
                           [last-cell 
                            (if (equal? c (pos->cell np))
                                lc
@@ -404,11 +436,17 @@
         (gl:for/gl
          ([v (in-hash-values objs:final)])
          (match v
-           [(struct* ghost ([n n] [pos p] [dir dir]))
+           [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
             ; XXX dead mode
-            (gl:translate 
-             (psn-x p) (psn-y p)
-             (ghost-animation n frame-n dir))]
+            (gl:seqn
+             (gl:translate 
+              (psn-x p) (psn-y p)
+              (ghost-animation n frame-n dir))
+             ; XXX color based on n
+             (gl:translate
+              (- (psn-x tp) .5) (- (psn-y tp) .5)
+              (gl:color 255 0 255 0
+                        (gl:rectangle 1. 1. 'outline))))]
            [(player p dir _)
             (gl:translate 
              (psn-x p) (psn-y p)
