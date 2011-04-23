@@ -38,6 +38,9 @@
 (define-syntax-rule (define-texture id f)
   (define id (gl:path->texture (build-path resource-path f))))
 
+(define-sound se:crunch "crunch.wav")
+(define-sound se:bgm "bgm.mp3")
+
 (define width 28)
 (define height 31)
 (define center-pos
@@ -57,9 +60,7 @@
 ; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
-; XXX show points
 ; XXX kill ghosts / be killed
-; XXX render ui
 ; XXX increase speed with time/score
 ; XXX add fruits
 ; XXX add music / sound effects
@@ -68,7 +69,7 @@
 ; XXX ghost train
 ; XXX bomb
 ; XXX fruit appears after 70 dots and 170 dots
-; XXX each level has 240 dots and 4 powerups
+; XXX each level has 4 powerups
 ; XXX move slower and escape in frightened mode
 ; XXX decrease frightened time with time/score
 ; XXX ambusher exits immediately
@@ -556,7 +557,13 @@
           (gl:for/gl
            ([x (in-range (add1 width))])
            (gl:line x 0 x height))))))
-    empty))
+    (append
+     (if ate-a-dot?
+         (list (sound-at se:crunch center-pos #:gain 0.8))
+         empty)
+     (if (zero? frame)
+           (list (background (λ (w) se:bgm) #:gain 0.5))
+           empty))))
  #:listener
  (λ (w) center-pos)
  #:done?
