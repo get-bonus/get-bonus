@@ -297,7 +297,6 @@
                             #:smoothing 'smoothed))
                (define-values (bm w h)
                  (string->bitmap f str))
-               (send bm save-file "test.png" 'png)
                (struct-copy 
                 texture 
                 (bm->texture bm)
