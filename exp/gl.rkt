@@ -17,7 +17,7 @@
 
 ;; Basic data structures
 ; XXX gc lists
-(struct cmd (count-box list-ref-box t) #:property prop:procedure (struct-field-index t))
+(struct cmd (count-box list-ref-box t))
 
 (define compiling? (make-parameter #f))
 (define THRESHOLD 10)
@@ -44,8 +44,6 @@
 
 (define-syntax-rule (λg e ...)
   (cmd (box 0) (box #f) (λ () e ...)))
-(define-syntax-rule (c pre in post)
-  (λg pre (for-each run in) post))
 
 ;; Basic shapes
 (define (point x y)
@@ -60,10 +58,9 @@
       (gl-end)))
 
 (define-syntax-rule (no-texture e ...)
-  (begin (gl-push-attrib 'enable-bit)
-         (gl-disable 'texture-2d)
+  (begin (gl-disable 'texture-2d)
          e ...
-         (gl-pop-attrib)))
+         (gl-enable 'texture-2d)))
   
 (define (rectangle w h [mode 'solid])
   (λg 
@@ -126,10 +123,12 @@
     (define-state ((id pre-a (... ...)) a (... ...))
       setup (... ...))
     (define (id a (... ...) . ics)
-      (c (begin (pre pre-a (... ...))
-                setup (... ...))
-         ics
-         (post)))))
+      (define ic (apply seqn ics))
+      (λg
+       (pre pre-a (... ...))
+       setup (... ...)
+       (run ic)
+       (post)))))
 
 (define-stateful define-matrix 
   gl-push-matrix gl-pop-matrix)
@@ -159,8 +158,12 @@
 (define blank
   (λg (void)))
 
-(define (seqn . cs)
-  (λg (for-each run cs)))
+(define seqn
+  (case-lambda
+    [() blank]
+    [(c) c]
+    [cs
+     (λg (for-each run cs))]))
 
 ;; Textures
 (require racket/draw
