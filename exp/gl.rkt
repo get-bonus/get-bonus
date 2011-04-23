@@ -249,12 +249,13 @@
    (glBlendFunc GL_ONE GL_ZERO)))
 
 ;; Text
+(define white (make-object color% 255 255 255 1))
+(define black (make-object color% 0 0 0 1))
 (define (string->bitmap f str)
   (define bdc
     (new bitmap-dc% [bitmap (make-object bitmap% 1 1 #f #t)]))
   (define transparent-c (make-object color% 0 0 0 0))
   (send bdc set-font f)
-  (send bdc set-text-mode 'solid)
   
   (define-values (w h bot vert) 
     (send bdc get-text-extent str f #t))
@@ -265,7 +266,8 @@
   
   (define bm (make-object bitmap% w* h* #f #t))
   (send bdc set-bitmap bm)    
-  (send bdc clear)
+  (send bdc erase)
+  (send bdc set-text-foreground black)
   (send bdc draw-text str 0 0 #t)
   (send bdc flush)
   
@@ -295,9 +297,14 @@
                             #:smoothing 'smoothed))
                (define-values (bm w h)
                  (string->bitmap f str))
-               (struct-copy texture (bm->texture bm GL_DST_COLOR)
-                            [dw (/ w h)]
-                            [dh 1]))))
+               (send bm save-file "test.png" 'png)
+               (struct-copy 
+                texture 
+                (bm->texture bm
+                             #;GL_SRC_ALPHA
+                             GL_DST_COLOR)
+                [dw (/ w h)]
+                [dh 1]))))
 
 ;; Focus
 (define (gl-viewport/restrict mw mh
