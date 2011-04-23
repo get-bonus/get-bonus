@@ -480,21 +480,24 @@
        dyn-objs:post-movement)
      (values 
       (game-st frame-n score-n st-n dyn-objs:final)
-      ; XXX Render UI
-      ; Put this whole thing in the center of the screen by
-      ; using translate and adding a scale to focus?
       (gl:focus 
-       width (+ height 3) width (+ height 3) 0 0
+       width (+ height 2) width (+ height 2) 0 0
        (gl:background 
         0. 0. 0. 0.
         (gl:color
          1. 1. 1. 1.
          (gl:center-texture-at 
-          (psn (/ width 2.) (+ height 2.5))
-          title))
-        (gl:translate
-         0 1
-         (gl:seqn
+          (psn (/ width 2.) (+ height 1.5))
+          title)
+         ; XXX show lives
+         (gl:translate
+          0. (+ height 0.5)
+          (gl:texture
+           (gl:string->texture
+            #:size 50
+            (format "Score: ~a"
+                    score-n)))))
+        (gl:seqn
           whole-map
           (static-display st)
           (gl:for/gl
@@ -530,7 +533,7 @@
              ; Draw vertical lines
              (gl:for/gl
               ([x (in-range (add1 width))])
-              (gl:line x 0 x height)))))))
+              (gl:line x 0 x height))))))
       empty))
    #:listener
    (λ (w) center-pos)
