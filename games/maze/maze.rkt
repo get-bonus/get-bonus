@@ -63,7 +63,6 @@
 ; XXX kill ghosts / be killed
 ; XXX increase speed with time/score
 ; XXX add fruits
-; XXX add music / sound effects
 ; XXX respawn pellets / change layout on left/right when pellets gone on other side
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
@@ -449,7 +448,7 @@
                            c)]
                       [pos np]
                       [dir ndir])]
-        ; XXX He's in jail, animate him in jail.
+        ; XXX He's in jail, animate him in jail?
         [(? ghost? v)
          v]
         [(player p dir next-dir)
@@ -494,6 +493,7 @@
          (update-objs
           dyn-objs:post-movement
           (match-lambda
+            ; XXX Add a sound effect when the activate?
             [(and v (struct* ghost ([dot-timer dt])))
              (struct-copy ghost v
                           [dot-timer (max 0 (sub1 dt))])]
@@ -512,6 +512,14 @@
        (gl:center-texture-at 
         (psn (/ width 2.) (+ height 1.5))
         title)
+       (gl:translate
+        (* width 3/4) (+ height 0.5)
+        (gl:texture
+         (gl:string->texture
+          #:size 50
+          (format "FPS: ~a"
+                  (real->decimal-string
+                   (current-rate) 1)))))
        ; XXX show lives
        (gl:translate
         0. (+ height 0.5)
@@ -548,7 +556,7 @@
              (rad->deg dir)
              (player-animation frame-n)))]))
        #;(gl:color
-          255 255 255 0
+          1. 1. 1. 0.
           ; Draw horizontal lines
           (gl:for/gl
            ([y (in-range (add1 height))])
