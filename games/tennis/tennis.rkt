@@ -305,10 +305,10 @@
            (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
            (- height (gl:texture-dh score-t))
            (gl:seqn
-            (gl:color 255 255 255 0
+            (gl:color 1. 1. 1. 0.
                       (gl:rectangle (gl:texture-dw score-t)
                                     (gl:texture-dh score-t)))
-            (gl:color 0 0 0 0
+            (gl:color 0. 0. 0. 1.
                       (gl:texture score-t)))))
         ; XXX Add a collision animation
         (gl:translate lhs-x (- lhs-y-n paddle-hh)
@@ -398,11 +398,11 @@
    (values 
     (GAME (add1 frame) #t last-winner-n)
     (gl:background
-     255 255 255 0
+     1. 1. 1. 0.
      (gl:focus 
       16 9 16 9 0 0
       (gl:color 
-       0 0 0 0
+       0. 0. 0. 1.
        (gl:seqn
         (gl:center-texture-at
          (psn 8. 6.5)

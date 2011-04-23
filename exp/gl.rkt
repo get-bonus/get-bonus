@@ -150,9 +150,9 @@
   gl-push-attrib gl-pop-attrib)
 
 (define-attrib ((color 'current-bit) r g b a)
-  (gl-color r g b a))
+  (glColor4f r g b a))
 (define-attrib ((background 'color-buffer-bit) r g b a)
-  (gl-clear-color r g b a)
+  (glClearColor r g b a)
   (gl-clear 'color-buffer-bit))
 
 ;; Combiners
@@ -198,24 +198,24 @@
   (send bm get-argb-pixels 0 0 w h argb #f)
   (argb->rgba argb))
 
-(struct texture (w h bs r dw dh st))
+(struct texture (w h bs r dw dh))
 (define (load-texture! t)
-  (match-define (texture w h bs r _ _ _) t)
+  (match-define (texture w h bs r _ _) t)
   (unless (unbox r)
     (define text-ref (bytes->text-ref w h (unbox bs)))
     (set-box! bs #f)
     (set-box! r text-ref)))
 
-(define (bm->texture bm style)
+(define (bm->texture bm)
   (define w (send bm get-width))
   (define h (send bm get-height))
   (define rgba (box (bm->rgba-bytes bm)))
   (define ref (box #f))
-  (texture w h rgba ref w h style))
+  (texture w h rgba ref w h))
 
 (define (path->texture p)
   (define bm (make-object bitmap% p 'png/alpha #f #t))
-  (bm->texture bm GL_SRC_ALPHA))
+  (bm->texture bm))
 
 (define (bind-texture-ref! t)
   (unless (equal? t (unbox (current-texture)))
@@ -240,7 +240,7 @@
    ; I thought it would be more elegant to use glPushAttrib before this, but it turns out
    ; that that is *really* slow. My frame-rate dropped from 60 to 5. Yikes. I hope I am
    ; not doing other stupid things like that.
-   (glBlendFunc (texture-st t) GL_ONE_MINUS_SRC_ALPHA)
+   (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
    (draw-texture! 
     (unbox (texture-r t)) 
     w h
@@ -267,7 +267,7 @@
   (define bm (make-object bitmap% w* h* #f #t))
   (send bdc set-bitmap bm)    
   (send bdc erase)
-  (send bdc set-text-foreground black)
+  (send bdc set-text-foreground white)
   (send bdc draw-text str 0 0 #t)
   (send bdc flush)
   
@@ -300,9 +300,7 @@
                (send bm save-file "test.png" 'png)
                (struct-copy 
                 texture 
-                (bm->texture bm
-                             #;GL_SRC_ALPHA
-                             GL_DST_COLOR)
+                (bm->texture bm)
                 [dw (/ w h)]
                 [dh 1]))))
 
@@ -392,8 +390,8 @@
  [mirror ((real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [scale ((real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [translate ((real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
- [color ((real? real? real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
- [background ((real? real? real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
+ [color ((inexact? inexact? inexact? inexact?) () #:rest (listof cmd?) . ->* . cmd?)]
+ [background ((inexact? inexact? inexact? inexact?) () #:rest (listof cmd?) . ->* . cmd?)]
  [mode/c contract?]
  [blank cmd?]
  [circle (() (mode/c) . ->* . cmd?)]

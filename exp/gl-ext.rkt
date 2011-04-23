@@ -23,15 +23,15 @@
 
 (define (color/% c . cs)
   (apply color
-         (/ (send c red) 255)
-         (/ (send c green) 255)
-         (/ (send c blue) 255)
+         (exact->inexact (/ (send c red) 255))
+         (exact->inexact (/ (send c green) 255))
+         (exact->inexact (/ (send c blue) 255))
          (- 1. (send c alpha)) cs))
 (define (background/% c . cs)
   (apply background 
-         (/ (send c red) 255)
-         (/ (send c green) 255)
-         (/ (send c blue) 255)
+         (exact->inexact (/ (send c red) 255))
+         (exact->inexact (/ (send c green) 255))
+         (exact->inexact (/ (send c blue) 255))
          (- 1. (send c alpha)) cs))
 
 (provide/contract

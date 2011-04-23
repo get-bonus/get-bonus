@@ -134,7 +134,7 @@
 
 (define whole-map
   (gl:color 
-   0 0 255 0
+   0. 0. 1. 0.
    (gl:for*/gl
     ([c (in-range width)]
      [r (in-range height)])
@@ -486,9 +486,9 @@
       (gl:focus 
        width (+ height 3) width (+ height 3) 0 0
        (gl:background 
-        0 0 0 0
+        0. 0. 0. 0.
         (gl:color
-         255 255 255 0
+         1. 1. 1. 1.
          (gl:center-texture-at 
           (psn (/ width 2.) (+ height 2.5))
           title))
