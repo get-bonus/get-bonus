@@ -27,7 +27,10 @@
 (define (sequence-not-empty? s)
   (for/or ([e s]) #t))
 
-; XXX refer to game as ハングリーマン
+
+(define title
+  (gl:string->texture "ハングリーマン"
+                      #:size 50 #:family 'decorative))
 
 (define-runtime-path resource-path "r")
 (define-syntax-rule (define-sound id f)
@@ -443,13 +446,17 @@
             [(player p dir next-dir)
              (define stick (controller-dpad c))
              (define next-dir-n 
-               ; If the stick is stable, then don't change the direction
+               ; If the stick is stable, 
+               ; then don't change the direction
                (if (= stick 0.+0.i)
                    next-dir
                    (angle (cardinate stick))))
-             ; The coorridors used to feel too "tight" and easy to get stuck on an edge, but I think this got fixed
+             ; The coorridors used to feel too "tight" 
+             ; and easy to get stuck on an edge, but I 
+             ; think this got fixed
              (define np (try-direction p next-dir-n))
-             ; Don't change the direction if we couldn't move in it
+             ; Don't change the direction if we couldn't
+             ; move in it
              (define actual-dir
                (if (= np p)
                    dir
@@ -474,47 +481,56 @@
      (values 
       (game-st frame-n score-n st-n dyn-objs:final)
       ; XXX Render UI
+      ; Put this whole thing in the center of the screen by
+      ; using translate and adding a scale to focus?
       (gl:focus 
-       width height width height
-       (psn-x center-pos) (psn-y center-pos)
+       width (+ height 3) width (+ height 3) 0 0
        (gl:background 
         0 0 0 0
-        whole-map
-        (static-display st)
-        (gl:for/gl
-         ([v (in-hash-values dyn-objs:final)])
-         (match v
-           [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
-            ; XXX dead mode
-            (gl:seqn
-             (gl:translate 
-              (psn-x p) (psn-y p)
-              (ghost-animation n frame-n dir))
-             (gl:translate
-              (- (psn-x tp) .5) (- (psn-y tp) .5)
-              (gl:color/%
-               (match n
-                 [0 (make-object color% 169 16 0)]
-                 [1 (make-object color% 215 182 247)]
-                 [2 (make-object color% 60 189 255)]
-                 [3 (make-object color% 230 93 16)])
-               (gl:rectangle 1. 1. 'outline))))]
-           [(player p dir _)
-            (gl:translate 
-             (psn-x p) (psn-y p)
-             (gl:rotate
-              (rad->deg dir)
-              (player-animation frame-n)))]))
-        #;(gl:color
+        (gl:color
          255 255 255 0
-         ; Draw horizontal lines
-         (gl:for/gl
-          ([y (in-range (add1 height))])
-          (gl:line 0 y width y))
-         ; Draw vertical lines
-         (gl:for/gl
-          ([x (in-range (add1 width))])
-          (gl:line x 0 x height)))))
+         (gl:center-texture-at 
+          (psn (/ width 2.) (+ height 2.5))
+          title))
+        (gl:translate
+         0 1
+         (gl:seqn
+          whole-map
+          (static-display st)
+          (gl:for/gl
+           ([v (in-hash-values dyn-objs:final)])
+           (match v
+             [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
+              ; XXX dead mode
+              (gl:seqn
+               (gl:translate 
+                (psn-x p) (psn-y p)
+                (ghost-animation n frame-n dir))
+               (gl:translate
+                (- (psn-x tp) .5) (- (psn-y tp) .5)
+                (gl:color/%
+                 (match n
+                   [0 (make-object color% 169 16 0)]
+                   [1 (make-object color% 215 182 247)]
+                   [2 (make-object color% 60 189 255)]
+                   [3 (make-object color% 230 93 16)])
+                 (gl:rectangle 1. 1. 'outline))))]
+             [(player p dir _)
+              (gl:translate 
+               (psn-x p) (psn-y p)
+               (gl:rotate
+                (rad->deg dir)
+                (player-animation frame-n)))]))
+          #;(gl:color
+             255 255 255 0
+             ; Draw horizontal lines
+             (gl:for/gl
+              ([y (in-range (add1 height))])
+              (gl:line 0 y width y))
+             ; Draw vertical lines
+             (gl:for/gl
+              ([x (in-range (add1 width))])
+              (gl:line x 0 x height)))))))
       empty))
    #:listener
    (λ (w) center-pos)

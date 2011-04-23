@@ -308,7 +308,8 @@
             (gl:color 255 255 255 0
                       (gl:rectangle (gl:texture-dw score-t)
                                     (gl:texture-dh score-t)))
-            (gl:texture score-t))))
+            (gl:color 0 0 0 0
+                      (gl:texture score-t)))))
         ; XXX Add a collision animation
         (gl:translate lhs-x (- lhs-y-n paddle-hh)
                       lhs-paddle)
@@ -400,25 +401,27 @@
      255 255 255 0
      (gl:focus 
       16 9 16 9 0 0
-      (gl:seqn
-       (gl:center-texture-at
-        (psn 8. 6.5)
-        (text "Tennis!"))
-       (if last-winner-n
-           (gl:center-texture-at
-            (psn 8. 4.5)
-            (text
-             (case last-winner-n
-               [(left) "Player 1 won!"]
-               [(right) "Player 2 won!"])))
-           gl:blank)
-       (if (zero? (modulo frame 10))
-           gl:blank
-           (gl:center-texture-at
-            (psn 8. 2.5)
-            (if last-winner-n
-                (text "Press START to play again")
-                (text "Press START to play")))))))
+      (gl:color 
+       0 0 0 0
+       (gl:seqn
+        (gl:center-texture-at
+         (psn 8. 6.5)
+         (text "Tennis!"))
+        (if last-winner-n
+            (gl:center-texture-at
+             (psn 8. 4.5)
+             (text
+              (case last-winner-n
+                [(left) "Player 1 won!"]
+                [(right) "Player 2 won!"])))
+            gl:blank)
+        (if (zero? (modulo frame 10))
+            gl:blank
+            (gl:center-texture-at
+             (psn 8. 2.5)
+             (if last-winner-n
+                 (text "Press START to play again")
+                 (text "Press START to play"))))))))
     (if bgm-started?
         empty
         (list (background (λ (w) se:title)))))))
