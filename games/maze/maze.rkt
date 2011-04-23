@@ -37,7 +37,7 @@
   (define id (path->audio (build-path resource-path f))))
 (define-syntax-rule (define-texture id f)
   (define id (gl:path->texture (build-path resource-path f))))
-             
+
 (define width 28)
 (define height 31)
 (define center-pos
@@ -71,10 +71,7 @@
 ; XXX each level has 240 dots and 4 powerups
 ; XXX move slower and escape in frightened mode
 ; XXX decrease frightened time with time/score
-; XXX chaser starts outside house
 ; XXX ambusher exits immediately
-; XXX fickle exits after 30 dots
-; XXX stupid leaves after 1/3 of the dots
 
 (define-texture sprites-t "pacman.png")
 
@@ -96,7 +93,7 @@
     (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 dir-n))))
     (+ 125 (* 18 n))
     14 12)))
-  
+
 (define (player-animation n)
   (gl:translate 
    -.5 -.5
@@ -220,10 +217,10 @@
      (let* ([nx (wrap-at width nx*)]
             [ny (wrap-at height ny*)]
             [nc (cons nx* ny*)])
-     (if (or (equal? last-cell nc)
-             (not (= hall (layout-ref/xy nx ny))))
-         empty
-         (list nc)))
+       (if (or (equal? last-cell nc)
+               (not (= hall (layout-ref/xy nx ny))))
+           empty
+           (list nc)))
      ...))
   (try [left (sub1 x) y]
        [up x (add1 y)]
@@ -347,195 +344,220 @@
 
 (struct game-st (frame score static-objs dyn-objs))
 (struct player (pos dir next-dir))
-(struct ghost (n pos target dir last-cell scatter? frames-to-switch))
-(define (make-ghost n)
-  (ghost n outside-jail #f 'left outside-jail-right-of #t TIME-TO-SCATTER))
+(struct ghost (n pos target dir last-cell scatter? frames-to-switch dot-timer))
+(define (make-ghost n init-timer)
+  (ghost n outside-jail (scatter-tile) 'left outside-jail-right-of #t TIME-TO-SCATTER init-timer))
 
 ; XXX Force it to be in-accessible?
 (define (scatter-tile)
   (psn (* (random) width)
        (* (random) height)))
 
+(define (update-objs objs f)
+  (for/hasheq ([(k v) (in-hash objs)])
+    (values k (f v))))
+
 (define pellet-pts 10)
 
 (big-bang
-   (game-st 0 0 (layout->static-objs layout)
-            (hasheq
-             'chaser (make-ghost 0)
-             'ambusher (make-ghost 1)
-             'fickle (make-ghost 2)
-             'stupid (make-ghost 3)
-             'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
-   #:sound-scale
-   (/ width 2.)
-   #:tick
-   (λ (w cs)
-     (define c (last cs))
-     (match-define (game-st frame score st dyn-objs) w)
-     (define frame-n (add1 frame))
-     (define dyn-objs:post-movement
-       (for/hasheq ([(k v) (in-hash dyn-objs)])
-         (values
-          k
-          (match v
-            [(struct* ghost 
-                      ([pos p]
-                       [last-cell lc]
-                       [target l-target]
-                       [scatter? scatter?] 
-                       [frames-to-switch switch-n]))
-             (define n-switch-n* (sub1 switch-n))
-             (define-values (n-scatter? n-switch-n) 
-               (if (zero? n-switch-n*)
-                   (if scatter?
-                       (values #f TIME-TO-CHASE)
-                       (values #t TIME-TO-SCATTER))
-                   (values scatter? n-switch-n*)))
-             (define same-mode?
-               (equal? scatter? n-scatter?))
-             (define c (pos->cell p))
-             (define nps*
-               (cell-neighbors/no-reverse c lc))
-             (define nps
-               ; This makes them allowed, but not obligated, to switch directions.
-               (if (not same-mode?)
-                   (list* lc nps*)
-                   nps*))
-             (define pp (player-pos (hash-ref dyn-objs 'player)))
-             (define target
-               (if (and l-target same-mode?
-                        (if (not n-scatter?) (= (length nps) 1) #t))
-                   l-target
-                   (if n-scatter?
-                       (scatter-tile)
-                       (match k
-                         ['chaser 
-                          pp]
-                         ['ambusher
-                          (+ pp
-                             (make-polar 4 (player-dir (hash-ref dyn-objs 'player))))]
-                         ['fickle
-                          (define v
-                            (- pp
-                               (ghost-pos (hash-ref dyn-objs 'ambusher))))
-                          (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
-                         ['stupid
-                          (if (<= (pos->pos-distance pp p) 8)
-                              ; XXX This can keep him target the spot where the player WAS
-                              l-target #;(scatter-tile)
-                              pp)]))))
-             (define next-cell
-               (argmin* (curry pos->cell-distance target)
-                        nps))
-             (define mv
-               (movement-vector p next-cell))
-             (define np
-               (posn->v p mv))
-             (define ndir 
-               (angle-direction (angle mv)))
+ (game-st 0 0 (layout->static-objs layout)
+          (hasheq
+           'chaser (make-ghost 0 0)
+            ; XXX Should really start inside the jail and leave shortly thereafter
+           'ambusher (make-ghost 1 0)
+           'fickle (make-ghost 2 30)
+           'stupid (make-ghost 3 80)
+           'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
+ #:sound-scale
+ (/ width 2.)
+ #:tick
+ (λ (w cs)
+   (define c (last cs))
+   (match-define (game-st frame score st dyn-objs) w)
+   (define frame-n (add1 frame))
+   (define dyn-objs:post-movement
+     (update-objs
+      dyn-objs
+      (match-lambda
+        [(and v
+              (struct* ghost 
+                       ([n n]
+                        [pos p]
+                        [last-cell lc]
+                        [target l-target]
+                        [scatter? scatter?] 
+                        [dot-timer 0]
+                        [frames-to-switch switch-n])))
+         (define n-switch-n* (sub1 switch-n))
+         (define-values (n-scatter? n-switch-n) 
+           (if (zero? n-switch-n*)
+               (if scatter?
+                   (values #f TIME-TO-CHASE)
+                   (values #t TIME-TO-SCATTER))
+               (values scatter? n-switch-n*)))
+         (define same-mode?
+           (equal? scatter? n-scatter?))
+         (define c (pos->cell p))
+         (define nps*
+           (cell-neighbors/no-reverse c lc))
+         (define nps
+           ; This makes them allowed, but not obligated,
+           ; to switch directions.
+           (if (not same-mode?)
+               (list* lc nps*)
+               nps*))
+         (define pp (player-pos (hash-ref dyn-objs 'player)))
+         (define target
+           (if (and l-target same-mode?
+                    (if (not n-scatter?) (= (length nps) 1) #t))
+               l-target
+               (if n-scatter?
+                   (scatter-tile)
+                   (match n
+                     [0
+                      pp]
+                     [1
+                      (+ pp
+                         (make-polar 4 (player-dir (hash-ref dyn-objs 'player))))]
+                     [2
+                      (define v
+                        (- pp
+                           (ghost-pos (hash-ref dyn-objs 'ambusher))))
+                      (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
+                     [3
+                      (if (<= (pos->pos-distance pp p) 8)
+                          ; XXX This can keep him target the spot where the player WAS
+                          l-target #;(scatter-tile)
+                          pp)]))))
+         (define next-cell
+           (argmin* (curry pos->cell-distance target)
+                    nps))
+         (define mv
+           (movement-vector p next-cell))
+         (define np
+           (posn->v p mv))
+         (define ndir 
+           (angle-direction (angle mv)))
+         (struct-copy ghost v
+                      [target target]
+                      [scatter? n-scatter?]
+                      [frames-to-switch n-switch-n]
+                      [last-cell 
+                       (if (equal? c (pos->cell np))
+                           lc
+                           c)]
+                      [pos np]
+                      [dir ndir])]
+        ; XXX He's in jail, animate him in jail.
+        [(? ghost? v)
+         v]
+        [(player p dir next-dir)
+         (define stick (controller-dpad c))
+         (define next-dir-n 
+           ; If the stick is stable, 
+           ; then don't change the direction
+           (if (= stick 0.+0.i)
+               next-dir
+               (angle (cardinate stick))))
+         ; The coorridors used to feel too "tight" 
+         ; and easy to get stuck on an edge, but I 
+         ; think this got fixed
+         (define np (try-direction p next-dir-n))
+         ; Don't change the direction if we couldn't
+         ; move in it
+         (define actual-dir
+           (if (= np p)
+               dir
+               next-dir-n))
+         (define nnp
+           (if (= np p)
+               (try-direction p dir)
+               np))
+         (player nnp actual-dir next-dir-n)])))
+   (define-values
+     (score-n st-n ate-a-dot?)
+     (let ()
+       (match-define 
+        (cons x y) 
+        (pos->cell (player-pos
+                    (hash-ref dyn-objs:post-movement 'player))))
+       (match (static-ref st x y)
+         ['pellet
+          (values (+ score pellet-pts)
+                  (static-chomp st x y)
+                  #t)]
+         [#f
+          (values score st #f)])))   
+   (define dyn-objs:post-chomp
+     (if ate-a-dot?
+         (update-objs
+          dyn-objs:post-movement
+          (match-lambda
+            [(and v (struct* ghost ([dot-timer dt])))
              (struct-copy ghost v
-                          [target target]
-                          [scatter? n-scatter?]
-                          [frames-to-switch n-switch-n]
-                          [last-cell 
-                           (if (equal? c (pos->cell np))
-                               lc
-                               c)]
-                          [pos np]
-                          [dir ndir])]
-            [(player p dir next-dir)
-             (define stick (controller-dpad c))
-             (define next-dir-n 
-               ; If the stick is stable, 
-               ; then don't change the direction
-               (if (= stick 0.+0.i)
-                   next-dir
-                   (angle (cardinate stick))))
-             ; The coorridors used to feel too "tight" 
-             ; and easy to get stuck on an edge, but I 
-             ; think this got fixed
-             (define np (try-direction p next-dir-n))
-             ; Don't change the direction if we couldn't
-             ; move in it
-             (define actual-dir
-               (if (= np p)
-                   dir
-                   next-dir-n))
-             (define nnp
-               (if (= np p)
-                   (try-direction p dir)
-                   np))
-             (player nnp actual-dir next-dir-n)]))))
-     (define-values
-       (score-n st-n)
-       (let ()
-         (match-define (cons x y) (pos->cell (player-pos (hash-ref dyn-objs:post-movement 'player))))
-         (match (static-ref st x y)
-           ['pellet
-            (values (+ score pellet-pts)
-                    (static-chomp st x y))]
-           [#f
-            (values score st)])))
-     (define dyn-objs:final
-       dyn-objs:post-movement)
-     (values 
-      (game-st frame-n score-n st-n dyn-objs:final)
-      (gl:focus 
-       width (+ height 2) width (+ height 2) 0 0
-       (gl:background 
-        0. 0. 0. 0.
-        (gl:color
-         1. 1. 1. 1.
-         (gl:center-texture-at 
-          (psn (/ width 2.) (+ height 1.5))
-          title)
-         ; XXX show lives
-         (gl:translate
-          0. (+ height 0.5)
-          (gl:texture
-           (gl:string->texture
-            #:size 50
-            (format "Score: ~a"
-                    score-n)))))
-        (gl:seqn
-          whole-map
-          (static-display st)
+                          [dot-timer (max 0 (sub1 dt))])]
+            [v v]))
+         dyn-objs:post-movement))
+   (define dyn-objs:final
+     dyn-objs:post-chomp)
+   (values 
+    (game-st frame-n score-n st-n dyn-objs:final)
+    (gl:focus 
+     width (+ height 2) width (+ height 2) 0 0
+     (gl:background 
+      0. 0. 0. 0.
+      (gl:color
+       1. 1. 1. 1.
+       (gl:center-texture-at 
+        (psn (/ width 2.) (+ height 1.5))
+        title)
+       ; XXX show lives
+       (gl:translate
+        0. (+ height 0.5)
+        (gl:texture
+         (gl:string->texture
+          #:size 50
+          (format "Score: ~a"
+                  score-n)))))
+      (gl:seqn
+       whole-map
+       (static-display st)
+       (gl:for/gl
+        ([v (in-hash-values dyn-objs:final)])
+        (match v
+          [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
+           ; XXX dead mode
+           (gl:seqn
+            (gl:translate 
+             (psn-x p) (psn-y p)
+             (ghost-animation n frame-n dir))
+            (gl:translate
+             (- (psn-x tp) .5) (- (psn-y tp) .5)
+             (gl:color/%
+              (match n
+                [0 (make-object color% 169 16 0)]
+                [1 (make-object color% 215 182 247)]
+                [2 (make-object color% 60 189 255)]
+                [3 (make-object color% 230 93 16)])
+              (gl:rectangle 1. 1. 'outline))))]
+          [(player p dir _)
+           (gl:translate 
+            (psn-x p) (psn-y p)
+            (gl:rotate
+             (rad->deg dir)
+             (player-animation frame-n)))]))
+       #;(gl:color
+          255 255 255 0
+          ; Draw horizontal lines
           (gl:for/gl
-           ([v (in-hash-values dyn-objs:final)])
-           (match v
-             [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
-              ; XXX dead mode
-              (gl:seqn
-               (gl:translate 
-                (psn-x p) (psn-y p)
-                (ghost-animation n frame-n dir))
-               (gl:translate
-                (- (psn-x tp) .5) (- (psn-y tp) .5)
-                (gl:color/%
-                 (match n
-                   [0 (make-object color% 169 16 0)]
-                   [1 (make-object color% 215 182 247)]
-                   [2 (make-object color% 60 189 255)]
-                   [3 (make-object color% 230 93 16)])
-                 (gl:rectangle 1. 1. 'outline))))]
-             [(player p dir _)
-              (gl:translate 
-               (psn-x p) (psn-y p)
-               (gl:rotate
-                (rad->deg dir)
-                (player-animation frame-n)))]))
-          #;(gl:color
-             255 255 255 0
-             ; Draw horizontal lines
-             (gl:for/gl
-              ([y (in-range (add1 height))])
-              (gl:line 0 y width y))
-             ; Draw vertical lines
-             (gl:for/gl
-              ([x (in-range (add1 width))])
-              (gl:line x 0 x height))))))
-      empty))
-   #:listener
-   (λ (w) center-pos)
-   #:done?
-   (λ (w) #f))
+           ([y (in-range (add1 height))])
+           (gl:line 0 y width y))
+          ; Draw vertical lines
+          (gl:for/gl
+           ([x (in-range (add1 width))])
+           (gl:line x 0 x height))))))
+    empty))
+ #:listener
+ (λ (w) center-pos)
+ #:done?
+ (λ (w) #f))
