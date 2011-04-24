@@ -13,7 +13,7 @@
 ; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
 ; XXX Register a finalizer that will run glDeleteTextures
 ; XXX The matrix stack can only be 32 deep
-; XXX Character-based texts
+; XXX Character-based texts (complicates centering)
 
 ;; Basic data structures
 ; XXX gc lists

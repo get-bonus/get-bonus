@@ -40,6 +40,8 @@
 
 (define-sound se:crunch "crunch.wav")
 (define-sound se:bgm "bgm.mp3")
+; XXX cut this better
+(define-sound se:power-up "power-up.mp3")
 
 (define width 28)
 (define height 31)
@@ -69,8 +71,9 @@
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
 ; XXX bomb
-; XXX move slower and escape in frightened mode
-; XXX decrease frightened time with time/score
+; XXX move slower in frightened mode
+; XXX run away in frightened mode
+; XXX blink white near the end of frightend mode
 
 (define-texture sprites-t "pacman.png")
 
@@ -84,14 +87,21 @@
       ['left 1]
       ['up 2]
       ['down 3]))
+  (ghost-sprite n dir-n frame-n))
+
+(define (ghost-sprite which-ghost which-set frame-n)
   (gl:translate 
    -.5 -.5
    (gl:texture/px 
     sprites-t
     1 1
-    (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 dir-n))))
-    (+ 125 (* 18 n))
+    (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 which-set))))
+    (+ 125 (* 18 which-ghost))
     14 12)))
+
+; XXX Use white frame too
+(define (scared-ghost-animation frame-n)
+  (ghost-sprite 4 0 frame-n))
 
 (define (player-animation n)
   (gl:translate 
@@ -309,6 +319,7 @@
 (define outside-jail-right-of
   (pos->cell
    (+ outside-jail 1.)))
+(define TIME-TO-POWER (/ 6 RATE)) ; 6 seconds
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
@@ -362,7 +373,10 @@
   (static (sub1 c) fm-n 
           (static-fm->display fm-n)))
 
-(struct game-st (frame score lives next-extend static-objs dyn-objs))
+(struct game-st (frame 
+                 score lives next-extend 
+                 power-left
+                 static-objs dyn-objs))
 (struct player (pos dir next-dir))
 (struct ghost (n pos target dir last-cell scatter? frames-to-switch dot-timer))
 (define (make-ghost n init-timer)
@@ -392,16 +406,20 @@
    'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
 
 (big-bang
- (game-st 0 0 3 extend-pts (layout->static-objs layout)
-          init-objs)
+ (game-st 0 0 3 extend-pts 0
+          (layout->static-objs layout) init-objs)
  #:sound-scale
  (/ width 2.)
  #:tick
  (λ (w cs)
    (define c (last cs))
    (match-define
-    (game-st frame score lives next-extend st dyn-objs)
+    (game-st frame 
+             score lives next-extend
+             power-left
+             st dyn-objs)
     w)
+   (define power-left-p (max 0 (sub1 power-left)))
    (define frame-n (add1 frame))
    (define dyn-objs:post-movement
      (update-objs
@@ -500,7 +518,7 @@
          (player nnp actual-dir next-dir-n)]
         [v v])))
    (define-values
-     (dp st-n event)
+     (dp1 st-n event)
      (let ()
        (match-define 
         (cons x y) 
@@ -517,8 +535,10 @@
                   'power-up)]
          [#f
           (values 0 st #f)])))
-   (define score-n (+ score dp))
-   (define next-extend-p (- next-extend dp))
+   (define power-left-n
+     (if (eq? event 'power-up)
+         (+ power-left-p TIME-TO-POWER)
+         power-left-p))
    (define dyn-objs:post-chomp
      (if (eq? event 'pellet)
          (update-objs
@@ -531,28 +551,38 @@
             [v v]))
          dyn-objs:post-movement))
    (define-values
-     (lives-p next-extend-n)
+     (lives-p dp2 dyn-objs:post-death)
+     (let ()
+       (define p-cell
+         (pos->cell 
+          (player-pos 
+           (hash-ref dyn-objs:post-chomp 'player))))
+       (if (power-left-n . > . 0)
+           ; XXX kill ghosts
+           (values lives 0 dyn-objs:post-chomp)
+           (if (for/or ([v (in-hash-values dyn-objs:post-chomp)]
+                        #:when (ghost? v)
+                        #:when (zero? (ghost-dot-timer v)))
+                 (equal? 
+                  p-cell
+                  (pos->cell (ghost-pos v))))
+               ; XXX Add sound effect
+               (values (sub1 lives) 0 init-objs)
+               (values lives 0 dyn-objs:post-chomp)))))
+   (define score-n (+ score dp1 dp2))
+   (define next-extend-p (- next-extend dp1 dp2))
+   (define-values
+     (lives-n next-extend-n)
      (if (next-extend-p . <= . 0)
          ; XXX Add sound effect
-         (values (add1 lives) extend-pts)
-         (values lives next-extend-p)))
-   (define-values
-     (lives-n dyn-objs:post-death)
-     (if (for/or ([v (in-hash-values dyn-objs:post-chomp)]
-                  #:when (ghost? v)
-                  #:when (zero? (ghost-dot-timer v)))
-           (equal? 
-            (pos->cell 
-             (player-pos (hash-ref dyn-objs:post-chomp 'player)))
-            (pos->cell (ghost-pos v))))
-         ; XXX Add sound effect
-         (values (sub1 lives-p) init-objs)
-         (values lives-p dyn-objs:post-chomp)))
+         (values (add1 lives-p) extend-pts)
+         (values lives-p next-extend-p)))
    (define dyn-objs:final
      dyn-objs:post-death)
    (values 
     (game-st frame-n score-n lives-n
-             next-extend-n st-n dyn-objs:final)
+             next-extend-n power-left-n 
+             st-n dyn-objs:final)
     (gl:focus 
      width (+ height 2) width (+ height 2) 0 0
      (gl:background 
@@ -595,7 +625,9 @@
               (gl:seqn
                (gl:translate 
                 (psn-x p) (psn-y p)
-                (ghost-animation n frame-n dir))
+                (if (zero? power-left-n)
+                    (ghost-animation n frame-n dir)
+                    (scared-ghost-animation frame-n)))
                (gl:translate
                 (- (psn-x tp) .5) (- (psn-y tp) .5)
                 (gl:color/%
@@ -624,13 +656,21 @@
            ([x (in-range (add1 width))])
            (gl:line x 0 x height))))))
     (append
-     ; XXX add 'power-up se
      (if (eq? event 'pellet)
          (list (sound-at se:crunch center-pos #:gain 0.8))
          empty)
      (if (zero? frame)
-           (list (background (λ (w) se:bgm) #:gain 0.5))
-           empty))))
+         (list (background (λ (w) se:bgm) 
+                           #:gain 0.5
+                           #:pause-f
+                           (λ (w)
+                             (not (zero? (game-st-power-left w)))))
+               (background (λ (w) se:power-up) 
+                           #:gain 1.0
+                           #:pause-f
+                           (λ (w)
+                             (zero? (game-st-power-left w)))))
+         empty))))
  #:listener
  (λ (w) center-pos)
  #:done?
