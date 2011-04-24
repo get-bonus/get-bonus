@@ -44,19 +44,19 @@
 (define-sound se:power-up "power-up.mp3")
 
 (define width 28)
-(define height 31)
+(define height 36)
 (define center-pos
   (psn (/ width 2.) (/ height 2.)))
 
-; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
-(define-runtime-path default-map "default.map")
+(define-runtime-path template-map "template.map")
 (match-define 
  (list wall hall gate jail)
  (bytes->list #"1023"))
-(define (path->layout p)
-  (apply bytes-append (rest (file->bytes-lines p))))
-(define layout (path->layout default-map))
+(define (path->quadrant p)
+  (apply bytes-append (file->bytes-lines p)))
+(define quadrant (path->quadrant template-map))
 
+; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
 ; XXX when a quadrant is cleared, put a fruit on the diagonal quad
 ;     when the fruit is got, re-populate the first quad
 ; XXX make layouts widescreen (56 width?)
@@ -118,14 +118,20 @@
   (gl:scale (* pellet-r 2) (* 2 pellet-r)
             (gl:circle)))
 
-(define mid-point 
+(define w-mid-point 
   (/ width 2))
+(define h-mid-point 
+  (/ height 2))
 (define (layout-ref r c)
   (define vc
-    (if (c . < . mid-point)
+    (if (c . < . w-mid-point)
         c
         (- width c 1)))
-  (bytes-ref layout (+ (* r  mid-point) vc)))
+  (define vr
+    (if (r . < . h-mid-point)
+        r
+        (- height r 1)))
+  (bytes-ref quadrant (+ (* vr w-mid-point) vc)))
 (define (r->y r)
   (- height r 1))
 (define (y->r y)
@@ -237,7 +243,7 @@
        [right (add1 x) y]
        [down x (sub1 y)]))
 
-(test
+#;(test
  (layout-ref/xy 2 1) => hall
  (layout-ref/xy 1 1) => hall
  (wrap-at width 28) => 0
@@ -329,7 +335,7 @@
   (if (eq? 'pellet (fmatrix-ref fm x y #f))
       (fmatrix-set fm x y 'power-up)
       (place-power-up w h fm)))
-(define (layout->static-objs layout)
+(define (layout->static-objs)
   (define-values
     (count fm)
     (for*/fold ([ct 0] [fm (fmatrix width height)])
@@ -405,11 +411,11 @@
    'ambusher (make-ghost 1 40)
    'fickle (make-ghost 2 80)
    'stupid (make-ghost 3 160)
-   'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
+   'player (player (psn 12.5 8.5) (* .5 pi) (* .5 pi))))
 
 (big-bang
  (game-st 0 0 3 extend-pts 0
-          (layout->static-objs layout) init-objs)
+          (layout->static-objs) init-objs)
  #:sound-scale
  (/ width 2.)
  #:tick
