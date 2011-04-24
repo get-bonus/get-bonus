@@ -72,7 +72,6 @@
 ; XXX ghost train
 ; XXX bomb
 ; XXX move slower in frightened mode
-; XXX run away in frightened mode
 
 (define-texture sprites-t "pacman.png")
 
@@ -384,7 +383,6 @@
 (define (make-ghost n init-timer)
   (ghost n outside-jail (scatter-tile) 'left outside-jail-right-of #t TIME-TO-SCATTER init-timer))
 
-; XXX Force it to be in-accessible?
 (define (scatter-tile)
   (psn (* (random) width)
        (* (random) height)))
@@ -423,6 +421,7 @@
     w)
    (define power-left-p (max 0 (sub1 power-left)))
    (define frame-n (add1 frame))
+   (define frightened? (not (zero? power-left-p)))
    (define dyn-objs:post-movement
      (update-objs
       dyn-objs
@@ -436,7 +435,12 @@
                         [scatter? scatter?] 
                         [dot-timer 0]
                         [frames-to-switch switch-n])))
-         (define n-switch-n* (sub1 switch-n))
+         (define c (pos->cell p))
+         (define n-switch-n*
+           (if frightened?
+               ; Don't count frightened time on clocks
+               switch-n
+               (sub1 switch-n)))
          (define-values (n-scatter? n-switch-n) 
            (if (zero? n-switch-n*)
                (if scatter?
@@ -445,7 +449,6 @@
                (values scatter? n-switch-n*)))
          (define same-mode?
            (equal? scatter? n-scatter?))
-         (define c (pos->cell p))
          (define nps*
            (cell-neighbors/no-reverse c lc))
          (define nps
@@ -454,28 +457,37 @@
            (if (not same-mode?)
                (list* lc nps*)
                nps*))
-         (define pp (player-pos (hash-ref dyn-objs 'player)))
+         (define pp 
+           (player-pos (hash-ref dyn-objs 'player)))
          (define target
-           (if (and l-target same-mode?
-                    (if (not n-scatter?) (= (length nps) 1) #t))
-               l-target
-               (if n-scatter?
-                   (scatter-tile)
-                   (match n
-                     [0
-                      pp]
-                     [1
-                      (+ pp
-                         (make-polar 4 (player-dir (hash-ref dyn-objs 'player))))]
-                     [2
-                      (define v
-                        (- pp
-                           (ghost-pos (hash-ref dyn-objs 'ambusher))))
-                      (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
-                     [3
-                      (if (<= (pos->pos-distance pp p) 8)
-                          l-target
-                          pp)]))))
+           (cond
+             [(or frightened?
+                  (and l-target same-mode?
+                       (if (not n-scatter?) (= (length nps) 1) #t)))
+              l-target]
+             [n-scatter?
+              (scatter-tile)]
+             [else
+              (match n
+                [0
+                 pp]
+                [1
+                 (+ pp
+                    (make-polar 
+                     4 
+                     (player-dir 
+                      (hash-ref dyn-objs 'player))))]
+                [2
+                 (define v
+                   (- pp
+                      (ghost-pos 
+                       (hash-ref dyn-objs 'ambusher))))
+                 (+ pp (make-polar (* 2 (magnitude v))
+                                   (angle v)))]
+                [3
+                 (if (<= (pos->pos-distance pp p) 8)
+                     l-target
+                     pp)])]))
          (define next-cell
            (argmin* (curry pos->cell-distance target)
                     nps))
