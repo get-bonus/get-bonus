@@ -331,10 +331,8 @@
   (define q:se quad:template)
   (define map-space
     (for*/fold ([s (cd:space width height 1. 1.)])
-      ([c (in-range width)]
-       [r (in-range height)])
-      (define x c)
-      (define y (- height r 1))
+      ([x (in-range width)]
+       [y (in-range height)])
       (define cx (+ x .5))
       (define cy (+ y .5))
       (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
@@ -344,10 +342,8 @@
     (gl:color 
      0. 0. 1. 0.
      (gl:for*/gl
-      ([c (in-range width)]
-       [r (in-range height)])
-      (define x c)
-      (define y (r->y r))
+      ([x (in-range width)]
+       [y (in-range height)])
       (gl:translate 
        (+ x .5) (+ y .5)
        (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
