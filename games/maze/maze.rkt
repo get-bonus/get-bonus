@@ -73,7 +73,6 @@
 ; XXX bomb
 ; XXX move slower in frightened mode
 ; XXX run away in frightened mode
-; XXX blink white near the end of frightend mode
 
 (define-texture sprites-t "pacman.png")
 
@@ -99,9 +98,11 @@
     (+ 125 (* 18 which-ghost))
     14 12)))
 
-; XXX Use white frame too
-(define (scared-ghost-animation frame-n)
-  (ghost-sprite 4 0 frame-n))
+(define (scared-ghost-animation frame-n warning?)
+  (ghost-sprite 
+   4 
+   (if (and warning? (even? frame-n)) 1 0)
+   frame-n))
 
 (define (player-animation n)
   (gl:translate 
@@ -319,7 +320,8 @@
 (define outside-jail-right-of
   (pos->cell
    (+ outside-jail 1.)))
-(define TIME-TO-POWER (/ 6 RATE)) ; 6 seconds
+(define TIME-TO-POWER-WARNING (/ 2 RATE))
+(define TIME-TO-POWER (/ 7 RATE))
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
@@ -627,7 +629,9 @@
                 (psn-x p) (psn-y p)
                 (if (zero? power-left-n)
                     (ghost-animation n frame-n dir)
-                    (scared-ghost-animation frame-n)))
+                    (scared-ghost-animation
+                     frame-n
+                     (power-left-n . <= . TIME-TO-POWER-WARNING))))
                (gl:translate
                 (- (psn-x tp) .5) (- (psn-y tp) .5)
                 (gl:color/%
@@ -644,17 +648,7 @@
             (psn-x p) (psn-y p)
             (gl:rotate
              (rad->deg dir)
-             (player-animation frame-n)))]))
-       #;(gl:color
-          1. 1. 1. 0.
-          ; Draw horizontal lines
-          (gl:for/gl
-           ([y (in-range (add1 height))])
-           (gl:line 0 y width y))
-          ; Draw vertical lines
-          (gl:for/gl
-           ([x (in-range (add1 width))])
-           (gl:line x 0 x height))))))
+             (player-animation frame-n)))])))))
     (append
      (if (eq? event 'pellet)
          (list (sound-at se:crunch center-pos #:gain 0.8))
