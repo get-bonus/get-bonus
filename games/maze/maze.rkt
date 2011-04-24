@@ -15,6 +15,7 @@
          "../../exp/3s.rkt"
          "../../exp/psn.rkt"
          "../../exp/math.rkt"
+         "../../exp/random.rkt"
          "../../exp/fmatrix.rkt"
          (only-in "../../exp/path-finding.rkt"
                   manhattan-distance)
@@ -119,34 +120,34 @@
   (gl:scale (* pellet-r 2) (* 2 pellet-r)
             (gl:circle)))
 
-(define w-mid-point 
+(define h-width 
   (/ width 2))
-(define h-mid-point 
+(define h-height 
   (/ height 2))
 (define (quad-ref quad vr vc)  
-  (bytes-ref quad (+ (* vr w-mid-point) vc)))
+  (bytes-ref quad (+ (* vr h-width) vc)))
 
 (define (layout-ref/xy q:nw q:ne q:sw q:se x y)
   (define r (y->r y))
   (define c x)
   (define vc
-    (if (c . < . w-mid-point)
+    (if (c . < . h-width)
         c
         (- width c 1)))
   (define vr
-    (if (r . < . h-mid-point)
+    (if (r . < . h-height)
         r
         (- height r 1)))
   (define
     quad
     (cond
-      [(and (r . < . h-mid-point) (c . < . w-mid-point))
+      [(and (r . < . h-height) (c . < . h-width))
        q:sw]
-      [(and (r . < . h-mid-point) (c . >= . w-mid-point))
+      [(and (r . < . h-height) (c . >= . h-width))
        q:se]
-      [(and (r . >= . h-mid-point) (c . < . w-mid-point))
+      [(and (r . >= . h-height) (c . < . h-width))
        q:nw]
-      [(and (r . >= . h-mid-point) (c . >= . w-mid-point))
+      [(and (r . >= . h-height) (c . >= . h-width))
        q:ne]))
   (quad-ref quad vr vc))
 (define (r->y r)
@@ -319,12 +320,12 @@
 (define (static-display st)
   (gl:seqn (static-map-display st)
            (static-objs-display st)))
-(define (place-power-up w h fm)
-  (define x (random w))
-  (define y (random h))
+(define (place-power-up sw ew sh eh fm)
+  (define x (random-between sw ew))
+  (define y (random-between sh eh))
   (if (eq? 'pellet (fmatrix-ref fm x y #f))
       (fmatrix-set fm x y 'power-up)
-      (place-power-up w h fm)))
+      (place-power-up sw ew sh eh fm)))
 (define (quads->space q:nw q:ne q:sw q:se)
   (for*/fold ([s (cd:space width height 1. 1.)])
     ([x (in-range width)]
@@ -369,13 +370,13 @@
                  fm)])))
   (define fin-fm
     (place-power-up 
-     width height 
+     0 h-width 0 h-height 
      (place-power-up
-      width height 
+      0 h-width h-height height 
       (place-power-up
-       width height 
+       h-width width 0 h-height 
        (place-power-up
-        width height fm)))))
+        h-width width h-height height fm)))))
   (static q:nw q:ne q:sw q:se
           (quads->display q:nw q:ne q:sw q:se)
           (quads->space q:nw q:ne q:sw q:se)
