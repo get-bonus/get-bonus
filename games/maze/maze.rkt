@@ -51,7 +51,7 @@
   (values (* 2 (bytes-length (first lines)))
           (* 2 (length lines))
           (apply bytes-append lines)))
-(define-values (width height quadrant)
+(define-values (width height quad:template)
   (path->quadrant template-map))
 
 (define center-pos
@@ -123,7 +123,12 @@
   (/ width 2))
 (define h-mid-point 
   (/ height 2))
-(define (layout-ref r c)
+(define (quad-ref quad vr vc)  
+  (bytes-ref quad (+ (* vr w-mid-point) vc)))
+
+(define (layout-ref/xy q:nw q:ne q:sw q:se x y)
+  (define r (y->r y))
+  (define c x)
   (define vc
     (if (c . < . w-mid-point)
         c
@@ -132,13 +137,22 @@
     (if (r . < . h-mid-point)
         r
         (- height r 1)))
-  (bytes-ref quadrant (+ (* vr w-mid-point) vc)))
+  (define
+    quad
+    (cond
+      [(and (r . < . h-mid-point) (c . < . w-mid-point))
+       q:sw]
+      [(and (r . < . h-mid-point) (c . >= . w-mid-point))
+       q:se]
+      [(and (r . >= . h-mid-point) (c . < . w-mid-point))
+       q:nw]
+      [(and (r . >= . h-mid-point) (c . >= . w-mid-point))
+       q:ne]))
+  (quad-ref quad vr vc))
 (define (r->y r)
   (- height r 1))
 (define (y->r y)
   (- height (+ y 1)))
-(define (layout-ref/xy x y)
-  (layout-ref (y->r y) x))
 
 (test
  (for ([rand (in-range height)])
@@ -289,10 +303,18 @@
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
-(struct static (map map-display map-space
+(struct static (q:nw q:ne q:sw q:se
+                map-display map-space
                 objs objs-display))
 (define (static-map-ref st x y)
-  (layout-ref/xy x y))
+  (match-define 
+   (struct* static
+            ([q:nw q:nw]
+             [q:ne q:ne]
+             [q:sw q:sw]
+             [q:se q:se]))
+   st)
+  (layout-ref/xy q:nw q:ne q:sw q:se x y))
 (define (static-display st)
   (gl:seqn (static-map-display st)
            (static-objs-display st)))
@@ -303,6 +325,10 @@
       (fmatrix-set fm x y 'power-up)
       (place-power-up w h fm)))
 (define (make-static)
+  (define q:nw quad:template)
+  (define q:sw quad:template)
+  (define q:ne quad:template)
+  (define q:se quad:template)
   (define map-space
     (for*/fold ([s (cd:space width height 1. 1.)])
       ([c (in-range width)]
@@ -311,7 +337,7 @@
       (define y (- height r 1))
       (define cx (+ x .5))
       (define cy (+ y .5))
-      (if (equal? wall (layout-ref r c))
+      (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
           (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
           s)))
   (define whole-map
@@ -324,7 +350,7 @@
       (define y (r->y r))
       (gl:translate 
        (+ x .5) (+ y .5)
-       (if (equal? wall (layout-ref r c))
+       (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
            (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
            gl:blank)))))
   (define-values
@@ -333,7 +359,7 @@
       ([x (in-range width)]
        [y (in-range height)])
       (cond
-        [(= hall (layout-ref/xy x y))
+        [(= hall (layout-ref/xy q:nw q:ne q:sw q:se x y))
          (values (add1 ct) (fmatrix-set fm x y 'pellet))]
         [else
          (values ct fm)])))
@@ -346,7 +372,8 @@
        width height 
        (place-power-up
         width height fm)))))
-  (static #f whole-map map-space
+  (static q:nw q:ne q:sw q:se
+          whole-map map-space
           fin-fm (static-fm->display fin-fm)))
 (define (static-fm->display fm)
   (gl:color/% 
