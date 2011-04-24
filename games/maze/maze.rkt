@@ -59,8 +59,6 @@
   (psn (/ width 2.) (/ height 2.)))
 
 ; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
-; XXX when a quadrant is cleared, put a fruit on the diagonal quad
-;     when the fruit is got, re-populate the first quad
 ; XXX make layouts widescreen (56 width?)
 ; XXX ghosts/pacman are the wrong size
 ; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
@@ -138,7 +136,6 @@
             #:when (= (quad-ref quad r c) value))
     (cons r c)))
 (define power-up-cell (locate-cell quad:template power-up))
-; XXX use
 (define fruit-cell (locate-cell quad:template fruit))
 (define ghost-entry-cell (locate-cell quad:template ghost-entry))
 (define player-entry-cell (locate-cell quad:template player-entry))
@@ -457,7 +454,6 @@
           (if (zero? qc-n)
               (let ()
                 (define oq (opposite-quad q))
-                (printf "Adding fruit\n")
                 (hash-update im oq place-fruit))
               im))
         (define quad->objs-n
