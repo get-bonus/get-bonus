@@ -55,12 +55,14 @@
   (apply bytes-append (rest (file->bytes-lines p))))
 (define layout (path->layout default-map))
 
+; XXX when a quadrant is cleared, put a fruit on the diagonal quad
+;     when the fruit is got, re-populate the first quad
 ; XXX make layouts widescreen (56 width?)
 ; XXX ghosts/pacman are the wrong size
 ; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
-; XXX kill ghosts / be killed
+; XXX kill ghosts
 ; XXX increase speed with time/score
 ; XXX add fruits
 ; XXX respawn pellets / change layout on left/right when pellets gone on other side
@@ -71,7 +73,6 @@
 ; XXX each level has 4 powerups
 ; XXX move slower and escape in frightened mode
 ; XXX decrease frightened time with time/score
-; XXX ambusher exits immediately
 
 (define-texture sprites-t "pacman.png")
 
@@ -317,7 +318,6 @@
     (for*/fold ([ct 0] [fm (fmatrix width height)])
       ([x (in-range width)]
        [y (in-range height)])
-      ; XXX Don't put them close to the ghost house?
       (if (= hall (layout-ref/xy x y))
           (values (add1 ct) (fmatrix-set fm x y 'pellet))
           (values ct fm))))
@@ -342,7 +342,7 @@
   (static (sub1 c) fm-n 
           (static-fm->display fm-n)))
 
-(struct game-st (frame score static-objs dyn-objs))
+(struct game-st (frame score lives next-extend static-objs dyn-objs))
 (struct player (pos dir next-dir))
 (struct ghost (n pos target dir last-cell scatter? frames-to-switch dot-timer))
 (define (make-ghost n init-timer)
@@ -358,22 +358,29 @@
     (values k (f v))))
 
 (define pellet-pts 10)
+(define extend-pts 1000)
+
+; XXX Add a slow start-up clock for beginning of game and
+;     after death
+(define init-objs
+  (hasheq
+   'chaser (make-ghost 0 0)
+   'ambusher (make-ghost 1 40)
+   'fickle (make-ghost 2 80)
+   'stupid (make-ghost 3 160)
+   'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
 
 (big-bang
- (game-st 0 0 (layout->static-objs layout)
-          (hasheq
-           'chaser (make-ghost 0 0)
-            ; XXX Should really start inside the jail and leave shortly thereafter
-           'ambusher (make-ghost 1 0)
-           'fickle (make-ghost 2 30)
-           'stupid (make-ghost 3 80)
-           'player (player (psn 13.5 7.5) (* .5 pi) (* .5 pi))))
+ (game-st 0 0 3 extend-pts (layout->static-objs layout)
+          init-objs)
  #:sound-scale
  (/ width 2.)
  #:tick
  (λ (w cs)
    (define c (last cs))
-   (match-define (game-st frame score st dyn-objs) w)
+   (match-define
+    (game-st frame score lives next-extend st dyn-objs)
+    w)
    (define frame-n (add1 frame))
    (define dyn-objs:post-movement
      (update-objs
@@ -426,8 +433,7 @@
                       (+ pp (make-polar (* 2 (magnitude v)) (angle v)))]
                      [3
                       (if (<= (pos->pos-distance pp p) 8)
-                          ; XXX This can keep him target the spot where the player WAS
-                          l-target #;(scatter-tile)
+                          l-target
                           pp)]))))
          (define next-cell
            (argmin* (curry pos->cell-distance target)
@@ -448,9 +454,6 @@
                            c)]
                       [pos np]
                       [dir ndir])]
-        ; XXX He's in jail, animate him in jail?
-        [(? ghost? v)
-         v]
         [(player p dir next-dir)
          (define stick (controller-dpad c))
          (define next-dir-n 
@@ -473,9 +476,10 @@
            (if (= np p)
                (try-direction p dir)
                np))
-         (player nnp actual-dir next-dir-n)])))
+         (player nnp actual-dir next-dir-n)]
+        [v v])))
    (define-values
-     (score-n st-n ate-a-dot?)
+     (score-n next-extend-p st-n ate-a-dot?)
      (let ()
        (match-define 
         (cons x y) 
@@ -484,10 +488,11 @@
        (match (static-ref st x y)
          ['pellet
           (values (+ score pellet-pts)
+                  (- next-extend pellet-pts)
                   (static-chomp st x y)
                   #t)]
          [#f
-          (values score st #f)])))   
+          (values score next-extend st #f)])))   
    (define dyn-objs:post-chomp
      (if ate-a-dot?
          (update-objs
@@ -499,10 +504,29 @@
                           [dot-timer (max 0 (sub1 dt))])]
             [v v]))
          dyn-objs:post-movement))
+   (define-values
+     (lives-p next-extend-n)
+     (if (next-extend-p . <= . 0)
+         ; XXX Add sound effect
+         (values (add1 lives) extend-pts)
+         (values lives next-extend-p)))
+   (define-values
+     (lives-n dyn-objs:post-death)
+     (if (for/or ([v (in-hash-values dyn-objs:post-chomp)]
+                  #:when (ghost? v)
+                  #:when (zero? (ghost-dot-timer v)))
+           (equal? 
+            (pos->cell 
+             (player-pos (hash-ref dyn-objs:post-chomp 'player)))
+            (pos->cell (ghost-pos v))))
+         ; XXX Add sound effect
+         (values (sub1 lives-p) init-objs)
+         (values lives-p dyn-objs:post-chomp)))
    (define dyn-objs:final
-     dyn-objs:post-chomp)
+     dyn-objs:post-death)
    (values 
-    (game-st frame-n score-n st-n dyn-objs:final)
+    (game-st frame-n score-n lives-n
+             next-extend-n st-n dyn-objs:final)
     (gl:focus 
      width (+ height 2) width (+ height 2) 0 0
      (gl:background 
@@ -520,35 +544,43 @@
           (format "FPS: ~a"
                   (real->decimal-string
                    (current-rate) 1)))))
-       ; XXX show lives
        (gl:translate
         0. (+ height 0.5)
         (gl:texture
          (gl:string->texture
           #:size 50
-          (format "Score: ~a"
-                  score-n)))))
+          (format "Score: ~a    Lives: ~a"
+                  score-n lives-n)))))
       (gl:seqn
        whole-map
        (static-display st)
        (gl:for/gl
         ([v (in-hash-values dyn-objs:final)])
         (match v
-          [(struct* ghost ([n n] [pos p] [target tp] [dir dir]))
-           ; XXX dead mode
-           (gl:seqn
-            (gl:translate 
-             (psn-x p) (psn-y p)
-             (ghost-animation n frame-n dir))
-            (gl:translate
-             (- (psn-x tp) .5) (- (psn-y tp) .5)
-             (gl:color/%
-              (match n
-                [0 (make-object color% 169 16 0)]
-                [1 (make-object color% 215 182 247)]
-                [2 (make-object color% 60 189 255)]
-                [3 (make-object color% 230 93 16)])
-              (gl:rectangle 1. 1. 'outline))))]
+          [(struct* ghost 
+                    ([n n] 
+                     [pos p]
+                     [target tp]
+                     [dir dir]
+                     [dot-timer dt]))
+           (cond
+             [(or (zero? dt)
+                  (and (dt . <= . 10) (even? frame)))
+              (gl:seqn
+               (gl:translate 
+                (psn-x p) (psn-y p)
+                (ghost-animation n frame-n dir))
+               (gl:translate
+                (- (psn-x tp) .5) (- (psn-y tp) .5)
+                (gl:color/%
+                 (match n
+                   [0 (make-object color% 169 16 0)]
+                   [1 (make-object color% 215 182 247)]
+                   [2 (make-object color% 60 189 255)]
+                   [3 (make-object color% 230 93 16)])
+                 (gl:rectangle 1. 1. 'outline))))]
+             [else
+              gl:blank])]
           [(player p dir _)
            (gl:translate 
             (psn-x p) (psn-y p)
@@ -575,4 +607,5 @@
  #:listener
  (λ (w) center-pos)
  #:done?
- (λ (w) #f))
+ (λ (w) 
+   (zero? (game-st-lives w))))
