@@ -27,7 +27,6 @@
 (define (sequence-not-empty? s)
   (for/or ([e s]) #t))
 
-
 (define title
   (gl:string->texture "ハングリーマン"
                       #:size 50 #:family 'decorative))
@@ -144,31 +143,6 @@
    (test
     (r->y (y->r rand)) => rand
     (y->r (r->y rand)) => rand)))
-
-(define whole-map
-  (gl:color 
-   0. 0. 1. 0.
-   (gl:for*/gl
-    ([c (in-range width)]
-     [r (in-range height)])
-    (define x c)
-    (define y (r->y r))
-    (gl:translate 
-     (+ x .5) (+ y .5)
-     (if (equal? wall (layout-ref r c))
-         (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
-         gl:blank)))))
-(define map-space
-  (for*/fold ([s (cd:space width height 1. 1.)])
-    ([c (in-range width)]
-     [r (in-range height)])
-    (define x c)
-    (define y (- height r 1))
-    (define cx (+ x .5))
-    (define cy (+ y .5))
-    (if (equal? wall (layout-ref r c))
-        (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
-        s)))
 
 (define (wrap-at top n)
   (cond
@@ -288,12 +262,12 @@
   (posn->v p (make-polar speed mdir)))
 (define (posn->v p v)
   (wrap width height (+ p v)))
-(define (try-direction speed p mdir)
-  (try-move p (posn-in-dir speed p mdir)))
-(define (try-move p mp)
+(define (try-direction st speed p mdir)
+  (define mp (posn-in-dir speed p mdir))
   (if (sequence-not-empty? 
        (cd:space-collisions? 
-        map-space (cd:aabb mp player-r player-r)))
+        (static-map-space st)
+        (cd:aabb mp player-r player-r)))
       p
       mp))
 
@@ -313,7 +287,7 @@
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
-(struct static (map map-display
+(struct static (map map-display map-space
                 objs objs-display))
 (define (static-display st)
   (gl:seqn (static-map-display st)
@@ -325,6 +299,30 @@
       (fmatrix-set fm x y 'power-up)
       (place-power-up w h fm)))
 (define (make-static)
+  (define map-space
+  (for*/fold ([s (cd:space width height 1. 1.)])
+    ([c (in-range width)]
+     [r (in-range height)])
+    (define x c)
+    (define y (- height r 1))
+    (define cx (+ x .5))
+    (define cy (+ y .5))
+    (if (equal? wall (layout-ref r c))
+        (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
+        s)))
+  (define whole-map
+    (gl:color 
+     0. 0. 1. 0.
+     (gl:for*/gl
+      ([c (in-range width)]
+       [r (in-range height)])
+      (define x c)
+      (define y (r->y r))
+      (gl:translate 
+       (+ x .5) (+ y .5)
+       (if (equal? wall (layout-ref r c))
+           (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
+           gl:blank)))))
   (define-values
     (count fm)
     (for*/fold ([ct 0] [fm (fmatrix width height)])
@@ -344,7 +342,8 @@
        width height 
        (place-power-up
         width height fm)))))
-  (static #f whole-map fin-fm (static-fm->display fin-fm)))
+  (static #f whole-map map-space
+          fin-fm (static-fm->display fin-fm)))
 (define (static-fm->display fm)
   (gl:color/% 
    (make-object color% 255 161 69)
@@ -358,16 +357,20 @@
        (gl:translate (+ x .5) (+ y .5) power-up-img)]
       [#f
        gl:blank]))))
-(define (static-ref st x y)
-  (fmatrix-ref (static-objs st) x y #f))
 (define (static-chomp st x y)
   (define fm (static-objs st))
-  (define fm-n
-    (fmatrix-set fm x y #f))
-  (struct-copy static st
-               [objs fm-n]
-               [objs-display
-                (static-fm->display fm-n)]))
+  (define obj 
+    (fmatrix-ref fm x y #f))
+  (if obj
+      (let ()
+        (define fm-n
+          (fmatrix-set fm x y #f))
+        (values (struct-copy static st
+                             [objs fm-n]
+                             [objs-display
+                              (static-fm->display fm-n)])
+                obj))
+      (values st obj)))
 
 (struct game-st (frame 
                  score lives next-extend 
@@ -526,7 +529,7 @@
          ; The coorridors used to feel too "tight" 
          ; and easy to get stuck on an edge, but I 
          ; think this got fixed
-         (define np (try-direction speed p next-dir-n))
+         (define np (try-direction st speed p next-dir-n))
          ; Don't change the direction if we couldn't
          ; move in it
          (define actual-dir
@@ -535,7 +538,7 @@
                next-dir-n))
          (define nnp
            (if (= np p)
-               (try-direction speed p dir)
+               (try-direction st speed p dir)
                np))
          (player nnp actual-dir next-dir-n)]
         [v v])))
@@ -546,17 +549,16 @@
         (cons x y) 
         (pos->cell (player-pos
                     (hash-ref dyn-objs:post-movement 'player))))
-       (match (static-ref st x y)
+       (define-values
+         (st-n chomped?)
+         (static-chomp st x y))
+       (match chomped?
          ['pellet
-          (values pellet-pts
-                  (static-chomp st x y)
-                  'pellet)]
+          (values pellet-pts st-n 'pellet)]
          ['power-up
-          (values power-up-pts
-                  (static-chomp st x y)
-                  'power-up)]
+          (values power-up-pts st-n 'power-up)]
          [#f
-          (values 0 st #f)])))
+          (values 0 st-n #f)])))
    (define power-left-n
      (if (eq? event 'power-up)
          (+ power-left-p TIME-TO-POWER)
