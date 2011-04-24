@@ -42,18 +42,20 @@
 ; XXX cut this better
 (define-sound se:power-up "power-up.mp3")
 
-(define width 28)
-(define height 36)
-(define center-pos
-  (psn (/ width 2.) (/ height 2.)))
-
 (define-runtime-path template-map "template.map")
 (match-define 
  (list wall hall gate jail)
  (bytes->list #"1023"))
 (define (path->quadrant p)
-  (apply bytes-append (file->bytes-lines p)))
-(define quadrant (path->quadrant template-map))
+  (define lines (file->bytes-lines p))
+  (values (* 2 (bytes-length (first lines)))
+          (* 2 (length lines))
+          (apply bytes-append lines)))
+(define-values (width height quadrant)
+  (path->quadrant template-map))
+
+(define center-pos
+  (psn (/ width 2.) (/ height 2.)))
 
 ; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
 ; XXX when a quadrant is cleared, put a fruit on the diagonal quad
