@@ -243,21 +243,6 @@
        [right (add1 x) y]
        [down x (sub1 y)]))
 
-#;(test
- (layout-ref/xy 2 1) => hall
- (layout-ref/xy 1 1) => hall
- (wrap-at width 28) => 0
- (wrap-at height 16) => 16
- (layout-ref/xy 0 16) => hall
- (cell-neighbors/no-reverse (cons 27 16) (cons 26 16)) => (list (cons 28 16))
- (cell-neighbors/no-reverse (cons 28 16) (cons 27 16)) => (list (cons 29 16))
- (cell-neighbors/no-reverse (cons 0 16) (cons 1 16)) => (list (cons -1 16))
- (cell-neighbors/no-reverse (cons 10 19) (cons 11 19)) => (list (cons 9 19))
- (cell-neighbors/no-reverse (cons 9 19) (cons 10 19)) => (list (cons 9 18))
- (cell-neighbors/no-reverse (cons 9 19) (cons 9 20)) => (list (cons 10 19) (cons 9 18))
- (cell-neighbors/no-reverse (cons 1 1) (cons 2 1)) => (list (cons 1 2))
- (cell-neighbors/no-reverse (cons 2 1) (cons 3 1)) => (list (cons 1 1)))
-
 (define (pos->cell-distance p c)
   (manhattan-distance (pos->cell p) c))
 (define (pos->pos-distance p1 p2)
@@ -328,14 +313,18 @@
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
-(struct static (count fmatrix display))
+(struct static (map map-display
+                objs objs-display))
+(define (static-display st)
+  (gl:seqn (static-map-display st)
+           (static-objs-display st)))
 (define (place-power-up w h fm)
   (define x (random w))
   (define y (random h))
   (if (eq? 'pellet (fmatrix-ref fm x y #f))
       (fmatrix-set fm x y 'power-up)
       (place-power-up w h fm)))
-(define (layout->static-objs)
+(define (make-static)
   (define-values
     (count fm)
     (for*/fold ([ct 0] [fm (fmatrix width height)])
@@ -355,7 +344,7 @@
        width height 
        (place-power-up
         width height fm)))))
-  (static count fin-fm (static-fm->display fin-fm)))
+  (static #f whole-map fin-fm (static-fm->display fin-fm)))
 (define (static-fm->display fm)
   (gl:color/% 
    (make-object color% 255 161 69)
@@ -370,22 +359,28 @@
       [#f
        gl:blank]))))
 (define (static-ref st x y)
-  (fmatrix-ref (static-fmatrix st) x y #f))
+  (fmatrix-ref (static-objs st) x y #f))
 (define (static-chomp st x y)
-  (match-define (static c fm _) st)
+  (define fm (static-objs st))
   (define fm-n
     (fmatrix-set fm x y #f))
-  (static (sub1 c) fm-n 
-          (static-fm->display fm-n)))
+  (struct-copy static st
+               [objs fm-n]
+               [objs-display
+                (static-fm->display fm-n)]))
 
 (struct game-st (frame 
                  score lives next-extend 
                  power-left
                  static-objs dyn-objs))
 (struct player (pos dir next-dir))
-(struct ghost (n pos target dir last-cell scatter? frames-to-switch dot-timer))
+(struct ghost 
+        (n pos target dir last-cell
+           scatter? frames-to-switch dot-timer))
 (define (make-ghost n init-timer)
-  (ghost n outside-jail (scatter-tile) 'left outside-jail-right-of #t TIME-TO-SCATTER init-timer))
+  (ghost n outside-jail (scatter-tile)
+         'left outside-jail-right-of #t
+         TIME-TO-SCATTER init-timer))
 
 (define (scatter-tile)
   (psn (* (random) width)
@@ -415,7 +410,7 @@
 
 (big-bang
  (game-st 0 0 3 extend-pts 0
-          (layout->static-objs) init-objs)
+          (make-static) init-objs)
  #:sound-scale
  (/ width 2.)
  #:tick
@@ -658,7 +653,6 @@
           (format "Score: ~a    Lives: ~a"
                   score-n lives-n)))))
       (gl:seqn
-       whole-map
        (static-display st)
        (gl:for/gl
         ([v (in-hash-values dyn-objs:final)])
