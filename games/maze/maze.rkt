@@ -69,8 +69,6 @@
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
 ; XXX bomb
-; XXX fruit appears after 70 dots and 170 dots
-; XXX each level has 4 powerups
 ; XXX move slower and escape in frightened mode
 ; XXX decrease frightened time with time/score
 
@@ -107,6 +105,9 @@
 (define pellet-r (/ player-r 6))
 (define pellet-img
   (gl:scale pellet-r pellet-r
+            (gl:circle)))
+(define power-up-img
+  (gl:scale (* pellet-r 2) (* 2 pellet-r)
             (gl:circle)))
 
 (define mid-point 
@@ -312,16 +313,33 @@
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
 (struct static (count fmatrix display))
+(define (place-power-up w h fm)
+  (define x (random w))
+  (define y (random h))
+  (if (eq? 'pellet (fmatrix-ref fm x y #f))
+      (fmatrix-set fm x y 'power-up)
+      (place-power-up w h fm)))
 (define (layout->static-objs layout)
   (define-values
     (count fm)
     (for*/fold ([ct 0] [fm (fmatrix width height)])
       ([x (in-range width)]
        [y (in-range height)])
-      (if (= hall (layout-ref/xy x y))
-          (values (add1 ct) (fmatrix-set fm x y 'pellet))
-          (values ct fm))))
-  (static count fm (static-fm->display fm)))
+      (cond
+        [(= hall (layout-ref/xy x y))
+         (values (add1 ct) (fmatrix-set fm x y 'pellet))]
+        [else
+         (values ct fm)])))
+  (define fin-fm
+    (place-power-up 
+     width height 
+     (place-power-up
+      width height 
+      (place-power-up
+       width height 
+       (place-power-up
+        width height fm)))))
+  (static count fin-fm (static-fm->display fin-fm)))
 (define (static-fm->display fm)
   (gl:color/% 
    (make-object color% 255 161 69)
@@ -331,6 +349,8 @@
     (match (fmatrix-ref fm x y #f)
       ['pellet
        (gl:translate (+ x .5) (+ y .5) pellet-img)]
+      ['power-up
+       (gl:translate (+ x .5) (+ y .5) power-up-img)]
       [#f
        gl:blank]))))
 (define (static-ref st x y)
@@ -358,6 +378,7 @@
     (values k (f v))))
 
 (define pellet-pts 10)
+(define power-up-pts 50)
 (define extend-pts 1000)
 
 ; XXX Add a slow start-up clock for beginning of game and
@@ -479,7 +500,7 @@
          (player nnp actual-dir next-dir-n)]
         [v v])))
    (define-values
-     (score-n next-extend-p st-n ate-a-dot?)
+     (dp st-n event)
      (let ()
        (match-define 
         (cons x y) 
@@ -487,14 +508,19 @@
                     (hash-ref dyn-objs:post-movement 'player))))
        (match (static-ref st x y)
          ['pellet
-          (values (+ score pellet-pts)
-                  (- next-extend pellet-pts)
+          (values pellet-pts
                   (static-chomp st x y)
-                  #t)]
+                  'pellet)]
+         ['power-up
+          (values power-up-pts
+                  (static-chomp st x y)
+                  'power-up)]
          [#f
-          (values score next-extend st #f)])))   
+          (values 0 st #f)])))
+   (define score-n (+ score dp))
+   (define next-extend-p (- next-extend dp))
    (define dyn-objs:post-chomp
-     (if ate-a-dot?
+     (if (eq? event 'pellet)
          (update-objs
           dyn-objs:post-movement
           (match-lambda
@@ -598,7 +624,8 @@
            ([x (in-range (add1 width))])
            (gl:line x 0 x height))))))
     (append
-     (if ate-a-dot?
+     ; XXX add 'power-up se
+     (if (eq? event 'pellet)
          (list (sound-at se:crunch center-pos #:gain 0.8))
          empty)
      (if (zero? frame)
