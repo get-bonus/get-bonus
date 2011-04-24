@@ -45,8 +45,8 @@
 
 (define-runtime-path template-map "template.map")
 (match-define 
- (list wall hall gate jail)
- (bytes->list #"1023"))
+ (list hall wall power-up fruit ghost-entry player-entry)
+ (bytes->list #"012345"))
 (define (path->quadrant p)
   (define lines (file->bytes-lines p))
   (values (* 2 (bytes-length (first lines)))
@@ -226,7 +226,7 @@
             [ny (wrap-at height ny*)]
             [nc (cons nx* ny*)])
        (if (or (equal? last-cell nc)
-               (not (= hall (static-map-ref st nx ny))))
+               (= wall (static-map-ref st nx ny)))
            empty
            (list nc)))
      ...))
@@ -413,13 +413,13 @@
       (let ()
         (define fm-n
           (fmatrix-set fm r c #f))
+        (define qc-n
+          (if (eq? obj 'pellet)
+              (sub1 qc)
+              qc))
         (define quad->objs-n
           (hash-set quad->objs q
-                    (quad-objs 
-                     (if (eq? obj 'pellet)
-                         (sub1 qc)
-                         qc)
-                     fm-n)))
+                    (quad-objs qc-n fm-n)))
                     
         (values (struct-copy static st
                              [quad->objs quad->objs-n]
