@@ -52,7 +52,6 @@
   (values (* 2 (bytes-length (first lines)))
           (* 2 (length lines))
           (apply bytes-append lines)))
-; XXX discover jail-pos and start-pos
 (define-values (width height quad:template)
   (path->quadrant template-map))
 
@@ -127,6 +126,19 @@
   (/ height 2))
 (define (quad-ref quad vr vc)  
   (bytes-ref quad (+ (* vr h-width) vc)))
+
+(define (locate-cell quad value)
+  (for*/or ([r (in-range h-height)]
+            [c (in-range h-width)]
+            #:when (= (quad-ref quad r c) value))
+    (cons r c)))
+(define power-up-cell (locate-cell quad:template power-up))
+; XXX use
+(define fruit-cell (locate-cell quad:template fruit))
+; XXX use
+(define ghost-entry-cell (locate-cell quad:template ghost-entry))
+; XXX use
+(define player-entry-cell (locate-cell quad:template player-entry))
 
 (define (xy->quad*r*c x y)
   (define r (y->r y))
@@ -323,11 +335,8 @@
   (gl:seqn (static-map-display st)
            (static-objs-display st)))
 (define (place-power-up fm)
-  (define c (random h-width))
-  (define r (random h-height))
-  (if (eq? 'pellet (fmatrix-ref fm r c #f))
-      (fmatrix-set fm r c 'power-up)
-      (place-power-up fm)))
+  (match-define (cons r c) power-up-cell)
+  (fmatrix-set fm r c 'power-up))
 
 (define (quads->space qs)
   (for*/fold ([s (cd:space width height 1. 1.)])
