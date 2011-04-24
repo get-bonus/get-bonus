@@ -119,34 +119,34 @@
   (gl:scale (* pellet-r 2) (* 2 pellet-r)
             (gl:circle)))
 
-(define h-width 
+(define w-mid-point 
   (/ width 2))
-(define h-height 
+(define h-mid-point 
   (/ height 2))
 (define (quad-ref quad vr vc)  
-  (bytes-ref quad (+ (* vr h-width) vc)))
+  (bytes-ref quad (+ (* vr w-mid-point) vc)))
 
 (define (layout-ref/xy q:nw q:ne q:sw q:se x y)
   (define r (y->r y))
   (define c x)
   (define vc
-    (if (c . < . h-width)
+    (if (c . < . w-mid-point)
         c
         (- width c 1)))
   (define vr
-    (if (r . < . h-height)
+    (if (r . < . h-mid-point)
         r
         (- height r 1)))
   (define
     quad
     (cond
-      [(and (r . < . h-height) (c . < . h-width))
+      [(and (r . < . h-mid-point) (c . < . w-mid-point))
        q:sw]
-      [(and (r . < . h-height) (c . >= . h-width))
+      [(and (r . < . h-mid-point) (c . >= . w-mid-point))
        q:se]
-      [(and (r . >= . h-height) (c . < . h-width))
+      [(and (r . >= . h-mid-point) (c . < . w-mid-point))
        q:nw]
-      [(and (r . >= . h-height) (c . >= . h-width))
+      [(and (r . >= . h-mid-point) (c . >= . w-mid-point))
        q:ne]))
   (quad-ref quad vr vc))
 (define (r->y r)
@@ -325,49 +325,31 @@
   (if (eq? 'pellet (fmatrix-ref fm x y #f))
       (fmatrix-set fm x y 'power-up)
       (place-power-up w h fm)))
-(define (space-add-quad sp q sw ew sh eh)
-  (for*/fold ([s sp])
-    ([x (in-range sw ew)]
-     [y (in-range sh eh)])
+(define (quads->space q:nw q:ne q:sw q:se)
+  (for*/fold ([s (cd:space width height 1. 1.)])
+    ([x (in-range width)]
+     [y (in-range height)])
     (define cx (+ x .5))
     (define cy (+ y .5))
-    (if (equal? wall (layout-ref/xy q q q q x y))
+    (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
         (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
         s)))
-  
+(define (quads->display q:nw q:ne q:sw q:se)
+  (gl:color 
+   0. 0. 1. 0.
+   (gl:for*/gl
+    ([x (in-range width)]
+     [y (in-range height)])
+    (gl:translate 
+     (+ x .5) (+ y .5)
+     (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
+         (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
+         gl:blank)))))
 (define (make-static)
   (define q:nw quad:template)
   (define q:sw quad:template)
   (define q:ne quad:template)
-  (define q:se quad:template)
-  (define map-space
-    (space-add-quad
-     (space-add-quad
-      (space-add-quad
-       (space-add-quad (cd:space width height 1. 1.)
-                       q:nw
-                       0 h-width
-                       h-height height)
-       q:sw
-       0 h-width
-       0 h-height)
-      q:ne
-      h-width width
-      h-height height)
-     q:se
-     h-width width
-     0 h-height))
-  (define whole-map
-    (gl:color 
-     0. 0. 1. 0.
-     (gl:for*/gl
-      ([x (in-range width)]
-       [y (in-range height)])
-      (gl:translate 
-       (+ x .5) (+ y .5)
-       (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
-           (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
-           gl:blank)))))
+  (define q:se quad:template)  
   (define-values
     (c:nw c:ne c:sw c:se fm)
     (for*/fold ([c:nw 0]
@@ -395,7 +377,8 @@
        (place-power-up
         width height fm)))))
   (static q:nw q:ne q:sw q:se
-          whole-map map-space
+          (quads->display q:nw q:ne q:sw q:se)
+          (quads->space q:nw q:ne q:sw q:se)
           c:nw c:ne c:sw c:se
           fin-fm (static-fm->display fin-fm)))
 (define (static-fm->display fm)
