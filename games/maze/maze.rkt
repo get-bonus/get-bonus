@@ -305,6 +305,7 @@
 
 (struct static (q:nw q:ne q:sw q:se
                 map-display map-space
+                c:nw c:ne c:sw c:se
                 objs objs-display))
 (define (static-map-ref st x y)
   (match-define 
@@ -350,15 +351,22 @@
            (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
            gl:blank)))))
   (define-values
-    (count fm)
-    (for*/fold ([ct 0] [fm (fmatrix width height)])
+    (c:nw c:ne c:sw c:se fm)
+    (for*/fold ([c:nw 0]
+                [c:ne 0]
+                [c:sw 0]
+                [c:se 0]
+                [fm (fmatrix width height)])
       ([x (in-range width)]
        [y (in-range height)])
       (cond
         [(= hall (layout-ref/xy q:nw q:ne q:sw q:se x y))
-         (values (add1 ct) (fmatrix-set fm x y 'pellet))]
+         ; XXX Keep count
+         (values c:nw c:ne c:sw c:se
+                 (fmatrix-set fm x y 'pellet))]
         [else
-         (values ct fm)])))
+         (values c:nw c:ne c:sw c:se
+                 fm)])))
   (define fin-fm
     (place-power-up 
      width height 
@@ -370,6 +378,7 @@
         width height fm)))))
   (static q:nw q:ne q:sw q:se
           whole-map map-space
+          c:nw c:ne c:sw c:se
           fin-fm (static-fm->display fin-fm)))
 (define (static-fm->display fm)
   (gl:color/% 
