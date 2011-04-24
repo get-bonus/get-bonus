@@ -52,6 +52,7 @@
   (values (* 2 (bytes-length (first lines)))
           (* 2 (length lines))
           (apply bytes-append lines)))
+; XXX discover jail-pos and start-pos
 (define-values (width height quad:template)
   (path->quadrant template-map))
 
