@@ -198,7 +198,7 @@
     ['up 'down]
     ['down 'up]))
 
-(define (cell-neighbors/no-reverse c last-cell)
+(define (cell-neighbors/no-reverse st c last-cell)
   (match-define (cons x y) c)
   (define-syntax-rule
     (try [ndir nx* ny*]
@@ -208,7 +208,7 @@
             [ny (wrap-at height ny*)]
             [nc (cons nx* ny*)])
        (if (or (equal? last-cell nc)
-               (not (= hall (layout-ref/xy nx ny))))
+               (not (= hall (static-map-ref st nx ny))))
            empty
            (list nc)))
      ...))
@@ -289,6 +289,8 @@
 
 (struct static (map map-display map-space
                 objs objs-display))
+(define (static-map-ref st x y)
+  (layout-ref/xy x y))
 (define (static-display st)
   (gl:seqn (static-map-display st)
            (static-objs-display st)))
@@ -300,16 +302,16 @@
       (place-power-up w h fm)))
 (define (make-static)
   (define map-space
-  (for*/fold ([s (cd:space width height 1. 1.)])
-    ([c (in-range width)]
-     [r (in-range height)])
-    (define x c)
-    (define y (- height r 1))
-    (define cx (+ x .5))
-    (define cy (+ y .5))
-    (if (equal? wall (layout-ref r c))
-        (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
-        s)))
+    (for*/fold ([s (cd:space width height 1. 1.)])
+      ([c (in-range width)]
+       [r (in-range height)])
+      (define x c)
+      (define y (- height r 1))
+      (define cx (+ x .5))
+      (define cy (+ y .5))
+      (if (equal? wall (layout-ref r c))
+          (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
+          s)))
   (define whole-map
     (gl:color 
      0. 0. 1. 0.
@@ -460,7 +462,7 @@
          (define same-mode?
            (equal? scatter? n-scatter?))
          (define nps*
-           (cell-neighbors/no-reverse c lc))
+           (cell-neighbors/no-reverse st c lc))
          (define nps
            ; This makes them allowed, but not obligated,
            ; to switch directions.
