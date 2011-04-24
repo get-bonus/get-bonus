@@ -128,7 +128,7 @@
 (define (quad-ref quad vr vc)  
   (bytes-ref quad (+ (* vr h-width) vc)))
 
-(define (layout-ref/xy q:nw q:ne q:sw q:se x y)
+(define (xy->quad*r*c x y)
   (define r (y->r y))
   (define c x)
   (define vc
@@ -143,14 +143,14 @@
     quad
     (cond
       [(and (r . < . h-height) (c . < . h-width))
-       q:sw]
+       'sw]
       [(and (r . < . h-height) (c . >= . h-width))
-       q:se]
+       'se]
       [(and (r . >= . h-height) (c . < . h-width))
-       q:nw]
+       'nw]
       [(and (r . >= . h-height) (c . >= . h-width))
-       q:ne]))
-  (quad-ref quad vr vc))
+       'ne]))
+  (values quad vr vc))
 (define (r->y r)
   (- height r 1))
 (define (y->r y)
@@ -305,109 +305,127 @@
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
 (define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
 
-(struct static (q:nw q:ne q:sw q:se
+(define QUADS '(nw ne se sw))
+(define quad->dx*dy
+  (match-lambda
+    ['nw (values 0 h-height)]
+    ['ne (values h-width h-height)]
+    ['sw (values 0 0)]
+    ['se (values h-width 0)]))
+(struct static (quads
                 map-display map-space
-                c:nw c:ne c:sw c:se
-                objs objs-display))
+                quad->objs objs-display))
 (define (static-map-ref st x y)
-  (match-define 
-   (struct* static
-            ([q:nw q:nw]
-             [q:ne q:ne]
-             [q:sw q:sw]
-             [q:se q:se]))
-   st)
-  (layout-ref/xy q:nw q:ne q:sw q:se x y))
+  (match-define (struct* static ([quads quads])) st)
+  (define-values (q r c) (xy->quad*r*c x y))
+  (quad-ref (hash-ref quads q) r c))
 (define (static-display st)
   (gl:seqn (static-map-display st)
            (static-objs-display st)))
-(define (place-power-up sw ew sh eh fm)
-  (define x (random-between sw ew))
-  (define y (random-between sh eh))
-  (if (eq? 'pellet (fmatrix-ref fm x y #f))
-      (fmatrix-set fm x y 'power-up)
-      (place-power-up sw ew sh eh fm)))
-(define (quads->space q:nw q:ne q:sw q:se)
+(define (place-power-up fm)
+  (define c (random h-width))
+  (define r (random h-height))
+  (if (eq? 'pellet (fmatrix-ref fm r c #f))
+      (fmatrix-set fm r c 'power-up)
+      (place-power-up fm)))
+
+(define (quads->space qs)
   (for*/fold ([s (cd:space width height 1. 1.)])
     ([x (in-range width)]
      [y (in-range height)])
+    (define-values (q r c) (xy->quad*r*c x y))
     (define cx (+ x .5))
     (define cy (+ y .5))
-    (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
+    (if (equal? wall (quad-ref (hash-ref qs q) r c))
         (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
         s)))
-(define (quads->display q:nw q:ne q:sw q:se)
+
+(define (quads->display qs)
   (gl:color 
    0. 0. 1. 0.
    (gl:for*/gl
     ([x (in-range width)]
      [y (in-range height)])
+    (define-values (q r c) (xy->quad*r*c x y))
     (gl:translate 
      (+ x .5) (+ y .5)
-     (if (equal? wall (layout-ref/xy q:nw q:ne q:sw q:se x y))
+     (if (equal? wall (quad-ref (hash-ref qs q) r c))
          (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
          gl:blank)))))
-(define (make-static)
-  (define q:nw quad:template)
-  (define q:sw quad:template)
-  (define q:ne quad:template)
-  (define q:se quad:template)  
-  (define-values
-    (c:nw c:ne c:sw c:se fm)
-    (for*/fold ([c:nw 0]
-                [c:ne 0]
-                [c:sw 0]
-                [c:se 0]
-                [fm (fmatrix width height)])
-      ([x (in-range width)]
-       [y (in-range height)])
+
+(struct quad-objs (pellet-count r*c->obj))
+(define (populate-quad q)
+  (define-values 
+    (pc fm)
+    (for*/fold ([c 0] [fm (fmatrix h-height h-width)])
+      ([r (in-range h-height)]
+       [c (in-range h-width)])
       (cond
-        [(= hall (layout-ref/xy q:nw q:ne q:sw q:se x y))
-         ; XXX Keep count
-         (values c:nw c:ne c:sw c:se
-                 (fmatrix-set fm x y 'pellet))]
+        [(= hall (quad-ref q r c))
+         (values (add1 c)
+                 (fmatrix-set fm r c 'pellet))]
         [else
-         (values c:nw c:ne c:sw c:se
-                 fm)])))
-  (define fin-fm
-    (place-power-up 
-     0 h-width 0 h-height 
-     (place-power-up
-      0 h-width h-height height 
-      (place-power-up
-       h-width width 0 h-height 
-       (place-power-up
-        h-width width h-height height fm)))))
-  (static q:nw q:ne q:sw q:se
-          (quads->display q:nw q:ne q:sw q:se)
-          (quads->space q:nw q:ne q:sw q:se)
-          c:nw c:ne c:sw c:se
-          fin-fm (static-fm->display fin-fm)))
-(define (static-fm->display fm)
+         (values c fm)])))
+  (quad-objs (sub1 pc) (place-power-up fm)))
+             
+(define (make-static)
+  (define quads
+    (hasheq 'nw quad:template
+            'ne quad:template
+            'sw quad:template
+            'se quad:template))
+  (define map-display
+    (quads->display quads))
+  (define map-space
+    (quads->space quads))
+  
+  (define objs
+    (for/hasheq ([(n q) (in-hash quads)])
+      (values n (populate-quad q))))
+  
+  (static quads map-display map-space
+          objs (quad-objs->display objs)))
+
+(define (quad-objs->display os)
   (gl:color/% 
    (make-object color% 255 161 69)
-   (gl:for*/gl      
+   (gl:for*/gl
     ([x (in-range width)]
      [y (in-range height)])
-    (match (fmatrix-ref fm x y #f)
+    (define-values (q r c) (xy->quad*r*c x y))
+    (match-define (quad-objs _ fm) (hash-ref os q))
+    (match (fmatrix-ref fm r c #f)
       ['pellet
        (gl:translate (+ x .5) (+ y .5) pellet-img)]
       ['power-up
        (gl:translate (+ x .5) (+ y .5) power-up-img)]
       [#f
        gl:blank]))))
+
 (define (static-chomp st x y)
-  (define fm (static-objs st))
+  (match-define (struct* static ([quad->objs quad->objs])) st)
+  (define-values (q r c) (xy->quad*r*c x y))
+  (match-define (quad-objs qc fm) (hash-ref quad->objs q))
+  
   (define obj 
-    (fmatrix-ref fm x y #f))
+    (fmatrix-ref fm r c #f))
   (if obj
       (let ()
         (define fm-n
-          (fmatrix-set fm x y #f))
+          (fmatrix-set fm r c #f))
+        (define quad->objs-n
+          (hash-set quad->objs q
+                    (quad-objs 
+                     (if (eq? obj 'pellet)
+                         (sub1 qc)
+                         qc)
+                     fm-n)))
+                    
         (values (struct-copy static st
-                             [objs fm-n]
+                             [quad->objs quad->objs-n]
                              [objs-display
-                              (static-fm->display fm-n)])
+                              (quad-objs->display 
+                               quad->objs-n)])
                 obj))
       (values st obj)))
 
