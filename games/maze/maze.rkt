@@ -135,9 +135,7 @@
 (define power-up-cell (locate-cell quad:template power-up))
 ; XXX use
 (define fruit-cell (locate-cell quad:template fruit))
-; XXX use
 (define ghost-entry-cell (locate-cell quad:template ghost-entry))
-; XXX use
 (define player-entry-cell (locate-cell quad:template player-entry))
 
 (define (xy->quad*r*c x y)
@@ -163,6 +161,18 @@
       [(and (r . >= . h-height) (c . >= . h-width))
        'ne]))
   (values quad vr vc))
+
+(define (quad*cell->psn q r*c)
+  (match-define (cons r c) r*c)
+  (define-values
+    (x y)
+  (match q
+    ['sw (values c r)]
+    ['nw (values c (- height r 1))]
+    ['se (values (- width c 1) r)]
+    ['ne (values (- width c 1) (- height r 1))]))
+  (psn (exact->inexact (+ x .5)) (exact->inexact (+ y .5))))
+
 (define (r->y r)
   (- height r 1))
 (define (y->r y)
@@ -198,9 +208,6 @@
     [(= (/ pi 2) a) 'up]
     [(= pi a) 'left]
     [else 'down]))
-
-(define jail-pos
-  (psn 14.5 16.5))
 
 (define INIT-SPEED
   (* 5. RATE))
@@ -307,11 +314,6 @@
       (argmin m l)
       (first l)))
 
-(define outside-jail
-  (+ jail-pos (psn 0. 3.)))
-(define outside-jail-right-of
-  (pos->cell
-   (+ outside-jail 1.)))
 (define TIME-TO-POWER-WARNING (/ 2 RATE))
 (define TIME-TO-POWER (/ 7 RATE))
 (define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
@@ -447,6 +449,17 @@
         (n pos target dir last-cell
            scatter? frames-to-switch dot-timer))
 (define (make-ghost n init-timer)
+  (define outside-jail
+    (quad*cell->psn 
+     (match n
+       [0 'nw]
+       [1 'ne]
+       [2 'sw]
+       [3 'se])
+     ghost-entry-cell))
+  (define outside-jail-right-of
+    (pos->cell
+     (+ outside-jail 1.)))
   (ghost n outside-jail (scatter-tile)
          'left outside-jail-right-of #t
          TIME-TO-SCATTER init-timer))
@@ -475,7 +488,8 @@
    'ambusher (make-ghost 1 40)
    'fickle (make-ghost 2 80)
    'stupid (make-ghost 3 160)
-   'player (player (psn 12.5 8.5) (* .5 pi) (* .5 pi))))
+   'player (player (quad*cell->psn 'sw player-entry-cell)
+                   (* .5 pi) (* .5 pi))))
 
 (big-bang
  (game-st 0 0 3 extend-pts 0
