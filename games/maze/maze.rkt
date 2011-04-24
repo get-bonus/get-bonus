@@ -194,7 +194,7 @@
 (define jail-pos
   (psn 14.5 16.5))
 
-(define speed
+(define INIT-SPEED
   (* 5. RATE))
 
 (define right 0)
@@ -259,7 +259,7 @@
 (define (pos->pos-distance p1 p2)
   (pos->cell-distance p1 (pos->cell p2)))
 
-(define (movement-vector p0 c)
+(define (movement-vector speed p0 c)
   (match-define (psn* (app ->i x0) (app ->i y0)) p0)
   (match-define (cons x1 y1) c)
   (define dir
@@ -295,12 +295,12 @@
               left
               right)))]))
 
-(define (posn-in-dir p mdir)
+(define (posn-in-dir speed p mdir)
   (posn->v p (make-polar speed mdir)))
 (define (posn->v p v)
   (wrap width height (+ p v)))
-(define (try-direction p mdir)
-  (try-move p (posn-in-dir p mdir)))
+(define (try-direction speed p mdir)
+  (try-move p (posn-in-dir speed p mdir)))
 (define (try-move p mp)
   (if (sequence-not-empty? 
        (cd:space-collisions? 
@@ -435,6 +435,10 @@
                         [scatter? scatter?] 
                         [dot-timer 0]
                         [frames-to-switch switch-n])))
+         (define speed 
+           (if frightened?
+               (/ INIT-SPEED 2.)
+               INIT-SPEED))
          (define c (pos->cell p))
          (define n-switch-n*
            (if frightened?
@@ -492,7 +496,7 @@
            (argmin* (curry pos->cell-distance target)
                     nps))
          (define mv
-           (movement-vector p next-cell))
+           (movement-vector speed p next-cell))
          (define np
            (posn->v p mv))
          (define ndir 
@@ -508,6 +512,7 @@
                       [pos np]
                       [dir ndir])]
         [(player p dir next-dir)
+         (define speed INIT-SPEED)
          (define stick (controller-dpad c))
          (define next-dir-n 
            ; If the stick is stable, 
@@ -518,7 +523,7 @@
          ; The coorridors used to feel too "tight" 
          ; and easy to get stuck on an edge, but I 
          ; think this got fixed
-         (define np (try-direction p next-dir-n))
+         (define np (try-direction speed p next-dir-n))
          ; Don't change the direction if we couldn't
          ; move in it
          (define actual-dir
@@ -527,7 +532,7 @@
                next-dir-n))
          (define nnp
            (if (= np p)
-               (try-direction p dir)
+               (try-direction speed p dir)
                np))
          (player nnp actual-dir next-dir-n)]
         [v v])))
