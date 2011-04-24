@@ -64,14 +64,12 @@
 ; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
-; XXX kill ghosts
 ; XXX increase speed with time/score
 ; XXX add fruits
 ; XXX respawn pellets / change layout on left/right when pellets gone on other side
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
 ; XXX bomb
-; XXX move slower in frightened mode
 
 (define-texture sprites-t "pacman.png")
 
@@ -391,9 +389,13 @@
   (for/hasheq ([(k v) (in-hash objs)])
     (values k (f v))))
 
+; XXX score multiplier
 (define pellet-pts 10)
 (define power-up-pts 50)
+(define ghost-pts 100)
 (define extend-pts 1000)
+
+(define ghost-return 40)
 
 ; XXX Add a slow start-up clock for beginning of game and
 ;     after death
@@ -577,8 +579,31 @@
           (player-pos 
            (hash-ref dyn-objs:post-chomp 'player))))
        (if (power-left-n . > . 0)
-           ; XXX kill ghosts
-           (values lives 0 dyn-objs:post-chomp)
+           (let ()
+             (define-values
+               (dp2 dyn-objs:post-killing)
+               (for/fold
+                   ([dp2 0]
+                    [do (hasheq)])
+                 ([(k v) (in-hash dyn-objs:post-chomp)])
+                 (match v
+                   [(struct* ghost 
+                             ([n n]
+                              [dot-timer 0]
+                              [pos (app pos->cell g-cell)]))
+                    (if (equal? p-cell g-cell)
+                        (values 
+                         (+ dp2 ghost-pts)
+                         (hash-set do k
+                                   (make-ghost n ghost-return)))
+                        (values
+                         dp2
+                         (hash-set do k v)))]
+                   [_ 
+                    (values
+                     dp2
+                     (hash-set do k v))])))
+             (values lives dp2 dyn-objs:post-killing))
            (if (for/or ([v (in-hash-values dyn-objs:post-chomp)]
                         #:when (ghost? v)
                         #:when (zero? (ghost-dot-timer v)))
