@@ -67,8 +67,7 @@
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
 ; XXX increase speed with time/score
-; XXX add fruits
-; XXX respawn pellets / change layout on left/right when pellets gone on other side
+; XXX change layout with fruit
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
 ; XXX bomb
@@ -119,6 +118,12 @@
 (define power-up-img
   (gl:scale (* pellet-r 2) (* 2 pellet-r)
             (gl:circle)))
+(define fruit-img
+  (let ()
+    (define s (* 3 pellet-r))
+    (gl:translate
+     (- (* s .5)) (- (* s .5))
+     (gl:rectangle s s))))
 
 (define h-width 
   (/ width 2))
@@ -336,9 +341,16 @@
 (define (static-display st)
   (gl:seqn (static-map-display st)
            (static-objs-display st)))
-(define (place-power-up fm)
+(define (place-power-up q)
+  (match-define (quad-objs pellet-count r*c->obj) q)
   (match-define (cons r c) power-up-cell)
-  (fmatrix-set fm r c 'power-up))
+  (quad-objs (add1 pellet-count)
+             (fmatrix-set r*c->obj r c 'power-up)))
+(define (place-fruit q)
+  (match-define (quad-objs pellet-count r*c->obj) q)
+  (match-define (cons r c) fruit-cell)
+  (quad-objs (add1 pellet-count)
+             (fmatrix-set r*c->obj r c 'fruit)))
 
 (define (quads->space qs)
   (for*/fold ([s (cd:space width height 1. 1.)])
@@ -368,16 +380,17 @@
 (define (populate-quad q)
   (define-values 
     (pc fm)
-    (for*/fold ([c 0] [fm (fmatrix h-height h-width)])
+    (for*/fold ([ct 0] [fm (fmatrix h-height h-width)])
       ([r (in-range h-height)]
        [c (in-range h-width)])
       (cond
         [(= hall (quad-ref q r c))
-         (values (add1 c)
+         (values (add1 ct)
                  (fmatrix-set fm r c 'pellet))]
         [else
-         (values c fm)])))
-  (quad-objs (sub1 pc) (place-power-up fm)))
+         (values ct fm)])))
+  (define im (quad-objs pc fm))
+  (place-power-up im))
              
 (define (make-static)
   (define quads
@@ -405,16 +418,27 @@
      [y (in-range height)])
     (define-values (q r c) (xy->quad*r*c x y))
     (match-define (quad-objs _ fm) (hash-ref os q))
-    (match (fmatrix-ref fm r c #f)
-      ['pellet
-       (gl:translate (+ x .5) (+ y .5) pellet-img)]
-      ['power-up
-       (gl:translate (+ x .5) (+ y .5) power-up-img)]
-      [#f
-       gl:blank]))))
+    (gl:translate 
+     (+ x .5) (+ y .5) 
+     (match (fmatrix-ref fm r c #f)
+       ['pellet pellet-img]
+       ['power-up power-up-img]
+       ['fruit fruit-img]
+       [#f
+        gl:blank])))))
+
+(define opposite-quad
+  (match-lambda
+    ['nw 'se]
+    ['ne 'sw]
+    ['se 'nw]
+    ['sw 'ne]))
 
 (define (static-chomp st x y)
-  (match-define (struct* static ([quad->objs quad->objs])) st)
+  (match-define (struct* static 
+                         ([quads quads]
+                          [quad->objs quad->objs]))
+                st)
   (define-values (q r c) (xy->quad*r*c x y))
   (match-define (quad-objs qc fm) (hash-ref quad->objs q))
   
@@ -424,13 +448,27 @@
       (let ()
         (define fm-n
           (fmatrix-set fm r c #f))
-        (define qc-n
-          (if (eq? obj 'pellet)
-              (sub1 qc)
-              qc))
-        (define quad->objs-n
+        (define qc-n (sub1 qc))
+        (define im
           (hash-set quad->objs q
                     (quad-objs qc-n fm-n)))
+        
+        (define quad->objs-p
+          (if (zero? qc-n)
+              (let ()
+                (define oq (opposite-quad q))
+                (printf "Adding fruit\n")
+                (hash-update im oq place-fruit))
+              im))
+        (define quad->objs-n
+          (if (eq? obj 'fruit)
+              ; XXX can this destroy the fruit on the other side?
+              ; XXX change design
+              (let ()
+                (define oq (opposite-quad q))
+                (hash-set quad->objs-p oq 
+                          (populate-quad (hash-ref quads q))))
+              quad->objs-p))
                     
         (values (struct-copy static st
                              [quad->objs quad->objs-n]
@@ -475,8 +513,9 @@
 ; XXX score multiplier
 (define pellet-pts 10)
 (define power-up-pts 50)
-(define ghost-pts 100)
-(define extend-pts 1000)
+(define fruit-pts 100)
+(define ghost-pts 200)
+(define extend-pts 3000)
 
 (define ghost-return 40)
 
@@ -492,7 +531,7 @@
                    (* .5 pi) (* .5 pi))))
 
 (big-bang
- (game-st 0 0 3 extend-pts 0
+ (game-st 0 0 #;3 30 extend-pts 0
           (make-static) init-objs)
  #:sound-scale
  (/ width 2.)
@@ -637,6 +676,8 @@
           (values pellet-pts st-n 'pellet)]
          ['power-up
           (values power-up-pts st-n 'power-up)]
+         ['fruit
+          (values fruit-pts st-n 'fruit)]
          [#f
           (values 0 st-n #f)])))
    (define power-left-n
