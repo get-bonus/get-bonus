@@ -8,6 +8,7 @@
          "keyboard.rkt"
          "psn.rkt"
          "3s.rkt"
+         "ltq.rkt"
          (prefix-in gl: "gl.rkt")
          "controller.rkt")
 
@@ -38,21 +39,12 @@
 (define (unpause-last-sound)
   (sound-unpause! (current-sound)))
 
-; All the worlds share the same tick time so that the
-; framerate is consistent across sub-world interactions
-; Otherwise, the "outer world" has to "catch up" due to
-; the delay cause by the "inner world"
-(define next-ticker (make-parameter #f))
-(define (make-next-ticker start-time)
-  (λ ()
-    (set! start-time
-          (+ start-time (* RATE 1000)))
-    start-time))
-
 (define (nested-big-bang initial-world tick sound-scale
                          world->listener done?)
   (let loop ([w initial-world]
              [st (initial-system-state world->listener)])
+    (define next-time 
+      (+ (current-inexact-milliseconds) (* RATE 1000)))
     (parameterize ([current-sound st])
       (define-values (wp cmd ss)
         (tick w 
@@ -66,7 +58,7 @@
             ; XXX This is implies that we could switch sounds while rendering the next sound... which is bad.
             (define stp
               (render-sound sound-scale st ss wp))
-            (sync (alarm-evt ((next-ticker))))
+            (sync (alarm-evt next-time))
             (loop wp stp))))))
 
 (define current-rate-finder (make-parameter (λ () (error 'current-rate "Not in big-bang"))))
@@ -97,10 +89,9 @@
     (cons (keyboard-monitor->controller-snapshot km)
           (map joystick-snapshot->controller-snapshot
                (get-all-joystick-snapshot-thunks))))
-  (define start-secs (current-seconds))
-  (define frames 0)
+  (define frame-ltq (ltq 240))
   (define (this-update-canvas cmd)
-    (set! frames (add1 frames))
+    (ltq-add! frame-ltq)
     (set! last-cmd cmd)
     (send the-canvas refresh-now))
   
@@ -112,16 +103,13 @@
         done-ch
         (parameterize 
             ([nested? #t]
-             [next-ticker 
-              (make-next-ticker
-               (current-inexact-milliseconds))]
              [current-rate-finder
               (λ () 
                 (with-handlers ([exn:fail? (λ (x) 0.)])
                   (exact->inexact
-                   (/ frames 
+                   (/ (ltq-count frame-ltq) 
                       (- (current-seconds)
-                         start-secs)))))]
+                         (ltq-min frame-ltq))))))]
              [current-controllers cs]
              [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick sound-scale
