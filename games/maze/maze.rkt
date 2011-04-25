@@ -164,7 +164,6 @@
   (psn (/ width 2.) (/ height 2.)))
 
 ; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
-; XXX make layouts widescreen (56 width?)
 ; XXX ghosts/pacman are the wrong size
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
@@ -872,7 +871,9 @@
              next-extend-n power-left-n 
              st-n dyn-objs:final)
     (gl:focus 
-     width (+ height 2) width (+ height 2) 0 0
+     (+ width 2) (+ height 3) (+ width 2) (+ height 3) 0 0
+     (gl:translate
+      1. 1.
      (gl:background 
       0. 0. 0. 0.
       (gl:color
@@ -895,45 +896,45 @@
           #:size 50
           (format "Score: ~a    Lives: ~a"
                   score-n lives-n)))))
-      (gl:seqn
-       (static-display st)
-       (gl:for/gl
-        ([v (in-hash-values dyn-objs:final)])
-        (match v
-          [(struct* ghost 
-                    ([n n] 
-                     [pos p]
-                     [target tp]
-                     [dir dir]
-                     [dot-timer dt]))
-           (cond
-             [(or (zero? dt)
-                  (and (dt . <= . 10) (even? frame)))
-              (gl:seqn
-               (gl:translate 
-                (psn-x p) (psn-y p)
-                (if (zero? power-left-n)
-                    (ghost-animation n frame-n dir)
-                    (scared-ghost-animation
-                     frame-n
-                     (power-left-n . <= . TIME-TO-POWER-WARNING))))
-               (gl:translate
-                (- (psn-x tp) .5) (- (psn-y tp) .5)
-                (gl:color/%
-                 (match n
-                   [0 (make-object color% 169 16 0)]
-                   [1 (make-object color% 215 182 247)]
-                   [2 (make-object color% 60 189 255)]
-                   [3 (make-object color% 230 93 16)])
-                 (gl:rectangle 1. 1. 'outline))))]
-             [else
-              gl:blank])]
-          [(player p dir _)
-           (gl:translate 
-            (psn-x p) (psn-y p)
-            (gl:rotate
-             (rad->deg dir)
-             (player-animation frame-n)))])))))
+       (gl:seqn
+        (static-display st)
+        (gl:for/gl
+         ([v (in-hash-values dyn-objs:final)])
+         (match v
+           [(struct* ghost 
+                     ([n n] 
+                      [pos p]
+                      [target tp]
+                      [dir dir]
+                      [dot-timer dt]))
+            (cond
+              [(or (zero? dt)
+                   (and (dt . <= . 10) (even? frame)))
+               (gl:seqn
+                (gl:translate 
+                 (psn-x p) (psn-y p)
+                 (if (zero? power-left-n)
+                     (ghost-animation n frame-n dir)
+                     (scared-ghost-animation
+                      frame-n
+                      (power-left-n . <= . TIME-TO-POWER-WARNING))))
+                (gl:translate
+                 (- (psn-x tp) .5) (- (psn-y tp) .5)
+                 (gl:color/%
+                  (match n
+                    [0 (make-object color% 169 16 0)]
+                    [1 (make-object color% 215 182 247)]
+                    [2 (make-object color% 60 189 255)]
+                    [3 (make-object color% 230 93 16)])
+                  (gl:rectangle 1. 1. 'outline))))]
+              [else
+               gl:blank])]
+           [(player p dir _)
+            (gl:translate 
+             (psn-x p) (psn-y p)
+             (gl:rotate
+              (rad->deg dir)
+              (player-animation frame-n)))]))))))
     (append
      (if (eq? event 'pellet)
          (list (sound-at se:crunch center-pos #:gain 0.8))
