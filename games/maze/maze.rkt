@@ -91,6 +91,8 @@
             (cell-neighbors cn)))
   #;(define (shuffle x) x)  
   
+  ; XXX Avoid rooms by striping horizontally/vertically?
+  
   ; For every cell, if it is not touching a wall, turn it
   ; into a wall
   #;(for ([r*c (in-list (shuffle cells))])
@@ -126,6 +128,8 @@
                         (non-wall-neighbors r*c)))))
   (visit player-entry-cell)
   
+  ; XXX Go out in concentric square and find the nearest 
+  ;     seen point.
   (define (dig-until-seen r*c)
     (unless (hash-has-key? seen? r*c)
       (match-define
