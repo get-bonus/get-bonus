@@ -55,8 +55,7 @@
 (define-values (width height quad:template)
   (path->quadrant template-map))
 
-; XXX incorporate ghost position
-; XXX avoid "rooms"
+; XXX incorporate ghost position (so that I don't put a ghost in a wall if I'm switching the state of a quad)
 (define (generate-quad)
   (define new-quad (bytes-copy quad:template))
   (define cells
@@ -69,12 +68,6 @@
           (cons (add1 r) c)
           (cons r (add1 c))
           (cons (sub1 r) c)))
-  (define (cell-diagonals r*c)
-    (match-define (cons r c) r*c)
-    (list (cons (sub1 r) (sub1 c))
-          (cons (sub1 r) (add1 c))
-          (cons (add1 r) (sub1 c))
-          (cons (add1 r) (add1 c))))
   (define (inside-maze? r*c)
     (match-define (cons r c) r*c)
     (and (<= 0 r (sub1 h-height))
@@ -84,26 +77,14 @@
     (if (inside-maze? r*c)
         (quad-ref new-quad r c)
         hall))
+  (define (original-wall? c)
+    (= wall (quad-ref quad:template (car c) (cdr c))))
   (define (not-wall? c)
     (not (= wall (quad-cell-ref c))))
   (define (non-wall-neighbors cn)
     (filter not-wall?
             (cell-neighbors cn)))
-  #;(define (shuffle x) x)  
   
-  ; XXX Avoid rooms by striping horizontally/vertically?
-  
-  ; For every cell, if it is not touching a wall, turn it
-  ; into a wall
-  #;(for ([r*c (in-list (shuffle cells))])
-    (when (= hall (quad-cell-ref r*c))
-      (define cns 
-        (filter not-wall?
-                (append #;(cell-neighbors r*c)
-                        (cell-diagonals r*c))))
-      (when (= (length cns) 4)
-        (match-define (cons r c) r*c)
-        (bytes-set! new-quad (r*c->i r c) wall))))
   ; For every cell, consider turning it into a wall if
   ; all its non-wall neighbors have more than 2 exits
   ; i.e. doing so does not create a dead-end.
@@ -128,26 +109,48 @@
                         (non-wall-neighbors r*c)))))
   (visit player-entry-cell)
   
-  ; XXX Go out in concentric square and find the nearest 
-  ;     seen point.
-  (define (dig-until-seen r*c)
-    (unless (hash-has-key? seen? r*c)
-      (match-define
-       (cons nr nc)
-       (argmin 
-        (λ (c)
-          (if (hash-has-key? seen? c)
-              -inf.0
-              (manhattan-distance player-entry-cell c)))
-        (filter inside-maze? (cell-neighbors r*c))))
-      (bytes-set! new-quad (r*c->i nr nc) hall)
-      (dig-until-seen (cons nr nc))))
-  
-  (for ([r*c (in-list (shuffle cells))])
-    (unless (= wall (quad-cell-ref r*c))
-      (unless (hash-has-key? seen? r*c)
-        (dig-until-seen r*c)
-        (visit r*c))))
+  (let ()
+    (local-require data/heap
+                   unstable/function)
+    (define (dig-until-seen c0)
+      (define h 
+        (make-heap (λ (c1 c2)
+                     (<= (manhattan-distance c1 c0)
+                         (manhattan-distance c2 c0)))))
+      (define came-from (make-hash))
+      (define (add-neighbors! c)
+        (define ns 
+          (filter (conjoin (λ (c) (not (hash-has-key? came-from c)))
+                           inside-maze?
+                           (negate original-wall?))
+                  (cell-neighbors c)))
+        (for-each (λ (nc) (hash-set! came-from nc c)) ns)
+        (heap-add-all! h ns))
+      (hash-set! came-from c0 #f)
+      (heap-add! h c0)
+      (define last-c
+        (let/ec done
+          (let loop ()
+            (define c (heap-min h))
+            (heap-remove-min! h)
+            (if (hash-has-key? seen? c)
+                (done c)
+                (begin
+                  (add-neighbors! c)
+                  (loop))))))
+      (let loop ([c last-c])
+        (define next-c (hash-ref came-from c #f))
+        (when (= wall (quad-cell-ref c))
+          (match-define (cons nr nc) c)
+          (bytes-set! new-quad (r*c->i nr nc) hall))
+        (when next-c
+          (loop next-c))))
+    
+    (for ([r*c (in-list (shuffle cells))])
+      (unless (= wall (quad-cell-ref r*c))
+        (unless (hash-has-key? seen? r*c)
+          (dig-until-seen r*c)
+          (visit r*c)))))
   
   ; Turn all the "conn" blocks into "hall".
   ; We had them different in the template to protect them from
@@ -163,11 +166,9 @@
 ; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
 ; XXX make layouts widescreen (56 width?)
 ; XXX ghosts/pacman are the wrong size
-; XXX randomly generate layouts --- ensure that every 0 has at least 2 adjacents 0, but prefer to not have more than 2, start from edges -- I want a "braid" maze like http://www.astrolog.org/labyrnth/algrithm.htm http://www.astrolog.org/labyrnth/sample/blindaly.gif https://github.com/jamis/theseus
 ; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
 ; XXX increase speed with time/score
-; XXX change layout with fruit
 ; XXX stationary ghosts that awaken
 ; XXX ghost train
 ; XXX bomb
@@ -478,7 +479,7 @@
          gl:blank)))))
 
 (struct quad-objs (pellet-count r*c->obj))
-(define (populate-quad q)
+(define (populate-quad q [old-q #f])
   (define-values 
     (pc fm)
     (for*/fold ([ct 0] [fm (fmatrix h-height h-width)])
@@ -490,8 +491,15 @@
                  (fmatrix-set fm r c 'pellet))]
         [else
          (values ct fm)])))
-  (define im (quad-objs pc fm))
-  (place-power-up im))
+  (define im1 (quad-objs pc fm))
+  (define im2 (place-power-up im1))
+  (define im3
+    (if (and old-q (fmatrix-ref (quad-objs-r*c->obj old-q)
+                                (car fruit-cell) (cdr fruit-cell)
+                                #f))
+        (place-fruit im2)
+        im2))
+  im3)
              
 (define (make-static)
   (define quads
@@ -561,16 +569,17 @@
                 (hash-update im oq place-fruit))
               im))
         (if (eq? obj 'fruit)
-            ; XXX can this destroy the fruit on the other side?
             (let ()
               (define oq (opposite-quad q))
               (define nq
                 (generate-quad))
               (define quads-n
                 (hash-set quads oq nq))
+              (define old-objs
+                (hash-ref quad->objs-p oq))
               (define quad->objs-n
                 (hash-set quad->objs-p oq 
-                          (populate-quad nq)))
+                          (populate-quad nq old-objs)))
               (values (struct-copy 
                        static st
                        [quads quads-n]
