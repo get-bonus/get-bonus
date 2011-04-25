@@ -75,10 +75,13 @@
           (cons (sub1 r) (add1 c))
           (cons (add1 r) (sub1 c))
           (cons (add1 r) (add1 c))))
+  (define (inside-maze? r*c)
+    (match-define (cons r c) r*c)
+    (and (<= 0 r (sub1 h-height))
+         (<= 0 c (sub1 h-width))))
   (define (quad-cell-ref r*c)
     (match-define (cons r c) r*c)
-    (if (and (<= 0 r (sub1 h-height))
-             (<= 0 c (sub1 h-width)))
+    (if (inside-maze? r*c)
         (quad-ref new-quad r c)
         hall))
   (define (not-wall? c)
@@ -87,9 +90,10 @@
     (filter not-wall?
             (cell-neighbors cn)))
   #;(define (shuffle x) x)  
+  
   ; For every cell, if it is not touching a wall, turn it
   ; into a wall
-  (for ([r*c (in-list (shuffle cells))])
+  #;(for ([r*c (in-list (shuffle cells))])
     (when (= hall (quad-cell-ref r*c))
       (define cns 
         (filter not-wall?
@@ -111,6 +115,36 @@
             (how-many-halls . > . 2))
         (match-define (cons r c) r*c)
         (bytes-set! new-quad (r*c->i r c) wall))))
+  
+  (define seen? (make-hash))
+  (define (visit r*c)
+    (match-define (cons r c) r*c)
+    (unless (hash-has-key? seen? r*c)
+      (hash-set! seen? r*c #t)
+      (for-each visit 
+                (filter inside-maze? 
+                        (non-wall-neighbors r*c)))))
+  (visit player-entry-cell)
+  
+  (define (dig-until-seen r*c)
+    (unless (hash-has-key? seen? r*c)
+      (match-define
+       (cons nr nc)
+       (argmin 
+        (λ (c)
+          (if (hash-has-key? seen? c)
+              -inf.0
+              (manhattan-distance player-entry-cell c)))
+        (filter inside-maze? (cell-neighbors r*c))))
+      (bytes-set! new-quad (r*c->i nr nc) hall)
+      (dig-until-seen (cons nr nc))))
+  
+  (for ([r*c (in-list (shuffle cells))])
+    (unless (= wall (quad-cell-ref r*c))
+      (unless (hash-has-key? seen? r*c)
+        (dig-until-seen r*c)
+        (visit r*c))))
+  
   ; Turn all the "conn" blocks into "hall".
   ; We had them different in the template to protect them from
   ; being walled.
