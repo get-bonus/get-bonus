@@ -56,37 +56,52 @@
   (path->quadrant template-map))
 
 ; XXX incorporate ghost position
+; XXX avoid "rooms"
 (define (generate-quad)
   (define new-quad (bytes-copy quad:template))
   (define cells
     (for*/list ([r (in-range h-height)]
                 [c (in-range h-width)])
       (cons r c)))
-  (define r-cells
-    cells
-    #;
-    (shuffle cells))
   (define (cell-neighbors r*c)
     (match-define (cons r c) r*c)
     (list (cons r (sub1 c))
           (cons (add1 r) c)
           (cons r (add1 c))
           (cons (sub1 r) c)))
+  (define (cell-diagonals r*c)
+    (match-define (cons r c) r*c)
+    (list (cons (sub1 r) (sub1 c))
+          (cons (sub1 r) (add1 c))
+          (cons (add1 r) (sub1 c))
+          (cons (add1 r) (add1 c))))
   (define (quad-cell-ref r*c)
     (match-define (cons r c) r*c)
     (if (and (<= 0 r (sub1 h-height))
              (<= 0 c (sub1 h-width)))
         (quad-ref new-quad r c)
         hall))
+  (define (not-wall? c)
+    (not (= wall (quad-cell-ref c))))
   (define (non-wall-neighbors cn)
-    (filter
-     (λ (c)
-       (not (= wall (quad-cell-ref c))))
-     (cell-neighbors cn)))
+    (filter not-wall?
+            (cell-neighbors cn)))
+  #;(define (shuffle x) x)  
+  ; For every cell, if it is not touching a wall, turn it
+  ; into a wall
+  (for ([r*c (in-list (shuffle cells))])
+    (when (= hall (quad-cell-ref r*c))
+      (define cns 
+        (filter not-wall?
+                (append #;(cell-neighbors r*c)
+                        (cell-diagonals r*c))))
+      (when (= (length cns) 4)
+        (match-define (cons r c) r*c)
+        (bytes-set! new-quad (r*c->i r c) wall))))
   ; For every cell, consider turning it into a wall if
   ; all its non-wall neighbors have more than 2 exits
   ; i.e. doing so does not create a dead-end.
-  (for ([r*c (in-list r-cells)])
+  (for ([r*c (in-list (shuffle cells))])
     (when (= hall (quad-cell-ref r*c))
       (define cns (non-wall-neighbors r*c))
       (when
@@ -507,21 +522,33 @@
                 (define oq (opposite-quad q))
                 (hash-update im oq place-fruit))
               im))
-        (define quad->objs-n
-          (if (eq? obj 'fruit)
-              ; XXX can this destroy the fruit on the other side?
-              (let ()
-                (define oq (opposite-quad q))
+        (if (eq? obj 'fruit)
+            ; XXX can this destroy the fruit on the other side?
+            (let ()
+              (define oq (opposite-quad q))
+              (define nq
+                (generate-quad))
+              (define quads-n
+                (hash-set quads oq nq))
+              (define quad->objs-n
                 (hash-set quad->objs-p oq 
-                          (populate-quad (generate-quad))))
-              quad->objs-p))
-                    
-        (values (struct-copy static st
-                             [quad->objs quad->objs-n]
-                             [objs-display
-                              (quad-objs->display 
-                               quad->objs-n)])
-                obj))
+                          (populate-quad nq)))
+              (values (struct-copy 
+                       static st
+                       [quads quads-n]
+                       [map-display (quads->display quads-n)]
+                       [map-space (quads->space quads-n)]
+                       [quad->objs quad->objs-n]
+                       [objs-display
+                        (quad-objs->display 
+                         quad->objs-n)])
+                      obj))
+            (values (struct-copy static st
+                                 [quad->objs quad->objs-p]
+                                 [objs-display
+                                  (quad-objs->display 
+                                   quad->objs-p)])
+                    obj)))
       (values st obj)))
 
 (struct game-st (frame 
@@ -577,7 +604,7 @@
                    (* .5 pi) (* .5 pi))))
 
 (big-bang
- (game-st 0 0 #;3 30 extend-pts 0
+ (game-st 0 0 30 extend-pts 0
           (make-static) init-objs)
  #:sound-scale
  (/ width 2.)
