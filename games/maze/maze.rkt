@@ -45,8 +45,8 @@
 
 (define-runtime-path template-map "template.map")
 (match-define 
- (list hall wall power-up fruit ghost-entry player-entry)
- (bytes->list #"012345"))
+ (list hall wall power-up fruit ghost-entry player-entry conn)
+ (bytes->list #"0123456"))
 (define (path->quadrant p)
   (define lines (file->bytes-lines p))
   (values (* 2 (bytes-length (first lines)))
@@ -54,6 +54,55 @@
           (apply bytes-append lines)))
 (define-values (width height quad:template)
   (path->quadrant template-map))
+
+; XXX incorporate ghost position
+(define (generate-quad)
+  (define new-quad (bytes-copy quad:template))
+  (define cells
+    (for*/list ([r (in-range h-height)]
+                [c (in-range h-width)])
+      (cons r c)))
+  (define r-cells
+    cells
+    #;
+    (shuffle cells))
+  (define (cell-neighbors r*c)
+    (match-define (cons r c) r*c)
+    (list (cons r (sub1 c))
+          (cons (add1 r) c)
+          (cons r (add1 c))
+          (cons (sub1 r) c)))
+  (define (quad-cell-ref r*c)
+    (match-define (cons r c) r*c)
+    (if (and (<= 0 r (sub1 h-height))
+             (<= 0 c (sub1 h-width)))
+        (quad-ref new-quad r c)
+        hall))
+  (define (non-wall-neighbors cn)
+    (filter
+     (λ (c)
+       (not (= wall (quad-cell-ref c))))
+     (cell-neighbors cn)))
+  ; For every cell, consider turning it into a wall if
+  ; all its non-wall neighbors have more than 2 exits
+  ; i.e. doing so does not create a dead-end.
+  (for ([r*c (in-list r-cells)])
+    (when (= hall (quad-cell-ref r*c))
+      (define cns (non-wall-neighbors r*c))
+      (when
+          (for/and ([cn (in-list cns)])
+            (define how-many-halls
+              (length (non-wall-neighbors cn)))
+            (how-many-halls . > . 2))
+        (match-define (cons r c) r*c)
+        (bytes-set! new-quad (r*c->i r c) wall))))
+  ; Turn all the "conn" blocks into "hall".
+  ; We had them different in the template to protect them from
+  ; being walled.
+  (for ([r*c (in-list cells)])
+    (when (= conn (quad-cell-ref r*c))
+      (bytes-set! new-quad (r*c->i (car r*c) (cdr r*c)) hall)))
+  new-quad)
 
 (define center-pos
   (psn (/ width 2.) (/ height 2.)))
@@ -127,8 +176,10 @@
   (/ width 2))
 (define h-height 
   (/ height 2))
+(define (r*c->i vr vc)
+  (+ (* vr h-width) vc))
 (define (quad-ref quad vr vc)  
-  (bytes-ref quad (+ (* vr h-width) vc)))
+  (bytes-ref quad (r*c->i vr vc)))
 
 (define (locate-cell quad value)
   (for*/or ([r (in-range h-height)]
@@ -391,10 +442,10 @@
              
 (define (make-static)
   (define quads
-    (hasheq 'nw quad:template
-            'ne quad:template
-            'sw quad:template
-            'se quad:template))
+    (hasheq 'nw (generate-quad)
+            'ne (generate-quad)
+            'sw (generate-quad)
+            'se (generate-quad)))
   (define map-display
     (quads->display quads))
   (define map-space
@@ -459,11 +510,10 @@
         (define quad->objs-n
           (if (eq? obj 'fruit)
               ; XXX can this destroy the fruit on the other side?
-              ; XXX change design
               (let ()
                 (define oq (opposite-quad q))
                 (hash-set quad->objs-p oq 
-                          (populate-quad (hash-ref quads q))))
+                          (populate-quad (generate-quad))))
               quad->objs-p))
                     
         (values (struct-copy static st
