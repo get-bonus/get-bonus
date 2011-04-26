@@ -3,6 +3,9 @@
          racket/match
          racket/contract)
 
+; A limited timestamp queue: Stores a limited set of
+; timestamps, preferring new to old.
+
 (struct ltq (max count h) #:mutable)
 
 (define (make-ltq max)

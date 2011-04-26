@@ -89,7 +89,7 @@
     (cons (keyboard-monitor->controller-snapshot km)
           (map joystick-snapshot->controller-snapshot
                (get-all-joystick-snapshot-thunks))))
-  (define frame-ltq (ltq 240))
+  (define frame-ltq (ltq (/ (* 2 60) RATE)))
   (define (this-update-canvas cmd)
     (ltq-add! frame-ltq)
     (set! last-cmd cmd)

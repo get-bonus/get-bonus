@@ -164,8 +164,9 @@
   (psn (/ width 2.) (/ height 2.)))
 
 ; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
+
+; XXX time limit?
 ; XXX ghosts/pacman are the wrong size
-; XXX look at http://media.giantbomb.com/uploads/0/1450/1620957-30786cedx_screenshot03_super.jpg
 ; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
 ; XXX increase speed with time/score
 ; XXX stationary ghosts that awaken
@@ -422,8 +423,8 @@
 
 (define TIME-TO-POWER-WARNING (/ 2 RATE))
 (define TIME-TO-POWER (/ 7 RATE))
-(define TIME-TO-SCATTER (/ 7 RATE)) ; 7 seconds
-(define TIME-TO-CHASE (/ 20 RATE)) ; 20 seconds
+(define TIME-TO-SCATTER (/ 4.5 RATE))
+(define TIME-TO-CHASE (/ 30 RATE))
 
 (define QUADS '(nw ne se sw))
 (define quad->dx*dy
