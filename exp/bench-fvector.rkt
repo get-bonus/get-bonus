@@ -3,37 +3,38 @@
          (prefix-in ra: (planet dvanhorn/ralist:3:2))
          "../lib/skal.rkt")
 
-(define (bench-ht N M)
-  (define ht
-    (for/hasheq ([i (in-range N)])
-      (values i i)))
-  (for/fold ([ht ht])
+(define (build-hash N f)
+  (for/hasheq ([i (in-range N)])
+    (values i (f i))))
+
+(define (bench build set ref N M)
+  (define fv (build N (λ (i) i)))
+  (for/fold ([s fv])
     ([i (in-range M)])
-    (hash-set ht (random N) i))
+    (if (zero? (random 2))
+        (set s (random N) i)
+        (begin (ref s (random N))
+               s)))
   (void))
 
-(define (bench-sbal N M)
-  (define s
-    (build-list N (λ (i) i)))
-  (for/fold ([s s])
-    ([i (in-range M)])
-    (list-set s (random N) i))
-  (void))
-
-(define (bench-ralist N M)
-  (define s
-    (ra:build-list N (λ (i) i)))
-  (for/fold ([s s])
-    ([i (in-range M)])
-    (ra:list-set s (random N) i))
-  (void))
+(define (build-fvec N f)
+  f)
+(define (fvec-ref f i)
+  (f i))
+(define (fvec-set f i v)
+  (λ (x)
+    (if (= i x)
+        v
+        (f x))))
 
 (define N 10000)
 (define M 10000)
 (stress 100
+        ["fvec"
+         (bench build-fvec fvec-set fvec-ref N M)]
         ["hasheq"
-         (bench-ht N M)]
+         (bench build-hash hash-set hash-ref N M)]
         ["sbal"
-         (bench-sbal N M)]
+         (bench build-list list-set list-ref N M)]
         ["ralist"
-         (bench-ralist N M)])
+         (bench ra:build-list ra:list-set ra:list-ref N M)])
