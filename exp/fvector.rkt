@@ -1,35 +1,29 @@
-#lang s-exp "tr-cheat.rkt"
-(require (prefix-in skal: "../lib/skal.rkt")
-         tests/eli-tester
-         racket/contract
-         racket/match)
-; XXX This is bad because it doesn't use the fact that the size of the vector is fixed.
+#lang racket/base
+(require (planet dvanhorn/fector:1:1/fast)
+         tests/eli-tester)
 
-(struct fvector (s))
-(define (make-fvector n)
-  (fvector 
-   (skal:make-list n #f)))
-
+(define (fvector n)
+  (make-fector n #f))
 (define (fvector-update f n u a)
-  (match-define (fvector s) f)
-  (fvector
-   (skal:list-update s n
-                     (λ (e)
-                       (u (or e a))))))
-
+  (fector-set f n
+              (u (or (fector-ref f n) a))))
 (define (fvector-ref f n a)
-  (match-define (fvector s) f)
-  (or (skal:list-ref s n) a))
-
+  (or (fector-ref f n) a))
 (define (fvector-set f n v)
-  (match-define (fvector s) f)
-  (fvector (skal:list-set s n v)))
+  (fector-set f n v))
 
+(define make-fvector fvector)
 (test
  (fvector-ref (make-fvector 4) 1 #f) => #f
  (fvector-ref (fvector-update (make-fvector 4) 1 add1 0) 1 #f) => 1)
 
-(provide/contract
+(provide
+ fvector
+ fvector-update
+ fvector-ref
+ fvector-set)
+
+#;(provide/contract
  [fvector? contract?]
  [rename make-fvector fvector
          (-> exact-nonnegative-integer?

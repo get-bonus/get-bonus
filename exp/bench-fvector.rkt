@@ -1,14 +1,16 @@
 #lang s-exp "tr-cheat.rkt"
 (require tests/stress
-         (prefix-in ra: (planet dvanhorn/ralist:3:2))
+         (prefix-in ra: (planet dvanhorn/ralist:3:5))
+         (prefix-in fec:slow: (planet dvanhorn/fector:1:1/main))
+         (prefix-in fec:fast: (planet dvanhorn/fector:1:1/fast))
          "../lib/skal.rkt")
 
-(define (build-hash N f)
+(define (make-hash N e)
   (for/hasheq ([i (in-range N)])
-    (values i (f i))))
+    (values i e)))
 
-(define (bench build set ref N M)
-  (define fv (build N (λ (i) i)))
+(define (bench make set ref N M)
+  (define fv (make N #f))
   (for/fold ([s fv])
     ([i (in-range M)])
     (if (zero? (random 2))
@@ -17,8 +19,8 @@
                s)))
   (void))
 
-(define (build-fvec N f)
-  f)
+(define (make-fvec N e)
+  (λ (x) e))
 (define (fvec-ref f i)
   (f i))
 (define (fvec-set f i v)
@@ -29,12 +31,16 @@
 
 (define N 10000)
 (define M 10000)
-(stress 100
+(stress 20
+        ["fec:fast"
+         (bench fec:fast:make-fector fec:fast:fector-set fec:fast:fector-ref N M)]
+        ["fec:slow"
+         (bench fec:slow:make-fector fec:slow:fector-set fec:slow:fector-ref N M)]
         ["fvec"
-         (bench build-fvec fvec-set fvec-ref N M)]
+         (bench make-fvec fvec-set fvec-ref N M)]
         ["hasheq"
-         (bench build-hash hash-set hash-ref N M)]
+         (bench make-hash hash-set hash-ref N M)]
         ["sbal"
-         (bench build-list list-set list-ref N M)]
+         (bench make-list list-set list-ref N M)]
         ["ralist"
-         (bench ra:build-list ra:list-set ra:list-ref N M)])
+         (bench ra:make-list ra:list-set ra:list-ref N M)])
