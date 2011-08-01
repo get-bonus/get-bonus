@@ -1,18 +1,22 @@
-#lang racket
-
-#|
-
-Press any key to advance the game.
-Press r for Rock.
-Press p for Paper.
-Press s for Scissors.
-
-|#
-
-(require "fst.rkt"
-         "graph.rkt"
-         2htdp/universe
-         2htdp/image)
+#lang racket/gui
+(require racket/runtime-path
+         "../../exp/loop.rkt"
+         (prefix-in gl: 
+                    (combine-in "../../exp/gl.rkt"
+                                "../../exp/gl-ext.rkt"))
+         "../../exp/sprites.rkt"
+         "../../exp/mvector.rkt"
+         "../../exp/fullscreen.rkt"
+         "../../exp/keyboard.rkt"
+         "../../exp/mapping.rkt"
+         "../../exp/controller.rkt"
+         "../../exp/joystick.rkt"
+         "../../exp/3s.rkt"
+         "../../exp/math.rkt"
+         "../../exp/psn.rkt"
+         (prefix-in cd: "../../exp/cd-narrow.rkt")
+         "fst.rkt"
+         "graph.rkt")
 
 (struct a-match (match-number ai-spec) #:transparent)
 (struct start a-match () #:transparent)
@@ -75,15 +79,34 @@ Press s for Scissors.
          w)]
     [_ (tick w)]))
 
+(define (text s)
+  (gl:texture
+   (gl:string->texture #:size 45 s)))
 (define (string s . a)
-  (text (apply format s a) 36 "black"))
+  (text (apply format s a)))
 (define rps->string 
   (match-lambda
     ['r "Rock"]
     ['p "Paper"]
     ['s "Scissors"]))
 
+(define above-dist 1)
+(define (above . l)
+  (define-values (offset cmd)
+    (for/fold ([offset 0.] [cmd (gl:seqn)])
+      ([e (in-list l)])
+      (values (+ above-dist offset)
+              (gl:seqn cmd
+                       (gl:translate 0. offset e)))))
+  cmd)
+
 (define (render w)
+  (gl:background
+            1. 1. 1. 0.
+            (gl:focus 
+             16 9 16 9 0 0
+             (gl:color 
+              0. 0. 0. 1.
   (above
    (match w
     [(start match# _)
@@ -118,12 +141,34 @@ Press s for Scissors.
             (string "Round: ~a" round#)
             (string "Ratio: ~a/~a" wins round#)
             (string "You won the match!"))])
-   (fst-graph* (a-match-ai-spec w))))
+   #;(fst-graph* (a-match-ai-spec w)))))))
 
 (define graphs (make-weak-hash))
 (define (fst-graph* fst)
   (hash-ref! graphs fst (λ () (fst-graph fst))))
 
-(big-bang (start 1 start-fst)
-          (on-key input)
-          (to-draw render 800 600))
+(define (any-controller cs p)
+  (for/or ([c (in-list cs)])
+    (equal? p (controller-dpad c))))
+
+(struct smoother (frame w))
+
+(big-bang 
+ (smoother 0 (start 1 start-fst))
+ #:tick
+ (λ (s cs)
+   (match s
+     [(smoother 0 w)
+      (define ke 
+        (cond [(any-controller cs (psn -1. 0.)) "r"]
+              [(any-controller cs (psn 0. 1.)) "p"]
+              [(any-controller cs (psn 0. -1.)) "s"]
+              [else #f]))
+      (define nw (input w ke))
+      (values (smoother 1 nw)
+              (render nw)
+              empty)]
+     [(smoother i w)
+      (values (smoother (modulo (add1 i) 60) w)
+              (render w)
+              empty)])))
