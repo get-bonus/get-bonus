@@ -18,7 +18,7 @@
   (define frame 
     (new frame% 
          [label LABEL]
-         [x 0] [y (* -1 2 y)]
+         [x 0] [y (* -1 y)]
          [width w] [height h]
          [style '(hide-menu-bar no-resize-border no-caption no-system-menu)]))
   
