@@ -20,8 +20,8 @@
      (fst e)
      (snd e)]
   [i integer]
-  [T unit
-     int
+  [T (unit)
+     (int)
      (var x)
      (-> T T)
      (* T T)
@@ -30,14 +30,18 @@
   [C ([T T] ...)]
   [x variable-not-otherwise-mentioned])
 
+;; XXX delay sub generate
+;; XXX interleave unification and generation
+;; XXX generating on rand terms forces picking them
+
 (define-metafunction STLC
   ty-cons : G x e -> C
   [(ty-cons G x_l x)
    ([(var x_l) (lookup G x)])]
   [(ty-cons G x_l ())
-   ([(var x_l) unit])]
+   ([(var x_l) (unit)])]
   [(ty-cons G x_l i)
-   ([(var x_l) int])]
+   ([(var x_l) (int)])]
   [(ty-cons G x_l (e : T))
    (C-extend (ty-cons G x_l e)
              (var x_l) T)]
@@ -53,7 +57,7 @@
    (where x_aa ,(gensym (term x_a)))
    (where x_lb ,(gensym 'body))]
   [(ty-cons G x_l add1)
-   ([(var x_l) (-> int int)])]
+   ([(var x_l) (-> (int) (int))])]
 
   [(ty-cons G x_l (inl e))
    (C-extend (ty-cons G x_le e)
@@ -160,11 +164,7 @@
    (var x_y)]
   [(T-subst x T (any T_1 ...))
    (any (T-subst x T T_1)
-        ...)]
-  [(T-subst x T int)
-   int]
-  [(T-subst x T unit)
-   unit])
+        ...)])
 
 (define cant-unify-exn?
   (lambda (x)
@@ -186,11 +186,6 @@
    (unify G ([(var x) T] [T_ml T_mr] ...))]
 
   ;; Constructory
-  [(unify G ([any_1 any_1]
-             [T_ml T_mr]
-             ...))
-   (unify G ([T_ml T_mr]
-             ...))]
   [(unify G ([(any_1 T_l ...)
               (any_1 T_r ...)]
              [T_ml T_mr]
@@ -237,45 +232,45 @@
               #f))
 
 ;; x
-(tt ((lambda (x) x) 7) int)
+(tt ((lambda (x) x) 7) (int))
 
 ;; ()
-(tt () unit)
+(tt () (unit))
 
 ;; i
-(tt 1 int)
+(tt 1 (int))
 
 ;; (e : T)
-(tt (1 : int) int)
-(tf (1 : (-> int int)))
+(tt (1 : (int)) (int))
+(tf (1 : (-> (int) (int))))
 
 ;; (e e)
-(tt (add1 1) int)
+(tt (add1 1) (int))
 (tf (add1 add1))
-(tt ((lambda (f) (f 1)) add1) int)
+(tt ((lambda (f) (f 1)) add1) (int))
 
 ;; lambda
 (tt (lambda (x) x)
     (-> (var A) (var A)))
 
 ;; add1
-(tt add1 (-> int int))
+(tt add1 (-> (int) (int)))
 
 ;; inl
-(tt (inl 1) (+ int (var A)))
+(tt (inl 1) (+ (int) (var A)))
 
 ;; inr
-(tt (inr 1) (+ (var A) int))
+(tt (inr 1) (+ (var A) (int)))
 
 ;; case
 (tt (case (inl 1)
       [(inl x) => (add1 x)]
       [(inr x) => (add1 (add1 x))])
-    int)
+    (int))
 (tt (case (inr 1)
       [(inl x) => (add1 x)]
       [(inr x) => (add1 (add1 x))])
-    int)
+    (int))
 (tf (case (inl add1)
       [(inl x) => (add1 x)]
       [(inr x) => (add1 (add1 x))]))
@@ -285,22 +280,22 @@
 (tt (case (inr add1)
       [(inl x) => x]
       [(inr x) => add1])
-    (-> int int))
+    (-> (int) (int)))
 (tf (case (inr add1)
       [(inl x) => 1]
       [(inr x) => add1]))
 
 ;; pair
-(tt (pair 1 1) (* int int))
-(tt (pair 1 add1) (* int (-> int int)))
+(tt (pair 1 1) (* (int) (int)))
+(tt (pair 1 add1) (* (int) (-> (int) (int))))
 
 ;; fst
-(tt (fst (pair 1 1)) int)
-(tt (fst (pair 1 add1)) int)
+(tt (fst (pair 1 1)) (int))
+(tt (fst (pair 1 add1)) (int))
 
 ;; snd
-(tt (snd (pair 1 1)) int)
-(tt (snd (pair add1 1)) int)
+(tt (snd (pair 1 1)) (int))
+(tt (snd (pair add1 1)) (int))
 
 ;; Implement lists
 (define omega
@@ -357,59 +352,10 @@
 (tt (,!car ,!empty)
     (var A))
 (tt ((,!cons 1) ,!empty)
-    (+ (* int (+ (var A) unit)) (var B)))
+    (+ (* (int) (+ (var A) (unit))) (var B)))
 (tt (,!car ((,!cons 1) ,!empty))
-    int)
+    (int))
 (tt ((,!map add1) ((,!cons 1) ,!empty))
-    (+ (* int (+ (* int (var A)) unit)) unit))
+    (+ (* (int) (+ (* (int) (var A)) (unit))) (unit)))
 
 ;; Random generation
-(define (generate-e juice G tys)
-  (random-choice
-   juice
-   ;; x
-   [(G-select G tys)
-    => (lambda (x T)
-         (values x T))]
-   ;; ()
-   [(ty-ok? (term unit) tys)
-    (values (term ())
-            (term unit))]
-   ;; i
-   [(ty-ok? (term int) tys)
-    (values (generate-int)
-            (term int))]
-   ;; (e : T)
-   [(ty-select tys)
-    => (lambda (T)
-         (define-values (ei Ti) (generate-e juice G (ty-set T)))
-         (values (term (,et : ,T))
-                 T))]
-   ;; (e e)
-   [(ty-select tys)
-    => (lambda (T)
-         (define-values (ea Ta) (generate-e juice G (ty-any)))
-         (define-values (ef Tf) (generate-e juice G (ty-set (-> Ta T))))
-         (values (term (,ef ,ea))
-                 T))]
-   ;; (lambda (x) e)
-   [(ty-arr-ok? tys)
-    => (lambda (Tx Tb)
-         (define x (gensym 'x))
-         (define-values (eb _Tb) (generate-e juice (G-extend G x Tx) Tb))
-         (values (term (lambda (,x) ,eb))
-                 (term (-> ,Tx ,Tb))))]
-   
-   ;; add1
-     
-   ;; (inl e)
-   ;; (inr e)
-   ;; (case e [(inl x) => e] [(inr x) => e])
-     
-   ;; (pair e e)
-   ;; (fst e)
-   ;; (snd e)    
-
-   ))
-
-(generate-e 10 empty (ty-any))
