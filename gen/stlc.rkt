@@ -3,6 +3,7 @@
 
 (define-language STLC
   [e x
+     ()
      i
      (e : T)
      (e e)
@@ -19,58 +20,109 @@
      (fst e)
      (snd e)]
   [i integer]
-  [T int
+  [T unit
+     int
+     (var x)
      (-> T T)
      (* T T)
      (+ T T)]
   [G ([x T] ...)]
+  [C ([T T] ...)]
   [x variable-not-otherwise-mentioned])
 
-(define-relation STLC
-  typeof<= ⊆ G × e × T
+(define-metafunction STLC
+  ty-cons : G x e -> C
+  [(ty-cons G x_l x)
+   ([(var x_l) (lookup G x)])]
+  [(ty-cons G x_l ())
+   ([(var x_l) unit])]
+  [(ty-cons G x_l i)
+   ([(var x_l) int])]
+  [(ty-cons G x_l (e : T))
+   (C-extend (ty-cons G x_l e)
+             (var x_l) T)]
+  [(ty-cons G x_l (e_1 e_2))
+   (C-extend (C-append (ty-cons G x_l1 e_1)
+                       (ty-cons G x_l2 e_2))
+             (var x_l1) (-> (var x_l2) (var x_l)))
+   (where x_l1 ,(gensym 'operator))
+   (where x_l2 ,(gensym 'operand))]
+  [(ty-cons G x_l (lambda (x_a) e_b))
+   (C-extend (ty-cons (extend G x_a (var x_aa)) x_lb e_b)
+             (var x_l) (-> (var x_aa) (var x_lb)))
+   (where x_aa ,(gensym (term x_a)))
+   (where x_lb ,(gensym 'body))]
+  [(ty-cons G x_l add1)
+   ([(var x_l) (-> int int)])]
 
-  [(typeof<= G (lambda (x) e) (-> T_1 T_2))
-   (typeof<= (extend G x T_1) e T_2)]
+  [(ty-cons G x_l (inl e))
+   (C-extend (ty-cons G x_le e)
+             (var x_l) (+ (var x_le) (var x_lr)))
+   (where x_le ,(gensym 'inl))
+   (where x_lr ,(gensym 'inl-free))]
+  [(ty-cons G x_l (inr e))
+   (C-extend (ty-cons G x_le e)
+             (var x_l) (+ (var x_lr) (var x_le)))
+   (where x_le ,(gensym 'inr))
+   (where x_lr ,(gensym 'inr-free))]
+  [(ty-cons G x_l
+            (case e_+
+              [(inl x_+l) => e_l]
+              [(inr x_+r) => e_r]))
+   (C-extend* (C-append* (ty-cons G x_l+ e_+)
+                         (ty-cons (extend G x_+l (var x_n+l)) x_ll e_l)
+                         (ty-cons (extend G x_+r (var x_n+r)) x_lr e_r))
+              [(var x_l) (var x_ll)]
+              [(var x_l) (var x_lr)]
+              [(var x_l+) (+ (var x_n+l) (var x_n+r))])
+   (where x_n+l ,(gensym (term x_+l)))
+   (where x_n+r ,(gensym (term x_+r)))
+   (where x_l+ ,(gensym 'case+))
+   (where x_ll ,(gensym 'case_left))
+   (where x_lr ,(gensym 'case_right))]
 
-  [(typeof<= G (inl e) (+ T_e T_1))
-   (typeof=> G e T_e)]
-  [(typeof<= G (inr e) (+ T_1 T_e))
-   (typeof=> G e T_e)]
+  [(ty-cons G x_l (pair e_l e_r))
+   (C-extend (C-append (ty-cons G x_ll e_l)
+                       (ty-cons G x_lr e_r))
+             (var x_l) (* (var x_ll) (var x_lr)))
+   (where x_ll ,(gensym 'pair_left))
+   (where x_lr ,(gensym 'pair_right))]
+  [(ty-cons G x_l (fst e_*))
+   (C-extend (ty-cons G x_l* e_*)
+             (var x_l*) (* (var x_l) (var x_r)))
+   (where x_l* ,(gensym 'pair))
+   (where x_r ,(gensym 'pair_right))]
+  [(ty-cons G x_r (snd e_*))
+   (C-extend (ty-cons G x_l* e_*)
+             (var x_l*) (* (var x_l) (var x_r)))
+   (where x_l* ,(gensym 'pair))
+   (where x_l ,(gensym 'pair_left))])
 
-  [(typeof<= G e T)
-   (typeof=> G e T)])
-  
-(define-judgment-form STLC
-  #:mode (typeof=> I I O)
-  #:contract (typeof=> G e T)
-  [(typeof=> G x T)
-   (where T (lookup G x))]
-  [(typeof=> G i int)]
-  [(typeof=> G add1 (-> int int))]
-  
-  [(typeof=> G (e_1 e_2) T_2)
-   (typeof=> G e_1 (-> T_1 T_2))
-   (where #t (typeof<= G e_2 T_1))]
-  
-  [(typeof=> G
-           (case e_+
-             [(inl x_l) => e_l]
-             [(inr x_r) => e_r])
-           T_body)
-   (typeof=> G e_+ (+ T_l T_r))
-   (typeof=> (extend G x_l T_l) e_l T_body)
-   (typeof=> (extend G x_r T_r) e_r T_body)]
+(define-metafunction STLC
+  C-extend : C T T -> C
+  [(C-extend ([T_l1 T_r1] ...) T_l0 T_r0)
+   ([T_l0 T_r0] [T_l1 T_r1] ...)])
 
-  [(typeof=> G (pair e_l e_r) (* T_l T_r))
-   (typeof=> G e_l T_l)
-   (typeof=> G e_r T_r)]
-  [(typeof=> G (fst e) T_l)
-   (typeof=> G e (* T_l T_r))]
-  [(typeof=> G (snd e) T_r)
-   (typeof=> G e (* T_l T_r))]
+(define-metafunction STLC
+  C-extend* : C [T T] ... -> C
+  [(C-extend* C)
+   C]
+  [(C-extend* C [T_1 T_2] [T_m1 T_m2] ...)
+   (C-extend* (C-extend C T_1 T_2) [T_m1 T_m2] ...)])
 
-  [(typeof=> G (e : T) T)
-   (where #t (typeof<= G e T))])
+(define-metafunction STLC
+  C-append : C C -> C
+  [(C-append ([T_l1 T_l2] ...)
+             ([T_r1 T_r2] ...))
+   ([T_l1 T_l2] ...
+    [T_r1 T_r2] ...)])
+
+(define-metafunction STLC
+  C-append* : C ... -> C
+  [(C-append* C)
+   C]
+  [(C-append* C_1 C_2 C_m ...)
+   (C-append* (C-append C_1 C_2) C_m ...)])
 
 (define-metafunction STLC
   extend : G x T -> G
@@ -82,57 +134,282 @@
 (define-metafunction STLC
   lookup : G x -> T
   [(lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i) 
-   T_i])
+   T_i]
+  [(lookup G x)
+   ,(error 'lookup "Unbound identifier ~e" (term x))])
 
-(test-equal 
- (judgment-holds 
-  (typeof=> () 
-            7
-            T)
-  T)
- (list (term int)))
-(test-equal 
- (term
-  (typeof<= () 
-            7
-            int))
- #t)
+(define unbound-id-exn?
+  (lambda (x)
+    (and (exn:fail? x)
+         (regexp-match #rx"^lookup: Unbound identifier "
+                       (exn-message x)))))
 
-(test-equal 
- (judgment-holds 
-  (typeof=> () 
-            add1
-            T)
-  T)
- (list (term (-> int int))))
-(test-equal 
- (term
-  (typeof<= () 
-            add1
-            (-> int int)))
- #t)
+;; Is ty-cons defined on the language, when there are no free identifiers
+(redex-check STLC e
+             (with-handlers ([unbound-id-exn?
+                              (lambda (x)
+                                #t)])
+               (term (ty-cons () top e)))
+             #:attempts 200)             
 
-(test-equal 
- (judgment-holds 
-  (typeof=> () 
-            (add1 7)
-            T)
-  T)
- (list (term int)))
-(test-equal 
- (judgment-holds 
-  (typeof=> () 
-            (lambda (x) 
-              (lambda (x)
-                (x (add1 7))))
-            T)
-  T)
- (list (term (-> int (-> (-> int int) int)))))
-(test-equal 
- (judgment-holds
-  (typeof=> () 
-            (lambda (x)
-              (lambda (x)
-                (add1 x)))
-            T))
- #f)
+(define-metafunction STLC
+  T-subst : x T T -> T
+  [(T-subst x T (var x))
+   T]
+  [(T-subst x T (var x_y))
+   (var x_y)]
+  [(T-subst x T (any T_1 ...))
+   (any (T-subst x T T_1)
+        ...)]
+  [(T-subst x T int)
+   int]
+  [(T-subst x T unit)
+   unit])
+
+(define cant-unify-exn?
+  (lambda (x)
+    (and (exn:fail? x)
+         (regexp-match #rx"^unify: Cannot unify "
+                       (exn-message x)))))
+
+(define-metafunction STLC
+  unify : G C -> G
+  ;; Done?
+  [(unify G ())
+   G]
+
+  ;; Push substitution
+  [(unify ([x_g T_g] ...) ([(var x) T] [T_ml T_mr] ...))
+   (unify (extend ([x_g (T-subst x T T_g)] ...) x T)
+          ([(T-subst x T T_ml) (T-subst x T T_mr)] ...))]
+  [(unify G ([T (var x)] [T_ml T_mr] ...))
+   (unify G ([(var x) T] [T_ml T_mr] ...))]
+
+  ;; Constructory
+  [(unify G ([any_1 any_1]
+             [T_ml T_mr]
+             ...))
+   (unify G ([T_ml T_mr]
+             ...))]
+  [(unify G ([(any_1 T_l ...)
+              (any_1 T_r ...)]
+             [T_ml T_mr]
+             ...))
+   (unify G ([T_l T_r] ...
+             [T_ml T_mr]
+             ...))]
+
+  [(unify G C)
+   ,(error 'unify "Cannot unify ~e" (term C))])
+
+(define-metafunction STLC
+  typeof : e -> T
+  [(typeof e)
+   (lookup (unify () (ty-cons () x_top e)) x_top)
+   (where x_top ,(gensym 'top))])
+
+(define (alpha-equal? T1 T2)
+  (define T1->T2 (make-hasheq))
+  (let loop ([t1 T1] [t2 T2])
+    (match* (t1 t2)
+            [((? symbol?) (? symbol?))
+             (if (hash-has-key? T1->T2 t1)
+                 (eq? (hash-ref T1->T2 t1) t2)
+                 (hash-set! T1->T2 t1 t2))]
+            [((cons t1f t1r)
+              (cons t2f t2r))
+             (and (loop t1f t2f)
+                  (loop t1r t2r))]
+            [((list) (list))
+             #t]
+            [(_ _)
+             #f])))
+
+(define-syntax-rule (tt e T)
+  (test-predicate
+   (curry alpha-equal? (term T))
+   (with-handlers ([unbound-id-exn? (lambda (x) #f)])
+     (term (typeof e)))))
+
+(define-syntax-rule (tf e)
+  (test-equal (with-handlers ([cant-unify-exn? (lambda (x) #f)])
+                (term (typeof e)))
+              #f))
+
+;; x
+(tt ((lambda (x) x) 7) int)
+
+;; ()
+(tt () unit)
+
+;; i
+(tt 1 int)
+
+;; (e : T)
+(tt (1 : int) int)
+(tf (1 : (-> int int)))
+
+;; (e e)
+(tt (add1 1) int)
+(tf (add1 add1))
+(tt ((lambda (f) (f 1)) add1) int)
+
+;; lambda
+(tt (lambda (x) x)
+    (-> (var A) (var A)))
+
+;; add1
+(tt add1 (-> int int))
+
+;; inl
+(tt (inl 1) (+ int (var A)))
+
+;; inr
+(tt (inr 1) (+ (var A) int))
+
+;; case
+(tt (case (inl 1)
+      [(inl x) => (add1 x)]
+      [(inr x) => (add1 (add1 x))])
+    int)
+(tt (case (inr 1)
+      [(inl x) => (add1 x)]
+      [(inr x) => (add1 (add1 x))])
+    int)
+(tf (case (inl add1)
+      [(inl x) => (add1 x)]
+      [(inr x) => (add1 (add1 x))]))
+(tf (case (inr add1)
+      [(inl x) => (add1 x)]
+      [(inr x) => (add1 (add1 x))]))
+(tt (case (inr add1)
+      [(inl x) => x]
+      [(inr x) => add1])
+    (-> int int))
+(tf (case (inr add1)
+      [(inl x) => 1]
+      [(inr x) => add1]))
+
+;; pair
+(tt (pair 1 1) (* int int))
+(tt (pair 1 add1) (* int (-> int int)))
+
+;; fst
+(tt (fst (pair 1 1)) int)
+(tt (fst (pair 1 add1)) int)
+
+;; snd
+(tt (snd (pair 1 1)) int)
+(tt (snd (pair add1 1)) int)
+
+;; Implement lists
+(define omega
+  (term (lambda (x) (x x))))
+(define Omega
+  (term (,omega ,omega)))
+(define diverge
+  (term ,Omega))
+(define !empty
+  (term (inr ())))
+(define !cons
+  (term (lambda (x)
+          (lambda (y)
+            (inl (pair x y))))))
+(define !car
+  (term (lambda (x)
+          (case x
+            [(inl x) =>
+             (fst x)]
+            [(inr x) =>
+             ,diverge]))))
+(define !cdr
+  (term (lambda (x)
+          (case x
+            [(inl x) =>
+             (snd x)]
+            [(inr x) =>
+             ,diverge]))))
+(define Y
+  (term (lambda (rf)
+          ((lambda (f)
+            (rf (lambda (x)
+                  ((f f) x))))
+          (lambda (f)
+            (rf (lambda (x)
+                  ((f f) x))))))))            
+(define !map
+  (term (,Y
+         (lambda (map)
+           (lambda (f)
+             (lambda (l)
+               (case l
+                 [(inl x) =>
+                  (inl
+                   (pair (f (fst x))
+                         ((map f) (snd x))))]
+                 [(inr x) =>
+                  (inr ())])))))))
+
+(tt ,diverge
+    (var A))
+(tt (lambda (x) ,diverge)
+    (-> (var A) (var B)))
+(tt (,!car ,!empty)
+    (var A))
+(tt ((,!cons 1) ,!empty)
+    (+ (* int (+ (var A) unit)) (var B)))
+(tt (,!car ((,!cons 1) ,!empty))
+    int)
+(tt ((,!map add1) ((,!cons 1) ,!empty))
+    (+ (* int (+ (* int (var A)) unit)) unit))
+
+;; Random generation
+(define (generate-e juice G tys)
+  (random-choice
+   juice
+   ;; x
+   [(G-select G tys)
+    => (lambda (x T)
+         (values x T))]
+   ;; ()
+   [(ty-ok? (term unit) tys)
+    (values (term ())
+            (term unit))]
+   ;; i
+   [(ty-ok? (term int) tys)
+    (values (generate-int)
+            (term int))]
+   ;; (e : T)
+   [(ty-select tys)
+    => (lambda (T)
+         (define-values (ei Ti) (generate-e juice G (ty-set T)))
+         (values (term (,et : ,T))
+                 T))]
+   ;; (e e)
+   [(ty-select tys)
+    => (lambda (T)
+         (define-values (ea Ta) (generate-e juice G (ty-any)))
+         (define-values (ef Tf) (generate-e juice G (ty-set (-> Ta T))))
+         (values (term (,ef ,ea))
+                 T))]
+   ;; (lambda (x) e)
+   [(ty-arr-ok? tys)
+    => (lambda (Tx Tb)
+         (define x (gensym 'x))
+         (define-values (eb _Tb) (generate-e juice (G-extend G x Tx) Tb))
+         (values (term (lambda (,x) ,eb))
+                 (term (-> ,Tx ,Tb))))]
+   
+   ;; add1
+     
+   ;; (inl e)
+   ;; (inr e)
+   ;; (case e [(inl x) => e] [(inr x) => e])
+     
+   ;; (pair e e)
+   ;; (fst e)
+   ;; (snd e)    
+
+   ))
+
+(generate-e 10 empty (ty-any))
