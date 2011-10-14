@@ -229,8 +229,7 @@
    (unify* G (U C_0 ... C_1 ...))]
   [(unify* G (U C C_1 ...))
    (unify* G_0 (U C_1 ...))
-   (where G_0 (unify* G C))
-   (side-condition (term G_0))]
+   (where G_0 (unify* G C))]
   [(unify* G C)
    #f])
 
@@ -239,8 +238,7 @@
   [(typeof e)
    (dual-lookup G_0 x_top)
    (where x_top ,(gensym 'top))
-   (where G_0 (unify* () (ty-cons () x_top e)))
-   (side-condition (term G_0))]
+   (where G_0 (unify* () (ty-cons () x_top e)))]
   [(typeof e)
    #f])
 
@@ -405,7 +403,9 @@
 (define (random-list-ref l)
   (list-ref l (random (length l))))
 (define (random-var G)
-  (first (random-list-ref G)))
+  (if (empty? G)
+      #f
+      (first (random-list-ref G))))
 
 (define (random-int)
   (random 64))
@@ -452,7 +452,7 @@
    (term (snd ,(random-id)))]))
 
 (define-metafunction STLC
-  unify*-modulo-delays : G C -> (G (C ...))
+  unify*-modulo-delays : G C -> (MG (C ...))
   ;; Actually do unification
   [(unify*-modulo-delays G RC)
    ((unify G (RC-subst G RC)) ())]
@@ -467,7 +467,10 @@
   [(unify*-modulo-delays G (U C C_1 ...))
    (G_s (C_f ... C_s ...))
    (where (G_f (C_f ...)) (unify*-modulo-delays G C))
-   (where (G_s (C_s ...)) (unify*-modulo-delays G_f (U C_1 ...)))])
+   (where (G_s (C_s ...)) (unify*-modulo-delays G_f (U C_1 ...)))]
+  ;; Error
+  [(unify*-modulo-delays G C)
+   (#f ())])
 
 (define (subst x t tp)
   (let loop ([tp tp])
@@ -486,22 +489,26 @@
       [(list 'delayed id->type label (? random-id?))
        (define new-term (unravel-random-e/once id->type juice))
        ;; XXX This may error, so we should try something else
-       (match-define
-        (list new-principal-typing delays)
-        (term 
-         (unify*-modulo-delays ,principal-typing
-                               (ty-cons ,id->type ,label ,new-term))))
-       (for/fold ([new-principal-typing new-principal-typing]
-                  [new-term new-term])
-           ([this-delay (in-list delays)])
-         (define this-random (fourth this-delay))
-         (define-values
-           (next-principal-typing next-term)
-           (loop (sub1 juice)
-                 new-principal-typing
-                 this-delay))
-         (values next-principal-typing
-                 (subst this-random next-term new-term)))])))
+
+       (match
+           (term 
+            (unify*-modulo-delays ,principal-typing
+                                  (ty-cons ,id->type ,label ,new-term)))
+         [(list #f _)
+          ;; XXX Backtrack
+          (error 'random-term "Can't unify")]
+         [(list new-principal-typing delays)
+          (for/fold ([new-principal-typing new-principal-typing]
+                     [new-term new-term])
+              ([this-delay (in-list delays)])
+            (define this-random (fourth this-delay))
+            (define-values
+              (next-principal-typing next-term)
+              (loop (sub1 juice)
+                    new-principal-typing
+                    this-delay))
+            (values next-principal-typing
+                    (subst this-random next-term new-term)))])])))
 
 (printf "Random\n")
 (random-term 3)
