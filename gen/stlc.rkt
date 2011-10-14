@@ -1,6 +1,9 @@
 #lang racket
 (require redex/reduction-semantics)
 
+;; XXX Use De Bruijin indices and maybe use that to cache the results
+;; of generating terms of some size
+
 (define-language STLC
   [e x
      ()
