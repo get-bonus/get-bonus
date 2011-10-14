@@ -380,17 +380,120 @@
                  [(inr x) =>
                   (inr ())])))))))
 
-(tt ,diverge
-    (var A))
-(tt (lambda (x) ,diverge)
-    (-> (var A) (var B)))
-(tt (,!car ,!empty)
-    (var A))
-(tt ((,!cons 1) ,!empty)
-    (+ (* (int) (+ (var A) (unit))) (var B)))
-(tt (,!car ((,!cons 1) ,!empty))
-    (int))
-(tt ((,!map add1) ((,!cons 1) ,!empty))
-    (+ (* (int) (+ (* (int) (var A)) (unit))) (unit)))
+(when #f
+  (tt ,diverge
+      (var A))
+  (tt (lambda (x) ,diverge)
+      (-> (var A) (var B)))
+  (tt (,!car ,!empty)
+      (var A))
+  (tt ((,!cons 1) ,!empty)
+      (+ (* (int) (+ (var A) (unit))) (var B)))
+  (tt (,!car ((,!cons 1) ,!empty))
+      (int))
+  (tt ((,!map add1) ((,!cons 1) ,!empty))
+      (+ (* (int) (+ (* (int) (var A)) (unit))) (unit))))
 
 ;; Random generation
+
+(define (random-list-ref l)
+  (list-ref l (random (length l))))
+(define (random-var G)
+  (first (random-list-ref G)))
+
+(define (random-int)
+  (random 64))
+
+(define-syntax-rule (random-choice j [0-opt ...] [n-opt ...])
+  (random-choice* j
+                  (list (lambda () 0-opt) ...)
+                  (list (lambda () n-opt) ...)))
+(define (random-choice* j 0-opt-thunks n-opt-thunks)
+  (ormap (lambda (t) (t))
+         (if (positive? j)
+             (shuffle (append 0-opt-thunks n-opt-thunks))
+             (shuffle 0-opt-thunks))))
+
+(define (random-id)
+  (gensym 'random))
+(define (random-id? x)
+  (and (symbol? x)
+       (regexp-match #rx"^random" (symbol->string x))))
+
+(define (unravel-random-e/once G juice)
+  (random-choice
+   juice
+
+   [(random-var G)
+    (term ())
+    (random-int)
+    (term add1)]
+
+   [
+   ;; XXX handle random T
+   ;;(term (random : (var random)))
+   (term (,(random-id) ,(random-id)))
+   (term (lambda (,(gensym 'x)) ,(random-id)))
+   (term (inl ,(random-id)))
+   (term (inr ,(random-id)))
+   (term
+    (case ,(random-id)
+      [(inl x) => ,(random-id)]
+      [(inr x) => ,(random-id)]))
+   (term (pair ,(random-id) ,(random-id)))
+   (term (fst ,(random-id)))
+   (term (snd ,(random-id)))]))
+
+(define-metafunction STLC
+  unify*-modulo-delays : G C -> (G (C ...))
+  ;; Actually do unification
+  [(unify*-modulo-delays G RC)
+   ((unify G (RC-subst G RC)) ())]
+  ;; Force promises
+  [(unify*-modulo-delays G (delayed G_p x_p e_p))
+   (G ((delayed G_p x_p e_p)))]
+  ;; Unroll unions
+  [(unify*-modulo-delays G (U))
+   (G ())]
+  [(unify*-modulo-delays G (U (U C_0 ...) C_1 ...))
+   (unify*-modulo-delays G (U C_0 ... C_1 ...))]
+  [(unify*-modulo-delays G (U C C_1 ...))
+   (G_s (C_f ... C_s ...))
+   (where (G_f (C_f ...)) (unify*-modulo-delays G C))
+   (where (G_s (C_s ...)) (unify*-modulo-delays G_f (U C_1 ...)))])
+
+(define (subst x t tp)
+  (let loop ([tp tp])
+    (cond
+     [(eq? x tp) t]
+     [(list? tp)
+      (map (curry subst x t) tp)]
+     [else tp])))
+
+(define (random-term juice)
+  (define top (gensym 'top))
+  (let loop ([juice juice]
+             [principal-typing (term ())]
+             [current-constraint (term (delayed () ,top ,(random-id)))])
+    (match current-constraint
+      [(list 'delayed id->type label (? random-id?))
+       (define new-term (unravel-random-e/once id->type juice))
+       ;; XXX This may error
+       (match-define
+        (list new-principal-typing delays)
+        (term 
+         (unify*-modulo-delays ,principal-typing
+                               (ty-cons ,id->type ,label ,new-term))))
+       (for/fold ([new-principal-typing new-principal-typing]
+                  [new-term new-term])
+           ([this-delay (in-list delays)])
+         (define this-random (fourth this-delay))
+         (define-values
+           (next-principal-typing next-term)
+           (loop (sub1 juice)
+                 new-principal-typing
+                 this-delay))
+         (values next-principal-typing
+                 (subst this-random next-term new-term)))])))
+
+(random-term 3)
