@@ -29,11 +29,10 @@
   [G ([x T] ...)]
   [RC ([T T] ...)]
   [C RC
+     (delayed G x e)
      (U C ...)]
   [x variable-not-otherwise-mentioned])
 
-;; XXX delay sub generate
-;; XXX interleave unification and generation
 ;; XXX generating on rand terms forces picking them
 
 (define-metafunction STLC
@@ -48,39 +47,39 @@
    (U (ty-cons G x_l e)
       ([(var x_l) T]))]
   [(ty-cons G x_l (e_1 e_2))
-   (U (ty-cons G x_l1 e_1)
-      (ty-cons G x_l2 e_2)
-      ([(var x_l1) (-> (var x_l2) (var x_l))]))
+   (U ([(var x_l1) (-> (var x_l2) (var x_l))])
+      (delayed G x_l1 e_1)
+      (delayed G x_l2 e_2))
    (where x_l1 ,(gensym 'operator))
    (where x_l2 ,(gensym 'operand))]
   [(ty-cons G x_l (lambda (x_a) e_b))
-   (U (ty-cons (extend G x_a (var x_aa)) x_lb e_b)
-      ([(var x_l) (-> (var x_aa) (var x_lb))]))
+   (U ([(var x_l) (-> (var x_aa) (var x_lb))])
+      (delayed (extend G x_a (var x_aa)) x_lb e_b))
    (where x_aa ,(gensym (term x_a)))
    (where x_lb ,(gensym 'body))]
   [(ty-cons G x_l add1)
    ([(var x_l) (-> (int) (int))])]
 
   [(ty-cons G x_l (inl e))
-   (U (ty-cons G x_le e)
-      ([(var x_l) (+ (var x_le) (var x_lr))]))
+   (U ([(var x_l) (+ (var x_le) (var x_lr))])
+      (delayed G x_le e))
    (where x_le ,(gensym 'inl))
    (where x_lr ,(gensym 'inl-free))]
   [(ty-cons G x_l (inr e))
-   (U (ty-cons G x_le e)
-      ([(var x_l) (+ (var x_lr) (var x_le))]))
+   (U ([(var x_l) (+ (var x_lr) (var x_le))])
+      (delayed G x_le e))
    (where x_le ,(gensym 'inr))
    (where x_lr ,(gensym 'inr-free))]
   [(ty-cons G x_l
             (case e_+
               [(inl x_+l) => e_l]
               [(inr x_+r) => e_r]))
-   (U (ty-cons G x_l+ e_+)
-      (ty-cons (extend G x_+l (var x_n+l)) x_ll e_l)
-      (ty-cons (extend G x_+r (var x_n+r)) x_lr e_r)
-      ([(var x_l) (var x_ll)]
+   (U ([(var x_l) (var x_ll)]
        [(var x_l) (var x_lr)]
-       [(var x_l+) (+ (var x_n+l) (var x_n+r))]))
+       [(var x_l+) (+ (var x_n+l) (var x_n+r))])
+      (delayed G x_l+ e_+)
+      (delayed (extend G x_+l (var x_n+l)) x_ll e_l)
+      (delayed (extend G x_+r (var x_n+r)) x_lr e_r))
    (where x_n+l ,(gensym (term x_+l)))
    (where x_n+r ,(gensym (term x_+r)))
    (where x_l+ ,(gensym 'case+))
@@ -88,19 +87,19 @@
    (where x_lr ,(gensym 'case_right))]
 
   [(ty-cons G x_l (pair e_l e_r))
-   (U (ty-cons G x_ll e_l)
-      (ty-cons G x_lr e_r)
-      ([(var x_l) (* (var x_ll) (var x_lr))]))
+   (U ([(var x_l) (* (var x_ll) (var x_lr))])
+      (delayed G x_ll e_l)
+      (delayed G x_lr e_r))
    (where x_ll ,(gensym 'pair_left))
    (where x_lr ,(gensym 'pair_right))]
   [(ty-cons G x_l (fst e_*))
-   (U (ty-cons G x_l* e_*)
-      ([(var x_l*) (* (var x_l) (var x_r))]))
+   (U ([(var x_l*) (* (var x_l) (var x_r))])
+      (delayed G x_l* e_*))
    (where x_l* ,(gensym 'pair))
    (where x_r ,(gensym 'pair_right))]
   [(ty-cons G x_r (snd e_*))
-   (U (ty-cons G x_l* e_*)
-      ([(var x_l*) (* (var x_l) (var x_r))]))
+   (U ([(var x_l*) (* (var x_l) (var x_r))])
+      (delayed G x_l* e_*))
    (where x_l* ,(gensym 'pair))
    (where x_l ,(gensym 'pair_left))])
 
@@ -218,14 +217,19 @@
 
 (define-metafunction STLC
   unify* : G C -> G
+  ;; Actually do unification
   [(unify* G RC)
    (unify G (RC-subst G RC))]
+  ;; Force promises
+  [(unify* G (delayed G_p x_p e_p))
+   (unify* G (ty-cons G_p x_p e_p))]
+  ;; Unroll unions
   [(unify* G (U))
    G]
   [(unify* G (U (U C_0 ...) C_1 ...))
    (unify* G (U C_0 ... C_1 ...))]
-  [(unify* G (U RC C_1 ...))
-   (unify* (unify* G RC) (U C_1 ...))])
+  [(unify* G (U C C_1 ...))
+   (unify* (unify* G C) (U C_1 ...))])
 
 (define-metafunction STLC
   typeof : e -> T
@@ -387,6 +391,6 @@
 (tt (,!car ((,!cons 1) ,!empty))
     (int))
 (tt ((,!map add1) ((,!cons 1) ,!empty))
-    (+ (* (int) (+ (* (int) (+ (* (int) (var A)) (unit))) (unit))) (unit)))
+    (+ (* (int) (+ (* (int) (var A)) (unit))) (unit)))
 
 ;; Random generation
