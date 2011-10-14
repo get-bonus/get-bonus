@@ -31,6 +31,11 @@
   [C RC
      (delayed G x e)
      (U C ...)]
+
+  [MT #f
+      T]
+  [MG #f
+      G]
   [x variable-not-otherwise-mentioned])
 
 ;; XXX generating on rand terms forces picking them
@@ -173,14 +178,8 @@
      (T-subst* G T_r)]
     ...)])
 
-(define cant-unify-exn?
-  (lambda (x)
-    (and (exn:fail? x)
-         (regexp-match #rx"^unify: Cannot unify "
-                       (exn-message x)))))
-
 (define-metafunction STLC
-  unify : G RC -> G
+  unify : G RC -> MG
   ;; Done?
   [(unify G ())
    G]
@@ -213,10 +212,10 @@
              ...))]
 
   [(unify G RC)
-   ,(error 'unify "Cannot unify ~e" (term RC))])
+   #f])
 
 (define-metafunction STLC
-  unify* : G C -> G
+  unify* : G C -> MG
   ;; Actually do unification
   [(unify* G RC)
    (unify G (RC-subst G RC))]
@@ -229,13 +228,21 @@
   [(unify* G (U (U C_0 ...) C_1 ...))
    (unify* G (U C_0 ... C_1 ...))]
   [(unify* G (U C C_1 ...))
-   (unify* (unify* G C) (U C_1 ...))])
+   (unify* G_0 (U C_1 ...))
+   (where G_0 (unify* G C))
+   (side-condition (term G_0))]
+  [(unify* G C)
+   #f])
 
 (define-metafunction STLC
-  typeof : e -> T
+  typeof : e -> MT
   [(typeof e)
-   (dual-lookup (unify* () (ty-cons () x_top e)) x_top)
-   (where x_top ,(gensym 'top))])
+   (dual-lookup G_0 x_top)
+   (where x_top ,(gensym 'top))
+   (where G_0 (unify* () (ty-cons () x_top e)))
+   (side-condition (term G_0))]
+  [(typeof e)
+   #f])
 
 (define (alpha-equal? T1 T2)
   (define T1->T2 (make-hasheq))
@@ -262,8 +269,7 @@
      (term (typeof e)))))
 
 (define-syntax-rule (tf e)
-  (test-equal (with-handlers ([cant-unify-exn? (lambda (x) #f)])
-                (term (typeof e)))
+  (test-equal (term (typeof e))
               #f))
 
 ;; x
@@ -420,6 +426,7 @@
   (and (symbol? x)
        (regexp-match #rx"^random" (symbol->string x))))
 
+;; XXX return a generator of every option
 (define (unravel-random-e/once G juice)
   (random-choice
    juice
@@ -431,7 +438,7 @@
 
    [
    ;; XXX handle random T
-   ;;(term (random : (var random)))
+   ;;(term (,(random-id) : (var ,(random-id))))
    (term (,(random-id) ,(random-id)))
    (term (lambda (,(gensym 'x)) ,(random-id)))
    (term (inl ,(random-id)))
@@ -478,7 +485,7 @@
     (match current-constraint
       [(list 'delayed id->type label (? random-id?))
        (define new-term (unravel-random-e/once id->type juice))
-       ;; XXX This may error
+       ;; XXX This may error, so we should try something else
        (match-define
         (list new-principal-typing delays)
         (term 
@@ -496,4 +503,5 @@
          (values next-principal-typing
                  (subst this-random next-term new-term)))])))
 
+(printf "Random\n")
 (random-term 3)
