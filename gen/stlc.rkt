@@ -27,7 +27,8 @@
      (* T T)
      (+ T T)]
   [G ([x T] ...)]
-  [C ([T T] ...)]
+  [C ([T T] ...)
+     (U C ...)]
   [x variable-not-otherwise-mentioned])
 
 ;; XXX delay sub generate
@@ -43,42 +44,42 @@
   [(ty-cons G x_l i)
    ([(var x_l) (int)])]
   [(ty-cons G x_l (e : T))
-   (C-extend (ty-cons G x_l e)
-             (var x_l) T)]
+   (U (ty-cons G x_l e)
+      ([(var x_l) T]))]
   [(ty-cons G x_l (e_1 e_2))
-   (C-extend (C-append (ty-cons G x_l1 e_1)
-                       (ty-cons G x_l2 e_2))
-             (var x_l1) (-> (var x_l2) (var x_l)))
+   (U (ty-cons G x_l1 e_1)
+      (ty-cons G x_l2 e_2)
+      ([(var x_l1) (-> (var x_l2) (var x_l))]))
    (where x_l1 ,(gensym 'operator))
    (where x_l2 ,(gensym 'operand))]
   [(ty-cons G x_l (lambda (x_a) e_b))
-   (C-extend (ty-cons (extend G x_a (var x_aa)) x_lb e_b)
-             (var x_l) (-> (var x_aa) (var x_lb)))
+   (U (ty-cons (extend G x_a (var x_aa)) x_lb e_b)
+      ([(var x_l) (-> (var x_aa) (var x_lb))]))
    (where x_aa ,(gensym (term x_a)))
    (where x_lb ,(gensym 'body))]
   [(ty-cons G x_l add1)
    ([(var x_l) (-> (int) (int))])]
 
   [(ty-cons G x_l (inl e))
-   (C-extend (ty-cons G x_le e)
-             (var x_l) (+ (var x_le) (var x_lr)))
+   (U (ty-cons G x_le e)
+      ([(var x_l) (+ (var x_le) (var x_lr))]))
    (where x_le ,(gensym 'inl))
    (where x_lr ,(gensym 'inl-free))]
   [(ty-cons G x_l (inr e))
-   (C-extend (ty-cons G x_le e)
-             (var x_l) (+ (var x_lr) (var x_le)))
+   (U (ty-cons G x_le e)
+      ([(var x_l) (+ (var x_lr) (var x_le))]))
    (where x_le ,(gensym 'inr))
    (where x_lr ,(gensym 'inr-free))]
   [(ty-cons G x_l
             (case e_+
               [(inl x_+l) => e_l]
               [(inr x_+r) => e_r]))
-   (C-extend* (C-append* (ty-cons G x_l+ e_+)
-                         (ty-cons (extend G x_+l (var x_n+l)) x_ll e_l)
-                         (ty-cons (extend G x_+r (var x_n+r)) x_lr e_r))
-              [(var x_l) (var x_ll)]
-              [(var x_l) (var x_lr)]
-              [(var x_l+) (+ (var x_n+l) (var x_n+r))])
+   (U (ty-cons G x_l+ e_+)
+      (ty-cons (extend G x_+l (var x_n+l)) x_ll e_l)
+      (ty-cons (extend G x_+r (var x_n+r)) x_lr e_r)
+      ([(var x_l) (var x_ll)]
+       [(var x_l) (var x_lr)]
+       [(var x_l+) (+ (var x_n+l) (var x_n+r))]))
    (where x_n+l ,(gensym (term x_+l)))
    (where x_n+r ,(gensym (term x_+r)))
    (where x_l+ ,(gensym 'case+))
@@ -86,47 +87,21 @@
    (where x_lr ,(gensym 'case_right))]
 
   [(ty-cons G x_l (pair e_l e_r))
-   (C-extend (C-append (ty-cons G x_ll e_l)
-                       (ty-cons G x_lr e_r))
-             (var x_l) (* (var x_ll) (var x_lr)))
+   (U (ty-cons G x_ll e_l)
+      (ty-cons G x_lr e_r)
+      ([(var x_l) (* (var x_ll) (var x_lr))]))
    (where x_ll ,(gensym 'pair_left))
    (where x_lr ,(gensym 'pair_right))]
   [(ty-cons G x_l (fst e_*))
-   (C-extend (ty-cons G x_l* e_*)
-             (var x_l*) (* (var x_l) (var x_r)))
+   (U (ty-cons G x_l* e_*)
+      ([(var x_l*) (* (var x_l) (var x_r))]))
    (where x_l* ,(gensym 'pair))
    (where x_r ,(gensym 'pair_right))]
   [(ty-cons G x_r (snd e_*))
-   (C-extend (ty-cons G x_l* e_*)
-             (var x_l*) (* (var x_l) (var x_r)))
+   (U (ty-cons G x_l* e_*)
+      ([(var x_l*) (* (var x_l) (var x_r))]))
    (where x_l* ,(gensym 'pair))
    (where x_l ,(gensym 'pair_left))])
-
-(define-metafunction STLC
-  C-extend : C T T -> C
-  [(C-extend ([T_l1 T_r1] ...) T_l0 T_r0)
-   ([T_l0 T_r0] [T_l1 T_r1] ...)])
-
-(define-metafunction STLC
-  C-extend* : C [T T] ... -> C
-  [(C-extend* C)
-   C]
-  [(C-extend* C [T_1 T_2] [T_m1 T_m2] ...)
-   (C-extend* (C-extend C T_1 T_2) [T_m1 T_m2] ...)])
-
-(define-metafunction STLC
-  C-append : C C -> C
-  [(C-append ([T_l1 T_l2] ...)
-             ([T_r1 T_r2] ...))
-   ([T_l1 T_l2] ...
-    [T_r1 T_r2] ...)])
-
-(define-metafunction STLC
-  C-append* : C ... -> C
-  [(C-append* C)
-   C]
-  [(C-append* C_1 C_2 C_m ...)
-   (C-append* (C-append C_1 C_2) C_m ...)])
 
 (define-metafunction STLC
   extend : G x T -> G
@@ -140,6 +115,25 @@
   [(lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i) 
    T_i]
   [(lookup G x)
+   ,(error 'lookup "Unbound identifier ~e" (term x))])
+
+(require (only-in unstable/match ==))
+(define (doesnt-match x Ts)
+  (for/and ([T (in-list Ts)])
+           (match T
+             [(list 'var (== x))
+              #f]
+             [_
+              #t])))
+
+(define-metafunction STLC
+  dual-lookup : G x -> T
+  [(dual-lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i) 
+   T_i]
+  [(dual-lookup ([x_0 T_0] ... [x_t (var x_i)] [x_i+1 T_i+1] ...) x_i) 
+   (var x_t)
+   (side-condition (doesnt-match (term x_i) (term (T_0 ...))))]
+  [(dual-lookup G x)
    ,(error 'lookup "Unbound identifier ~e" (term x))])
 
 (define unbound-id-exn?
@@ -166,6 +160,21 @@
    (any (T-subst x T T_1)
         ...)])
 
+(define-metafunction STLC
+  T-subst* : G T -> T
+  [(T-subst* () T) T]
+  [(T-subst* ([x_1 T_1] [x_n T_n] ...) T)
+   (T-subst* ([x_n T_n] ...) (T-subst x_1 T_1 T))])
+
+(define-metafunction STLC
+  C-subst : G C -> C
+  [(C-subst G (U C ...))
+   (U (C-subst G C) ...)]
+  [(C-subst G ([T_l T_r] ...))
+   ([(T-subst* G T_l)
+     (T-subst* G T_r)]
+    ...)])
+
 (define cant-unify-exn?
   (lambda (x)
     (and (exn:fail? x)
@@ -178,12 +187,30 @@
   [(unify G ())
    G]
 
+  ;; Union
+  [(unify G (U))
+   G]
+  [(unify G (U C_1 C ...))
+   (unify (unify G (C-subst G C_1))
+          (U C ...))]
+
+  ;; Ignore equal ids
+  [(unify G ([(var x_1) (var x_1)]
+             [T_ml T_mr] ...))
+   (unify G ([T_ml T_mr] ...))]
+
   ;; Push substitution
-  [(unify ([x_g T_g] ...) ([(var x) T] [T_ml T_mr] ...))
+  [(unify ([x_g T_g] ...)
+          ([(var x) T]
+           [T_ml T_mr] ...))
    (unify (extend ([x_g (T-subst x T T_g)] ...) x T)
           ([(T-subst x T T_ml) (T-subst x T T_mr)] ...))]
-  [(unify G ([T (var x)] [T_ml T_mr] ...))
-   (unify G ([(var x) T] [T_ml T_mr] ...))]
+
+  ;; Swap sides
+  [(unify G ([T (var x)]
+             [T_ml T_mr] ...))
+   (unify G ([(var x) T]
+             [T_ml T_mr] ...))]
 
   ;; Constructory
   [(unify G ([(any_1 T_l ...)
@@ -200,7 +227,7 @@
 (define-metafunction STLC
   typeof : e -> T
   [(typeof e)
-   (lookup (unify () (ty-cons () x_top e)) x_top)
+   (dual-lookup (unify () (ty-cons () x_top e)) x_top)
    (where x_top ,(gensym 'top))])
 
 (define (alpha-equal? T1 T2)
@@ -222,7 +249,8 @@
 
 (define-syntax-rule (tt e T)
   (test-predicate
-   (curry alpha-equal? (term T))
+   (procedure-rename (curry alpha-equal? (term T))
+                     (string->symbol (format "alpha-equal to ~v" (term T))))
    (with-handlers ([unbound-id-exn? (lambda (x) #f)])
      (term (typeof e)))))
 
@@ -356,6 +384,6 @@
 (tt (,!car ((,!cons 1) ,!empty))
     (int))
 (tt ((,!map add1) ((,!cons 1) ,!empty))
-    (+ (* (int) (+ (* (int) (var A)) (unit))) (unit)))
+    (+ (* (int) (+ (* (int) (+ (* (int) (var A)) (unit))) (unit))) (unit)))
 
 ;; Random generation
