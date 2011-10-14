@@ -399,26 +399,29 @@
       (+ (* (int) (+ (* (int) (var A)) (unit))) (unit))))
 
 ;; Random generation
+(require racket/generator)
 
 (define (random-list-ref l)
   (list-ref l (random (length l))))
-(define (random-var G)
-  (if (empty? G)
-      #f
-      (first (random-list-ref G))))
+(define (random-var G yield)
+  (for-each yield (map first (shuffle G))))
 
 (define (random-int)
   (random 64))
 
-(define-syntax-rule (random-choice j [0-opt ...] [n-opt ...])
+(define-syntax-rule (random-choice j y [0-opt ...] [n-opt ...])
   (random-choice* j
-                  (list (lambda () 0-opt) ...)
-                  (list (lambda () n-opt) ...)))
+                  (list (lambda (y) 0-opt) ...)
+                  (list (lambda (y) n-opt) ...)))
 (define (random-choice* j 0-opt-thunks n-opt-thunks)
-  (ormap (lambda (t) (t))
-         (if (positive? j)
-             (shuffle (append 0-opt-thunks n-opt-thunks))
-             (shuffle 0-opt-thunks))))
+  (in-generator
+   (for ([opt
+          (in-list
+           (shuffle
+            (if (positive? j)
+                (append 0-opt-thunks n-opt-thunks)
+                0-opt-thunks)))])
+        (opt yield))))             
 
 (define (random-id)
   (gensym 'random))
@@ -426,30 +429,31 @@
   (and (symbol? x)
        (regexp-match #rx"^random" (symbol->string x))))
 
-;; XXX return a generator of every option
 (define (unravel-random-e/once G juice)
   (random-choice
-   juice
+   juice yield
 
-   [(random-var G)
-    (term ())
-    (random-int)
-    (term add1)]
+   [(random-var G yield)
+    (yield (term ()))
+    (begin (yield (random-int))
+           (yield (random-int)))
+    (yield (term add1))]
 
    [
    ;; XXX handle random T
    ;;(term (,(random-id) : (var ,(random-id))))
-   (term (,(random-id) ,(random-id)))
-   (term (lambda (,(gensym 'x)) ,(random-id)))
-   (term (inl ,(random-id)))
-   (term (inr ,(random-id)))
-   (term
-    (case ,(random-id)
-      [(inl x) => ,(random-id)]
-      [(inr x) => ,(random-id)]))
-   (term (pair ,(random-id) ,(random-id)))
-   (term (fst ,(random-id)))
-   (term (snd ,(random-id)))]))
+   (yield (term (,(random-id) ,(random-id))))
+   (yield (term (lambda (,(gensym 'x)) ,(random-id))))
+   (yield (term (inl ,(random-id))))
+   (yield (term (inr ,(random-id))))
+   (yield
+    (term
+     (case ,(random-id)
+       [(inl x) => ,(random-id)]
+       [(inr x) => ,(random-id)])))
+   (yield (term (pair ,(random-id) ,(random-id))))
+   (yield (term (fst ,(random-id))))
+   (yield (term (snd ,(random-id))))]))
 
 (define-metafunction STLC
   unify*-modulo-delays : G C -> (MG (C ...))
@@ -480,35 +484,41 @@
       (map (curry subst x t) tp)]
      [else tp])))
 
-(define (random-term juice)
+(define (random-terms juice)
   (define top (gensym 'top))
   (let loop ([juice juice]
              [principal-typing (term ())]
              [current-constraint (term (delayed () ,top ,(random-id)))])
-    (match current-constraint
-      [(list 'delayed id->type label (? random-id?))
-       (define new-term (unravel-random-e/once id->type juice))
-       ;; XXX This may error, so we should try something else
-
-       (match
-           (term 
-            (unify*-modulo-delays ,principal-typing
-                                  (ty-cons ,id->type ,label ,new-term)))
-         [(list #f _)
-          ;; XXX Backtrack
-          (error 'random-term "Can't unify")]
-         [(list new-principal-typing delays)
-          (for/fold ([new-principal-typing new-principal-typing]
-                     [new-term new-term])
-              ([this-delay (in-list delays)])
-            (define this-random (fourth this-delay))
-            (define-values
-              (next-principal-typing next-term)
-              (loop (sub1 juice)
-                    new-principal-typing
-                    this-delay))
-            (values next-principal-typing
-                    (subst this-random next-term new-term)))])])))
+    (in-generator
+     (match current-constraint
+       [(list 'delayed id->type label (? random-id?))
+        (for ([new-term (unravel-random-e/once id->type juice)])
+             (match
+                 (term 
+                  (unify*-modulo-delays ,principal-typing
+                                        (ty-cons ,id->type ,label ,new-term)))
+               [(list #f _)
+                (void)]
+               [(list new-principal-typing delays)
+                (let inner-loop
+                    ([new-principal-typing new-principal-typing]
+                     [new-term new-term]
+                     [delays delays])
+                  (match delays
+                    [(list)
+                     (yield (list new-principal-typing new-term top))]
+                    [(list-rest this-delay delays)
+                     (define this-random (fourth this-delay))
+                     (for ([ty*t
+                            (loop (sub1 juice)
+                                  new-principal-typing
+                                  this-delay)])
+                          (match-define (list next-principal-typing next-term _) ty*t)
+                          (inner-loop next-principal-typing
+                                      (subst this-random next-term new-term)
+                                      delays))]))]))]))))
 
 (printf "Random\n")
-(random-term 3)
+(for ([a (random-terms 1)])
+     (match-define (list ty t top) a)
+     (printf "~v : ~v\n" t (term (dual-lookup ,ty ,top))))
