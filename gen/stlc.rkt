@@ -564,8 +564,13 @@
 
 (printf "Random\n")
 (define-values (top-id term-s) (random-terms 5))
-(for ([a (in-stream term-s)]
-      [i (in-range 10)])
+(for/fold ([last (current-inexact-milliseconds)])
+    ([a (in-stream term-s)]
+     [i (in-range 10)])
      (match-define (vector t ty) a)
-     (printf "~v : ~v\n" t
-             (term (dual-lookup ,ty ,top-id))))
+     (define this (current-inexact-milliseconds))
+     (printf "~v>> ~v : ~v\n"
+             (- this last)
+             t
+             (term (dual-lookup ,ty ,top-id)))
+     this)
