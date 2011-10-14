@@ -38,8 +38,6 @@
       G]
   [x variable-not-otherwise-mentioned])
 
-;; XXX generating on rand terms forces picking them
-
 (define-metafunction STLC
   ty-cons : G x e -> C
   [(ty-cons G x_l x)
@@ -399,29 +397,31 @@
       (+ (* (int) (+ (* (int) (var A)) (unit))) (unit))))
 
 ;; Random generation
-(require racket/generator)
+(require racket/stream)
+
+(define (stream-append-map f s)
+  (stream-of-stream-of-X->stream-of-X/breadth
+   (stream-map f s)))
 
 (define (random-list-ref l)
   (list-ref l (random (length l))))
-(define (random-var G yield)
-  (for-each yield (map first (shuffle G))))
+(define (random-var G)
+  (stream-map first (shuffle G)))
 
 (define (random-int)
   (random 64))
 
-(define-syntax-rule (random-choice j y [0-opt ...] [n-opt ...])
+(define-syntax-rule (random-choice j [0-opt ...] [n-opt ...])
   (random-choice* j
-                  (list (lambda (y) 0-opt) ...)
-                  (list (lambda (y) n-opt) ...)))
+                  (list (lambda () 0-opt) ...)
+                  (list (lambda () (list n-opt)) ...)))
 (define (random-choice* j 0-opt-thunks n-opt-thunks)
-  (in-generator
-   (for ([opt
-          (in-list
-           (shuffle
-            (if (positive? j)
-                (append 0-opt-thunks n-opt-thunks)
-                0-opt-thunks)))])
-        (opt yield))))             
+  (stream-append-map
+   (lambda (t) (t))
+   (shuffle
+    (if (positive? j)
+        (append 0-opt-thunks n-opt-thunks)
+        0-opt-thunks))))
 
 (define (random-id)
   (gensym 'random))
@@ -431,29 +431,26 @@
 
 (define (unravel-random-e/once G juice)
   (random-choice
-   juice yield
+   juice
 
-   [(random-var G yield)
-    (yield (term ()))
-    (begin (yield (random-int))
-           (yield (random-int)))
-    (yield (term add1))]
+   [(random-var G )
+    (list (term ()))
+    (list (random-int))
+    (list (term add1))]
 
-   [
-   ;; XXX handle random T
-   ;;(term (,(random-id) : (var ,(random-id))))
-   (yield (term (,(random-id) ,(random-id))))
-   (yield (term (lambda (,(gensym 'x)) ,(random-id))))
-   (yield (term (inl ,(random-id))))
-   (yield (term (inr ,(random-id))))
-   (yield
+   [(term (,(random-id) ,(random-id)))
+    (term (lambda (,(gensym 'x)) ,(random-id)))
+    ;; XXX handle random T
+    ;;(term (,(random-id) : (var ,(random-id))))
+    (term (inl ,(random-id)))
+    (term (inr ,(random-id)))
     (term
      (case ,(random-id)
        [(inl x) => ,(random-id)]
-       [(inr x) => ,(random-id)])))
-   (yield (term (pair ,(random-id) ,(random-id))))
-   (yield (term (fst ,(random-id))))
-   (yield (term (snd ,(random-id))))]))
+       [(inr x) => ,(random-id)]))
+    (term (pair ,(random-id) ,(random-id)))
+    (term (fst ,(random-id)))
+    (term (snd ,(random-id)))]))
 
 (define-metafunction STLC
   unify*-modulo-delays : G C -> (MG (C ...))
@@ -483,42 +480,92 @@
      [(list? tp)
       (map (curry subst x t) tp)]
      [else tp])))
-
+  
 (define (random-terms juice)
   (define top (gensym 'top))
-  (let loop ([juice juice]
-             [principal-typing (term ())]
-             [current-constraint (term (delayed () ,top ,(random-id)))])
-    (in-generator
-     (match current-constraint
-       [(list 'delayed id->type label (? random-id?))
-        (for ([new-term (unravel-random-e/once id->type juice)])
-             (match
-                 (term 
-                  (unify*-modulo-delays ,principal-typing
-                                        (ty-cons ,id->type ,label ,new-term)))
-               [(list #f _)
-                (void)]
-               [(list new-principal-typing delays)
-                (let inner-loop
-                    ([new-principal-typing new-principal-typing]
-                     [new-term new-term]
-                     [delays delays])
-                  (match delays
-                    [(list)
-                     (yield (list new-principal-typing new-term top))]
-                    [(list-rest this-delay delays)
-                     (define this-random (fourth this-delay))
-                     (for ([ty*t
-                            (loop (sub1 juice)
-                                  new-principal-typing
-                                  this-delay)])
-                          (match-define (list next-principal-typing next-term _) ty*t)
-                          (inner-loop next-principal-typing
-                                      (subst this-random next-term new-term)
-                                      delays))]))]))]))))
+  (values top
+          (stream-of-all-ok-complete-terms
+           juice
+           (term ())
+           (term (delayed () ,top ,(random-id))))))
+
+(define (stream-of-all-random-terms juice principal-typing constraint)
+  (match-define (list 'delayed id->type label (? random-id?)) constraint)
+  (unravel-random-e/once id->type juice))
+
+(define (stream-of-all-ok-random-terms+typings+delays juice principal-typing constraint)
+  (match-define (list 'delayed id->type label (? random-id?)) constraint)
+  (stream-filter-map
+   (lambda (new-term)
+     (match
+         (term 
+          (unify*-modulo-delays ,principal-typing
+                                (ty-cons ,id->type ,label ,new-term)))
+       [(list #f _)
+        #f]
+       [(list new-principal-typing delays)
+        (vector new-term new-principal-typing delays)]))
+   (stream-of-all-random-terms juice principal-typing constraint)))
+
+(define (stream-filter-map f s)
+  (stream-filter (lambda (x) x)
+                 (stream-map f s)))
+
+;; Removes one delay
+(define (stream-of-rt/t/ds->stream-of-stream-of-rt/t/ds juice s)
+  (stream-map
+   (match-lambda
+    [(vector new-term new-principal-typing (list))
+     (list (vector new-term new-principal-typing (list)))]
+    [(vector new-term new-principal-typing (list-rest this-delay delays))
+     (define this-random (fourth this-delay))
+     (stream-map
+      (match-lambda
+       [(vector next-term next-principal-typing)
+        (vector (subst this-random next-term new-term)
+                next-principal-typing
+                delays)])
+      (stream-of-all-ok-complete-terms (sub1 juice) new-principal-typing this-delay))])
+   s))
+
+(define (stream-of-stream-of-X->stream-of-X/breadth s-s)
+  (let loop ([fst-pass s-s]
+             [snd-pass empty-stream])
+    (cond
+     [(stream-empty? fst-pass)
+      (if (stream-empty? snd-pass)
+          empty-stream
+          (loop snd-pass empty-stream))]
+     [else
+      (define s-e (stream-first fst-pass))
+      (if (stream-empty? s-e)
+          (loop (stream-rest fst-pass)
+                snd-pass)
+          (stream-cons (stream-first s-e)
+                       (loop (stream-rest fst-pass)
+                             (stream-cons (stream-rest s-e)
+                                          snd-pass))))])))
+
+(define MAXIMUM-DELAYS 3) ;; XXX Really ugly
+
+(define (stream-of-all-ok-complete-terms juice principal-typing constraint)
+  (define s
+    (stream-of-all-ok-random-terms+typings+delays juice principal-typing constraint))
+  (define unfolded-s
+    (for/fold ([s s])
+        ([i (in-range MAXIMUM-DELAYS)])
+      (stream-of-stream-of-X->stream-of-X/breadth
+       (stream-of-rt/t/ds->stream-of-stream-of-rt/t/ds juice s))))
+  (stream-map
+   (match-lambda
+    [(vector new-term new-principal-typing (list))
+     (vector new-term new-principal-typing)])
+   unfolded-s))
 
 (printf "Random\n")
-(for ([a (random-terms 1)])
-     (match-define (list ty t top) a)
-     (printf "~v : ~v\n" t (term (dual-lookup ,ty ,top))))
+(define-values (top-id term-s) (random-terms 5))
+(for ([a (in-stream term-s)]
+      [i (in-range 10)])
+     (match-define (vector t ty) a)
+     (printf "~v : ~v\n" t
+             (term (dual-lookup ,ty ,top-id))))
