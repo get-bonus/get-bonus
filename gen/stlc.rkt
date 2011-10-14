@@ -27,7 +27,8 @@
      (* T T)
      (+ T T)]
   [G ([x T] ...)]
-  [C ([T T] ...)
+  [RC ([T T] ...)]
+  [C RC
      (U C ...)]
   [x variable-not-otherwise-mentioned])
 
@@ -167,10 +168,8 @@
    (T-subst* ([x_n T_n] ...) (T-subst x_1 T_1 T))])
 
 (define-metafunction STLC
-  C-subst : G C -> C
-  [(C-subst G (U C ...))
-   (U (C-subst G C) ...)]
-  [(C-subst G ([T_l T_r] ...))
+  RC-subst : G RC -> RC
+  [(RC-subst G ([T_l T_r] ...))
    ([(T-subst* G T_l)
      (T-subst* G T_r)]
     ...)])
@@ -182,17 +181,10 @@
                        (exn-message x)))))
 
 (define-metafunction STLC
-  unify : G C -> G
+  unify : G RC -> G
   ;; Done?
   [(unify G ())
    G]
-
-  ;; Union
-  [(unify G (U))
-   G]
-  [(unify G (U C_1 C ...))
-   (unify (unify G (C-subst G C_1))
-          (U C ...))]
 
   ;; Ignore equal ids
   [(unify G ([(var x_1) (var x_1)]
@@ -221,13 +213,24 @@
              [T_ml T_mr]
              ...))]
 
-  [(unify G C)
-   ,(error 'unify "Cannot unify ~e" (term C))])
+  [(unify G RC)
+   ,(error 'unify "Cannot unify ~e" (term RC))])
+
+(define-metafunction STLC
+  unify* : G C -> G
+  [(unify* G RC)
+   (unify G (RC-subst G RC))]
+  [(unify* G (U))
+   G]
+  [(unify* G (U (U C_0 ...) C_1 ...))
+   (unify* G (U C_0 ... C_1 ...))]
+  [(unify* G (U RC C_1 ...))
+   (unify* (unify* G RC) (U C_1 ...))])
 
 (define-metafunction STLC
   typeof : e -> T
   [(typeof e)
-   (dual-lookup (unify () (ty-cons () x_top e)) x_top)
+   (dual-lookup (unify* () (ty-cons () x_top e)) x_top)
    (where x_top ,(gensym 'top))])
 
 (define (alpha-equal? T1 T2)
