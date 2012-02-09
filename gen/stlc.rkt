@@ -566,7 +566,7 @@
    unfolded-s))
 
 (printf "Random\n")
-(define-values (top-id term-s) (random-terms 5))
+(define-values (top-id term-s) (random-terms 2))
 (for/fold ([last (current-inexact-milliseconds)])
     ([a (in-stream term-s)]
      [i (in-range 10)])
