@@ -156,6 +156,8 @@
   it could use a mutable matrix and update it when it evaluates
   events.
 
+  http://www.tsarevitch.org/ozcollide/
+
   --
 
   I wonder if it would be good for certain kinds of events to be
