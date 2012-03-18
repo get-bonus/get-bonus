@@ -169,3 +169,14 @@
   Rather than using custom events, it may make sense to insist that
   inter-object communication events be reified as objects that can
   collide with the objects that receive them, but may not see them.
+
+* Is the DES a Linda-like tuple space?
+  Would it make sense to think of the available events, their
+  propagation, etc, as being a tuple-space (modified with location and
+  area) that uses Linda-like primitives? Sounds kind of weird, but
+  maybe a good principle and maybe something to write a paper about?
+
+  You would combine a tuple-out with a shape of its influence and well
+  as a tuple-in with a shape of its receptor. You may need to combine
+  this with something like the angle of incidence, etc to properly
+  handle "Mario can only kill Goombas from above"

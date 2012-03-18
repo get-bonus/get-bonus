@@ -58,12 +58,12 @@
           (define (react this events)
             (match-define (counter n) this)
             (match events
-                   [(list)
-                    (values this
-                            empty)]
-                   [(list evt_1 ... (tick frames) evt_2 ...)
-                    (values (counter (add1 n))
-                            empty)]))))
+              [(list)
+               (values this
+                       empty)]
+              [(list evt_1 ... (tick frames) evt_2 ...)
+               (values (counter (add1 n))
+                       empty)]))))
 
 (check-equal?
  (react (mesh-add (new-mesh)

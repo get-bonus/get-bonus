@@ -23,6 +23,8 @@
                     (combine-in "../../exp/cd-narrow.rkt"
                                 "../../exp/cd-broad.rkt")))
 
+;; https://s3.amazonaws.com/data.tumblr.com/tumblr_m01c27aYQ91qbw2q1o1_1280.jpg?AWSAccessKeyId=AKIAJ6IHWSU3BX3X7X3Q&Expires=1331014634&Signature=MsCEbwNiXX7J5h%2B%2BeCdDjW11mmc%3D
+
 (define (rad->deg r)
   (* r (/ 180 pi)))
 (define (sequence-not-empty? s)
