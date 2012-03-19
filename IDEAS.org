@@ -180,3 +180,10 @@
   as a tuple-in with a shape of its receptor. You may need to combine
   this with something like the angle of incidence, etc to properly
   handle "Mario can only kill Goombas from above"
+
+  If you combine this with the process / blocking perspective, it may
+  be very natural to program to. You could guarantee that writes only
+  happen to the NEXT time instance to ensure strong normalization /
+  order invariance. If you also ensured that reads only happened once,
+  then you could effectively collect all reads and then evaluate them
+  simultaneously on the GPU for efficiency.
