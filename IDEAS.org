@@ -187,3 +187,9 @@
   order invariance. If you also ensured that reads only happened once,
   then you could effectively collect all reads and then evaluate them
   simultaneously on the GPU for efficiency.
+
+  You make 'write' a blocking operation until the next round.
+
+  Since you can hold off evaluating the effect of all the writes until
+  every process is at that point, you could use a mutable
+  data-structure for the tuple-space.
