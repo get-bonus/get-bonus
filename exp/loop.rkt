@@ -78,6 +78,10 @@
      (λ (c)
        (define dc (send c get-dc))
        (define glctx (send dc get-gl-context))
+       (unless glctx
+         (error 'loop "Could not initialize OpenGL!")
+         ;; XXX should bring down the whole thing
+         (exit 1))
        (send glctx call-as-current
              (λ () 
                (when last-cmd (gl:draw last-cmd))
