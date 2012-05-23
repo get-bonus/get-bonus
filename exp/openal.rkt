@@ -3,11 +3,14 @@
          (for-syntax racket/base)
          (prefix-in c: racket/contract)
          racket/runtime-path
-         ffi/unsafe
-         ffi/unsafe/objc
-         mred/private/wx/cocoa/types)
+         ffi/unsafe)
 
-(define openal (ffi-lib "OpenAL.framework/OpenAL"))
+(define openal 
+  (case (system-type 'os)
+    [(unix)
+     (ffi-lib "libopenal")]
+    [(macosx)
+     (ffi-lib "OpenAL.framework/OpenAL")]))
 
 (define-syntax-rule (define-ffi-definer define-openal define-openal* openal)
   (begin
