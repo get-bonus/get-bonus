@@ -3,7 +3,8 @@
          racket/match
          racket/list
          "psn.rkt"
-         "openal.rkt")
+         "openal.rkt"
+         "openal-path.rkt")
 
 ; xxx gc buffers some how
 (struct audio (buffer))

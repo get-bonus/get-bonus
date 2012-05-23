@@ -8,9 +8,6 @@
          mred/private/wx/cocoa/types)
 
 (define openal (ffi-lib "OpenAL.framework/OpenAL"))
-(define-runtime-path support-lib 
-  "../dist/OpenALSupport/build/Release/libOpenALSupport")
-(define openal-support (ffi-lib support-lib))
 
 (define-syntax-rule (define-ffi-definer define-openal define-openal* openal)
   (begin
@@ -18,7 +15,6 @@
       (define id (get-ffi-obj 'ffi-id openal ty)))
     (define-syntax-rule (define-openal id ty)
       (define-openal* (id id) ty))))
-(define-ffi-definer define-support define-support* openal-support)
 (define-ffi-definer define-openal define-openal* openal)
 
 (define-openal alGetError
@@ -71,22 +67,6 @@
         -> _void
         -> (check-error 'alDeleteBuffers)))
 
-(define-support MyGetOpenALAudioData
-  (_fun (p) ::
-        [s : _NSString = 
-           (path->string 
-            (path->complete-path p))]
-        ; XXX types might be wrong
-        [size : (_ptr o _uint)]
-        [format : (_ptr o _uint)]
-        [rate : (_ptr o _uint)]
-        ->
-        [data : _pointer]
-        ->
-        (if data
-            (values size format rate data)
-            (error 'MyGetOpenALAudioData "failed to load audio data from ~a" p))))
-
 (define-openal alBufferData
   (_fun [b : _ALbuffer]
         [format : _uint]
@@ -95,13 +75,6 @@
         [freq : _uint]
         -> _void
         -> (check-error 'alBufferData)))
-
-(define (alBufferData/path b p)
-  (define-values
-    (size format rate data)
-    (MyGetOpenALAudioData p))
-  (alBufferData b format data size rate)
-  (free data))
 
 (define _ALsource _uint)
 (define-openal alGenSources
@@ -198,8 +171,8 @@
 
 ; XXX These could be stricter with the allowable property names
 (provide/contract
+ [alBufferData (c:-> integer? integer? cpointer? integer? integer? void)]
  [alGenBuffers (c:-> integer? (vectorof integer?))]
- [alBufferData/path (c:-> integer? path? void)]
  [alGenSources (c:-> integer? (vectorof integer?))]
  [alListener3f (c:-> integer? inexact? inexact? inexact? void)]
  [alGetSourcei (c:-> integer? integer? integer?)]
