@@ -1,0 +1,9 @@
+* TODO Move tests into test submodules
+* TODO Write a makefile that runs all the tests with raco test
+* TODO Really implement openal on linux
+* TODO Really implement joysticks on linux
+* TODO Change gl model to keep track of sizes for centering, etc
+* TODO Change gl model to be memoized
+* TODO Write the GBES wrapper to start experimenting with incremental games
+* TODO Rewrite past games with the OS model
+* TODO Write a generic Godel-encoding library
