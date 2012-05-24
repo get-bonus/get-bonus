@@ -359,23 +359,33 @@
 (define (nats2level ns)
   (define (nat2row n)
     (as nat (bijnat 2) n))
-  (map nat2row 
+  (map nat2row
        ns))
 
 (define level
   (iso level2nats nats2level))
 
 (module+ test
+  (printf "one\n")
   (check-as level nats
             (list (list 0 0 0)
                   (list 0 1 0)
                   (list 0 0 0)
                   (list 1 1 1))
             (list 7 9 7 14))
+  (printf "two\n")
   (check-equal? (as nat nats
                     (as level nats
                         (list (list 0 0 0)
                               (list 0 1 0)
                               (list 0 0 0)
                               (list 1 1 1))))
+                712056)
+
+  (printf "three\n")
+  (check-equal? (as nat (invert level)
+                    (list (list 0 0 0)
+                          (list 0 1 0)
+                          (list 0 0 0)
+                          (list 1 1 1)))
                 712056))
