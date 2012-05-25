@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     typed-scheme/utils/tc-utils))
+                     typed-racket/utils/tc-utils))
 
 (define-syntax (module-begin stx)
   (syntax-case stx ()

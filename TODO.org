@@ -1,5 +1,7 @@
-* TODO Move tests into test submodules
-* TODO Write a makefile that runs all the tests with raco test
+* DONE Move tests into test submodules
+  CLOSED: [2012-05-25 Fri 01:23]
+* DONE Write a makefile that runs all the tests with raco test
+  CLOSED: [2012-05-25 Fri 01:29]
 * TODO Really implement openal on linux
 * TODO Really implement joysticks on linux
 * TODO Change gl model to keep track of sizes for centering, etc
