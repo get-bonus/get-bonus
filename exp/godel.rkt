@@ -1,229 +1,391 @@
 #lang racket/base
-(require racket/list
+(require racket/match
          racket/function
-         racket/match)
-
-;; XXX Need to review the paper to double check each representation
-
+         racket/list)
 (module+ test
   (require rackunit)
-  (define SHOW? #f)
-  (define (show v bs)
-    (define-values (bs-n bs-p) (decode-binary-nat (length bs) bs))
-    (printf "~v = ~v = ~v\n"
-            v
-            bs
-            bs-n))
-  (define (random-bits)
-    (if (zero? (random 2))
-      empty
-      (cons (random 2)
-            (random-bits))))
-  (define (number->bits n)
-    (encode-binary-nat (integer-length n) n))
-  (define-syntax-rule (round-trips encode-e decode-e example ...)
-    (begin (define encode encode-e)
-           (define (encode/show v)
-             (define ans (encode v))
-             (show v ans)
-             ans)
-           (define decode decode-e)
-           (define (decode/show bs)
-             (define-values (v bs-p) (decode bs))
-             (show v bs)
-             (values v bs-p))
-           (test-not-exn (format "~a / empty" 'decode-e)
-                         (λ () (decode/show empty)))
-           (let ()
-             (define input example)
-             (define bs (encode/show input))
-             (define-values (output bs-p) (decode/show bs))
-             (test-equal? (format "~a -> ~a / ~a" 'encode-e 'decode-e input)
-                          output input))
-           ...
-           (test-not-exn (format "~a / random list" 'decode-e)
-                         (λ () (decode/show (random-bits))))
-           (for ([i (in-range 32)])
-             (test-not-exn (format "~a / number: ~a" 'decode-e i)
-                           (λ () (decode/show (number->bits i)))))
-           (define r (random 1024))
-           (test-not-exn (format "~a / random number: ~a" 'decode-e r)
-                         (λ () (decode/show (number->bits r)))))))
+  (define-syntax-rule (check-as from to from-e to-e)
+    (let ()
+      (define from-v from-e)
+      (define to-v to-e)
+      (check-equal? (as from to from-v)
+                    to-v)
+      (check-equal? (as to from to-v)
+                    from-v))))
 
-(define (encode-unary-nat n)
+(struct iso (to from))
+
+(define (iso-compose a-b b-c)
+  (match-define (iso f g) a-b)
+  (match-define (iso fp gp) b-c)
+  (iso (compose fp f)
+       (compose g gp)))
+
+(define itself
+  (iso identity identity))
+
+(define invert
+  (match-lambda
+   [(iso f g)
+    (iso g f)]))
+
+(define nats
+  itself)
+
+(define (as that this x)
+  (match-define (iso _ g) (iso-compose that (invert this)))
+  (g x))
+
+(define (nat-cons x y)
+  (arithmetic-shift (bitwise-ior 1 (arithmetic-shift y 1))
+                    x))
+
+(define (nat-hd n)
+  (unless (> n 0)
+    (error 'nat-hd "Cannot take the head of 0"))
+  (if (= 1 (bitwise-and n 1))
+    0
+    (add1 (nat-hd (arithmetic-shift n -1)))))
+
+(define (nat-tl n)
+  (arithmetic-shift n (* -1 (add1 (nat-hd n)))))
+
+(define (as-nats-nat n)
   (if (zero? n)
-    (list 0)
-    (cons 1 (encode-unary-nat (sub1 n)))))
-(define (decode-unary-nat bs)
-  (match bs
-    ;; XXX is this correct?
-    [(or (and bs (list)) (cons 0 bs))
-     (values 0 bs)]
-    [(cons 1 bs)
-     (define-values (n bs-p) (decode-unary-nat bs))
-     (values (add1 n) bs-p)]))
+    empty
+    (cons (nat-hd n)
+          (as-nats-nat (nat-tl n)))))
+(define (as-nat-nats l)
+  (if (empty? l)
+    0
+    (nat-cons (first l) (as-nat-nats (rest l)))))
+
+(define nat1 (iso as-nats-nat as-nat-nats))
 
 (module+ test
-  (round-trips encode-unary-nat decode-unary-nat
-               0 1 2 3 4 5 6 7 8 9 10
-               (random 1024)))
+  (check-as nat1 nats
+            (list 50 20 50)
+            5316911983139665852799595575850827776))
 
-(define (encode-binary-nat len n)
+(define (unpair z)
+  (values (nat-hd (add1 z))
+          (nat-tl (add1 z))))
+(define (pair x y)
+  (sub1 (nat-cons x y)))
+
+(module+ test
+  (check-equal? (map (λ (i) (call-with-values (λ () (unpair i)) cons)) (range 8))
+                (list (cons 0 0)
+                      (cons 1 0)
+                      (cons 0 1)
+                      (cons 2 0)
+                      (cons 0 2)
+                      (cons 1 1)
+                      (cons 0 3)
+                      (cons 3 0))))
+
+(define (from-base base l)
+  (match l
+    [(list)
+     0]
+    [(cons x xs)
+     (unless (and (>= x 0) (< x base))
+       (error 'from-base "Numbers not within base"))
+     (+ x (* base (from-base base xs)))]))
+
+(define (transpose l-of-l)
+  (if (empty? l-of-l)
+    empty
+    (for/list ([i (in-range (length (first l-of-l)))])
+      (for/list ([l (in-list l-of-l)])
+        (list-ref l i)))))
+
+(define (bitcount n)
+  (for/or ([x (in-naturals)]
+           #:when (> (expt 2 x) n))
+    x))
+
+(define (max-bitcount ns)
+  (for/fold ([ans 0])
+      ([n (in-list ns)])
+    (max ans (bitcount n))))
+
+(define (to-maxbits maxbits n)
+  (define bs (to-base 2 n))
+  (append bs (make-list (max 0 (- maxbits (length bs))) 0)))
+
+(define (to-base base n)
+  (unless (> base 1)
+    (error 'to-base "Cannot use unary"))
+  (define-values (q d) (quotient/remainder n base))
+  (cons d
+        (if (= q 0)
+          empty
+          (to-base base q))))
+
+(define (to-tuple k n)
+  (map (curry from-base 2)
+       (transpose
+        (map (curry to-maxbits k)
+             (to-base (expt 2 k) n)))))
+(define (from-tuple ns)
+  (define k (length ns))
+  (define l (max-bitcount ns))
+  (from-base (expt 2 k)
+             (map (curry from-base 2)
+                  (transpose
+                   (map (curry to-maxbits l) ns)))))
+
+(module+ test
+  (check-equal? (to-tuple 3 42)
+                (list 2 1 2))
+  (check-equal? (from-tuple (list 2 1 2))
+                42))
+
+(define (ftuple2nat ns)
   (cond
-    [(zero? len)
+    [(empty? ns)
+     0]
+    [else
+     (define k (length ns))
+     (define t (from-tuple ns))
+     (add1 (pair (sub1 k) t))]))
+(define (nat2ftuple kf)
+  (cond
+    [(zero? kf)
      empty]
     [else
-     (define-values (q r) (quotient/remainder n 2))
-     (cons
-      (if (= r 1) 1 0)
-      (encode-binary-nat (sub1 len) q))]))
-(define (decode-binary-nat len bs)
-  (cond
-    [(zero? len)
-     (values 0 bs)]
-    [else
-     (match bs
-       ;; XXX is this correct?
-       [(or (and (list) bs-p
-                 (app (λ _ 0) bit))
-            (cons bit bs-p))
-        (define-values (n bs-pp) (decode-binary-nat (sub1 len) bs-p))
-        (values (+ (* 2 n) bit) bs-pp)])]))
+     (define-values (k f) (unpair (sub1 kf)))
+     (to-tuple (add1 k) f)]))
+
+(define nat
+  (iso nat2ftuple ftuple2nat))
+
+(define n2
+  (iso-compose (iso pair unpair)
+               nat))
 
 (module+ test
-  (require racket/function)
-  (round-trips (curry encode-binary-nat 10) (curry decode-binary-nat 10)
-               0 1 2 3 4 5 6 7 8 9 10
-               (random 1024)))
+  (check-as nats nat
+            2008
+            (list 3 2 3 1))
+  (check-as nat nats
+            (list 2009 2010 4000 0 5000 42)
+            4855136191239427404734560))
 
-(define (encode-integer n)
-  (define len (integer-length n))
-  (append
-   (encode-unary-nat len)
-   (encode-binary-nat len n)))
-(define (decode-integer bs)
-  (define-values (len bs-p) (decode-unary-nat bs))
-  (define-values (n bs-pp) (decode-binary-nat len bs-p))
-  (values n bs-pp))
+(struct term () #:transparent)
+(struct id term (var) #:transparent)
+(struct fun term (const args) #:transparent)
 
-(module+ test
-  (round-trips encode-integer decode-integer
-               0 1 2 3 4 5 6 7 8 9 10
-               (random 1024)))
+(define nterm2code
+  (match-lambda
+   [(id i)
+    (* 2 i)]
+   [(fun name args)
+    (define cs (map nterm2code args))
+    (define fc (as nat nats (cons name cs)))
+    (sub1 (* 2 fc))]))
+(define code2nterm
+  (match-lambda
+   [(? even? n)
+    (id (quotient n 2))]
+   [n
+    (define k (quotient (add1 n) 2))
+    (match-define (cons name cs) (as nats nat k))
+    (define args (map code2nterm cs))
+    (fun name args)]))
 
-(define (encode-pair encode-l encode-r p)
-  (match-define (cons l r) p)
-  (fuse (encode-l l)
-        (encode-r r)))
-(define (fuse evens odds)
-  (match* (evens odds)
-    [((list) (list))
-     (list)]
-    [((list) (cons o odds))
-     (list* 0 o (fuse evens odds))]
-    [((cons e evens) (list))
-     (list* e 0 (fuse evens odds))]
-    [((cons e evens) (cons o odds))
-     (list* e o (fuse evens odds))]))
-
-(define (decode-pair decode-l decode-r bs)
-  (define-values (l-bs r-bs) (defuse bs))
-  (define-values (l l-bs-p) (decode-l l-bs))
-  (define-values (r r-bs-p) (decode-r r-bs))
-  (values (cons l r) (fuse l-bs-p r-bs-p)))
-(define (defuse bs)
-  (match bs
-    [(list)
-     (values empty empty)]
-    ;; XXX is this correct?
-    [(or (and (list e)
-              (app (λ _ 0) o)
-              (app (λ _ empty) bs))
-         (list* e o bs))
-     (define-values (evens odds) (defuse bs))
-     (values (list* e evens) (list* o odds))]))
+(define nterm
+  (iso-compose (iso nterm2code code2nterm) nat))
 
 (module+ test
-  (round-trips (curry encode-pair encode-integer encode-integer)
-               (curry decode-pair decode-integer decode-integer)
-               (cons 0 0) (cons 0 1) (cons 1 1)
-               (cons 3 0) (cons 7 1) (cons 9 1)
-               (cons 5 0) (cons 3 1) (cons 10 1)
-               (cons 4 0) (cons 1 1) (cons 8 1)
-               (cons (random 1024) (random 1024))))
+  (check-as nterm nat
+            55
+            (fun 1 (list (fun 0 empty) (id 0)))))
 
-(define (encode-union l? encode-l r? encode-r l-or-r)
-  (cond
-    [(l? l-or-r)
-     (cons 0 (encode-l l-or-r))]
-    [else
-     (cons 1 (encode-r l-or-r))]))
-(define (decode-union decode-l decode-r bs)
-  (match bs
-    ;; XXX is this correct?
-    [(or (and (list) bs) (cons 0 bs))
-     (decode-l bs)]
-    [(cons 1 bs)
-     (decode-r bs)]))
+(define (from-bbase base xs)
+  (define (from-bbase-p base xs)
+    (match xs
+      [(list) 0]
+      [(cons x xs)
+       (unless (and (> x 0) (<= x base))
+         (error 'from-bbase "Numbers must be within base"))
+       (+ x (* base (from-bbase-p base xs)))]))
+  (from-bbase-p base (map add1 xs)))
+
+(define (to-bbase base n)
+  (define (to-bbase-p base n)
+    (cond
+      [(zero? n)
+       empty]
+      [else
+       (define-values (q d) (quotient/remainder n base))
+       (define d-p
+         (if (zero? d)
+           base
+           d))
+       (define q-p
+         (if (zero? d)
+           (sub1 q)
+           q))
+       (define ds
+         (if (zero? q-p)
+           empty
+           (to-bbase-p base q-p)))
+       (cons d-p ds)]))
+  (map sub1 (to-bbase-p base n)))
+
+(define (bijnat a)
+  (iso-compose (iso (curry from-bbase a) (curry to-bbase a)) nat))
 
 (module+ test
-  (round-trips (curry encode-union
-                      pair? (curry encode-pair encode-integer encode-integer)
-                      exact-integer? encode-integer)
-               (curry decode-union
-                      (curry decode-pair decode-integer decode-integer)
-                      decode-integer)
-               0 1 2 3 4 5 6 7 8 9 10 (random 1024)
-               (cons 0 0) (cons 0 1) (cons 1 1)
-               (cons 3 0) (cons 7 1) (cons 9 1)
-               (cons 5 0) (cons 3 1) (cons 10 1)
-               (cons 4 0) (cons 1 1) (cons 8 1)
-               (cons (random 1024) (random 1024))))
+  (check-as (bijnat 3) nat
+            2009
+            (list 1 2 2 0 2 0 1))
+  (check-as (bijnat 10) nat
+            2009
+            (list 8 9 8 0))
+  (check-equal? (map (curry as (bijnat 3) nat) (range 13))
+                '(()
+                  (0)
+                  (1)
+                  (2)
+                  (0 0)
+                  (1 0)
+                  (2 0)
+                  (0 1)
+                  (1 1)
+                  (2 1)
+                  (0 2)
+                  (1 2)
+                  (2 2))))
 
-(define (encode-const val some-val)
-  empty)
-(define (decode-const val some-bs)
-  (values val some-bs))
+(define bot-char #\a)
+(define top-char #\z)
+(define char-base
+  (+ 1 (- (char->integer top-char)
+          (char->integer bot-char))))
+
+(define (chr2ord c)
+  (- (char->integer c)
+     (char->integer bot-char)))
+(define (ord2chr n)
+  (integer->char
+   (+ n
+      (char->integer bot-char))))
+
+(define (string2nat cs)
+  (from-bbase char-base (map chr2ord (string->list cs))))
+(define (nat2string n)
+  (list->string (map ord2chr (to-bbase char-base n))))
+
+(define string
+  (iso-compose (iso string2nat nat2string) nat))
+
 (module+ test
-  (round-trips (curry encode-const empty) (curry decode-const empty)
-               empty))
+  (check-as nat string
+            "hello"
+            7073802))
 
-(define (encode-list encode-e l)
-  (encode-union empty? (curry encode-const empty)
-                pair? (curry encode-pair encode-e (curry encode-list encode-e))
-                l))
-(define (decode-list decode-e bs)
-  (decode-union (curry decode-const empty)
-                (curry decode-pair decode-e (curry decode-list decode-e))
-                bs))
+(define sterm2code
+  (match-lambda
+   [(id i)
+    (* 2 i)]
+   [(fun name args)
+    (define cs (map sterm2code args))
+    (define cname (as nat string name))
+    (define fc (as nat nats (cons cname cs)))
+    (sub1 (* 2 fc))]))
+(define code2sterm
+  (match-lambda
+   [(? even? n)
+    (id (quotient n 2))]
+   [n
+    (define k (quotient (add1 n) 2))
+    (match-define (cons cname cs) (as nats nat k))
+    (define name (as string nat cname))
+    (define args (map code2sterm cs))
+    (fun name args)]))
+
+(define sterm
+  (iso-compose (iso sterm2code code2sterm) nat))
+
 (module+ test
-  (round-trips (curry encode-list encode-integer)
-               (curry decode-list decode-integer)
-               empty
-               (list 1)
-               (list (random 1024))
-               (list 1 2)
-               (list 1 2 3 4)
-               (list 5 9 10 23 24 18 9 20)))
+  (check-as nat sterm
+            (fun "b" (list (fun "a" empty) (id 0)))
+            2215)
+  (check-as nat sterm
+            (fun "forall" (list (id 0) (fun "f" (list (id 0)))))
+            38696270040102961756579399)
+  (check-equal?
+   (map (curry as sterm nat) (range 8))
+   (list (id 0)
+         (fun "" empty)
+         (id 1)
+         (fun "" (list (id 0)))
+         (id 2)
+         (fun "a" empty)
+         (id 3)
+         (fun "" (list (id 0) (id 0))))))
 
-;; XXX other numbers
+(define bits
+  (bijnat 2))
 
-;; XXX strings
+(module+ test
+  (check-as bits nat 42
+            (list 1 1 0 1 0)))
 
-;; XXX bytes
+(define nterm2bits
+  (curry as bits nterm))
+(define bits2nterm
+  (curry as nterm bits))
 
-;; XXX characters
+(define sterm2bits
+  (curry as bits sterm))
+(define bits2sterm
+  (curry as sterm bits))
 
-;; XXX symbols
+(module+ test
+  (check-as nterm bits
+            (list 0 0 0 1 0 1 0 0 1 1 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0
+                  0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (fun 0 (list (fun 1 (list (id 0) (fun 1 (list (id 0))))) (id 1)))))
 
-;; XXX vectors
+;; A level is... an NxM matrix with 0s for sky and 1 for blocks
+(define (level2nats l)
+  (define (row2nat l)
+    (as (bijnat 2) nat l))
+  (map row2nat l))
+(define (nats2level ns)
+  (define (nat2row n)
+    (as nat (bijnat 2) n))
+  (map nat2row
+       ns))
 
-;; XXX hash tables
+(define level
+  (iso level2nats nats2level))
 
-;; XXX structs
+(module+ test
+  (printf "one\n")
+  (check-as level nats
+            (list (list 0 0 0)
+                  (list 0 1 0)
+                  (list 0 0 0)
+                  (list 1 1 1))
+            (list 7 9 7 14))
+  (printf "two\n")
+  (check-equal? (as nat nats
+                    (as level nats
+                        (list (list 0 0 0)
+                              (list 0 1 0)
+                              (list 0 0 0)
+                              (list 1 1 1))))
+                712056)
 
-;; XXX void
-
-;; XXX data-types
-
-;; XXX TRT
+  (printf "three\n")
+  (check-equal? (as nat (invert level)
+                    (list (list 0 0 0)
+                          (list 0 1 0)
+                          (list 0 0 0)
+                          (list 1 1 1)))
+                712056))
