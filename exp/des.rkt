@@ -65,8 +65,12 @@
                (values (counter (add1 n))
                        empty)]))))
 
-(check-equal?
- (react (mesh-add (new-mesh)
-                  (counter 0))
-        (list (tick 0))))
+(module+ test
+  (require rackunit)
+  (define-values (m l)
+    (react (mesh-add (new-mesh)
+                     (counter 0))
+           (list (tick 0))))
+  (check-equal? m (mesh-add (new-mesh) (counter 0)))
+  (check-equal? l empty))
 

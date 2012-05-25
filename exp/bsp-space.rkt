@@ -21,11 +21,12 @@
                [x (+ x w)]
                [y (+ y h)]))
 
-(test
- (space-ul (space (posn 1 2) 3 4)) => (posn 1 2)
- (space-ur (space (posn 1 2) 3 4)) => (posn 4 2)
- (space-ll (space (posn 1 2) 3 4)) => (posn 1 6)
- (space-lr (space (posn 1 2) 3 4)) => (posn 4 6))
+(module+ test
+  (test
+   (space-ul (space (posn 1 2) 3 4)) => (posn 1 2)
+   (space-ur (space (posn 1 2) 3 4)) => (posn 4 2)
+   (space-ll (space (posn 1 2) 3 4)) => (posn 1 6)
+   (space-lr (space (posn 1 2) 3 4)) => (posn 4 6)))
 
 (define (segment-transpose s)
   (match-define (segment (posn x1 y1) (posn x2 y2)) s)
@@ -34,16 +35,17 @@
   (match-define (space (posn x y) w h) s)
   (space (posn y x) h w))
 
-(test
- (segment-transpose (segment (posn 1 2) (posn 3 4)))
- => (segment (posn 2 1) (posn 4 3))
- 
- (space-transpose (space (posn 1 2) 3 4))
- => (space (posn 2 1) 4 3)
- (let ([r (space (posn (random 10) (random 10))
-                 (random 10) (random 10))])
-   (test
-    (space-transpose (space-transpose r)) => r)))
+(module+ test
+  (test
+   (segment-transpose (segment (posn 1 2) (posn 3 4)))
+   => (segment (posn 2 1) (posn 4 3))
+
+   (space-transpose (space (posn 1 2) 3 4))
+   => (space (posn 2 1) 4 3)
+   (let ([r (space (posn (random 10) (random 10))
+                   (random 10) (random 10))])
+     (test
+      (space-transpose (space-transpose r)) => r))))
 
 (struct dungeon (w h))
 (struct dun:split dungeon (connection left right))
@@ -53,22 +55,22 @@
 
 (define dungeon-transpose
   (match-lambda
-    [(dun:room w h s)
-     (dun:room h w (space-transpose s))]
-    [(dun:split:vert w h c l r x)
-     (dun:split:horiz 
-      h w 
-      (segment-transpose c) 
-      (dungeon-transpose l)
-      (dungeon-transpose r)
-      x)]
-    [(dun:split:horiz w h c l r y)
-     (dun:split:vert
-      h w 
-      (segment-transpose c) 
-      (dungeon-transpose l)
-      (dungeon-transpose r)
-      y)]))
+   [(dun:room w h s)
+    (dun:room h w (space-transpose s))]
+   [(dun:split:vert w h c l r x)
+    (dun:split:horiz
+     h w
+     (segment-transpose c)
+     (dungeon-transpose l)
+     (dungeon-transpose r)
+     x)]
+   [(dun:split:horiz w h c l r y)
+    (dun:split:vert
+     h w
+     (segment-transpose c)
+     (dungeon-transpose l)
+     (dungeon-transpose r)
+     y)]))
 
 (define max-room-width (make-parameter 25))
 (define (min-room-width) (* (max-room-width) (min-room-percentage)))
@@ -79,23 +81,25 @@
 (define (random-in-range min max)
   (define size (inexact->exact (floor (- max min))))
   (if (size . <= . 0)
-      min
-      (+ min (random size))))
+    min
+    (+ min (random size))))
 
 (define (posn+ p1 p2)
   (posn (+ (posn-x p1) (posn-x p2))
         (+ (posn-y p1) (posn-y p2))))
 
-(test
- (posn+ (posn 1 1) (posn 2 2)) => (posn 3 3))
+(module+ test
+  (test
+   (posn+ (posn 1 1) (posn 2 2)) => (posn 3 3)))
 
 (define (space-adjust p s)
   (struct-copy space s
                [ul (posn+ p (space-ul s))]))
 
-(test
- (space-adjust (posn 1 1) (space (posn 0 0) 5 5))
- => (space (posn 1 1) 5 5))
+(module+ test
+  (test
+   (space-adjust (posn 1 1) (space (posn 0 0) 5 5))
+   => (space (posn 1 1) 5 5)))
 
 (define (horiz-connect-spaces sl sr)
   (define x-pos-min
@@ -112,14 +116,14 @@
         x-pos-max))
      (segment (posn x-pos (posn-y (space-ll sl)))
               (posn x-pos (posn-y (space-ul sr))))]
-    [else     
+    [else
      (segment
-      ; Pick a point on the bottom wall of sl
+                                        ; Pick a point on the bottom wall of sl
       (posn+
        (space-ll sl)
        (posn (random-in-range 0 (space-w sl)) 0))
-      
-      ; Pick a point on the top wall of sr
+
+                                        ; Pick a point on the top wall of sr
       (posn+ (space-ul sr)
              (posn (random-in-range 0 (space-w sr)) 0)))]))
 
@@ -142,14 +146,14 @@
   (define-values
     (sl sr)
     (for*/fold ([sl #f] [sr #f])
-      ([l (in-list (absolute-rooms 0 0 l))]
-       [r (in-list (absolute-rooms 0 dis r))])
+        ([l (in-list (absolute-rooms 0 0 l))]
+         [r (in-list (absolute-rooms 0 dis r))])
       (if
-       (and sl sr
-            (> (posn-distance (space-ll l) (space-ul r))
-               (posn-distance (space-ll sl) (space-ul sr))))
-       (values sl sr)
-       (values l r))))
+          (and sl sr
+               (> (posn-distance (space-ll l) (space-ul r))
+                  (posn-distance (space-ll sl) (space-ul sr))))
+        (values sl sr)
+        (values l r))))
   (horiz-connect-spaces sl sr))
 
 (define (vert-connect dis l r)
@@ -178,7 +182,7 @@
   (define (room)
     (define rw (random-in-range (* w (min-room-percentage)) w))
     (define rh (random-in-range (* h (min-room-percentage)) h))
-    (dun:room 
+    (dun:room
      w h
      (space
       (posn (random-in-range 0 (- w rw))
@@ -217,26 +221,27 @@
 
 (define render
   (match-lambda
-    [(dun:split:vert _ h s left right y)
-     (render-segment
-      s "red"
-      (beside/align 
-       "top"
-       (render left)
-       (render right)))]
-    [(dun:split:horiz w _ s left right x)
-     (render-segment
-      s "red"
-      (above/align
-       "left"
-       (render left)
-       (render right)))]
-    [(dun:room w h s)
-     (render-space
-      s "black"
-      (rectangle w h "solid" "white"))]))
+   [(dun:split:vert _ h s left right y)
+    (render-segment
+     s "red"
+     (beside/align
+      "top"
+      (render left)
+      (render right)))]
+   [(dun:split:horiz w _ s left right x)
+    (render-segment
+     s "red"
+     (above/align
+      "left"
+      (render left)
+      (render right)))]
+   [(dun:room w h s)
+    (render-space
+     s "black"
+     (rectangle w h "solid" "white"))]))
 
-(scale 2 
-       (parameterize ([max-room-width 50]
-                      [max-room-height 50])
-         (render (random-dungeon 6 250 250))))
+(module+ main
+  (scale 2
+         (parameterize ([max-room-width 50]
+                        [max-room-height 50])
+           (render (random-dungeon 6 250 250)))))

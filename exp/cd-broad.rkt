@@ -143,7 +143,7 @@
                  (+ y y-inc)
                  (+ error (* 2 dx)))))))
 
-(let ()
+(module+ test
   (test
    (sequence->list (in-space/ray (make-space 4 5 1 1) (psn .5 .5) (psn 2.5 3.5)))
    =>
@@ -198,7 +198,7 @@
       psn? psn?
       (sequence/c collision?))])
 
-(let ()
+(module+ test
   (define s
     (space-insert (make-space 10 10 1 1)
                   (circle (psn 1. 1.) .5) 

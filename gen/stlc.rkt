@@ -12,13 +12,13 @@
      (e e)
      (lambda (x) e)
      add1
-     
+
      (inl e)
      (inr e)
      (case e
        [(inl x) => e]
        [(inr x) => e])
-     
+
      (pair e e)
      (fst e)
      (snd e)]
@@ -118,43 +118,43 @@
 
 (define-metafunction STLC
   lookup : G x -> T
-  [(lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i) 
+  [(lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i)
    T_i]
   [(lookup G x)
    ,(error 'lookup "Unbound identifier ~e" (term x))])
 
-(require (only-in unstable/match ==))
 (define (doesnt-match x Ts)
   (for/and ([T (in-list Ts)])
-           (match T
-             [(list 'var (== x))
-              #f]
-             [_
-              #t])))
+    (match T
+      [(list 'var (== x))
+       #f]
+      [_
+       #t])))
 
 (define-metafunction STLC
   dual-lookup : G x -> T
-  [(dual-lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i) 
+  [(dual-lookup ([x_0 T_0] ... [x_i T_i] [x_i+1 T_i+1] ...) x_i)
    T_i]
-  [(dual-lookup ([x_0 T_0] ... [x_t (var x_i)] [x_i+1 T_i+1] ...) x_i) 
+  [(dual-lookup ([x_0 T_0] ... [x_t (var x_i)] [x_i+1 T_i+1] ...) x_i)
    (var x_t)
    (side-condition (doesnt-match (term x_i) (term (T_0 ...))))]
   [(dual-lookup G x)
    ,(error 'lookup "Unbound identifier ~e" (term x))])
 
-(define unbound-id-exn?
-  (lambda (x)
-    (and (exn:fail? x)
-         (regexp-match #rx"^lookup: Unbound identifier "
-                       (exn-message x)))))
+(module+ test
+  (define unbound-id-exn?
+    (lambda (x)
+      (and (exn:fail? x)
+           (regexp-match #rx"^lookup: Unbound identifier "
+                         (exn-message x)))))
 
-;; Is ty-cons defined on the language, when there are no free identifiers
-(redex-check STLC e
-             (with-handlers ([unbound-id-exn?
-                              (lambda (x)
-                                #t)])
-               (term (ty-cons () top e)))
-             #:attempts 200)             
+  ;; Is ty-cons defined on the language, when there are no free identifiers
+  (redex-check STLC e
+               (with-handlers ([unbound-id-exn?
+                                (lambda (x)
+                                  #t)])
+                 (term (ty-cons () top e)))
+               #:attempts 200))
 
 (define-metafunction STLC
   T-subst : x T T -> T
@@ -247,157 +247,158 @@
   (define T1->T2 (make-hasheq))
   (let loop ([t1 T1] [t2 T2])
     (match* (t1 t2)
-            [((? symbol?) (? symbol?))
-             (if (hash-has-key? T1->T2 t1)
-                 (eq? (hash-ref T1->T2 t1) t2)
-                 (hash-set! T1->T2 t1 t2))]
-            [((cons t1f t1r)
-              (cons t2f t2r))
-             (and (loop t1f t2f)
-                  (loop t1r t2r))]
-            [((list) (list))
-             #t]
-            [(_ _)
-             #f])))
+      [((? symbol?) (? symbol?))
+       (if (hash-has-key? T1->T2 t1)
+         (eq? (hash-ref T1->T2 t1) t2)
+         (hash-set! T1->T2 t1 t2))]
+      [((cons t1f t1r)
+        (cons t2f t2r))
+       (and (loop t1f t2f)
+            (loop t1r t2r))]
+      [((list) (list))
+       #t]
+      [(_ _)
+       #f])))
 
-(define-syntax-rule (tt e T)
-  (test-predicate
-   (procedure-rename (curry alpha-equal? (term T))
-                     (string->symbol (format "alpha-equal to ~v" (term T))))
-   (with-handlers ([unbound-id-exn? (lambda (x) #f)])
-     (term (typeof e)))))
+(module+ test
+  (define-syntax-rule (tt e T)
+    (test-predicate
+     (procedure-rename (curry alpha-equal? (term T))
+                       (string->symbol (format "alpha-equal to ~v" (term T))))
+     (with-handlers ([unbound-id-exn? (lambda (x) #f)])
+       (term (typeof e)))))
 
-(define-syntax-rule (tf e)
-  (test-equal (term (typeof e))
-              #f))
+  (define-syntax-rule (tf e)
+    (test-equal (term (typeof e))
+                #f))
 
-;; x
-(tt ((lambda (x) x) 7) (int))
+  ;; x
+  (tt ((lambda (x) x) 7) (int))
 
-;; ()
-(tt () (unit))
+  ;; ()
+  (tt () (unit))
 
-;; i
-(tt 1 (int))
+  ;; i
+  (tt 1 (int))
 
-;; (e : T)
-(tt (1 : (int)) (int))
-(tf (1 : (-> (int) (int))))
+  ;; (e : T)
+  (tt (1 : (int)) (int))
+  (tf (1 : (-> (int) (int))))
 
-;; (e e)
-(tt (add1 1) (int))
-(tf (add1 add1))
-(tt ((lambda (f) (f 1)) add1) (int))
+  ;; (e e)
+  (tt (add1 1) (int))
+  (tf (add1 add1))
+  (tt ((lambda (f) (f 1)) add1) (int))
 
-;; lambda
-(tt (lambda (x) x)
-    (-> (var A) (var A)))
+  ;; lambda
+  (tt (lambda (x) x)
+      (-> (var A) (var A)))
 
-;; add1
-(tt add1 (-> (int) (int)))
+  ;; add1
+  (tt add1 (-> (int) (int)))
 
-;; inl
-(tt (inl 1) (+ (int) (var A)))
+  ;; inl
+  (tt (inl 1) (+ (int) (var A)))
 
-;; inr
-(tt (inr 1) (+ (var A) (int)))
+  ;; inr
+  (tt (inr 1) (+ (var A) (int)))
 
-;; case
-(tt (case (inl 1)
-      [(inl x) => (add1 x)]
-      [(inr x) => (add1 (add1 x))])
-    (int))
-(tt (case (inr 1)
-      [(inl x) => (add1 x)]
-      [(inr x) => (add1 (add1 x))])
-    (int))
-(tf (case (inl add1)
-      [(inl x) => (add1 x)]
-      [(inr x) => (add1 (add1 x))]))
-(tf (case (inr add1)
-      [(inl x) => (add1 x)]
-      [(inr x) => (add1 (add1 x))]))
-(tt (case (inr add1)
-      [(inl x) => x]
-      [(inr x) => add1])
-    (-> (int) (int)))
-(tf (case (inr add1)
-      [(inl x) => 1]
-      [(inr x) => add1]))
-
-;; pair
-(tt (pair 1 1) (* (int) (int)))
-(tt (pair 1 add1) (* (int) (-> (int) (int))))
-
-;; fst
-(tt (fst (pair 1 1)) (int))
-(tt (fst (pair 1 add1)) (int))
-
-;; snd
-(tt (snd (pair 1 1)) (int))
-(tt (snd (pair add1 1)) (int))
-
-;; Implement lists
-(define omega
-  (term (lambda (x) (x x))))
-(define Omega
-  (term (,omega ,omega)))
-(define diverge
-  (term ,Omega))
-(define !empty
-  (term (inr ())))
-(define !cons
-  (term (lambda (x)
-          (lambda (y)
-            (inl (pair x y))))))
-(define !car
-  (term (lambda (x)
-          (case x
-            [(inl x) =>
-             (fst x)]
-            [(inr x) =>
-             ,diverge]))))
-(define !cdr
-  (term (lambda (x)
-          (case x
-            [(inl x) =>
-             (snd x)]
-            [(inr x) =>
-             ,diverge]))))
-(define Y
-  (term (lambda (rf)
-          ((lambda (f)
-            (rf (lambda (x)
-                  ((f f) x))))
-          (lambda (f)
-            (rf (lambda (x)
-                  ((f f) x))))))))            
-(define !map
-  (term (,Y
-         (lambda (map)
-           (lambda (f)
-             (lambda (l)
-               (case l
-                 [(inl x) =>
-                  (inl
-                   (pair (f (fst x))
-                         ((map f) (snd x))))]
-                 [(inr x) =>
-                  (inr ())])))))))
-
-(when #f
-  (tt ,diverge
-      (var A))
-  (tt (lambda (x) ,diverge)
-      (-> (var A) (var B)))
-  (tt (,!car ,!empty)
-      (var A))
-  (tt ((,!cons 1) ,!empty)
-      (+ (* (int) (+ (var A) (unit))) (var B)))
-  (tt (,!car ((,!cons 1) ,!empty))
+  ;; case
+  (tt (case (inl 1)
+        [(inl x) => (add1 x)]
+        [(inr x) => (add1 (add1 x))])
       (int))
-  (tt ((,!map add1) ((,!cons 1) ,!empty))
-      (+ (* (int) (+ (* (int) (var A)) (unit))) (unit))))
+  (tt (case (inr 1)
+        [(inl x) => (add1 x)]
+        [(inr x) => (add1 (add1 x))])
+      (int))
+  (tf (case (inl add1)
+        [(inl x) => (add1 x)]
+        [(inr x) => (add1 (add1 x))]))
+  (tf (case (inr add1)
+        [(inl x) => (add1 x)]
+        [(inr x) => (add1 (add1 x))]))
+  (tt (case (inr add1)
+        [(inl x) => x]
+        [(inr x) => add1])
+      (-> (int) (int)))
+  (tf (case (inr add1)
+        [(inl x) => 1]
+        [(inr x) => add1]))
+
+  ;; pair
+  (tt (pair 1 1) (* (int) (int)))
+  (tt (pair 1 add1) (* (int) (-> (int) (int))))
+
+  ;; fst
+  (tt (fst (pair 1 1)) (int))
+  (tt (fst (pair 1 add1)) (int))
+
+  ;; snd
+  (tt (snd (pair 1 1)) (int))
+  (tt (snd (pair add1 1)) (int))
+
+  ;; Implement lists
+  (define omega
+    (term (lambda (x) (x x))))
+  (define Omega
+    (term (,omega ,omega)))
+  (define diverge
+    (term ,Omega))
+  (define !empty
+    (term (inr ())))
+  (define !cons
+    (term (lambda (x)
+            (lambda (y)
+              (inl (pair x y))))))
+  (define !car
+    (term (lambda (x)
+            (case x
+              [(inl x) =>
+               (fst x)]
+              [(inr x) =>
+               ,diverge]))))
+  (define !cdr
+    (term (lambda (x)
+            (case x
+              [(inl x) =>
+               (snd x)]
+              [(inr x) =>
+               ,diverge]))))
+  (define Y
+    (term (lambda (rf)
+            ((lambda (f)
+               (rf (lambda (x)
+                     ((f f) x))))
+             (lambda (f)
+               (rf (lambda (x)
+                     ((f f) x))))))))
+  (define !map
+    (term (,Y
+           (lambda (map)
+             (lambda (f)
+               (lambda (l)
+                 (case l
+                   [(inl x) =>
+                    (inl
+                     (pair (f (fst x))
+                           ((map f) (snd x))))]
+                   [(inr x) =>
+                    (inr ())])))))))
+
+  (when #f
+    (tt ,diverge
+        (var A))
+    (tt (lambda (x) ,diverge)
+        (-> (var A) (var B)))
+    (tt (,!car ,!empty)
+        (var A))
+    (tt ((,!cons 1) ,!empty)
+        (+ (* (int) (+ (var A) (unit))) (var B)))
+    (tt (,!car ((,!cons 1) ,!empty))
+        (int))
+    (tt ((,!map add1) ((,!cons 1) ,!empty))
+        (+ (* (int) (+ (* (int) (var A)) (unit))) (unit)))))
 
 ;; Random generation
 (require racket/stream)
@@ -423,8 +424,8 @@
    (lambda (t) (t))
    (shuffle
     (if (positive? j)
-        (append 0-opt-thunks n-opt-thunks)
-        0-opt-thunks))))
+      (append 0-opt-thunks n-opt-thunks)
+      0-opt-thunks))))
 
 (define (random-id)
   (gensym 'random))
@@ -479,11 +480,11 @@
 (define (subst x t tp)
   (let loop ([tp tp])
     (cond
-     [(eq? x tp) t]
-     [(list? tp)
-      (map (curry subst x t) tp)]
-     [else tp])))
-  
+      [(eq? x tp) t]
+      [(list? tp)
+       (map (curry subst x t) tp)]
+      [else tp])))
+
 (define (random-terms juice)
   (define top (gensym 'top))
   (values top
@@ -501,7 +502,7 @@
   (stream-filter-map
    (lambda (new-term)
      (match
-         (term 
+         (term
           (unify*-modulo-delays ,principal-typing
                                 (ty-cons ,id->type ,label ,new-term)))
        [(list #f _)
@@ -535,19 +536,19 @@
   (let loop ([fst-pass s-s]
              [snd-pass empty-stream])
     (cond
-     [(stream-empty? fst-pass)
-      (if (stream-empty? snd-pass)
-          empty-stream
-          (loop snd-pass empty-stream))]
-     [else
-      (define s-e (stream-first fst-pass))
-      (if (stream-empty? s-e)
-          (loop (stream-rest fst-pass)
-                snd-pass)
-          (stream-cons (stream-first s-e)
-                       (loop (stream-rest fst-pass)
-                             (stream-cons (stream-rest s-e)
-                                          snd-pass))))])))
+      [(stream-empty? fst-pass)
+       (if (stream-empty? snd-pass)
+         empty-stream
+         (loop snd-pass empty-stream))]
+      [else
+       (define s-e (stream-first fst-pass))
+       (if (stream-empty? s-e)
+         (loop (stream-rest fst-pass)
+               snd-pass)
+         (stream-cons (stream-first s-e)
+                      (loop (stream-rest fst-pass)
+                            (stream-cons (stream-rest s-e)
+                                         snd-pass))))])))
 
 (define MAXIMUM-DELAYS 3) ;; XXX Really ugly
 
@@ -565,15 +566,16 @@
      (vector new-term new-principal-typing)])
    unfolded-s))
 
-(printf "Random\n")
-(define-values (top-id term-s) (random-terms 2))
-(for/fold ([last (current-inexact-milliseconds)])
-    ([a (in-stream term-s)]
-     [i (in-range 10)])
-     (match-define (vector t ty) a)
-     (define this (current-inexact-milliseconds))
-     (printf "~v>> ~v : ~v\n"
-             (- this last)
-             t
-             (term (dual-lookup ,ty ,top-id)))
-     this)
+(module+ test
+  (printf "Random\n")
+  (define-values (top-id term-s) (random-terms 2))
+  (for/fold ([last (current-inexact-milliseconds)])
+      ([a (in-stream term-s)]
+       [i (in-range 10)])
+    (match-define (vector t ty) a)
+    (define this (current-inexact-milliseconds))
+    (printf "~v>> ~v : ~v\n"
+            (- this last)
+            t
+            (term (dual-lookup ,ty ,top-id)))
+    this))
