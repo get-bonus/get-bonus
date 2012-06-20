@@ -2,10 +2,15 @@
   CLOSED: [2012-05-25 Fri 01:23]
 * DONE Write a makefile that runs all the tests with raco test
   CLOSED: [2012-05-25 Fri 01:29]
-* TODO Really implement openal on linux
+* DONE Really implement openal on linux
+  CLOSED: [2012-06-19 Tue 19:46]
 * TODO Really implement joysticks on linux
+* TODO Reorganize exp directory into other directories
 * TODO Change gl model to keep track of sizes for centering, etc
 * TODO Change gl model to be memoized
 * TODO Write the GBES wrapper to start experimenting with incremental games
+* TODO Connect to plt-games? (or mimic its technique)
 * TODO Rewrite past games with the OS model
+* TODO Make OS use futures for parallelism
+* TODO Convert things to typed racket as I go
 * TODO Write a generic Godel-encoding library

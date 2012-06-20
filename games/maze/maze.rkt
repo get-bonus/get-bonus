@@ -41,9 +41,9 @@
   (define id (gl:path->texture (build-path resource-path f))))
 
 (define-sound se:crunch "crunch.wav")
-(define-sound se:bgm "bgm.mp3")
+(define-sound se:bgm "bgm.ogg")
 ;; XXX cut this better
-(define-sound se:power-up "power-up.mp3")
+(define-sound se:power-up "power-up.ogg")
 
 (define-runtime-path template-map "template.map")
 (match-define

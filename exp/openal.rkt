@@ -26,7 +26,7 @@
 (define (check-error i)
   (define ec (alGetError))
   (unless (equal? ec AL_NO_ERROR)
-    (error i "error ~a" ec)))
+    (error i "error ~a" (number->string ec 16))))
 
 (define-cpointer-type _ALCdevice)
 (define-openal alcOpenDevice
@@ -104,6 +104,11 @@
 (define AL_PLAYING                                #x1012)
 (define AL_PAUSED                                 #x1013)
 (define AL_STOPPED                                #x1014)
+
+(define AL_FORMAT_MONO8                           #x1100)
+(define AL_FORMAT_MONO16                          #x1101)
+(define AL_FORMAT_STEREO8                         #x1102)
+(define AL_FORMAT_STEREO16                        #x1103)
 
 (define-openal alSourcei
   (_fun [source : _ALsource]
@@ -199,4 +204,8 @@
  [AL_LOOPING integer?]
  [AL_PLAYING integer?]
  [AL_GAIN integer?]
- [AL_BUFFER integer?])
+ [AL_BUFFER integer?]
+ [AL_FORMAT_MONO8 integer?]
+ [AL_FORMAT_MONO16 integer?]
+ [AL_FORMAT_STEREO8 integer?]
+ [AL_FORMAT_STEREO16 integer?])

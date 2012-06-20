@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for m in $(find . -name '*mp3') ; do
+    sox ${m} $(dirname ${m})/$(basename ${m} .mp3).ogg &&
+    rm ${m}
+done
