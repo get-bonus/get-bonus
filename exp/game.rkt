@@ -8,7 +8,6 @@
          "keyboard.rkt"
          "mapping.rkt"
          "controller.rkt"
-         "joystick.rkt"
          "3s.rkt"
          "psn.rkt")
 

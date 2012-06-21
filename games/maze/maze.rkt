@@ -11,7 +11,6 @@
          "../../exp/keyboard.rkt"
          "../../exp/mapping.rkt"
          "../../exp/controller.rkt"
-         "../../exp/joystick.rkt"
          "../../exp/3s.rkt"
          "../../exp/psn.rkt"
          "../../exp/math.rkt"
