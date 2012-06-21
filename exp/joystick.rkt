@@ -34,29 +34,31 @@
   (get-ffi-obj "scheme_get_port_fd" c-lib
                (_fun _scheme -> _int)))
 (define ioctl_char
-  (get-ffi-obj "ioctl" c-lib
-               (_fun (p code) ::
-                     (fd : _int = (scheme_get_port_fd p))
-                     (code : _intptr)
-                     (char : (_ptr o _byte))
-                     ->
-                     (err : _int)
-                     ->
-                     (if (not (= err -1))
-                       char
-                       (error 'ioctl "error code: ~e" err)))))
+  (get-ffi-obj
+   "ioctl" c-lib
+   (_fun (p code) ::
+         (fd : _int = (scheme_get_port_fd p))
+         (code : _intptr)
+         (char : (_ptr o _byte))
+         ->
+         (err : _int)
+         ->
+         (if (not (= err -1))
+           char
+           (error 'ioctl "error code: ~e" err)))))
 (define ioctl_str128
-  (get-ffi-obj "ioctl" c-lib
-               (_fun (p code) ::
-                     (fd : _int = (scheme_get_port_fd p))
-                     (code : _intptr)
-                     (bs : (_bytes o 128))
-                     ->
-                     (err : _int)
-                     ->
-                     (if (not (= err -1))
-                       (subbytes bs 0 (sub1 err))
-                       (error 'ioctl "error code: ~e" err)))))
+  (get-ffi-obj
+   "ioctl" c-lib
+   (_fun (p code) ::
+         (fd : _int = (scheme_get_port_fd p))
+         (code : _intptr)
+         (bs : (_bytes o 128))
+         ->
+         (err : _int)
+         ->
+         (if (not (= err -1))
+           (subbytes bs 0 (sub1 err))
+           (error 'ioctl "error code: ~e" err)))))
 
 (struct joystick-state (name axes buttons) #:transparent)
 (define deep-copy
@@ -110,8 +112,10 @@
           (λ (_)
             (deep-update! state out-state)
             (semaphore-post out-sem))))
+       (define evts
+         (apply choice-evt read-evt event-evts))
        (let loop ()
-         (apply sync read-evt event-evts)
+         (sync evts)
          (loop)))))
   (joystick-monitor monitor-t in-sem out-sem out-state))
 
@@ -130,11 +134,11 @@
  [get-all-joystick-snapshot-thunks
   (c-> (listof (c-> joystick-state?)))])
 
-;; XXX This seems to have really bad memory performance, well it goes
-;; up until it hits about 140M then goes between 128M to 140M
 (module+ main
   (define m (make-joystick-monitor))
   (let loop ()
-    (printf "~v\n" (monitor-state m))
+    (printf "~a ~v\n"
+            (real->decimal-string (/ (/ (current-memory-use) 1024) 1024))
+            (monitor-state m))
     (sleep 1/60)
     (loop)))
