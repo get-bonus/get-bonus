@@ -71,7 +71,7 @@
     (vector-copy! (joystick-state-axes out) 0 (joystick-state-axes in))
     (vector-copy! (joystick-state-buttons out) 0 (joystick-state-buttons in))))
 
-(struct joystick-monitor (t in-sem out-sem state))
+(struct joystick-monitor (t in-sem out-sem out-state))
 (define (make-joystick-monitor)
   (define js-ports
     (map open-input-file
@@ -119,26 +119,29 @@
          (loop)))))
   (joystick-monitor monitor-t in-sem out-sem out-state))
 
-(define (monitor-state m)
+(define (joystick-monitor-state m)
   (match-define (joystick-monitor t in-sem out-sem st) m)
   (thread-resume t)
   (semaphore-post in-sem)
   (semaphore-wait out-sem)
   st)
 
-(define the-monitor #f #;(make-joystick-monitor))
-(define (get-all-joystick-snapshot-thunks)
-  (monitor-state the-monitor))
-
 (provide/contract
- [get-all-joystick-snapshot-thunks
-  (c-> (listof (c-> joystick-state?)))])
+ [struct joystick-state
+         ([name bytes?]
+          [axes (vectorof number?)]
+          [buttons (vectorof number?)])]
+ [joystick-monitor?
+  (c-> any/c boolean?)]
+ [make-joystick-monitor
+  (c-> joystick-monitor?)]
+ [joystick-monitor-state
+  (c-> joystick-monitor? (listof joystick-state?))])
 
 (module+ main
   (define m (make-joystick-monitor))
-  (let loop ()
+  (for ([i (in-range (* 60 15))])
     (printf "~a ~v\n"
             (real->decimal-string (/ (/ (current-memory-use) 1024) 1024))
-            (monitor-state m))
-    (sleep 1/60)
-    (loop)))
+            (joystick-monitor-state m))
+    (sleep 1/60)))
