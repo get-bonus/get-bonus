@@ -61,6 +61,8 @@
   (define a (axis i))
   (λ (js)
     (= 1 (a js))))
+(define (mt js)
+  #f)
 
 (define (controller-dpad-x cs)
   (stick-x (controller-dpad cs)))
@@ -86,7 +88,22 @@
    [home (button 8)]
    [start (button 7)]
    [l (button 4)]
-   [r (button-axis 2)]))
+   [r (button-axis 2)])
+  (#"RetroUSB.com RetroPad"
+   [dpad-x (axis 0)]
+   [dpad-y (reverse-axis 1)]
+   [back (button 2)]
+   [start (button 3)]
+   [a (button 0)]
+   [b (button 1)]
+   ;; XXX try with SNES controller to find x,y,l,r
+   [c mt]
+   [x mt]
+   [y mt]
+   [z mt]
+   [home mt]   
+   [l mt]
+   [r mt]))
 
 (define (make-controller-monitor)
   (define js-mon (make-joystick-monitor))
