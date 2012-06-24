@@ -5,15 +5,8 @@
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse)
+         "psn.rkt"
          "joystick.rkt")
-
-(define (stick-state? n)
-  (and (inexact? n)
-       (<= -1 (real-part n) 1)
-       (<= -1 (imag-part n) 1)))
-
-(define stick-x real-part)
-(define stick-y imag-part)
 
 (struct controller
         (dpad
@@ -65,15 +58,15 @@
   #f)
 
 (define (controller-dpad-x cs)
-  (stick-x (controller-dpad cs)))
+  (psn-x (controller-dpad cs)))
 (define (controller-dpad-y cs)
-  (stick-y (controller-dpad cs)))
+  (psn-y (controller-dpad cs)))
 (define (set-controller-dpad-x! cs x)
-  (set-controller-dpad! cs (make-rectangular x (controller-dpad-y cs))))
+  (set-controller-dpad! cs (psn x (controller-dpad-y cs))))
 (define (set-controller-dpad-y! cs y)
-  (set-controller-dpad! cs (make-rectangular (controller-dpad-x cs) y)))
+  (set-controller-dpad! cs (psn (controller-dpad-x cs) y)))
 
-;; XXX customize
+;; XXX customize with files/gui?
 (define-mapping mapping
   (#"Generic X-Box pad"
    [dpad-x (axis 6)]
@@ -110,7 +103,7 @@
   (controller-monitor
    js-mon
    (for/list ([i (in-range (length (joystick-monitor-state js-mon)))])
-     (controller (make-rectangular 0 0)
+     (controller (psn 0 0)
                  #f #f #f
                  #f #f #f
                  #f #f #f
@@ -124,15 +117,16 @@
   st)
 
 (provide/contract
- [stick-state? contract?]
- [stick-x (-> stick-state? (between/c -1 1))]
- [stick-y (-> stick-state? (between/c -1 1))]
  [struct controller
-         ([dpad stick-state?]
+         ([dpad psn?]
           [a boolean?] [b boolean?] [c boolean?]
           [x boolean?] [y boolean?] [z boolean?]
           [back boolean?] [home boolean?] [start boolean?]
           [l boolean?] [r boolean?])]
+ [controller-dpad-x
+  (-> controller? inexact?)]
+ [controller-dpad-y
+  (-> controller? inexact?)]
  [controller-monitor?
   (-> any/c boolean?)]
  [make-controller-monitor
