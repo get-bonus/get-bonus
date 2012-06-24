@@ -133,6 +133,7 @@
           [buttons (vectorof number?)])]
  [joystick-monitor?
   (c-> any/c boolean?)]
+ ;; XXX remove make
  [make-joystick-monitor
   (c-> joystick-monitor?)]
  [joystick-monitor-state

@@ -19,7 +19,7 @@
                 (set-remove (unbox b) (send ke get-key-release-code))
                 (set-add (unbox b) c))))
 
-(define (keyboard-monitor-snapshot km)
+(define (keyboard-monitor-state km)
   (match-define (keyboard-monitor b) km)
   (unbox b))
 
@@ -29,5 +29,5 @@
          (-> keyboard-monitor?)]
  [keyboard-monitor-submit! 
   (keyboard-monitor? (is-a?/c key-event%) . -> . void)]
- [keyboard-monitor-snapshot
+ [keyboard-monitor-state
   (keyboard-monitor? . -> . (set/c (or/c char? key-code-symbol?)))])

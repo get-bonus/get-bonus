@@ -2,12 +2,17 @@
 (require racket/contract
          racket/math
          racket/match
+         racket/set
+         racket/list
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse)
          "psn.rkt"
-         "joystick.rkt")
+         "joystick.rkt"
+         "keyboard.rkt")
 
+;; XXX add something to communicate capabilties (like no third button,
+;; home, etc)
 (struct controller
         (dpad
          a b c
@@ -17,7 +22,7 @@
         #:mutable
         #:transparent)
 
-(struct controller-monitor (js-mon buf))
+(struct controller-monitor (js-mon key-mon buf))
 
 (define-syntax (define-mapping stx)
   (syntax-parse stx
@@ -85,38 +90,96 @@
   (#"RetroUSB.com RetroPad"
    [dpad-x (axis 0)]
    [dpad-y (reverse-axis 1)]
-   [back (button 2)]
-   [start (button 3)]
    [a (button 0)]
    [b (button 1)]
+   [back (button 2)]
+   [start (button 3)]
    ;; XXX try with SNES controller to find x,y,l,r
    [c mt]
    [x mt]
    [y mt]
    [z mt]
-   [home mt]   
+   [home mt]
    [l mt]
    [r mt]))
 
-(define (make-controller-monitor)
+(define-syntax (define-keyboard-mapping stx)
+  (syntax-parse stx
+    [(_ id ([c-field j-field] ...))
+     (with-syntax
+         ([(set-controller-field! ...)
+           (for/list ([f (in-list (syntax->list #'(c-field ...)))])
+               (format-id f "set-controller-~a!" f))]
+          [(joystick-state-field ...)
+           (generate-temporaries #'(j-field ...))])
+       (syntax/loc stx
+         (begin
+           (define joystick-state-field j-field)
+           ...
+           (define (id ks c)
+             (let ()
+               (define f (joystick-state-field ks))
+               ;; XXX busted idea
+               (when f
+                 (set-controller-field! c f)))
+             ...))))]))
+
+(define ((key-axis neg pos) ks)
+  (eprintf "~a\n" (list neg pos ks))
+  (cond [(set-member? ks neg) -1.]
+        [(set-member? ks pos) +1.]
+        [else #f]))
+(define ((key k) ks)
+  (set-member? ks k))
+
+(define-keyboard-mapping keyboard-mapping
+  ([dpad-x (key-axis 'left 'right)]
+   [dpad-y (key-axis 'down 'up)]   
+   [a (key #\z)]
+   [b (key #\x)]
+   [c (key #\c)]
+   [x (key #\a)]
+   [y (key #\s)]
+   [z (key #\d)]
+   [back (key #\tab)]
+   [home (key 'escape)]
+   [start (key #\return)]
+   [l (key #\q)]
+   [r (key #\e)]))
+
+(define (make-controller-monitor #:keyboard [km #f])
   (define js-mon (make-joystick-monitor))
+  (define how-many-joysticks
+    (length (joystick-monitor-state js-mon)))
+  ;; If a keyboard is present, guarantee one controller
+  (define how-many-controllers
+    (if km
+      (max 1 how-many-joysticks)
+      how-many-joysticks))
   (controller-monitor
-   js-mon
-   (for/list ([i (in-range (length (joystick-monitor-state js-mon)))])
-     (controller (psn 0 0)
+   js-mon km
+   (for/list ([i (in-range how-many-controllers)])
+     (controller (psn 0. 0.)
                  #f #f #f
                  #f #f #f
                  #f #f #f
                  #f #f))))
 
 (define (controller-monitor-state cm)
-  (match-define (controller-monitor js-mon st) cm)
+  (match-define (controller-monitor js-mon km st) cm)
   (for ([j (in-list (joystick-monitor-state js-mon))]
         [c (in-list st)])
     (mapping j c))
+  ;; If a keyboard is present, merge it with the first controller
+  ;; input.
+  (when km
+    (keyboard-mapping (keyboard-monitor-state km)
+                      (first st)))
+  (eprintf "~a\n" st)
   st)
 
 (provide/contract
+ ;; XXX don't provide mutators
  [struct controller
          ([dpad psn?]
           [a boolean?] [b boolean?] [c boolean?]
@@ -129,8 +192,9 @@
   (-> controller? inexact?)]
  [controller-monitor?
   (-> any/c boolean?)]
+ ;; XXX remove make
  [make-controller-monitor
-  (-> controller-monitor?)]
+  (->* () (#:keyboard keyboard-monitor?) controller-monitor?)]
  [controller-monitor-state
   (-> controller-monitor? (listof controller?))])
 

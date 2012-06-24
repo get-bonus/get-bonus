@@ -7,8 +7,6 @@
          "../../exp/sprites.rkt"
          "../../exp/mvector.rkt"
          "../../exp/fullscreen.rkt"
-         "../../exp/keyboard.rkt"
-         "../../exp/mapping.rkt"
          "../../exp/controller.rkt"
          "../../exp/3s.rkt"
          "../../exp/math.rkt"
