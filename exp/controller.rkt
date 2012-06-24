@@ -22,7 +22,7 @@
         #:mutable
         #:transparent)
 
-(struct controller-monitor (js-mon key-mon buf))
+(struct controller-monitor (js-mon key-mon how-many-joysticks buf))
 
 (define-syntax (define-mapping stx)
   (syntax-parse stx
@@ -107,9 +107,12 @@
   (syntax-parse stx
     [(_ id ([c-field j-field] ...))
      (with-syntax
-         ([(set-controller-field! ...)
+         ([(controller-field ...)
            (for/list ([f (in-list (syntax->list #'(c-field ...)))])
-               (format-id f "set-controller-~a!" f))]
+             (format-id f "controller-~a" f))]
+          [(set-controller-field! ...)
+           (for/list ([f (in-list (syntax->list #'(c-field ...)))])
+             (format-id f "set-controller-~a!" f))]
           [(joystick-state-field ...)
            (generate-temporaries #'(j-field ...))])
        (syntax/loc stx
@@ -119,22 +122,20 @@
            (define (id ks c)
              (let ()
                (define f (joystick-state-field ks))
-               ;; XXX busted idea
-               (when f
-                 (set-controller-field! c f)))
+               (set-controller-field! c f))
              ...))))]))
 
 (define ((key-axis neg pos) ks)
   (eprintf "~a\n" (list neg pos ks))
   (cond [(set-member? ks neg) -1.]
         [(set-member? ks pos) +1.]
-        [else #f]))
+        [else 0.]))
 (define ((key k) ks)
   (set-member? ks k))
 
 (define-keyboard-mapping keyboard-mapping
   ([dpad-x (key-axis 'left 'right)]
-   [dpad-y (key-axis 'down 'up)]   
+   [dpad-y (key-axis 'down 'up)]
    [a (key #\z)]
    [b (key #\x)]
    [c (key #\c)]
@@ -147,6 +148,43 @@
    [l (key #\q)]
    [r (key #\e)]))
 
+(define (null-controller)
+  (controller (psn 0. 0.)
+              #f #f #f
+              #f #f #f
+              #f #f #f
+              #f #f))
+
+(define (clamp n)
+  (max -1. (min 1. n)))
+
+(define (clamp-psn p)
+  (psn (clamp (psn-x p))
+       (clamp (psn-y p))))
+
+(define (controller-merge orig new)
+  (set-controller-dpad! orig
+                        (clamp-psn
+                         (+ (controller-dpad orig)
+                            (controller-dpad new))))
+  (define-syntax (merge-button stx)
+    (syntax-parse stx
+      [(_ b:id)
+       (with-syntax
+           ([set-controller-b! (format-id #'b "set-controller-~a!" #'b)]
+            [controller-b (format-id #'b "controller-~a" #'b)])
+         (syntax/loc stx
+           (set-controller-b! orig
+                              (or (controller-b orig)
+                                  (controller-b new)))))]))
+  (define-syntax-rule (merge-buttons b ...)
+    (begin (merge-button b) ...))
+  (merge-buttons
+   a b c
+   x y z
+   back home start
+   l r))
+
 (define (make-controller-monitor #:keyboard [km #f])
   (define js-mon (make-joystick-monitor))
   (define how-many-joysticks
@@ -157,24 +195,27 @@
       (max 1 how-many-joysticks)
       how-many-joysticks))
   (controller-monitor
-   js-mon km
+   js-mon km how-many-joysticks
    (for/list ([i (in-range how-many-controllers)])
-     (controller (psn 0. 0.)
-                 #f #f #f
-                 #f #f #f
-                 #f #f #f
-                 #f #f))))
+     (null-controller))))
 
 (define (controller-monitor-state cm)
-  (match-define (controller-monitor js-mon km st) cm)
+  (match-define (controller-monitor js-mon km how-many-joysticks st) cm)
   (for ([j (in-list (joystick-monitor-state js-mon))]
         [c (in-list st)])
     (mapping j c))
   ;; If a keyboard is present, merge it with the first controller
   ;; input.
   (when km
-    (keyboard-mapping (keyboard-monitor-state km)
-                      (first st)))
+    (cond
+      [(zero? how-many-joysticks)
+       (keyboard-mapping (keyboard-monitor-state km)
+                         (first st))]
+      [else
+       (define c (null-controller))
+       (keyboard-mapping (keyboard-monitor-state km)
+                         c)
+       (controller-merge (first st) c)]))
   (eprintf "~a\n" st)
   st)
 

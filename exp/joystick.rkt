@@ -82,7 +82,7 @@
       (define axes (ioctl_char p JSIOCGAXES))
       (define buttons (ioctl_char p JSIOCGBUTTONS))
       (define name (ioctl_str128 p JSIOCGNAME_128))
-      (joystick-state name (make-vector axes 0) (make-vector buttons 0))))
+      (joystick-state name (make-vector axes 0.0) (make-vector buttons 0))))
   (define out-state
     (map deep-copy state))
   (define event-bs
@@ -105,7 +105,8 @@
                                           (js-event-value event-bs))
                              (vector-set! (joystick-state-axes s)
                                           (js-event-number event-bs)
-                                          (/ (js-event-value event-bs) 32767))))))))
+                                          (exact->inexact
+                                           (/ (js-event-value event-bs) 32767)))))))))
        (define read-evt
          (handle-evt
           in-sem
@@ -129,7 +130,7 @@
 (provide/contract
  [struct joystick-state
          ([name bytes?]
-          [axes (vectorof number?)]
+          [axes (vectorof inexact?)]
           [buttons (vectorof number?)])]
  [joystick-monitor?
   (c-> any/c boolean?)]
