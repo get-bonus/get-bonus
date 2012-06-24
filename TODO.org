@@ -4,7 +4,8 @@
   CLOSED: [2012-05-25 Fri 01:29]
 * DONE Really implement openal on linux
   CLOSED: [2012-06-19 Tue 19:46]
-* TODO Really implement joysticks on linux
+* DONE Really implement joysticks on linux
+  CLOSED: [2012-06-24 Sun 08:34]
 * TODO Reorganize exp directory into other directories
 * TODO Change gl model to keep track of sizes for centering, etc
 * TODO Change gl model to be memoized
