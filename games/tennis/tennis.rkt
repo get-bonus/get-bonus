@@ -19,9 +19,9 @@
   (define id (path->audio (build-path resource-path f))))
 
 (define-sound se:applause "applause.wav")
-(define-sound se:bgm "bgm.mp3")
-(define-sound se:bump-lhs "bump-lhs.mp3")
-(define-sound se:bump-rhs "bump-rhs.mp3")
+(define-sound se:bgm "bgm.ogg")
+(define-sound se:bump-lhs "bump-lhs.ogg")
+(define-sound se:bump-rhs "bump-rhs.ogg")
 (define-sound se:bump-wall "bump-wall.wav")
 
 (define width 16.)
@@ -182,12 +182,11 @@
                  (clamp -1.
                         (/ (- (psn-y ball-pos) rhs-y) speed)
                         1.))
-            0. 0.
             ; Serves immediately
             (if (and serving? (eq? server 'right))
                 #t
                 #f)
-            #f #f #f 
+            #f #f #f #f
             #f #f #f #f #f #f))))
      
      (define lhs-y-n
@@ -377,7 +376,7 @@
 (define (text s)
   (gl:string->texture #:size 45 s))
 
-(define-sound se:title "title.mp3")
+(define-sound se:title "title.ogg")
 (big-bang
  (GAME 0 #f #f)
  #:tick
