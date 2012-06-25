@@ -6,7 +6,8 @@
   CLOSED: [2012-06-19 Tue 19:46]
 * DONE Really implement joysticks on linux
   CLOSED: [2012-06-24 Sun 08:34]
-* TODO Remove controller debugging printfs
+* DONE Remove controller debugging printfs
+  CLOSED: [2012-06-25 Mon 17:30]
 * TODO Reorganize exp directory into other directories
 * TODO Change gl model to keep track of sizes for centering, etc
 * TODO Change gl model to be memoized

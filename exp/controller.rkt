@@ -126,7 +126,6 @@
              ...))))]))
 
 (define ((key-axis neg pos) ks)
-  (eprintf "~a\n" (list neg pos ks))
   (cond [(set-member? ks neg) -1.]
         [(set-member? ks pos) +1.]
         [else 0.]))
@@ -216,7 +215,6 @@
        (keyboard-mapping (keyboard-monitor-state km)
                          c)
        (controller-merge (first st) c)]))
-  (eprintf "~a\n" st)
   st)
 
 (provide/contract
