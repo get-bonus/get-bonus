@@ -5,7 +5,7 @@
          racket/math
          racket/match
          racket/contract
-         "psn.rkt"
+         gb/data/psn
          tests/eli-tester)
 
 ;; XXX They have ideas about collision response

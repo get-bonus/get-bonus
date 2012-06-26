@@ -8,7 +8,8 @@
   CLOSED: [2012-06-24 Sun 08:34]
 * DONE Remove controller debugging printfs
   CLOSED: [2012-06-25 Mon 17:30]
-* TODO Reorganize exp directory into other directories
+* DONE Reorganize exp directory into other directories
+  CLOSED: [2012-06-25 Mon 19:38]
 * TODO Change gl model to keep track of sizes for centering, etc
 * TODO Change gl model to be memoized
 * TODO Write the GBES wrapper to start experimenting with incremental games

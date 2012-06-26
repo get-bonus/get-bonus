@@ -1,5 +1,5 @@
 #lang racket/base
-(require "gl.rkt"
+(require gb/graphics/gl
          racket/contract)
 
 (define (sprite-sheet/grid t size [margin 0])

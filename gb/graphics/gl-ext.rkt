@@ -2,8 +2,8 @@
 (require racket/contract
          racket/draw
          racket/class
-         "psn.rkt"
-         "gl.rkt")
+         gb/data/psn
+         gb/graphics/gl)
 
 (define (center-texture-at p t)
   (translate

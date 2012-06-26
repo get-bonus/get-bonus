@@ -1,17 +1,17 @@
 #lang racket/gui
 (require racket/runtime-path
-         "../../exp/loop.rkt"
+         gb/gui/world
          (prefix-in gl: 
-                    (combine-in "../../exp/gl.rkt"
-                                "../../exp/gl-ext.rkt"))
-         "../../exp/sprites.rkt"
-         "../../exp/mvector.rkt"
-         "../../exp/fullscreen.rkt"
-         "../../exp/controller.rkt"
-         "../../exp/3s.rkt"
-         "../../exp/math.rkt"
-         "../../exp/psn.rkt"
-         (prefix-in cd: "../../exp/cd-narrow.rkt"))
+                    (combine-in gb/graphics/gl
+                                gb/graphics/gl-ext))
+         gb/graphics/sprites
+         gb/data/mvector
+         gb/gui/fullscreen
+         gb/input/controller
+         gb/audio/3s
+         gb/lib/math
+         gb/data/psn
+         (prefix-in cd: gb/physics/cd-narrow))
 
 (define-runtime-path resource-path "r")
 

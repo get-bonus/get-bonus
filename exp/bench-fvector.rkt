@@ -1,9 +1,9 @@
-#lang s-exp "tr-cheat.rkt"
+#lang s-exp gb/lib/tr-cheat
 (require tests/stress
          (prefix-in ra: (planet dvanhorn/ralist:3:5))
          (prefix-in fec:slow: (planet dvanhorn/fector:1:1/main))
          (prefix-in fec:fast: (planet dvanhorn/fector:1:1/fast))
-         "../lib/skal.rkt")
+         gb/lib/skal)
 
 (define (make-hash N e)
   (for/hasheq ([i (in-range N)])

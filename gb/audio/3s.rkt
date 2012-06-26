@@ -2,9 +2,9 @@
 (require racket/contract
          racket/match
          racket/list
-         "psn.rkt"
-         "openal.rkt"
-         "openal-path.rkt")
+         gb/data/psn
+         gb/audio/openal
+         gb/audio/openal-path)
 
 ; xxx gc buffers some how
 (struct audio (buffer))

@@ -3,13 +3,13 @@
          racket/contract
          racket/class
          racket/list
-         "fullscreen.rkt"
-         "keyboard.rkt"
-         "psn.rkt"
-         "3s.rkt"
-         "ltq.rkt"
-         (prefix-in gl: "gl.rkt")
-         "controller.rkt")
+         gb/gui/fullscreen
+         gb/input/keyboard
+         gb/data/psn
+         gb/audio/3s
+         gb/data/ltq
+         (prefix-in gl: gb/graphics/gl)
+         gb/input/controller)
 
 (define RATE 1/60)
 

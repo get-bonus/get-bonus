@@ -7,9 +7,9 @@
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse)
-         "psn.rkt"
-         "joystick.rkt"
-         "keyboard.rkt")
+         gb/data/psn
+         gb/input/joystick
+         gb/input/keyboard)
 
 ;; XXX add something to communicate capabilties (like no third button,
 ;; home, etc)

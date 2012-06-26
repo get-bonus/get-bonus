@@ -1,24 +1,24 @@
 #lang racket/gui
 (require racket/runtime-path
          tests/eli-tester
-         "../../exp/loop.rkt"
+         gb/gui/world
          (prefix-in gl:
-                    (combine-in "../../exp/gl.rkt"
-                                "../../exp/gl-ext.rkt"))
-         "../../exp/sprites.rkt"
-         "../../exp/mvector.rkt"
-         "../../exp/fullscreen.rkt"
-         "../../exp/controller.rkt"
-         "../../exp/3s.rkt"
-         "../../exp/psn.rkt"
-         "../../exp/math.rkt"
-         "../../exp/random.rkt"
-         "../../exp/fmatrix.rkt"
-         (only-in "../../exp/path-finding.rkt"
+                    (combine-in gb/graphics/gl
+                                gb/graphics/gl-ext))
+         gb/graphics/sprites
+         gb/data/mvector
+         gb/gui/fullscreen
+         gb/input/controller
+         gb/audio/3s
+         gb/data/psn
+         gb/lib/math
+         gb/lib/random
+         gb/data/fmatrix
+         (only-in gb/ai/path-finding
                   manhattan-distance)
          (prefix-in cd:
-                    (combine-in "../../exp/cd-narrow.rkt"
-                                "../../exp/cd-broad.rkt")))
+                    (combine-in gb/physics/cd-narrow
+                                gb/physics/cd-broad)))
 
 ;; https://s3.amazonaws.com/data.tumblr.com/tumblr_m01c27aYQ91qbw2q1o1_1280.jpg?AWSAccessKeyId=AKIAJ6IHWSU3BX3X7X3Q&Expires=1331014634&Signature=MsCEbwNiXX7J5h%2B%2BeCdDjW11mmc%3D
 

@@ -5,7 +5,7 @@
          ffi/examples/sndfile
          ffi/vector
          (only-in rackunit require/expose)
-         "openal.rkt")
+         gb/audio/openal)
 (require/expose ffi/examples/sndfile (read-sound-internal))
 
 (define (alBufferData/path b file)

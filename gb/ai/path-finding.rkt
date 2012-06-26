@@ -3,7 +3,7 @@
          racket/contract
          racket/math
          racket/match
-         "lifo-heap.rkt"
+         gb/data/lifo-heap
          tests/eli-tester
          racket/package)
 

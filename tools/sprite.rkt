@@ -1,8 +1,8 @@
 #lang racket/gui
 (require racket/runtime-path
-         (prefix-in gl: "../exp/gl.rkt")
-         "../exp/component.rkt"
-         "../exp/sprites.rkt")
+         (prefix-in gl: gb/graphics/gl)
+         gb/lib/component
+         gb/graphics/sprites)
 (define-runtime-path resource-path "../resources")
 (current-directory resource-path)
 

@@ -7,9 +7,9 @@
          racket/match
          unstable/contract
          tests/eli-tester
-         "math.rkt"
-         "psn.rkt"
-         "cd-narrow.rkt")
+         gb/lib/math
+         gb/data/psn
+         gb/physics/cd-narrow)
 
 ; Right now, the space is a grid made of cells such that there are
 ; (w / cell-w) x (h / cell-h) cells. An object, abstracted to an
@@ -21,7 +21,7 @@
 ; It would be interesting to see if other data-structures, such as discussed on 
 ; http://en.wikipedia.org/wiki/Spatial_index would be better.
 (require racket/set
-         "fmatrix.rkt")
+         gb/data/fmatrix)
 (struct space (rows cols cw ch fm))
 (define (make-space w h cell-w cell-h)
   (define cols (inexact->exact (ceiling (/ w cell-w))))

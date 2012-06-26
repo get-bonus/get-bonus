@@ -1,15 +1,14 @@
 #lang racket/gui
 (require racket/runtime-path
-         "loop.rkt"
-         (prefix-in gl: "gl.rkt")
-         "sprites.rkt"
-         "mvector.rkt"
-         "fullscreen.rkt"
-         "keyboard.rkt"
-         "mapping.rkt"
-         "controller.rkt"
-         "3s.rkt"
-         "psn.rkt")
+         gb/gui/world
+         (prefix-in gl: gb/graphics/gl)
+         gb/graphics/sprites
+         gb/data/mvector
+         gb/gui/fullscreen
+         gb/input/keyboard
+         gb/input/controller
+         gb/audio/3s
+         gb/data/psn)
 
 (define-runtime-path resource-path "../resources")
 

@@ -1,5 +1,5 @@
 #lang racket/base
-(require "fvector.rkt"
+(require gb/data/fvector
          racket/match
          racket/contract)
 ; This is a functional matrix.

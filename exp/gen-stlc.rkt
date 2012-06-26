@@ -568,7 +568,8 @@
 
 (module+ test
   (printf "Random\n")
-  (define-values (top-id term-s) (random-terms 2))
+  (exit 0)
+  (define-values (top-id term-s) (random-terms 0))
   (for/fold ([last (current-inexact-milliseconds)])
       ([a (in-stream term-s)]
        [i (in-range 10)])

@@ -1,5 +1,5 @@
 #lang racket/base
-(require "psn.rkt"
+(require gb/data/psn
          racket/math
          racket/contract)
 
