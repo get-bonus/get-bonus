@@ -153,6 +153,10 @@
 
 (big-bang 
  (smoother 0 (start 1 start-fst))
+ #:done?
+ (match-lambda
+  [(smoother _ w)
+   (>= (a-match-match-number w) 4)])
  #:tick
  (λ (s cs)
    (match s
@@ -167,6 +171,6 @@
               (render nw)
               empty)]
      [(smoother i w)
-      (values (smoother (modulo (add1 i) 60) w)
+      (values (smoother (modulo (add1 i) 1) w)
               (render w)
               empty)])))

@@ -637,7 +637,7 @@
 (define power-up-pts 50)
 (define fruit-pts 100)
 (define ghost-pts 200)
-(define extend-pts 3000)
+(define extend-pts +inf.0)
 
 (define ghost-return 40)
 
@@ -653,7 +653,7 @@
                    (* .5 pi) (* .5 pi))))
 
 (big-bang
- (game-st 0 0 30 extend-pts 0
+ (game-st 0 0 1 extend-pts 0
           (make-static) init-objs)
  #:sound-scale
  (/ width 2.)
@@ -897,7 +897,8 @@
          (gl:texture
           (gl:string->texture
            #:size 50
-           (format "Score: ~a    Lives: ~a"
+           (format "~a" score-n)
+           #;(format "Score: ~a    Lives: ~a"
                    score-n lives-n)))))
        (gl:seqn
         (static-display st)

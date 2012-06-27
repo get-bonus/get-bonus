@@ -139,9 +139,12 @@
     ['left 'right]
     ['right 'left]))
 
-; XXX show the overall score
-(define (play-game s g server)
-  (big-bang
+(define (won? at-least over lhs rhs)
+  (and ((max lhs rhs) . >= . at-least)
+       ((abs (- lhs rhs)) . >= . over)))
+
+(define server 'left)
+(big-bang
    (game-st 0 #t
             0 0
             4.5
@@ -294,8 +297,7 @@
           (define score-t
             (gl:string->texture 
              #:size 30 
-             (format "~a.~a (~a:~a)"
-                     (add1 s) (add1 g)
+             (format "(~a:~a)"
                      lhs-score-n rhs-score-n)))
           (gl:translate
            (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
@@ -335,89 +337,4 @@
                     ball-pos ball-dir ball-tar
                     rhs-y)
                    w)
-     (won? 4 2 lhs-score rhs-score))))
-
-(define (won? at-least over lhs rhs)
-  (and ((max lhs rhs) . >= . at-least)
-       ((abs (- lhs rhs)) . >= . over)))
-
-(define (play-match)
-  (let match-loop ([s 0]
-                   [lhs-sets 0]
-                   [rhs-sets 0])
-    (cond
-      [(= lhs-sets 2)
-       #t]
-      [(= rhs-sets 2)
-       #f]
-      [else
-       (define lhs-won?
-         (let set-loop ([server 'left]
-                        [g 0]
-                        [lhs-games 0]
-                        [rhs-games 0])
-           (if (won? 6 2 lhs-games rhs-games)
-               (lhs-games . > . rhs-games)
-               ; XXX show something after a game
-               (match (play-game s g server)
-                 [(and (app game-st-lhs-score lhs)
-                       (app game-st-rhs-score rhs))
-                  (define lhs-won? (lhs . > . rhs))
-                  (set-loop (opposite server)
-                            (add1 g)
-                            (if lhs-won? (add1 lhs-games) lhs-games)
-                            (if lhs-won? rhs-games (add1 rhs-games)))]))))
-       (if lhs-won?
-           (match-loop (add1 s) (add1 lhs-sets) rhs-sets)
-           (match-loop (add1 s) lhs-sets (add1 rhs-sets)))])))
-
-(struct GAME (frame bgm-started? last-game))
-
-(define (text s)
-  (gl:string->texture #:size 45 s))
-
-(define-sound se:title "title.ogg")
-(big-bang
- (GAME 0 #f #f)
- #:tick
- (λ (w cs)
-   (match-define (GAME frame bgm-started? last-winner) w)
-   (define start?
-     (ormap controller-start cs))
-   (define last-winner-n
-     ; XXX Maybe have a select sound like http://www.freesound.org/samplesViewSingle.php?id=87035
-     (if start?
-         (if (play-match)
-             'left 'right)
-         last-winner))
-   
-   (values 
-    (GAME (add1 frame) #t last-winner-n)
-    (gl:background
-     1. 1. 1. 0.
-     (gl:focus 
-      16 9 16 9 0 0
-      (gl:color 
-       0. 0. 0. 1.
-       (gl:seqn
-        (gl:center-texture-at
-         (psn 8. 6.5)
-         (text "Tennis!"))
-        (if last-winner-n
-            (gl:center-texture-at
-             (psn 8. 4.5)
-             (text
-              (case last-winner-n
-                [(left) "Player 1 won!"]
-                [(right) "Player 2 won!"])))
-            gl:blank)
-        (if (zero? (modulo frame 10))
-            gl:blank
-            (gl:center-texture-at
-             (psn 8. 2.5)
-             (if last-winner-n
-                 (text "Press START to play again")
-                 (text "Press START to play"))))))))
-    (if bgm-started?
-        empty
-        (list (background (λ (w) se:title)))))))
+     (won? 4 2 lhs-score rhs-score)))
