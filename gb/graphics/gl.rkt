@@ -148,6 +148,7 @@
 (define-matrix ((rotate) angle)
   (min-x min-y max-x max-y)
   ;; XXX Don't know if this is correct
+  ;; XXX share angle
   ((* min-x (make-polar 0 angle)) 
    (* min-y (make-polar 0 angle))
    (* max-x (make-polar 0 angle))

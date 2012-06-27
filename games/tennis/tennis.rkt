@@ -1,7 +1,7 @@
 #lang racket/gui
 (require racket/runtime-path
          gb/gui/world
-         (prefix-in gl: 
+         (prefix-in gl:
                     (combine-in gb/graphics/gl
                                 gb/graphics/gl-ext))
          gb/graphics/sprites
@@ -29,7 +29,7 @@
 (define height 9.)
 (define center-pos
   (psn width-h (/ height 2.)))
-(define speed 
+(define speed
   (* 4.5 RATE))
 (define ball-speed
   (* 2. speed))
@@ -59,8 +59,8 @@
   (define block-h
     (/ paddle-h blocks-in-a-paddle))
   (define block
-    (gl:texture/px paddle-blocks 
-                   paddle-w block-h 
+    (gl:texture/px paddle-blocks
+                   paddle-w block-h
                    px 44
                    10 10))
   (stack blocks-in-a-paddle block-h
@@ -76,7 +76,7 @@
 (define ball-hh ball-r)
 
 (define ball-sprites
-  (gl:path->texture 
+  (gl:path->texture
    (build-path resource-path "ryu.png")))
 (define ball
   (gl:translate (- ball-r) (- ball-r)
@@ -86,7 +86,7 @@
                                36 24)))
 
 (define bgm-img
-  (gl:path->texture 
+  (gl:path->texture
    (build-path resource-path "potosvillage.png")))
 (define bgm
   (gl:texture/px bgm-img
@@ -94,12 +94,12 @@
                  315 265
                  336 189))
 
-(define lhs-x 
+(define lhs-x
   (- .5 paddle-hw))
-(define rhs-x 
+(define rhs-x
   (- width .5 paddle-hw))
 
-(struct game-st 
+(struct game-st
         (frame
          serving?
          lhs-score rhs-score
@@ -118,7 +118,7 @@
   (+ lo (* (random) (- hi lo))))
 (define (random-dir t)
   (case t
-    [(left) 
+    [(left)
      (between (* 2/3 pi) (* 4/3 pi))]
     [(right)
      (between (* 5/3 pi) (* 7/3 pi))]))
@@ -126,25 +126,26 @@
   (* 1.2 (+ ball-hw paddle-hw)))
 (define (start-pos lhs-y rhs-y server)
   (case server
-    [(right) 
+    [(right)
      (psn (- rhs-x serve-dist) rhs-y)]
-    [(left) 
+    [(left)
      (psn (+ lhs-x serve-dist) lhs-y)]))
 (define start-dir
   (match-lambda
-    ['left 0.]
-    ['right pi]))
+   ['left 0.]
+   ['right pi]))
 (define opposite
   (match-lambda
-    ['left 'right]
-    ['right 'left]))
+   ['left 'right]
+   ['right 'left]))
 
 (define (won? at-least over lhs rhs)
   (and ((max lhs rhs) . >= . at-least)
        ((abs (- lhs rhs)) . >= . over)))
 
 (define server 'left)
-(big-bang
+(define (game-start)
+  (big-bang
    (game-st 0 #t
             0 0
             4.5
@@ -155,14 +156,14 @@
    width-h
    #:tick
    (λ (w cs)
-     (match-define (game-st 
+     (match-define (game-st
                     frame serving?
                     lhs-score rhs-score
                     lhs-y
                     ball-pos ball-dir ball-tar
                     rhs-y)
                    w)
-     (match-define 
+     (match-define
       (list (and
              (app controller-a
                   lhs-serve?)
@@ -176,22 +177,22 @@
                   (app psn-y
                        rhs-dy))))
       (if (= (length cs) 2)
-          cs
-          (list
-           (first cs)
-           (controller 
-            (psn 0. 
-                 ; Goes towards the ball's y position
-                 (clamp -1.
-                        (/ (- (psn-y ball-pos) rhs-y) speed)
-                        1.))
-            ; Serves immediately
-            (if (and serving? (eq? server 'right))
-                #t
-                #f)
-            #f #f #f #f
-            #f #f #f #f #f #f))))
-     
+        cs
+        (list
+         (first cs)
+         (controller
+          (psn 0.
+                                        ; Goes towards the ball's y position
+               (clamp -1.
+                      (/ (- (psn-y ball-pos) rhs-y) speed)
+                      1.))
+                                        ; Serves immediately
+          (if (and serving? (eq? server 'right))
+            #t
+            #f)
+          #f #f #f #f
+          #f #f #f #f #f #f))))
+
      (define lhs-y-n
        (clamp
         min-paddle-y
@@ -206,9 +207,9 @@
        (+ ball-pos (make-polar ball-speed dir)))
      (define ball-pos-m
        (if serving?
-           (start-pos lhs-y-n rhs-y-n server)
-           (ball-in-dir ball-dir)))
-     
+         (start-pos lhs-y-n rhs-y-n server)
+         (ball-in-dir ball-dir)))
+
      (define ball-shape
        (cd:aabb ball-pos-m ball-hw ball-hh))
      (define lhs-shape
@@ -217,7 +218,7 @@
      (define rhs-shape
        (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n)
                 paddle-hw paddle-hh))
-     
+
      (define-values
        (ball-pos-n+ ball-dir-n ball-tar-n serving?-p sounds)
        (cond
@@ -257,46 +258,46 @@
           (values ball-pos
                   (random-dir 'left) 'left #f
                   (list (sound-at se:bump-rhs ball-pos-m)))]
-         ; The ball is inside the frame
+                                        ; The ball is inside the frame
          [else
           (values ball-pos-m ball-dir ball-tar #f empty)]))
      (define ball-pos-n
        (if (= ball-dir-n ball-dir)
-           ball-pos-n+
-           (ball-in-dir ball-dir-n)))
-     
+         ball-pos-n+
+         (ball-in-dir ball-dir-n)))
+
      (define-values
        (ball-pos-p ball-dir-p ball-tar-p
                    serving?-n lhs-score-n rhs-score-n score?)
        (cond
-         ; The ball has moved to the left of the lhs paddle
+                                        ; The ball has moved to the left of the lhs paddle
          [((psn-x ball-pos-n) . < . lhs-x)
           (values (start-pos lhs-y rhs-y server) (start-dir server)
                   (opposite server) #t lhs-score (add1 rhs-score) #t)]
-         ; The ball has moved to the right of the rhs paddle
+                                        ; The ball has moved to the right of the rhs paddle
          [((psn-x ball-pos-n) . > . rhs-x)
           (values (start-pos lhs-y rhs-y server) (start-dir server)
                   (opposite server) #t (add1 lhs-score) rhs-score #t)]
          [else
           (values ball-pos-n ball-dir-n ball-tar-n
                   serving?-p lhs-score rhs-score #f)]))
-     
-     (values 
-      (game-st 
+
+     (values
+      (game-st
        (add1 frame) serving?-n
        lhs-score-n rhs-score-n
        lhs-y-n
        ball-pos-p ball-dir-p ball-tar-p
        rhs-y-n)
-      (gl:focus 
+      (gl:focus
        width height width height
        (psn-x center-pos) (psn-y center-pos)
        (gl:seqn
         bgm
         (let ()
           (define score-t
-            (gl:string->texture 
-             #:size 30 
+            (gl:string->texture
+             #:size 30
              (format "(~a:~a)"
                      lhs-score-n rhs-score-n)))
           (gl:translate
@@ -308,7 +309,7 @@
                                     (gl:texture-dh score-t)))
             (gl:color 0. 0. 0. 1.
                       (gl:texture score-t)))))
-        ; XXX Add a collision animation
+        ;; XXX Add a collision animation
         (gl:translate lhs-x (- lhs-y-n paddle-hh)
                       lhs-paddle)
         (gl:translate rhs-x (- rhs-y-n paddle-hh)
@@ -316,25 +317,27 @@
         (gl:translate (psn-x ball-pos-p) (psn-y ball-pos-p)
                       (gl:rotate (* (/ 180 pi) ball-dir-p)
                                  ball))))
-      ; XXX Make the ball whoosh
-      ; XXX Make scores have calls
+      ;; XXX Make the ball whoosh
+      ;; XXX Make scores have calls
       (append
        sounds
        (if score?
-           (list (sound-at se:applause center-pos))
-           empty)
+         (list (sound-at se:applause center-pos))
+         empty)
        (if (zero? frame)
-           (list (background (λ (w) se:bgm) #:gain 0.1))
-           empty))))
+         (list (background (λ (w) se:bgm) #:gain 0.1))
+         empty))))
    #:listener
    (λ (w) center-pos)
    #:done?
    (λ (w)
-     (match-define (game-st 
+     (match-define (game-st
                     frame serving?
                     lhs-score rhs-score
                     lhs-y
                     ball-pos ball-dir ball-tar
                     rhs-y)
                    w)
-     (won? 4 2 lhs-score rhs-score)))
+     (won? 4 2 lhs-score rhs-score))))
+
+(provide game-start)
