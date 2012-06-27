@@ -7,7 +7,6 @@
          sgl/gl
          sgl/gl-vectors)
 
-; XXX Maybe store the bounding box of a cmd for center purposes
 ; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL
 ; XXX Send fewer GL functions generally
 ; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
@@ -17,13 +16,13 @@
 
 ;; Basic data structures
 ; XXX gc lists
-(struct cmd (count-box list-ref-box t))
+(struct cmd (count-box list-ref-box min-x min-y max-x max-y t))
 
 (define compiling? (make-parameter #f))
 (define THRESHOLD 10)
 (define run
   (match-lambda
-    [(cmd (and cb (box count)) (and lrb (box #f)) t)
+    [(cmd (and cb (box count)) (and lrb (box #f)) _ _ _ _ t)
      (define ncount (add1 count))
      (set-box! cb ncount)
      (if (and (ncount . >= . THRESHOLD)
@@ -39,20 +38,22 @@
            (t)
            (glEndList))
          (t))]
-    [(cmd _ (box the-list) _)
+    [(cmd _ (box the-list) _ _ _ _ _)
      (glCallList the-list)]))
 
-(define-syntax-rule (λg e ...)
-  (cmd (box 0) (box #f) (λ () e ...)))
+(define-syntax-rule (λg (min-x min-y max-x max-y) e ...)
+  (cmd (box 0) (box #f) min-x min-y max-x max-y (λ () e ...)))
 
 ;; Basic shapes
 (define (point x y)
-  (λg (gl-begin 'points)
+  (λg (x y x y)
+      (gl-begin 'points)
       (gl-vertex x y)
       (gl-end)))
 
 (define (line x1 y1 x2 y2)
-  (λg (gl-begin 'lines)
+  (λg ((min x1 x2) (min y1 y2) (max x1 x2) (max y1 y2))
+      (gl-begin 'lines)
       (gl-vertex x1 y1)
       (gl-vertex x2 y2)
       (gl-end)))
@@ -63,7 +64,7 @@
          (gl-enable 'texture-2d)))
   
 (define (rectangle w h [mode 'solid])
-  (λg 
+  (λg ((min 0 w) (min 0 h) (max 0 w) (max 0 h))
    (no-texture
     (case mode
       [(solid)
@@ -92,7 +93,7 @@
 
 ; XXX Make it so circle is a constant, so it will be efficient re: list detection
 (define circle:solid
-  (λg 
+  (λg (-1 -1 1 1)
    (no-texture
     (gl-begin 'triangle-fan)
     (begin
@@ -102,7 +103,7 @@
         (gl-vertex s c)))
     (gl-end))))
 (define circle:outline
-  (λg 
+  (λg (-1 -1 1 1)
    (no-texture
     (gl-begin 'line-strip)
     (begin
@@ -121,23 +122,36 @@
   (define-stateful define-state pre post)
   (define-syntax-rule 
     (define-state ((id pre-a (... ...)) a (... ...))
+      (min-x min-y max-x max-y)
+      (n-min-x n-min-y n-max-x n-max-y)
       setup (... ...))
     (define (id a (... ...) . ics)
       (define ic (apply seqn ics))
-      (λg
-       (pre pre-a (... ...))
-       setup (... ...)
-       (run ic)
-       (post)))))
+      (match-define (cmd _ _ min-x min-y max-x max-y _) ic)
+      (λg (n-min-x n-min-y n-max-x n-max-y)
+          (pre pre-a (... ...))
+          setup (... ...)
+          (run ic)
+          (post)))))
 
 (define-stateful define-matrix 
   gl-push-matrix gl-pop-matrix)
 
 (define-matrix ((translate) x y)
+  (min-x min-y max-x max-y)
+  ((+ min-x x) (+ min-y y) (+ max-x x) (+ max-y y))
   (gl-translate x y 0))
 (define-matrix ((scale) x y)
+  (min-x min-y max-x max-y)
+  ((* min-x x) (* min-y y) (* max-x x) (* max-y y))
   (gl-scale x y 0))
 (define-matrix ((rotate) angle)
+  (min-x min-y max-x max-y)
+  ;; XXX Don't know if this is correct
+  ((* min-x (make-polar 0 angle)) 
+   (* min-y (make-polar 0 angle))
+   (* max-x (make-polar 0 angle))
+   (* max-y (make-polar 0 angle)))
   (gl-rotate angle 0 0 1))
 
 (define (mirror w . ics)
@@ -149,21 +163,31 @@
   gl-push-attrib gl-pop-attrib)
 
 (define-attrib ((color 'current-bit) r g b a)
+  (min-x min-y max-x max-y)
+  (min-x min-y max-x max-y)
   (glColor4f r g b a))
 (define-attrib ((background 'color-buffer-bit) r g b a)
+  (min-x min-y max-x max-y)
+  (min-x min-y max-x max-y)
   (glClearColor r g b a)
   (gl-clear 'color-buffer-bit))
 
 ;; Combiners
 (define blank
-  (λg (void)))
+  (λg (0 0 0 0)
+      (void)))
 
 (define seqn
   (case-lambda
     [() blank]
     [(c) c]
     [cs
-     (λg (for-each run cs))]))
+     (define min-x (apply min (map cmd-min-x cs)))
+     (define min-y (apply min (map cmd-min-y cs)))
+     (define max-x (apply max (map cmd-max-x cs)))
+     (define max-y (apply max (map cmd-max-y cs)))
+     (λg (min-x min-y max-x max-y)
+         (for-each run cs))]))
 
 ;; Textures
 (require racket/draw
@@ -239,6 +263,7 @@
                   [tx1 0] [ty1 0]
                   [tw 1] [th 1])
   (λg 
+   ((min 0 w) (min 0 h) (max 0 w) (max 0 h))
    (load-texture! t)
    ; I thought it would be more elegant to use glPushAttrib before this, but it turns out
    ; that that is *really* slow. My frame-rate dropped from 60 to 5. Yikes. I hope I am
@@ -342,10 +367,13 @@
                cx cy
                cmd)
   (λg
+   ((cmd-min-x cmd) (cmd-min-y cmd)
+    (cmd-max-x cmd) (cmd-max-y cmd))
    (gl-push-matrix)
-   (gl-viewport/restrict mw mh
-                        vw vh 
-                        cx cy)
+   (gl-viewport/restrict 
+    mw mh
+    vw vh 
+    cx cy)
    (run cmd)
    (gl-pop-matrix)))
 
@@ -386,6 +414,10 @@
 (provide/contract
  [focus (real? real? real? real? real? real? cmd? . -> . cmd?)]
  [draw (cmd? . -> . void?)]
+ [cmd-min-x (-> cmd? real?)]
+ [cmd-min-y (-> cmd? real?)]
+ [cmd-max-x (-> cmd? real?)]
+ [cmd-max-y (-> cmd? real?)]
  [cmd? contract?]
  [seqn (() () #:rest (listof cmd?) . ->* . cmd?)]
  [rotate ((real?) () #:rest (listof cmd?) . ->* . cmd?)]
