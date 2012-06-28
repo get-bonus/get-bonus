@@ -34,6 +34,11 @@
          (exact->inexact (/ (send c blue) 255))
          (- 1. (send c alpha)) cs))
 
+(define (above2 top bot)
+  (seqn (translate 0. (cmd-max-y bot) top) bot))
+(define (above . many)
+  (foldl above2 blank many))
+
 (provide/contract
  [color/% (((is-a?/c color%)) () #:rest (listof cmd?) . ->* . cmd?)]
  [background/% (((is-a?/c color%)) () #:rest (listof cmd?) . ->* . cmd?)]
@@ -42,4 +47,10 @@
  [texture/px 
   ((texture?) 
    (real? real? integer? integer? integer? integer?)
-   . ->* . cmd?)])
+   . ->* . cmd?)]
+ [above2
+  (-> cmd? cmd?
+      cmd?)]
+ [above
+  (->* () () #:rest (listof cmd?)
+       cmd?)])

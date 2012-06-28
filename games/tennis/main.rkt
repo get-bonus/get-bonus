@@ -11,6 +11,7 @@
          gb/audio/3s
          gb/lib/math
          gb/data/psn
+         gb/meta
          (prefix-in cd: gb/physics/cd-narrow))
 
 (define-runtime-path resource-path "r")
@@ -340,4 +341,8 @@
                    w)
      (won? 4 2 lhs-score rhs-score))))
 
-(provide game-start)
+(define game
+  (game-info "Tennis!"
+             game-start))
+
+(provide game)

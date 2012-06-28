@@ -12,6 +12,7 @@
          gb/audio/3s
          gb/lib/math
          gb/data/psn
+         gb/meta
          (prefix-in cd: gb/physics/cd-narrow)
          "fst.rkt"
          "graph.rkt")
@@ -88,15 +89,7 @@
    ['p "Paper"]
    ['s "Scissors"]))
 
-(define above-dist 1)
-(define (above . l)
-  (define-values (offset cmd)
-    (for/fold ([offset 0.] [cmd (gl:seqn)])
-        ([e (in-list l)])
-      (values (+ above-dist offset)
-              (gl:seqn cmd
-                       (gl:translate 0. offset e)))))
-  cmd)
+(define above gl:above)
 
 (define (render w)
   (gl:background
@@ -176,4 +169,8 @@
                 (render w)
                 empty)]))))
 
-(provide game-start)
+(define game
+  (game-info "Rock-Paper-Scissors Warrior"
+             game-start))
+
+(provide game)

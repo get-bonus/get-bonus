@@ -14,6 +14,7 @@
          gb/lib/math
          gb/lib/random
          gb/data/fmatrix
+         gb/meta
          (only-in gb/ai/path-finding
                   manhattan-distance)
          (prefix-in cd:
@@ -898,9 +899,7 @@
            (gl:texture
             (gl:string->texture
              #:size 50
-             (format "~a" score-n)
-             #;(format "Score: ~a    Lives: ~a"
-             score-n lives-n)))))
+             (format "~a" score-n)))))
          (gl:seqn
           (static-display st)
           (gl:for/gl
@@ -962,4 +961,8 @@
    (λ (w)
      (zero? (game-st-lives w)))))
 
-(provide game-start)
+(define game
+  (game-info "ハングリーマン"
+             game-start))
+
+(provide game)
