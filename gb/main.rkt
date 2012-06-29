@@ -32,7 +32,7 @@
 (define games
   (static-games))
 
-(struct game-st (bgm? pos))
+(struct game-st (bgm? input-delay pos))
 
 (define-runtime-path resource-path "../games/tennis/r")
 (define-syntax-rule (define-sound id f)
@@ -68,23 +68,33 @@
                  t))))))
 
   (big-bang
-   (game-st #f 0)
+   (game-st #f 0 0)
    #:sound-scale
    width
    #:tick
    (λ (w cs)
-     ;; XXX Errors: (1) cursor moves too fast
-     (match-define (game-st bgm? pos) w)
+     (match-define (game-st bgm? delay pos) w)
      (match-define (list* c _) cs)
-     (define pos+
-       (modulo (+ pos
-                  (match (controller-dpad-y c)
-                    [(? positive?) -1]
-                    [(? negative?) +1]
-                    [_              0]))
-               (length games)))
+     (define mod
+       (match (controller-dpad-y c)
+         [(? positive?) -1]
+         [(? negative?) +1]
+         [_              0]))
+     (define-values
+       (delay+ pos+)
+       (cond
+         [(positive? delay)
+          (values (sub1 delay) pos)]
+         [(zero? mod)
+          (values 0 pos)]
+         [else
+          (values 8 ;; How many frames to wait for more input
+                  (modulo (+ pos mod)
+                          (length games)))]))
+     (when (controller-start c)
+       ((game-info-start (list-ref games pos+))))
      (values
-      (game-st #t pos+)
+      (game-st #t delay+ pos+)
       (gl:focus
        width height width height
        (psn-x center-pos) (psn-y center-pos)
