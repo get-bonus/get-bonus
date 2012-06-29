@@ -20,17 +20,23 @@
   (syntax-case stx ()
     [(_)
      (with-syntax
-         ([(game/main ...)
+         ([((game-code game/main) ...)
            (for/list ([g (in-list (directory-list games-path))])
-             (path->string (build-path "../games" g "main.rkt")))])
+             (list (path->string g)
+                   (path->string (build-path "../games" g "main.rkt"))))])
        (syntax/loc stx
-         (list (let ()
-                 (local-require (only-in game/main game))
-                 game)
-               ...)))]))
+         (make-hash
+          (list
+           (cons game-code
+                 (let ()
+                   (local-require (only-in game/main game))
+                   game))
+           ...))))]))
 
-(define games
+(define game-code->info
   (static-games))
+(define games
+  (hash-values game-code->info))
 
 (struct game-st (bgm? input-delay pos))
 
@@ -112,4 +118,18 @@
      #f)))
 
 (module+ main
-  (go))
+  (require racket/cmdline)
+
+  (command-line
+   #:program "get-bonus"
+   #:args maybe-game
+   (match maybe-game
+     [(list)
+      (go)]
+     [(list some-game)
+      (define gi
+        (hash-ref game-code->info some-game
+                  (λ ()
+                    (error 'get-bonus "We know nothing about the game ~e"
+                           some-game))))
+      ((game-info-start gi))])))
