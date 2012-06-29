@@ -13,9 +13,10 @@
   (fector-set f n v))
 
 (define make-fvector fvector)
-(test
- (fvector-ref (make-fvector 4) 1 #f) => #f
- (fvector-ref (fvector-update (make-fvector 4) 1 add1 0) 1 #f) => 1)
+(module+ test
+  (test
+   (fvector-ref (make-fvector 4) 1 #f) => #f
+   (fvector-ref (fvector-update (make-fvector 4) 1 add1 0) 1 #f) => 1))
 
 (provide
  fvector
@@ -24,22 +25,22 @@
  fvector-set)
 
 #;(provide/contract
- [fvector? contract?]
- [rename make-fvector fvector
-         (-> exact-nonnegative-integer?
-             fvector?)]
- [fvector-update
-  (-> fvector? 
-      exact-nonnegative-integer?
-      (-> any/c any/c) any/c
-      fvector?)]
- [fvector-ref
-  (-> fvector?
-      exact-nonnegative-integer?
-      any/c
-      any/c)]
- [fvector-set
-  (-> fvector?
-      exact-nonnegative-integer?
-      any/c
-      fvector?)])
+[fvector? contract?]
+[rename make-fvector fvector
+        (-> exact-nonnegative-integer?
+            fvector?)]
+[fvector-update
+ (-> fvector?
+     exact-nonnegative-integer?
+     (-> any/c any/c) any/c
+     fvector?)]
+[fvector-ref
+ (-> fvector?
+     exact-nonnegative-integer?
+     any/c
+     any/c)]
+[fvector-set
+ (-> fvector?
+     exact-nonnegative-integer?
+     any/c
+     fvector?)])
