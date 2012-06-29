@@ -37,7 +37,7 @@
 (define (above2 top bot)
   (seqn (translate 0. (cmd-max-y bot) top) bot))
 (define (above . many)
-  (foldl above2 blank many))
+  (foldr above2 blank many))
 
 (provide/contract
  [color/% (((is-a?/c color%)) () #:rest (listof cmd?) . ->* . cmd?)]

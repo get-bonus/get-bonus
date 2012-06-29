@@ -32,9 +32,7 @@
 (define games
   (static-games))
 
-;; Before and after are like a zipper representing where we are in the
-;; menu.
-(struct game-st (bgm? before after))
+(struct game-st (bgm? pos))
 
 (define-runtime-path resource-path "../games/tennis/r")
 (define-syntax-rule (define-sound id f)
@@ -50,65 +48,49 @@
   (append l (list x)))
 
 (define (go)
-  (define (gl:menu-part games)
-    (apply gl:above
-           (for/list ([g (in-list games)])
-             (gl:texture
-              (gl:string->texture #:size 30 (game-info-name g))))))
   (define gl:pointer
-          (gl:texture
-           (gl:string->texture #:size 60 "→")))
-  (define (gl:menu before after)
+    (gl:texture
+     (gl:string->texture #:size 60 "→")))
+  (define (gl:menu pos)
     (gl:color
      1. 1. 1. 1.
      (gl:above
-      (gl:translate
-       1.0 0.0
-       (gl:menu-part before))
-      (gl:seqn
-       gl:pointer
-       (gl:translate
-        1.0 0.0
-        (gl:menu-part after))))))
+      (apply gl:above
+             (for/list ([g (in-list games)]
+                        [i (in-naturals)])
+               (define t
+                 (gl:translate
+                  1.0 0.0
+                  (gl:texture
+                   (gl:string->texture #:size 30 (game-info-name g)))))
+               (if (= pos i)
+                 (gl:seqn gl:pointer t)
+                 t))))))
 
   (big-bang
-   (game-st #f empty games)
+   (game-st #f 0)
    #:sound-scale
    width
    #:tick
    (λ (w cs)
-     ;; XXX Errors: (1) cursor moves too fast (2) can end up on an
-     ;; empty spot (3) starts at the bottom, rather than the top
-     (match-define (game-st bgm? before after) w)
+     ;; XXX Errors: (1) cursor moves too fast
+     (match-define (game-st bgm? pos) w)
      (match-define (list* c _) cs)
-     (define-values (before+ after+)
-       (match (controller-dpad-y c)
-         [(? negative?)
-          (match after
-            [(list)
-             (values empty before)]
-            [(list* last after+)
-             ;; XXX Slow
-             (values (snoc before last) after+)])]
-         [(? positive?)
-          (cond
-            [(empty? before)
-             (values after empty)]
-            [else
-             ;; XXX Slow!!!!
-             (match-define (cons next before+/r) (reverse before))
-             (define before+ (reverse before+/r))
-             (values before+ (cons next after))])]
-         [_
-          (values before after)]))
+     (define pos+
+       (modulo (+ pos
+                  (match (controller-dpad-y c)
+                    [(? positive?) -1]
+                    [(? negative?) +1]
+                    [_              0]))
+               (length games)))
      (values
-      (game-st #t before+ after+)
+      (game-st #t pos+)
       (gl:focus
        width height width height
        (psn-x center-pos) (psn-y center-pos)
-       (gl:background 
+       (gl:background
         0. 0. 0. 1.
-        (gl:menu before+ after+)))
+        (gl:menu pos+)))
       (if bgm?
         empty
         (list (background (λ (w) se:bgm) #:gain 0.1)))))
