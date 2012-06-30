@@ -12,10 +12,40 @@
   CLOSED: [2012-06-25 Mon 19:38]
 * DONE Change gl model to keep track of sizes for centering, etc
   CLOSED: [2012-06-26 Tue 19:15]
-* TODO Write the GBES wrapper to start experimenting with incremental games
-* TODO Change gl model to be memoized
-* TODO Connect to plt-games? (or mimic its technique)
+* DONE Make dashboard
+  CLOSED: [2012-06-29 Fri 22:25]
 * TODO Rewrite past games with the OS model
 * TODO Make OS use futures for parallelism
+* TODO Correct tennis angle of reflection
+* TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
+* TODO Make tennis harder over time: more balls, faster movement
+* TODO Change gl model to be memoized
+* TODO Make games return score information to dashboard for it to manager
+  (Version, Level, Numeric Score) from game
+  
+  (Game, Date, Version, Level, Numeric Score) from dashboard
+
+  Store (cached) locally and online
+
+  Store a cached global ranking
+* TODO Make games return replays (and allow them to accept replays)
+  Replay = (random seed, level, controller stream)
+* TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
+* TODO Add "compare with ..." to game info
+* TODO Make Anki-like SRS system in dashboard
+* TODO Make icons for dashboards vs text
+* TODO Make games in dashboard have capabilities
+  1P, 2P Round-robin, 2P VS, 2P Co-op, etc
+* TODO Make play modes in dashboard
+  Single, King-of-the-Hill (play levels that your score has been
+  beaten on), Training (improve your score, SRS style), Round-Robin
+  (play all games)
+
+  Have it so you can highlight games to be played that way
+* TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
+* TODO Make audio loading lazy (or other things that are slow on boot)
+* TODO Use trippy graphics in tennis & maze
+* TODO Make RPS more JRPG-like
 * TODO Convert things to typed racket as I go
 * TODO Write a generic Godel-encoding library
+* TODO Make more games
