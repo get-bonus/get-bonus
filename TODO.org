@@ -14,11 +14,17 @@
   CLOSED: [2012-06-26 Tue 19:15]
 * DONE Make dashboard
   CLOSED: [2012-06-29 Fri 22:25]
-* TODO Rewrite past games with the OS model
+* DONE Add scoring back into tennis/OS
+  CLOSED: [2012-06-30 Sat 22:25]
+* DONE Correct tennis angle of reflection
+  CLOSED: [2012-06-30 Sat 19:52]
+* TODO Improve tennis/OS structure
+* TODO Separate OS out of tennis/OS
+* TODO Rewrite maze with OS model
+* TODO Figure out how to use OpenGL depth bit for background/foreground
 * TODO Make OS use futures for parallelism
-* TODO Correct tennis angle of reflection
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
-* TODO Make tennis harder over time: more balls, faster movement
+* TODO Make tennis harder over time: more balls, faster movement, larger opponent
 * TODO Change gl model to be memoized
 * TODO Make games return score information to dashboard for it to manager
   (Version, Level, Numeric Score) from game
