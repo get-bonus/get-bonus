@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/runtime-path
          racket/match
-         racket/future
          racket/function
          racket/math
          racket/list
@@ -66,10 +65,7 @@
 (define (snoc* beginning . end)
   (append beginning end))
 
-(struct process (pid k-future) #:transparent)
-
-(define (process* pid k)
-  (process pid (future (λ () (run-process-until-syscall k)))))
+(struct process (pid k) #:transparent)
 
 (struct os (cur-heap next-heap cur-procs next-procs))
 
@@ -78,7 +74,7 @@
    (match-define (os cur-h next-h cur-ps next-ps) current)
    (os cur-h next-h
        (snoc* cur-ps
-              (process* pid (λ () (k (hash-ref cur-h id empty)))))
+              (process pid (λ () (k (hash-ref cur-h id empty)))))
        next-ps)]
   [(os/write k id*vals)
    (match-define (os cur-h next-h cur-ps next-ps) current)
@@ -87,14 +83,14 @@
      (hash-update! next-h id (curry cons val) (λ () empty)))
    (os cur-h next-h cur-ps
        (snoc* next-ps
-              (process* pid (λ () (k (void))))))]
+              (process pid (λ () (k (void))))))]
   [(os/thread k t)
    (match-define (os cur-h next-h cur-ps next-ps) current)
    (define t-pid (gensym 'pid))
    (os cur-h next-h
        (snoc* cur-ps
-              (process* pid (λ () (k t-pid)))
-              (process* t-pid t))
+              (process pid (λ () (k t-pid)))
+              (process t-pid t))
        next-ps)])
 
 (define (os/read* k [def #f])
@@ -111,7 +107,7 @@
    [(os cur-h next-h (list) next-ps)
     (os next-h (make-hasheq) next-ps (list))]
    [(os cur-h next-h (list* (process pid now) cur-ps) next-ps)
-    (define syscall (touch now))
+    (define syscall (run-process-until-syscall now))
     (boot (syscall pid
                    (os cur-h next-h cur-ps next-ps)))]))
 
@@ -120,7 +116,7 @@
                      main-t)
   (big-bang
    (os (make-hasheq) (make-hasheq)
-       (list (process* (gensym 'pid) main-t))
+       (list (process (gensym 'pid) main-t))
        empty)
    #:sound-scale sound-scale
    #:tick

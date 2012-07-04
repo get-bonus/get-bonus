@@ -23,8 +23,9 @@
 * TODO Improve tennis/OS structure
 * TODO Rewrite maze with OS model
 * TODO Make a faster FPS counter
+  Making a texture is slow. Maybe with character-based string textures
+  it would be faster?
 * TODO Figure out how to use OpenGL depth bit for background/foreground
-* TODO Make OS use futures for parallelism
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
 * TODO Make tennis harder over time: more balls, faster movement, larger opponent
 * TODO Change gl model to be memoized
@@ -58,3 +59,7 @@
 * TODO Write a generic Godel-encoding library
 * TODO Figure out a way to do localization well
 * TODO Make more games
+* TODO Make OS use futures for parallelism
+  First experiment, 2012/07/01 failed... got a slower frame rate. I
+  think the key is to make it just a future during the time that GL is
+  rendering.

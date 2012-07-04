@@ -121,17 +121,14 @@
     [(right)
      (between (* 5/3 pi) (* 7/3 pi))]))
 (define serve-dist
-  (* 1.2 (+ ball-hw paddle-hw)))
-(define (start-pos lhs-y rhs-y server)
-  (case server
-    [(right)
-     (psn (- rhs-x serve-dist) rhs-y)]
-    [(left)
-     (psn (+ lhs-x serve-dist) lhs-y)]))
-(define start-dir
-  (match-lambda
-   ['left 0.]
-   ['right pi]))
+  (* 1.5 (+ ball-hw paddle-hw)))
+(define ball-start-pos
+  (psn (+ lhs-x serve-dist) (/ height 2.)))
+(define (ball-start-dir)
+  (* (if (zero? (random 2))
+       -1.
+       1.)
+     (between 0 (/ pi 4.))))
 (define opposite
   (match-lambda
    ['left 'right]
@@ -165,7 +162,7 @@
   (define (ai-paddle)
     (let loop ([rhs-y 4.5])
       (define ball-pos
-        (os/read* 'ball-pos (start-pos 4.5 4.5 server)))
+        (os/read* 'ball-pos ball-start-pos))
       (define rhs-dy
         (clamp -1.
                (/ (- (psn-y ball-pos) rhs-y) speed)
@@ -188,9 +185,8 @@
 
   (define (ball)
     (let loop ([serving? #t]
-               [ball-pos (start-pos 4.5 4.5 server)]
-               [ball-dir (start-dir server)]
-               [ball-tar (opposite server)])
+               [ball-pos ball-start-pos]
+               [ball-dir (ball-start-dir)])
       (define (ball-in-dir dir)
         (+ ball-pos (make-polar ball-speed dir)))
       (define (ball-bounce dir mx my [dy 0.])
@@ -210,52 +206,52 @@
       (define lhs-serve? #t)
       (define ball-pos-m
         (if serving?
-          (start-pos lhs-y-n rhs-y-n server)
+          ball-start-pos
           (ball-in-dir ball-dir)))
       (define ball-shape
         (cd:aabb ball-pos-m ball-hw ball-hh))
       (define-values
-        (ball-pos-n+ ball-dir-n ball-tar-n serving?-p sounds)
+        (ball-pos-n+ ball-dir-n serving?-p sounds)
         (cond
           [serving?
            (cond
              [(and (eq? server 'right) rhs-serve?)
-              (values ball-pos-m ball-dir ball-tar #f
+              (values ball-pos-m ball-dir #f
                       (list (cons 'sound (sound-at se:bump-rhs ball-pos-m))))]
              [(and (eq? server 'left) lhs-serve?)
-              (values ball-pos-m ball-dir ball-tar #f
+              (values ball-pos-m ball-dir #f
                       (list (cons 'sound (sound-at se:bump-lhs ball-pos-m))))]
              [else
-              (values ball-pos-m ball-dir ball-tar serving? empty)])]
+              (values ball-pos-m ball-dir serving? empty)])]
           [; The ball hit the top
            (cd:shape-vs-shape ball-shape frame-top)
            (values ball-pos
                    (ball-bounce ball-dir 1.0 -1.0)
-                   ball-tar #f
+                   #f
                    (list (cons 'sound (sound-at se:bump-wall ball-pos-m))))]
           [; The ball hit the bot
            (cd:shape-vs-shape ball-shape frame-bot)
            (values ball-pos
                    (ball-bounce ball-dir 1.0 -1.0)
-                   ball-tar #f
+                    #f
                    (list (cons 'sound (sound-at se:bump-wall ball-pos-m))))]
           [; The ball has bounced off the lhs
            (cd:shape-vs-shape ball-shape lhs-shape)
            (values ball-pos 
                    (ball-bounce ball-dir -1.0 
                                 (+ 1.0) (/ (- lhs-y-n (psn-y ball-pos-m)) paddle-hh))                   
-                   'right #f
+                    #f
                    (list (cons 'sound (sound-at se:bump-lhs ball-pos-m))))]
           [; The ball has bounced off the rhs
            (cd:shape-vs-shape ball-shape rhs-shape)
            (values ball-pos
                    (ball-bounce ball-dir -1.0 
                                 (+ 1.0) (/ (- rhs-y-n (psn-y ball-pos-m)) paddle-hh))
-                   'left #f
+                    #f
                    (list (cons 'sound (sound-at se:bump-rhs ball-pos-m))))]
           ;; The ball is inside the frame
           [else
-           (values ball-pos-m ball-dir ball-tar #f empty)]))
+           (values ball-pos-m ball-dir #f empty)]))
       (define ball-pos-n
         (if (= ball-dir-n ball-dir)
           ball-pos-n+          
@@ -265,19 +261,19 @@
            (ball-in-dir ball-dir-n)
            lhs-x rhs-x)))
       (define-values
-        (ball-pos-p ball-dir-p ball-tar-p
+        (ball-pos-p ball-dir-p 
                     serving?-n score?)
         (cond
           ;; The ball has moved to the left of the lhs paddle
           [((psn-x ball-pos-n) . < . lhs-x)
-           (values (start-pos lhs-y-n rhs-y-n server) (start-dir server)
-                   (opposite server) #t 'right)]
+           (values ball-start-pos (ball-start-dir)
+                    #t 'right)]
           ;; The ball has moved to the right of the rhs paddle
           [((psn-x ball-pos-n) . > . rhs-x)
-           (values (start-pos lhs-y-n rhs-y-n server) (start-dir server)
-                   (opposite server) #t 'left)]
+           (values ball-start-pos (ball-start-dir)
+                   #t 'left)]
           [else
-           (values ball-pos-n ball-dir-n ball-tar-n
+           (values ball-pos-n ball-dir-n
                    serving?-p #f)]))
       (os/write
        (list*
@@ -289,7 +285,7 @@
                             (gl:rotate (* (/ 180 pi) ball-dir-p)
                                        gl:ball)))
         sounds))
-      (loop serving?-p ball-pos-p ball-dir-p ball-tar-p)))
+      (loop serving?-p ball-pos-p ball-dir-p)))
 
   (big-bang/os
    width height center-pos
