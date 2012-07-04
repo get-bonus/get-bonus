@@ -185,7 +185,7 @@
   (let loop ([serving? #t]
              [ball-pos ball-start-pos]
              [ball-dir (ball-start-dir)])
-    (define (ball-in-dir dir)
+    (define (ball-in-dir ball-pos dir)
       (+ ball-pos (make-polar ball-speed dir)))
     (define lhs-y-n (os/read* 'lhs-y 4.5))
     (define lhs-shape
@@ -195,10 +195,7 @@
     (define rhs-shape
       (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n)
                paddle-hw paddle-hh))
-    (define ball-pos-m
-      (if serving?
-        ball-start-pos
-        (ball-in-dir ball-dir)))
+    (define ball-pos-m ball-pos)
     (define ball-shape
       (cd:aabb ball-pos-m ball-hw ball-hh))
     (define-values
@@ -260,7 +257,10 @@
                           (gl:rotate (* (/ 180 pi) ball-dir-n)
                                      gl:ball)))
       sounds))
-    (loop serving?-p ball-pos-n ball-dir-n)))
+    (loop serving?-p 
+          ;;ball-pos-n
+          (ball-in-dir ball-pos-n ball-dir-n)
+          ball-dir-n)))
 
 (define (game-start)
   (big-bang/os
