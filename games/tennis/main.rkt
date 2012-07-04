@@ -191,8 +191,6 @@
     (define rhs-shape
       (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n)
                paddle-hw paddle-hh))
-    (define rhs-serve? #t)
-    (define lhs-serve? #t)
     (define ball-pos-m
       (if serving?
         ball-start-pos
