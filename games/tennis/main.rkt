@@ -74,8 +74,6 @@
 
 (define lhs-paddle
   (paddle-at 4))
-(define rhs-paddle
-  (paddle-at 70))
 
 (define ball-r .25)
 (define ball-hw (* 1.5 ball-r))
@@ -105,8 +103,6 @@
 
 (define lhs-x
   (- .5 paddle-hw))
-(define rhs-x
-  (- width .5 paddle-hw))
 
 (define (between lo hi)
   (+ lo (* (random) (- hi lo))))
@@ -144,27 +140,6 @@
                           lhs-paddle))))
     (loop lhs-y-n)))
 
-(define (ai-paddle)
-  (let loop ([rhs-y 4.5])
-    (define ball-pos
-      (os/read* 'ball-pos ball-start-pos))
-    (define rhs-dy
-      (clamp -1.
-             (/ (- (psn-y ball-pos) rhs-y) speed)
-             1.))
-    (define rhs-y-n
-      (clamp
-       min-paddle-y
-       (+ rhs-y (* rhs-dy speed))
-       max-paddle-y))
-    (os/write
-     (list
-      (cons 'rhs-y rhs-y-n)
-      (cons 'graphics
-            (gl:translate rhs-x (- rhs-y-n paddle-hh)
-                          rhs-paddle))))
-    (loop rhs-y-n)))
-
 (define (psn-clamp-x p min-x max-x)
   (psn (min max-x (max min-x (psn-x p))) (psn-y p)))
 
@@ -172,7 +147,8 @@
   (define p (make-polar 1.0 dir))
   (angle
    (make-rectangular (* mx (real-part p))
-                     (+ (* -1. dy) (* my (imag-part p))))))
+                     (+ ;;(* -1 dy) ;;; see comment below
+                        (* my (imag-part p))))))
 
 (define (ball)
   (let loop ([ball-pos ball-start-pos]
@@ -183,46 +159,39 @@
     (define lhs-shape
       (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n)
                paddle-hw paddle-hh))
-    (define rhs-y-n (os/read* 'rhs-y 4.5))
-    (define rhs-shape
-      (cd:aabb (psn (+ rhs-x paddle-hw) rhs-y-n)
-               paddle-hw paddle-hh))
     (define ball-shape
       (cd:aabb ball-pos ball-hw ball-hh))
     (define-values
       (ball-pos-n ball-dir-n sounds score?)
       (cond
         ;; The ball has moved to the left of the lhs paddle
-        [((psn-x ball-pos) . < . lhs-x)
+        [((psn-x ball-pos) . <= . lhs-x)
          (values ball-start-pos (ball-start-dir)
                  empty 'right)]
-        ;; The ball has moved to the right of the rhs paddle
-        [((psn-x ball-pos) . > . rhs-x)
-         (values ball-start-pos (ball-start-dir)
-                 empty 'left)]
         ;; The ball hit a horizontal wall
         [(or
           ;; The ball hit the top
-          ((psn-y ball-pos) . > . height)
+          ((psn-y ball-pos) . >= . height)
           ;; The ball hit the bot
-          ((psn-y ball-pos) . < . 0))
+          ((psn-y ball-pos) . <= . 0))
          (values ball-pos
                  (ball-bounce ball-dir 1.0 -1.0)
+                 (list (cons 'sound (sound-at se:bump-wall ball-pos)))
+                 #f)]
+        ;; The ball hit the right vertical wall
+        [((psn-x ball-pos) . >= . width)
+         (values ball-pos
+                 (ball-bounce ball-dir -1.0 1.0)
                  (list (cons 'sound (sound-at se:bump-wall ball-pos)))
                  #f)]
         [; The ball has bounced off the lhs
          (cd:shape-vs-shape ball-shape lhs-shape)
          (values ball-pos
-                 (ball-bounce ball-dir -1.0
-                              (+ 1.0) (/ (- lhs-y-n (psn-y ball-pos)) paddle-hh))
+                 ;; XXX Sometimes the ball can bend too far. I need to
+                 ;; tone this done a little.
+                 (ball-bounce ball-dir -1.0 1.0
+                              (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
                  (list (cons 'sound (sound-at se:bump-lhs ball-pos)))
-                 #f)]
-        [; The ball has bounced off the rhs
-         (cd:shape-vs-shape ball-shape rhs-shape)
-         (values ball-pos
-                 (ball-bounce ball-dir -1.0
-                              (+ 1.0) (/ (- rhs-y-n (psn-y ball-pos)) paddle-hh))
-                 (list (cons 'sound (sound-at se:bump-rhs ball-pos)))
                  #f)]
         ;; The ball is inside the frame
         [else
@@ -230,8 +199,6 @@
     (os/write
      (list*
       (cons 'score? score?)
-      (cons 'ball-pos
-            ball-pos-n)
       (cons 'graphics
             (gl:translate (psn-x ball-pos-n) (psn-y ball-pos-n)
                           (gl:rotate (* (/ 180 pi) ball-dir-n)
@@ -246,7 +213,6 @@
    #:sound-scale width-h
    (λ ()
      (os/thread player-paddle)
-     (os/thread ai-paddle)
      (os/thread ball)
      (os/write
       (list
@@ -270,7 +236,7 @@
                 (gl:seqn
                  bgm
                  (let ()
-                   (printf "FPS: ~a\n"
+                   #;(printf "FPS: ~a\n"
                            (real->decimal-string
                             (current-rate) 1))
                    (define score-t
