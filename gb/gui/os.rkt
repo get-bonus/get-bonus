@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/runtime-path
          racket/match
+         racket/future
          racket/function
          racket/math
          racket/list
@@ -65,7 +66,11 @@
 (define (snoc* beginning . end)
   (append beginning end))
 
-(struct process (pid k) #:transparent)
+(struct process (pid k-future) #:transparent)
+
+(define (process* pid k)
+  (process pid (future (λ () (run-process-until-syscall k)))))
+
 (struct os (cur-heap next-heap cur-procs next-procs))
 
 (define-syscalls (pid current)
@@ -106,7 +111,7 @@
    [(os cur-h next-h (list) next-ps)
     (os next-h (make-hasheq) next-ps (list))]
    [(os cur-h next-h (list* (process pid now) cur-ps) next-ps)
-    (define syscall (run-process-until-syscall now))
+    (define syscall (touch now))
     (boot (syscall pid
                    (os cur-h next-h cur-ps next-ps)))]))
 
@@ -115,7 +120,7 @@
                      main-t)
   (big-bang
    (os (make-hasheq) (make-hasheq)
-       (list (process (gensym 'pid) main-t))
+       (list (process* (gensym 'pid) main-t))
        empty)
    #:sound-scale sound-scale
    #:tick
