@@ -108,13 +108,6 @@
 (define rhs-x
   (- width .5 paddle-hw))
 
-(define frame-top
-  (cd:aabb (+ center-pos (psn 0. height))
-           width-h (/ height 2.)))
-(define frame-bot
-  (cd:aabb (- center-pos (psn 0. height))
-           width-h (/ height 2.)))
-
 (define (between lo hi)
   (+ lo (* (random) (- hi lo))))
 (define serve-dist
@@ -207,14 +200,12 @@
         [((psn-x ball-pos) . > . rhs-x)
          (values ball-start-pos (ball-start-dir)
                  empty 'left)]
-        [; The ball hit the top
-         (cd:shape-vs-shape ball-shape frame-top)
-         (values ball-pos
-                 (ball-bounce ball-dir 1.0 -1.0)
-                 (list (cons 'sound (sound-at se:bump-wall ball-pos)))
-                 #f)]
-        [; The ball hit the bot
-         (cd:shape-vs-shape ball-shape frame-bot)
+        ;; The ball hit a horizontal wall
+        [(or
+          ;; The ball hit the top
+          ((psn-y ball-pos) . > . height)
+          ;; The ball hit the bot
+          ((psn-y ball-pos) . < . 0))
          (values ball-pos
                  (ball-bounce ball-dir 1.0 -1.0)
                  (list (cons 'sound (sound-at se:bump-wall ball-pos)))
