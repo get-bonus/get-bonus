@@ -37,8 +37,8 @@
   (psn width-h (/ height 2.)))
 (define speed
   (* 4.5 RATE))
-(define ball-speed
-  (* 2. speed))
+(define initial-ball-speed
+  speed)
 
 (define paddle-w
   .5)
@@ -136,9 +136,6 @@
                           lhs-paddle))))
     (loop lhs-y-n)))
 
-(define (psn-clamp-x p min-x max-x)
-  (psn (min max-x (max min-x (psn-x p))) (psn-y p)))
-
 (define (ball-bounce dir mx my [dy 0.])
   (define p (make-polar 1.0 dir))
   (angle
@@ -146,12 +143,14 @@
                      (+ ;;(* -1 dy) ;;; see comment below
                       (* my (imag-part p))))))
 
-(define (ball)
+(define ((ball initial-ball-speed))
   (let loop ([taps 0]
              [ball-pos ball-start-pos]
              [ball-dir (ball-start-dir)])
+    (define (ball-speed taps)
+      (* (+ 1 (* .1 taps)) initial-ball-speed))
     (define (ball-in-dir ball-pos dir)
-      (+ ball-pos (make-polar ball-speed dir)))
+      (+ ball-pos (make-polar (ball-speed taps) dir)))
     (define lhs-y-n (os/read* 'lhs-y 4.5))
     (define lhs-shape
       (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n)
@@ -173,7 +172,7 @@
                  (ball-bounce ball-dir -1.0 1.0
                               (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
                  (list (cons 'sound (sound-at se:bump-lhs ball-pos)))
-                 'left)]
+                 (add1 taps))]
         ;; The ball has moved to the left of the lhs paddle
         [((psn-x ball-pos) . <= . lhs-x)
          (values ball-start-pos (ball-start-dir)
@@ -198,14 +197,14 @@
         [else
          (values ball-pos ball-dir empty #f)]))
     (define taps-n
-      (if (eq? score? 'left)
+      (if (number? score?)
         (add1 taps)
         taps))
     (define new-ball?
       (if (= taps taps-n)
         #f
         (if (zero? (modulo taps-n 5))
-          (begin (os/thread ball)
+          (begin (os/thread (ball (ball-speed (/ taps 2))))
                  #t)
           #f)))
     (os/write
@@ -231,7 +230,7 @@
    #:sound-scale width-h
    (λ ()
      (os/thread player-paddle)
-     (os/thread ball)
+     (os/thread (ball initial-ball-speed))
      (os/write
       (list
        ;; XXX fix sound lambda
@@ -240,13 +239,7 @@
      (let loop ([score 0])
        (define score?s (os/read 'score?))
        (define balls (length score?s))
-       (define score-n
-         (for/fold ([score score])
-             ([score? score?s])
-           (match score?
-             [#f score]
-             ['right score]
-             ['left (add1 score)])))
+       (define score-n (+ score (apply + (filter number? score?s))))
        (os/write
         (list
          (cons 'done? (zero? balls))
@@ -254,13 +247,13 @@
                (gl:seqn
                 bgm
                 (let ()
-                  #;(printf "FPS: ~a\n"
-                  (real->decimal-string
-                  (current-rate) 1))
+                  (printf "FPS: ~a\n"
+                          (real->decimal-string
+                           (current-rate) 1))
                   (define score-t
                     (gl:string->texture
                      #:size 30
-                     (format "~a:~a" balls score-n)))
+                     (format "~a" score-n)))
                   (gl:translate
                    (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
                    (- height (gl:texture-dh score-t))

@@ -20,15 +20,18 @@
   CLOSED: [2012-06-30 Sat 19:52]
 * DONE Separate OS out of tennis/OS
   CLOSED: [2012-07-03 Tue 20:47]
-* TODO Improve tennis/OS structure
+* DONE Improve tennis/OS structure
+  CLOSED: [2012-07-04 Wed 22:39]
+* DONE Make tennis harder over time: more balls, faster movement, larger opponent
+  CLOSED: [2012-07-04 Wed 22:39]
+* DONE I can still get stuck on the wall and the paddle sometimes in Tennis
+  CLOSED: [2012-07-04 Wed 22:39]
 * TODO Rewrite maze with OS model
 * TODO Make a faster FPS counter
   Making a texture is slow. Maybe with character-based string textures
   it would be faster?
-* TODO I can still get stuck on the wall and the paddle sometimes in Tennis
 * TODO Figure out how to use OpenGL depth bit for background/foreground
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
-* TODO Make tennis harder over time: more balls, faster movement, larger opponent
 * TODO Change gl model to be memoized
 * TODO Make games return score information to dashboard for it to manager
   (Version, Level, Numeric Score) from game
