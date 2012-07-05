@@ -116,10 +116,6 @@
        1.)
      (between 0 (/ pi 4.))))
 
-(define (won? at-least over lhs rhs)
-  (and ((max lhs rhs) . >= . at-least)
-       ((abs (- lhs rhs)) . >= . over)))
-
 ;; XXX Make the ball whoosh
 ;; XXX Make scores have calls
 
@@ -148,10 +144,11 @@
   (angle
    (make-rectangular (* mx (real-part p))
                      (+ ;;(* -1 dy) ;;; see comment below
-                        (* my (imag-part p))))))
+                      (* my (imag-part p))))))
 
 (define (ball)
-  (let loop ([ball-pos ball-start-pos]
+  (let loop ([taps 0]
+             [ball-pos ball-start-pos]
              [ball-dir (ball-start-dir)])
     (define (ball-in-dir ball-pos dir)
       (+ ball-pos (make-polar ball-speed dir)))
@@ -164,6 +161,19 @@
     (define-values
       (ball-pos-n ball-dir-n sounds score?)
       (cond
+        [; The ball has bounced off the lhs
+         (cd:shape-vs-shape ball-shape lhs-shape)
+         (define ball-pos-pushed
+           (psn (max (+ lhs-x (* 4 paddle-hw))
+                     (psn-x ball-pos))
+                (psn-y ball-pos)))
+         (values ball-pos-pushed
+                 ;; XXX Sometimes the ball can bend too far. I need to
+                 ;; tone this done a little.
+                 (ball-bounce ball-dir -1.0 1.0
+                              (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
+                 (list (cons 'sound (sound-at se:bump-lhs ball-pos)))
+                 'left)]
         ;; The ball has moved to the left of the lhs paddle
         [((psn-x ball-pos) . <= . lhs-x)
          (values ball-start-pos (ball-start-dir)
@@ -184,18 +194,20 @@
                  (ball-bounce ball-dir -1.0 1.0)
                  (list (cons 'sound (sound-at se:bump-wall ball-pos)))
                  #f)]
-        [; The ball has bounced off the lhs
-         (cd:shape-vs-shape ball-shape lhs-shape)
-         (values ball-pos
-                 ;; XXX Sometimes the ball can bend too far. I need to
-                 ;; tone this done a little.
-                 (ball-bounce ball-dir -1.0 1.0
-                              (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
-                 (list (cons 'sound (sound-at se:bump-lhs ball-pos)))
-                 #f)]
         ;; The ball is inside the frame
         [else
          (values ball-pos ball-dir empty #f)]))
+    (define taps-n
+      (if (eq? score? 'left)
+        (add1 taps)
+        taps))
+    (define new-ball?
+      (if (= taps taps-n)
+        #f
+        (if (zero? (modulo taps-n 5))
+          (begin (os/thread ball)
+                 #t)
+          #f)))
     (os/write
      (list*
       (cons 'score? score?)
@@ -203,9 +215,15 @@
             (gl:translate (psn-x ball-pos-n) (psn-y ball-pos-n)
                           (gl:rotate (* (/ 180 pi) ball-dir-n)
                                      gl:ball)))
-      sounds))
-    (loop (ball-in-dir ball-pos-n ball-dir-n)
-          ball-dir-n)))
+      (append
+       sounds
+       (if new-ball?
+         (list (cons 'sound (sound-at se:applause center-pos)))
+         empty))))
+    (unless (eq? score? 'right)
+      (loop taps-n
+            (ball-in-dir ball-pos-n ball-dir-n)
+            ball-dir-n))))
 
 (define (game-start)
   (big-bang/os
@@ -219,44 +237,40 @@
        ;; XXX fix sound lambda
        (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))
        (cons 'listener center-pos)))
-     (let loop ([lhs-score 0]
-                [rhs-score 0])
-       (define score? (os/read* 'score?))
-       (define-syntax-rule (define-score lhs-score-n left lhs-score)
-         (define lhs-score-n
-           (if (eq? 'left score?) (add1 lhs-score) lhs-score)))
-       (define-score lhs-score-n left lhs-score)
-       (define-score rhs-score-n right rhs-score)
+     (let loop ([score 0])
+       (define score?s (os/read 'score?))
+       (define balls (length score?s))
+       (define score-n
+         (for/fold ([score score])
+             ([score? score?s])
+           (match score?
+             [#f score]
+             ['right score]
+             ['left (add1 score)])))
        (os/write
-        (append
-         (list
-          (cons 'done?
-                (won? 4 2 lhs-score rhs-score))
-          (cons 'graphics/first
-                (gl:seqn
-                 bgm
-                 (let ()
-                   #;(printf "FPS: ~a\n"
-                           (real->decimal-string
-                            (current-rate) 1))
-                   (define score-t
-                     (gl:string->texture
-                      #:size 30
-                      (format "(~a:~a)" lhs-score-n rhs-score-n)))
-                   (gl:translate
-                    (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
-                    (- height (gl:texture-dh score-t))
-                    (gl:seqn
-                     (gl:color 1. 1. 1. 0.
-                               (gl:rectangle (gl:texture-dw score-t)
-                                             (gl:texture-dh score-t)))
-                     (gl:color 0. 0. 0. 1.
-                               (gl:texture score-t))))))))
-         (if score?
-           (list (cons 'sound (sound-at se:applause center-pos)))
-           empty)))
-       (loop lhs-score-n
-             rhs-score-n)))))
+        (list
+         (cons 'done? (zero? balls))
+         (cons 'graphics/first
+               (gl:seqn
+                bgm
+                (let ()
+                  #;(printf "FPS: ~a\n"
+                  (real->decimal-string
+                  (current-rate) 1))
+                  (define score-t
+                    (gl:string->texture
+                     #:size 30
+                     (format "~a:~a" balls score-n)))
+                  (gl:translate
+                   (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
+                   (- height (gl:texture-dh score-t))
+                   (gl:seqn
+                    (gl:color 1. 1. 1. 0.
+                              (gl:rectangle (gl:texture-dw score-t)
+                                            (gl:texture-dh score-t)))
+                    (gl:color 0. 0. 0. 1.
+                              (gl:texture score-t)))))))))
+       (loop score-n)))))
 
 (define game
   (game-info "Tennis!"

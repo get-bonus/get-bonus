@@ -24,7 +24,7 @@
    (λ ()
      (call-with-continuation-prompt
       (λ ()
-        (p)
+        (os/exit (p))
         (error 'kernel "Process did not run to system call"))
       kernel-prompt-tag
       (λ (x) x)))))
@@ -70,6 +70,8 @@
 (struct os (cur-heap next-heap cur-procs next-procs))
 
 (define-syscalls (pid current)
+  [(os/exit k v)
+   current]
   [(os/read k id)
    (match-define (os cur-h next-h cur-ps next-ps) current)
    (os cur-h next-h
