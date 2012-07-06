@@ -27,6 +27,10 @@
 * DONE I can still get stuck on the wall and the paddle sometimes in Tennis
   CLOSED: [2012-07-04 Wed 22:39]
 * TODO Rewrite maze with OS model
+* TODO OS - fix connection to 3s
+  There is a use in tennis that would be fixed
+
+  And maze uses it for the background music
 * TODO Make a faster FPS counter
   Making a texture is slow. Maybe with character-based string textures
   it would be faster?
@@ -58,6 +62,8 @@
 * TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
 * TODO Make audio loading lazy (or other things that are slow on boot)
 * TODO Use trippy graphics in tennis & maze
+* TODO Tennis - ugly score display
+* TODO Tennis - revisit use of paddle bounce 
 * TODO Make RPS more JRPG-like
 * TODO Convert things to typed racket as I go
 * TODO Write a generic Godel-encoding library

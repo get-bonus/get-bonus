@@ -116,9 +116,6 @@
        1.)
      (between 0 (/ pi 4.))))
 
-;; XXX Make the ball whoosh
-;; XXX Make scores have calls
-
 (define (player-paddle)
   (let loop ([lhs-y 4.5])
     (define lhs-dy
@@ -140,7 +137,7 @@
   (define p (make-polar 1.0 dir))
   (angle
    (make-rectangular (* mx (real-part p))
-                     (+ ;;(* -1 dy) ;;; see comment below
+                     (+ ;;(* -1 dy) ;;; XXX see comment below
                       (* my (imag-part p))))))
 
 (define ((ball initial-ball-speed))
@@ -247,9 +244,6 @@
                (gl:seqn
                 bgm
                 (let ()
-                  (printf "FPS: ~a\n"
-                          (real->decimal-string
-                           (current-rate) 1))
                   (define score-t
                     (gl:string->texture
                      #:size 30
