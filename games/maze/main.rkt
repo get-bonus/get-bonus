@@ -602,10 +602,6 @@
                 obj)))
     (values st obj)))
 
-(struct game-st (frame
-                 score lives next-extend
-                 power-left
-                 static-objs dyn-objs))
 (struct player (pos dir next-dir))
 (struct ghost
         (n pos target dir last-cell
@@ -659,15 +655,14 @@
    (+ width 2) (+ height 3) center-pos
    #:sound-scale (/ width 2.)
    (λ ()
-     (let loop ([w (game-st 0 0 1 extend-pts 0
-                            (make-static) init-objs)])
+     (let loop ([frame 0]
+                [score 0]
+                [lives 1]
+                [next-extend extend-pts]
+                [power-left 0]
+                [st (make-static)]
+                [dyn-objs init-objs])
        (define c (os/read* 'controller))
-       (match-define
-        (game-st frame
-                 score lives next-extend
-                 power-left
-                 st dyn-objs)
-        w)
        (define power-left-p (max 0 (sub1 power-left)))
        (define frame-n (add1 frame))
        (define frightened? (not (zero? power-left-p)))
@@ -875,7 +870,7 @@
         (append
          (list
           (cons 'done?
-                (zero? (game-st-lives w)))
+                (zero? lives-n))
           (cons 'graphics
                 (gl:translate
                  1. 1.
@@ -932,7 +927,7 @@
                          (rad->deg dir)
                          (player-animation frame-n)))]))))))
           (cons 'power-left
-                (game-st-power-left w)))         
+                power-left-n))         
          (map (curry cons 'sound)
               (append
                (if (eq? event 'pellet)
@@ -961,9 +956,9 @@
                                                   (list 0)))))))
                  empty)))))
        (loop
-        (game-st frame-n score-n lives-n
-                 next-extend-n power-left-n
-                 st-n dyn-objs:final))))))
+        frame-n score-n lives-n
+        next-extend-n power-left-n
+        st-n dyn-objs:final)))))
 
 (define game
   (game-info "ハングリーマン"
