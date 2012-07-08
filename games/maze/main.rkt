@@ -602,7 +602,6 @@
                 obj)))
     (values st obj)))
 
-(struct player (pos dir next-dir))
 (struct ghost
         (n pos target dir last-cell
            scatter? frames-to-switch dot-timer))
@@ -646,21 +645,67 @@
    'chaser (make-ghost 0 0)
    'ambusher (make-ghost 1 40)
    'fickle (make-ghost 2 80)
-   'stupid (make-ghost 3 160)
-   'player (player (quad*cell->psn 'sw player-entry-cell)
-                   (* .5 pi) (* .5 pi))))
+   'stupid (make-ghost 3 160)))
+
+(define (player)
+  (let loop ([frame 0]
+             [p (quad*cell->psn 'sw player-entry-cell)]
+             [dir (* .5 pi)]
+             [next-dir (* .5 pi)])
+    (define frame-n (add1 frame))
+    (define speed INIT-SPEED)
+    (define c (os/read* 'controller))
+    (define st (os/read* 'static))
+    (define stick (controller-dpad c))
+    (define next-dir-n
+      ;; If the stick is stable,
+      ;; then don't change the direction
+      (if (= stick 0.+0.i)
+        next-dir
+        (angle (cardinate stick))))
+    ;; The coorridors used to feel too "tight"
+    ;; and easy to get stuck on an edge, but I
+    ;; think this got fixed
+    (define np (try-direction st speed p next-dir-n))
+    ;; Don't change the direction if we couldn't
+    ;; move in it
+    (define actual-dir
+      (if (= np p)
+        dir
+        next-dir-n))
+    (define nnp
+      (if (= np p)
+        (try-direction st speed p dir)
+        np))
+    (os/write
+     (list
+      (cons 'player-pos nnp)
+      (cons 'player-dir actual-dir)
+      (cons 'graphics
+            (gl:translate
+             1. 1.
+             (gl:translate
+              (psn-x nnp) (psn-y nnp)
+              (gl:rotate
+               (rad->deg actual-dir)
+               (player-animation frame-n)))))))
+    (loop frame-n nnp actual-dir next-dir-n)))
 
 (define (game-start)
   (big-bang/os
    (+ width 2) (+ height 3) center-pos
    #:sound-scale (/ width 2.)
    (λ ()
+     (define init-st (make-static))
+     (os/write (list (cons 'static init-st)))
+     (os/thread player)
+     (os/write (list (cons 'static init-st)))
      (let loop ([frame 0]
                 [score 0]
                 [lives 1]
                 [next-extend extend-pts]
                 [power-left 0]
-                [st (make-static)]
+                [st init-st]
                 [dyn-objs init-objs])
        (define c (os/read* 'controller))
        (define power-left-p (max 0 (sub1 power-left)))
@@ -706,7 +751,7 @@
                 (list* lc nps*)
                 nps*))
             (define pp
-              (player-pos (hash-ref dyn-objs 'player)))
+              (os/read* 'player-pos))
             (define target
               (cond
                 [(or frightened?
@@ -723,8 +768,7 @@
                     (+ pp
                        (make-polar
                         4
-                        (player-dir
-                         (hash-ref dyn-objs 'player))))]
+                        (os/read* 'player-dir)))]
                    [2
                     (define v
                       (- pp
@@ -754,39 +798,13 @@
                             lc
                             c)]
                          [pos np]
-                         [dir ndir])]
-           [(player p dir next-dir)
-            (define speed INIT-SPEED)
-            (define stick (controller-dpad c))
-            (define next-dir-n
-              ;; If the stick is stable,
-              ;; then don't change the direction
-              (if (= stick 0.+0.i)
-                next-dir
-                (angle (cardinate stick))))
-            ;; The coorridors used to feel too "tight"
-            ;; and easy to get stuck on an edge, but I
-            ;; think this got fixed
-            (define np (try-direction st speed p next-dir-n))
-            ;; Don't change the direction if we couldn't
-            ;; move in it
-            (define actual-dir
-              (if (= np p)
-                dir
-                next-dir-n))
-            (define nnp
-              (if (= np p)
-                (try-direction st speed p dir)
-                np))
-            (player nnp actual-dir next-dir-n)]
-           [v v])))
+                         [dir ndir])])))
        (define-values
          (dp1 st-n event)
          (let ()
            (match-define
             (cons x y)
-            (pos->cell (player-pos
-                        (hash-ref dyn-objs:post-movement 'player))))
+            (pos->cell (os/read* 'player-pos)))
            (define-values
              (st-n chomped?)
              (static-chomp st x y))
@@ -811,16 +829,14 @@
              ;; XXX Add a sound effect when the activate?
              [(and v (struct* ghost ([dot-timer dt])))
               (struct-copy ghost v
-                           [dot-timer (max 0 (sub1 dt))])]
-             [v v]))
+                           [dot-timer (max 0 (sub1 dt))])]))
            dyn-objs:post-movement))
        (define-values
          (lives-p dp2 dyn-objs:post-death)
          (let ()
            (define p-cell
              (pos->cell
-              (player-pos
-               (hash-ref dyn-objs:post-chomp 'player))))
+              (os/read* 'player-pos)))
            (if (power-left-n . > . 0)
              (let ()
                (define-values
@@ -841,11 +857,7 @@
                                    (make-ghost n ghost-return)))
                         (values
                          dp2
-                         (hash-set do k v)))]
-                     [_
-                      (values
-                       dp2
-                       (hash-set do k v))])))
+                         (hash-set do k v)))])))
                (values lives dp2 dyn-objs:post-killing))
              (if (for/or ([v (in-hash-values dyn-objs:post-chomp)]
                           #:when (ghost? v)
@@ -919,15 +931,11 @@
                                [3 (make-object color% 230 93 16)])
                              (gl:rectangle 1. 1. 'outline))))]
                          [else
-                          gl:blank])]
-                      [(player p dir _)
-                       (gl:translate
-                        (psn-x p) (psn-y p)
-                        (gl:rotate
-                         (rad->deg dir)
-                         (player-animation frame-n)))]))))))
+                          gl:blank])]))))))
+          (cons 'static
+                st-n)
           (cons 'power-left
-                power-left-n))         
+                power-left-n))
          (map (curry cons 'sound)
               (append
                (if (eq? event 'pellet)
@@ -943,17 +951,17 @@
                                       (zero?
                                        (first
                                         (hash-ref (os-cur-heap w)
-                                                  'power-left 
+                                                  'power-left
                                                   (list 0)))))))
                        (background (λ (w) se:power-up)
                                    #:gain 1.0
                                    #:pause-f
                                    (λ (w)
                                      (zero?
-                                       (first
-                                        (hash-ref (os-cur-heap w)
-                                                  'power-left 
-                                                  (list 0)))))))
+                                      (first
+                                       (hash-ref (os-cur-heap w)
+                                                 'power-left
+                                                 (list 0)))))))
                  empty)))))
        (loop
         frame-n score-n lives-n
