@@ -26,7 +26,9 @@
   CLOSED: [2012-07-04 Wed 22:39]
 * DONE I can still get stuck on the wall and the paddle sometimes in Tennis
   CLOSED: [2012-07-04 Wed 22:39]
-* TODO Rewrite maze with OS model
+* DONE Rewrite maze with OS model
+  CLOSED: [2012-07-08 Sun 00:32]
+* TODO Improve maze OS structure
 * TODO OS - fix connection to 3s
   There is a use in tennis that would be fixed
 

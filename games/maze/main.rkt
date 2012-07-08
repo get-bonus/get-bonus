@@ -602,32 +602,9 @@
                 obj)))
     (values st obj)))
 
-(struct ghost
-        (n pos target dir last-cell
-           scatter? frames-to-switch dot-timer))
-(define (make-ghost n init-timer)
-  (define outside-jail
-    (quad*cell->psn
-     (match n
-       [0 'nw]
-       [1 'ne]
-       [2 'sw]
-       [3 'se])
-     ghost-entry-cell))
-  (define outside-jail-right-of
-    (pos->cell
-     (+ outside-jail 1.)))
-  (ghost n outside-jail (scatter-tile)
-         'left outside-jail-right-of #t
-         TIME-TO-SCATTER init-timer))
-
 (define (scatter-tile)
   (psn (* (random) width)
        (* (random) height)))
-
-(define (update-objs objs f)
-  (for/hasheq ([(k v) (in-hash objs)])
-              (values k (f v))))
 
 ;; XXX score multiplier
 (define pellet-pts 10)
@@ -640,12 +617,164 @@
 
 ;; XXX Add a slow start-up clock for beginning of game and
 ;;     after death
-(define init-objs
-  (hasheq
-   'chaser (make-ghost 0 0)
-   'ambusher (make-ghost 1 40)
-   'fickle (make-ghost 2 80)
-   'stupid (make-ghost 3 160)))
+
+(define ((ghost ai-sym n init-timer))
+  (define outside-jail
+    (quad*cell->psn
+     (match n
+       [0 'nw]
+       [1 'ne]
+       [2 'sw]
+       [3 'se])
+     ghost-entry-cell))
+  (define outside-jail-right-of
+    (pos->cell
+     (+ outside-jail 1.)))
+  (let loop ([frame 0]
+             [n n]
+             [pos outside-jail]
+             [l-target (scatter-tile)]
+             [dir 'left]
+             [lc outside-jail-right-of]
+             [scatter? #t]
+             [switch-n TIME-TO-SCATTER]
+             [dot-timer init-timer])
+    (define power-left-n (os/read* 'power-left))
+    (define frame-n (add1 frame))
+    (define (ghost-write!)
+      (define p-cell
+        (pos->cell
+         (os/read* 'player-pos)))
+      (define g-cell
+        (pos->cell pos))
+      (define-values (events death?)
+        (if (and (zero? dot-timer)
+                 (equal?
+                  p-cell
+                  g-cell))
+          (if (power-left-n . > . 0)
+            ;; XXX reset dot-timer to ghost-return and jail
+            (values (list (cons 'dp2 ghost-pts)) #t)
+            ;; XXX Add sound effect
+            (values (list (cons 'lives-p -1)) #f))
+          (values empty #f)))
+      (os/write
+       (append
+        events
+        (list
+         (cons ai-sym pos)
+         (cons 'graphics
+               (gl:translate
+                1. 1.
+                (cond
+                  [(or (zero? dot-timer)
+                       (and (dot-timer . <= . 10) (even? frame)))
+                   (gl:seqn
+                    (gl:translate
+                     (psn-x pos) (psn-y pos)
+                     (if (zero? power-left-n)
+                       (ghost-animation n frame-n dir)
+                       (scared-ghost-animation
+                        frame-n
+                        (power-left-n . <= . TIME-TO-POWER-WARNING))))
+                    (gl:translate
+                     (- (psn-x l-target) .5) (- (psn-y l-target) .5)
+                     (gl:color/%
+                      (match n
+                        [0 (make-object color% 169 16 0)]
+                        [1 (make-object color% 215 182 247)]
+                        [2 (make-object color% 60 189 255)]
+                        [3 (make-object color% 230 93 16)])
+                      (gl:rectangle 1. 1. 'outline))))]
+                  [else
+                   gl:blank]))))))
+      death?)
+    (match dot-timer
+      [0
+       (define frightened? (not (zero? power-left-n)))
+       (define speed
+         (if frightened?
+           (/ INIT-SPEED 2.)
+           INIT-SPEED))
+       (define c (pos->cell pos))
+       (define n-switch-n*
+         (if frightened?
+           ;; Don't count frightened time on clocks
+           switch-n
+           (sub1 switch-n)))
+       (define-values (n-scatter? n-switch-n)
+         (if (zero? n-switch-n*)
+           (if scatter?
+             (values #f TIME-TO-CHASE)
+             (values #t TIME-TO-SCATTER))
+           (values scatter? n-switch-n*)))
+       (define same-mode?
+         (equal? scatter? n-scatter?))
+       (define st (os/read* 'static))
+       (define nps*
+         (cell-neighbors/no-reverse st c lc))
+       (define nps
+         ;; This makes them allowed, but not obligated,
+         ;; to switch directions.
+         (if (not same-mode?)
+           (list* lc nps*)
+           nps*))
+       (define pp
+         (os/read* 'player-pos))
+       (define target
+         (cond
+           [(or frightened?
+                (and l-target same-mode?
+                     (if (not n-scatter?) (= (length nps) 1) #t)))
+            l-target]
+           [n-scatter?
+            (scatter-tile)]
+           [else
+            (match n
+              [0
+               pp]
+              [1
+               (+ pp
+                  (make-polar
+                   4
+                   (os/read* 'player-dir)))]
+              [2
+               (define v
+                 (- pp
+                    (os/read* 'ambusher)))
+               (+ pp (make-polar (* 2 (magnitude v))
+                                 (angle v)))]
+              [3
+               (if (<= (pos->pos-distance pp pos) 8)
+                 l-target
+                 pp)])]))
+       (define next-cell
+         (argmin* (curry pos->cell-distance target)
+                  nps))
+       (define mv
+         (movement-vector speed pos next-cell))
+       (define np
+         (posn->v pos mv))
+       (define ndir
+         (angle-direction (angle mv)))
+       (if (ghost-write!)
+         ((ghost ai-sym n ghost-return))
+         (loop frame-n n np target ndir
+               (if (equal? c (pos->cell np))
+                 lc
+                 c)
+               n-scatter?
+               n-switch-n
+               dot-timer))]
+      [else
+       (define event (os/read* 'event #f))
+       (ghost-write!)
+       (if (eq? event 'pellet)
+         ;; XXX Add a sound effect when the activate?
+         (loop frame-n n pos l-target dir lc scatter? switch-n
+               (max 0 (sub1 dot-timer)))
+         (loop frame-n n pos l-target dir lc scatter? switch-n
+               dot-timer))])))
 
 (define (player)
   (let loop ([frame 0]
@@ -697,108 +826,26 @@
    #:sound-scale (/ width 2.)
    (λ ()
      (define init-st (make-static))
-     (os/write (list (cons 'static init-st)))
+     (os/write (list (cons 'static init-st)
+                     (cons 'player-pos 0.)
+                     (cons 'power-left 0)))
      (os/thread player)
-     (os/write (list (cons 'static init-st)))
+     (os/thread (ghost 'chaser 0 0))
+     (os/thread (ghost 'ambusher 1 40))
+     (os/thread (ghost 'fickle 2 80))
+     (os/thread (ghost 'stupid 3 160))
+     (os/write (list (cons 'static init-st)
+                     (cons 'power-left 0)))
      (let loop ([frame 0]
                 [score 0]
                 [lives 1]
                 [next-extend extend-pts]
                 [power-left 0]
-                [st init-st]
-                [dyn-objs init-objs])
+                [st init-st])
        (define c (os/read* 'controller))
        (define power-left-p (max 0 (sub1 power-left)))
        (define frame-n (add1 frame))
        (define frightened? (not (zero? power-left-p)))
-       (define dyn-objs:post-movement
-         (update-objs
-          dyn-objs
-          (match-lambda
-           [(and v
-                 (struct* ghost
-                          ([n n]
-                           [pos p]
-                           [last-cell lc]
-                           [target l-target]
-                           [scatter? scatter?]
-                           [dot-timer 0]
-                           [frames-to-switch switch-n])))
-            (define speed
-              (if frightened?
-                (/ INIT-SPEED 2.)
-                INIT-SPEED))
-            (define c (pos->cell p))
-            (define n-switch-n*
-              (if frightened?
-                ;; Don't count frightened time on clocks
-                switch-n
-                (sub1 switch-n)))
-            (define-values (n-scatter? n-switch-n)
-              (if (zero? n-switch-n*)
-                (if scatter?
-                  (values #f TIME-TO-CHASE)
-                  (values #t TIME-TO-SCATTER))
-                (values scatter? n-switch-n*)))
-            (define same-mode?
-              (equal? scatter? n-scatter?))
-            (define nps*
-              (cell-neighbors/no-reverse st c lc))
-            (define nps
-              ;; This makes them allowed, but not obligated,
-              ;; to switch directions.
-              (if (not same-mode?)
-                (list* lc nps*)
-                nps*))
-            (define pp
-              (os/read* 'player-pos))
-            (define target
-              (cond
-                [(or frightened?
-                     (and l-target same-mode?
-                          (if (not n-scatter?) (= (length nps) 1) #t)))
-                 l-target]
-                [n-scatter?
-                 (scatter-tile)]
-                [else
-                 (match n
-                   [0
-                    pp]
-                   [1
-                    (+ pp
-                       (make-polar
-                        4
-                        (os/read* 'player-dir)))]
-                   [2
-                    (define v
-                      (- pp
-                         (ghost-pos
-                          (hash-ref dyn-objs 'ambusher))))
-                    (+ pp (make-polar (* 2 (magnitude v))
-                                      (angle v)))]
-                   [3
-                    (if (<= (pos->pos-distance pp p) 8)
-                      l-target
-                      pp)])]))
-            (define next-cell
-              (argmin* (curry pos->cell-distance target)
-                       nps))
-            (define mv
-              (movement-vector speed p next-cell))
-            (define np
-              (posn->v p mv))
-            (define ndir
-              (angle-direction (angle mv)))
-            (struct-copy ghost v
-                         [target target]
-                         [scatter? n-scatter?]
-                         [frames-to-switch n-switch-n]
-                         [last-cell
-                          (if (equal? c (pos->cell np))
-                            lc
-                            c)]
-                         [pos np]
-                         [dir ndir])])))
        (define-values
          (dp1 st-n event)
          (let ()
@@ -821,53 +868,8 @@
          (if (eq? event 'power-up)
            (+ power-left-p TIME-TO-POWER)
            power-left-p))
-       (define dyn-objs:post-chomp
-         (if (eq? event 'pellet)
-           (update-objs
-            dyn-objs:post-movement
-            (match-lambda
-             ;; XXX Add a sound effect when the activate?
-             [(and v (struct* ghost ([dot-timer dt])))
-              (struct-copy ghost v
-                           [dot-timer (max 0 (sub1 dt))])]))
-           dyn-objs:post-movement))
-       (define-values
-         (lives-p dp2 dyn-objs:post-death)
-         (let ()
-           (define p-cell
-             (pos->cell
-              (os/read* 'player-pos)))
-           (if (power-left-n . > . 0)
-             (let ()
-               (define-values
-                 (dp2 dyn-objs:post-killing)
-                 (for/fold
-                     ([dp2 0]
-                      [do (hasheq)])
-                     ([(k v) (in-hash dyn-objs:post-chomp)])
-                   (match v
-                     [(struct* ghost
-                               ([n n]
-                                [dot-timer 0]
-                                [pos (app pos->cell g-cell)]))
-                      (if (equal? p-cell g-cell)
-                        (values
-                         (+ dp2 ghost-pts)
-                         (hash-set do k
-                                   (make-ghost n ghost-return)))
-                        (values
-                         dp2
-                         (hash-set do k v)))])))
-               (values lives dp2 dyn-objs:post-killing))
-             (if (for/or ([v (in-hash-values dyn-objs:post-chomp)]
-                          #:when (ghost? v)
-                          #:when (zero? (ghost-dot-timer v)))
-                   (equal?
-                    p-cell
-                    (pos->cell (ghost-pos v))))
-               ;; XXX Add sound effect
-               (values (sub1 lives) 0 init-objs)
-               (values lives 0 dyn-objs:post-chomp)))))
+       (define lives-p (+ lives (apply + (os/read 'lives-p))))
+       (define dp2 (apply + (os/read 'dp2)))
        (define score-n (+ score dp1 dp2))
        (define next-extend-p (- next-extend dp1 dp2))
        (define-values
@@ -876,14 +878,13 @@
            ;; XXX Add sound effect
            (values (add1 lives-p) extend-pts)
            (values lives-p next-extend-p)))
-       (define dyn-objs:final
-         dyn-objs:post-death)
        (os/write
         (append
          (list
+          (cons 'event event)
           (cons 'done?
                 (zero? lives-n))
-          (cons 'graphics
+          (cons 'graphics/first
                 (gl:translate
                  1. 1.
                  (gl:background
@@ -899,39 +900,7 @@
                      (gl:string->texture
                       #:size 50
                       (format "~a" score-n)))))
-                  (gl:seqn
-                   (static-display st)
-                   (gl:for/gl
-                    ([v (in-hash-values dyn-objs:final)])
-                    (match v
-                      [(struct* ghost
-                                ([n n]
-                                 [pos p]
-                                 [target tp]
-                                 [dir dir]
-                                 [dot-timer dt]))
-                       (cond
-                         [(or (zero? dt)
-                              (and (dt . <= . 10) (even? frame)))
-                          (gl:seqn
-                           (gl:translate
-                            (psn-x p) (psn-y p)
-                            (if (zero? power-left-n)
-                              (ghost-animation n frame-n dir)
-                              (scared-ghost-animation
-                               frame-n
-                               (power-left-n . <= . TIME-TO-POWER-WARNING))))
-                           (gl:translate
-                            (- (psn-x tp) .5) (- (psn-y tp) .5)
-                            (gl:color/%
-                             (match n
-                               [0 (make-object color% 169 16 0)]
-                               [1 (make-object color% 215 182 247)]
-                               [2 (make-object color% 60 189 255)]
-                               [3 (make-object color% 230 93 16)])
-                             (gl:rectangle 1. 1. 'outline))))]
-                         [else
-                          gl:blank])]))))))
+                  (static-display st))))
           (cons 'static
                 st-n)
           (cons 'power-left
@@ -966,7 +935,7 @@
        (loop
         frame-n score-n lives-n
         next-extend-n power-left-n
-        st-n dyn-objs:final)))))
+        st-n)))))
 
 (define game
   (game-info "ハングリーマン"

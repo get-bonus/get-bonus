@@ -95,12 +95,13 @@
               (process t-pid t))
        next-ps)])
 
-(define (os/read* k [def #f])
+(define nothing (gensym))
+(define (os/read* k [def nothing])
   (match (os/read k)
     [(list v)
      v]
     [else
-     (if def
+     (if (not (eq? nothing def))
        def
        (error 'os/read* "~e does not have one value, has ~e" k else))]))
 
