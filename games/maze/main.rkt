@@ -611,7 +611,6 @@
 (define power-up-pts 50)
 (define fruit-pts 100)
 (define ghost-pts 200)
-(define extend-pts +inf.0)
 
 (define ghost-return 40)
 
@@ -839,7 +838,6 @@
      (let loop ([frame 0]
                 [score 0]
                 [lives 1]
-                [next-extend extend-pts]
                 [power-left 0]
                 [st init-st])
        (define c (os/read* 'controller))
@@ -870,20 +868,13 @@
            power-left-p))
        (define lives-p (+ lives (apply + (os/read 'lives-p))))
        (define dp2 (apply + (os/read 'dp2)))
-       (define score-n (+ score dp1 dp2))
-       (define next-extend-p (- next-extend dp1 dp2))
-       (define-values
-         (lives-n next-extend-n)
-         (if (next-extend-p . <= . 0)
-           ;; XXX Add sound effect
-           (values (add1 lives-p) extend-pts)
-           (values lives-p next-extend-p)))
+       (define score-n (+ score dp1 dp2))       
        (os/write
         (append
          (list
           (cons 'event event)
           (cons 'done?
-                (zero? lives-n))
+                (zero? lives-p))
           (cons 'graphics/first
                 (gl:translate
                  1. 1.
@@ -925,6 +916,7 @@
                        (background (λ (w) se:power-up)
                                    #:gain 1.0
                                    #:pause-f
+                                   ;; XXX very bad
                                    (λ (w)
                                      (zero?
                                       (first
@@ -933,9 +925,8 @@
                                                  (list 0)))))))
                  empty)))))
        (loop
-        frame-n score-n lives-n
-        next-extend-n power-left-n
-        st-n)))))
+        frame-n score-n lives-p
+        power-left-n st-n)))))
 
 (define game
   (game-info "ハングリーマン"
