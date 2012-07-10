@@ -827,7 +827,30 @@
      (define init-st (make-static))
      (os/write (list (cons 'static init-st)
                      (cons 'player-pos 0.)
-                     (cons 'power-left 0)))
+                     (cons 'power-left 0)
+                     (cons 'sound
+                           (background (λ (w) se:bgm)
+                                       #:gain 0.5
+                                       #:pause-f
+                                       ;; XXX very bad
+                                       (λ (w)
+                                         (not
+                                          (zero?
+                                           (first
+                                            (hash-ref (os-cur-heap w)
+                                                      'power-left
+                                                      (list 0))))))))
+                     (cons 'sound
+                           (background (λ (w) se:power-up)
+                                       #:gain 1.0
+                                       #:pause-f
+                                       ;; XXX very bad
+                                       (λ (w)
+                                         (zero?
+                                          (first
+                                           (hash-ref (os-cur-heap w)
+                                                     'power-left
+                                                     (list 0)))))))))
      (os/thread player)
      (os/thread (ghost 'chaser 0 0))
      (os/thread (ghost 'ambusher 1 40))
@@ -835,15 +858,12 @@
      (os/thread (ghost 'stupid 3 160))
      (os/write (list (cons 'static init-st)
                      (cons 'power-left 0)))
-     (let loop ([frame 0]
-                [score 0]
+     (let loop ([score 0]
                 [lives 1]
                 [power-left 0]
                 [st init-st])
        (define c (os/read* 'controller))
        (define power-left-p (max 0 (sub1 power-left)))
-       (define frame-n (add1 frame))
-       (define frightened? (not (zero? power-left-p)))
        (define-values
          (dp1 st-n event)
          (let ()
@@ -853,79 +873,50 @@
            (define-values
              (st-n chomped?)
              (static-chomp st x y))
-           (match chomped?
-             ['pellet
-              (values pellet-pts st-n 'pellet)]
-             ['power-up
-              (values power-up-pts st-n 'power-up)]
-             ['fruit
-              (values fruit-pts st-n 'fruit)]
-             [#f
-              (values 0 st-n #f)])))
+           (values (match chomped?
+                     ['pellet pellet-pts]
+                     ['power-up power-up-pts]
+                     ['fruit fruit-pts]
+                     [#f 0])
+                   st-n chomped?)))
        (define power-left-n
          (if (eq? event 'power-up)
            (+ power-left-p TIME-TO-POWER)
            power-left-p))
-       (define lives-p (+ lives (apply + (os/read 'lives-p))))
-       (define dp2 (apply + (os/read 'dp2)))
-       (define score-n (+ score dp1 dp2))       
+       (define lives-p (+ lives (sum (os/read 'lives-p))))
+       (define dp2 (sum (os/read 'dp2)))
+       (define score-n (+ score dp1 dp2))
        (os/write
-        (append
-         (list
-          (cons 'event event)
-          (cons 'done?
-                (zero? lives-p))
-          (cons 'graphics/first
-                (gl:translate
-                 1. 1.
-                 (gl:background
-                  0. 0. 0. 0.
-                  (gl:color
-                   1. 1. 1. 1.
-                   (gl:center-texture-at
-                    (psn (/ width 2.) (+ height 1.5))
-                    title)
-                   (gl:translate
-                    0. (+ height 0.5)
-                    (gl:texture
-                     (gl:string->texture
-                      #:size 50
-                      (format "~a" score-n)))))
-                  (static-display st))))
-          (cons 'static
-                st-n)
-          (cons 'power-left
-                power-left-n))
-         (map (curry cons 'sound)
-              (append
-               (if (eq? event 'pellet)
-                 (list (sound-at se:crunch center-pos #:gain 0.8))
-                 empty)
-               (if (zero? frame)
-                 (list (background (λ (w) se:bgm)
-                                   #:gain 0.5
-                                   #:pause-f
-                                   ;; XXX very bad
-                                   (λ (w)
-                                     (not
-                                      (zero?
-                                       (first
-                                        (hash-ref (os-cur-heap w)
-                                                  'power-left
-                                                  (list 0)))))))
-                       (background (λ (w) se:power-up)
-                                   #:gain 1.0
-                                   #:pause-f
-                                   ;; XXX very bad
-                                   (λ (w)
-                                     (zero?
-                                      (first
-                                       (hash-ref (os-cur-heap w)
-                                                 'power-left
-                                                 (list 0)))))))
-                 empty)))))
+        (list*
+         (cons 'event event)
+         (cons 'done?
+               (zero? lives-p))
+         (cons 'graphics/first
+               (gl:translate
+                1. 1.
+                (gl:background
+                 0. 0. 0. 0.
+                 (gl:color
+                  1. 1. 1. 1.
+                  (gl:center-texture-at
+                   (psn (/ width 2.) (+ height 1.5))
+                   title)
+                  (gl:translate
+                   0. (+ height 0.5)
+                   (gl:texture
+                    (gl:string->texture
+                     #:size 50
+                     (format "~a" score-n)))))
+                 (static-display st))))
+         (cons 'static
+               st-n)
+         (cons 'power-left
+               power-left-n)
+         (if (eq? event 'pellet)
+           (list (cons 'sound (sound-at se:crunch center-pos #:gain 0.8)))
+           empty)))
        (loop
-        frame-n score-n lives-p
+        score-n lives-p
         power-left-n st-n)))))
 
 (define game
