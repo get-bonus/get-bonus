@@ -629,8 +629,7 @@
   (define outside-jail-right-of
     (pos->cell
      (+ outside-jail 1.)))
-  (let loop ([frame 0]
-             [n n]
+  (let loop ([n n]
              [pos outside-jail]
              [l-target (scatter-tile)]
              [dir 'left]
@@ -639,7 +638,6 @@
              [switch-n TIME-TO-SCATTER]
              [dot-timer init-timer])
     (define power-left-n (os/read* 'power-left))
-    (define frame-n (add1 frame))
     (define (ghost-write!)
       (define p-cell
         (pos->cell
@@ -667,14 +665,14 @@
                 1. 1.
                 (cond
                   [(or (zero? dot-timer)
-                       (and (dot-timer . <= . 10) (even? frame)))
+                       (and (dot-timer . <= . 10) (even? (current-frame))))
                    (gl:seqn
                     (gl:translate
                      (psn-x pos) (psn-y pos)
                      (if (zero? power-left-n)
-                       (ghost-animation n frame-n dir)
+                       (ghost-animation n (current-frame) dir)
                        (scared-ghost-animation
-                        frame-n
+                        (current-frame)
                         (power-left-n . <= . TIME-TO-POWER-WARNING))))
                     (gl:translate
                      (- (psn-x l-target) .5) (- (psn-y l-target) .5)
@@ -758,7 +756,7 @@
          (angle-direction (angle mv)))
        (if (ghost-write!)
          ((ghost ai-sym n ghost-return))
-         (loop frame-n n np target ndir
+         (loop n np target ndir
                (if (equal? c (pos->cell np))
                  lc
                  c)
@@ -768,19 +766,16 @@
       [else
        (define event (os/read* 'event #f))
        (ghost-write!)
-       (if (eq? event 'pellet)
-         ;; XXX Add a sound effect when the activate?
-         (loop frame-n n pos l-target dir lc scatter? switch-n
-               (max 0 (sub1 dot-timer)))
-         (loop frame-n n pos l-target dir lc scatter? switch-n
+       (loop n pos l-target dir lc scatter? switch-n
+             (if (eq? event 'pellet)
+               ;; XXX Add a sound effect when the activate?
+               (max 0 (sub1 dot-timer))
                dot-timer))])))
 
 (define (player)
-  (let loop ([frame 0]
-             [p (quad*cell->psn 'sw player-entry-cell)]
+  (let loop ([p (quad*cell->psn 'sw player-entry-cell)]
              [dir (* .5 pi)]
              [next-dir (* .5 pi)])
-    (define frame-n (add1 frame))
     (define speed INIT-SPEED)
     (define c (os/read* 'controller))
     (define st (os/read* 'static))
@@ -816,8 +811,8 @@
               (psn-x nnp) (psn-y nnp)
               (gl:rotate
                (rad->deg actual-dir)
-               (player-animation frame-n)))))))
-    (loop frame-n nnp actual-dir next-dir-n)))
+               (player-animation (current-frame))))))))
+    (loop nnp actual-dir next-dir-n)))
 
 (define (game-start)
   (big-bang/os

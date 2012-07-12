@@ -40,13 +40,15 @@
 
 (define (nested-big-bang initial-world tick sound-scale
                          world->listener done?)
-  (let loop ([w initial-world]
+  (let loop ([frame 0]
+             [w initial-world]
              [st (initial-system-state world->listener)])
     (define next-time
       (+ (current-inexact-milliseconds) (* RATE 1000)))
     (parameterize ([current-sound st])
       (define-values (wp cmd ss)
-        (tick w (controller-monitor-state (current-controllers))))
+        (parameterize ([current-frame frame])
+          (tick w (controller-monitor-state (current-controllers)))))
       ((current-update-canvas) cmd)
       (if (done? wp)
         (let ()
@@ -58,11 +60,14 @@
           (define stp
             (render-sound sound-scale st ss wp))
           (sync (alarm-evt next-time))
-          (loop wp stp))))))
+          (loop (add1 frame) wp stp))))))
 
-(define current-rate-finder (make-parameter (λ () (error 'current-rate "Not in big-bang"))))
+(define current-rate-finder
+  (make-parameter (λ () (error 'current-rate "Not in big-bang"))))
 (define (current-rate)
   ((current-rate-finder)))
+(define current-frame
+  (make-parameter 0))
 (define (outer-big-bang initial-world tick sound-scale
                         world->listener done?)
   (define km
@@ -124,6 +129,7 @@
 (provide/contract
  [RATE number?]
  [current-rate (-> number?)]
+ [current-frame (-> exact-nonnegative-integer?)]
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)
