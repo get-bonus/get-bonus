@@ -56,7 +56,8 @@
 (define-values (width height quad:template)
   (path->quadrant template-map))
 
-;; XXX incorporate ghost position (so that I don't put a ghost in a wall if I'm switching the state of a quad)
+;; XXX incorporate ghost position (so that I don't put a ghost in a
+;; wall if I'm switching the state of a quad)
 (define (generate-quad)
   (define new-quad (bytes-copy quad:template))
   (define cells
@@ -166,7 +167,6 @@
 
 ;; Much enlightenment from http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
 
-;; XXX time limit?
 ;; XXX ghosts/pacman are the wrong size
 ;; XXX turn the layout into a nice graphic with rounded walls, wide tunnels, etc
 ;; XXX increase speed with time/score
@@ -617,10 +617,16 @@
 ;; XXX Add a slow start-up clock for beginning of game and
 ;;     after death
 
-(define ((ghost ai-sym n init-timer))
+(define ((ghost ai-n init-timer))
+  (define ai-sym
+    (match ai-n
+       [0 'chaser]
+       [1 'ambusher]
+       [2 'fickle]
+       [3 'stupid]))
   (define outside-jail
     (quad*cell->psn
-     (match n
+     (match ai-n
        [0 'nw]
        [1 'ne]
        [2 'sw]
@@ -629,8 +635,7 @@
   (define outside-jail-right-of
     (pos->cell
      (+ outside-jail 1.)))
-  (let loop ([n n]
-             [pos outside-jail]
+  (let loop ([pos outside-jail]
              [l-target (scatter-tile)]
              [dir 'left]
              [lc outside-jail-right-of]
@@ -670,14 +675,14 @@
                     (gl:translate
                      (psn-x pos) (psn-y pos)
                      (if (zero? power-left-n)
-                       (ghost-animation n (current-frame) dir)
+                       (ghost-animation ai-n (current-frame) dir)
                        (scared-ghost-animation
                         (current-frame)
                         (power-left-n . <= . TIME-TO-POWER-WARNING))))
                     (gl:translate
                      (- (psn-x l-target) .5) (- (psn-y l-target) .5)
                      (gl:color/%
-                      (match n
+                      (match ai-n
                         [0 (make-object color% 169 16 0)]
                         [1 (make-object color% 215 182 247)]
                         [2 (make-object color% 60 189 255)]
@@ -727,7 +732,7 @@
            [n-scatter?
             (scatter-tile)]
            [else
-            (match n
+            (match ai-n
               [0
                pp]
               [1
@@ -738,7 +743,7 @@
               [2
                (define v
                  (- pp
-                    (os/read* 'ambusher)))
+                    (os/read* 'ambusher pp)))
                (+ pp (make-polar (* 2 (magnitude v))
                                  (angle v)))]
               [3
@@ -755,8 +760,8 @@
        (define ndir
          (angle-direction (angle mv)))
        (if (ghost-write!)
-         ((ghost ai-sym n ghost-return))
-         (loop n np target ndir
+         (os/exit ai-n)
+         (loop np target ndir
                (if (equal? c (pos->cell np))
                  lc
                  c)
@@ -766,7 +771,7 @@
       [else
        (define event (os/read* 'event #f))
        (ghost-write!)
-       (loop n pos l-target dir lc scatter? switch-n
+       (loop pos l-target dir lc scatter? switch-n
              (if (eq? event 'pellet)
                ;; XXX Add a sound effect when the activate?
                (max 0 (sub1 dot-timer))
@@ -820,60 +825,56 @@
    #:sound-scale (/ width 2.)
    (λ ()
      (define init-st (make-static))
-     (os/write (list (cons 'static init-st)
-                     (cons 'player-pos 0.)
-                     (cons 'power-left 0)
-                     (cons 'sound
-                           (background (λ (w) se:bgm)
-                                       #:gain 0.5
-                                       #:pause-f
-                                       ;; XXX very bad
-                                       (λ (w)
-                                         (not
-                                          (zero?
-                                           (first
-                                            (hash-ref (os-cur-heap w)
-                                                      'power-left
-                                                      (list 0))))))))
-                     (cons 'sound
-                           (background (λ (w) se:power-up)
-                                       #:gain 1.0
-                                       #:pause-f
-                                       ;; XXX very bad
-                                       (λ (w)
-                                         (zero?
-                                          (first
-                                           (hash-ref (os-cur-heap w)
-                                                     'power-left
-                                                     (list 0)))))))))
+     (os/write
+      (list (cons 'static init-st)
+            (cons 'player-pos 0.)
+            (cons 'power-left 0)
+            (cons 'sound
+                  (background (λ (w) se:bgm)
+                              #:gain 0.5
+                              #:pause-f
+                              ;; XXX very bad
+                              (λ (w)
+                                (not
+                                 (zero?
+                                  (first
+                                   (hash-ref (os-cur-heap w)
+                                             'power-left
+                                             (list 0))))))))
+            (cons 'sound
+                  (background (λ (w) se:power-up)
+                              #:gain 1.0
+                              #:pause-f
+                              ;; XXX very bad
+                              (λ (w)
+                                (zero?
+                                 (first
+                                  (hash-ref (os-cur-heap w)
+                                            'power-left
+                                            (list 0)))))))))
      (os/thread player)
-     (os/thread (ghost 'chaser 0 0))
-     (os/thread (ghost 'ambusher 1 40))
-     (os/thread (ghost 'fickle 2 80))
-     (os/thread (ghost 'stupid 3 160))
      (os/write (list (cons 'static init-st)
                      (cons 'power-left 0)))
      (let loop ([score 0]
                 [lives 1]
                 [power-left 0]
-                [st init-st])
+                [st init-st]
+                [next-ghost 0]
+                [dots-to-ghost 0])
        (define c (os/read* 'controller))
        (define power-left-p (max 0 (sub1 power-left)))
+       (match-define
+        (cons x y)
+        (pos->cell (os/read* 'player-pos)))
        (define-values
-         (dp1 st-n event)
-         (let ()
-           (match-define
-            (cons x y)
-            (pos->cell (os/read* 'player-pos)))
-           (define-values
-             (st-n chomped?)
-             (static-chomp st x y))
-           (values (match chomped?
-                     ['pellet pellet-pts]
-                     ['power-up power-up-pts]
-                     ['fruit fruit-pts]
-                     [#f 0])
-                   st-n chomped?)))
+         (st-n event)
+         (static-chomp st x y))
+       (define dp1
+         (match event
+           ['pellet pellet-pts]
+           ['power-up power-up-pts]
+           ['fruit fruit-pts]
+           [#f 0]))
        (define power-left-n
          (if (eq? event 'power-up)
            (+ power-left-p TIME-TO-POWER)
@@ -881,6 +882,17 @@
        (define lives-p (+ lives (sum (os/read 'lives-p))))
        (define dp2 (sum (os/read 'dp2)))
        (define score-n (+ score dp1 dp2))
+       (define-values
+         (next-ghost-n dots-to-ghost-n)
+         (cond
+           [(zero? dots-to-ghost)
+            (os/thread (ghost next-ghost 10))
+            (values (modulo (add1 next-ghost) 4)
+                    (- ghost-return 10))]
+           [(eq? event 'pellet)            
+            (values next-ghost (sub1 dots-to-ghost))]
+           [else
+            (values next-ghost dots-to-ghost)]))
        (os/write
         (list*
          (cons 'event event)
@@ -912,7 +924,8 @@
            empty)))
        (loop
         score-n lives-p
-        power-left-n st-n)))))
+        power-left-n st-n
+        next-ghost-n dots-to-ghost-n)))))
 
 (define game
   (game-info "ハングリーマン"
