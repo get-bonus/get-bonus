@@ -620,10 +620,10 @@
 (define ((ghost ai-n init-timer))
   (define ai-sym
     (match ai-n
-       [0 'chaser]
-       [1 'ambusher]
-       [2 'fickle]
-       [3 'stupid]))
+      [0 'chaser]
+      [1 'ambusher]
+      [2 'fickle]
+      [3 'stupid]))
   (define outside-jail
     (quad*cell->psn
      (match ai-n
@@ -643,56 +643,28 @@
              [switch-n TIME-TO-SCATTER]
              [dot-timer init-timer])
     (define power-left-n (os/read* 'power-left))
-    (define (ghost-write!)
-      (define p-cell
-        (pos->cell
-         (os/read* 'player-pos)))
-      (define g-cell
-        (pos->cell pos))
-      (define-values (events death?)
-        (if (and (zero? dot-timer)
-                 (equal?
-                  p-cell
-                  g-cell))
-          (if (power-left-n . > . 0)
-            ;; XXX reset dot-timer to ghost-return and jail
-            (values (list (cons 'dp2 ghost-pts)) #t)
-            ;; XXX Add sound effect
-            (values (list (cons 'lives-p -1)) #f))
-          (values empty #f)))
-      (os/write
-       (append
-        events
-        (list
-         (cons ai-sym pos)
-         (cons 'graphics
-               (gl:translate
-                1. 1.
-                (cond
-                  [(or (zero? dot-timer)
-                       (and (dot-timer . <= . 10) (even? (current-frame))))
-                   (gl:seqn
-                    (gl:translate
-                     (psn-x pos) (psn-y pos)
-                     (if (zero? power-left-n)
-                       (ghost-animation ai-n (current-frame) dir)
-                       (scared-ghost-animation
-                        (current-frame)
-                        (power-left-n . <= . TIME-TO-POWER-WARNING))))
-                    (gl:translate
-                     (- (psn-x l-target) .5) (- (psn-y l-target) .5)
-                     (gl:color/%
-                      (match ai-n
-                        [0 (make-object color% 169 16 0)]
-                        [1 (make-object color% 215 182 247)]
-                        [2 (make-object color% 60 189 255)]
-                        [3 (make-object color% 230 93 16)])
-                      (gl:rectangle 1. 1. 'outline))))]
-                  [else
-                   gl:blank]))))))
-      death?)
-    (match dot-timer
-      [0
+    (define ghost-graphics
+      (gl:translate
+       1. 1.
+       (gl:seqn
+        (gl:translate
+         (psn-x pos) (psn-y pos)
+         (if (zero? power-left-n)
+           (ghost-animation ai-n (current-frame) dir)
+           (scared-ghost-animation
+            (current-frame)
+            (power-left-n . <= . TIME-TO-POWER-WARNING))))
+        (gl:translate
+         (- (psn-x l-target) .5) (- (psn-y l-target) .5)
+         (gl:color/%
+          (match ai-n
+            [0 (make-object color% 169 16 0)]
+            [1 (make-object color% 215 182 247)]
+            [2 (make-object color% 60 189 255)]
+            [3 (make-object color% 230 93 16)])
+          (gl:rectangle 1. 1. 'outline))))))
+    (cond
+      [(zero? dot-timer)
        (define frightened? (not (zero? power-left-n)))
        (define speed
          (if frightened?
@@ -759,7 +731,30 @@
          (posn->v pos mv))
        (define ndir
          (angle-direction (angle mv)))
-       (if (ghost-write!)
+       (define p-cell
+         (pos->cell
+          (os/read* 'player-pos)))
+       (define g-cell
+         (pos->cell pos))
+       (define-values (events death?)
+         (if (and (zero? dot-timer)
+                  (equal?
+                   p-cell
+                   g-cell))
+           (if (power-left-n . > . 0)
+             ;; XXX reset dot-timer to ghost-return and jail
+             (values (list (cons 'dp2 ghost-pts)) #t)
+             ;; XXX Add sound effect
+             (values (list (cons 'lives-p -1)) #f))
+           (values empty #f)))
+       (os/write
+        (append
+         events
+         (list
+          (cons ai-sym pos)
+          (cons 'graphics
+                ghost-graphics))))
+       (if death?
          (os/exit ai-n)
          (loop np target ndir
                (if (equal? c (pos->cell np))
@@ -770,7 +765,12 @@
                dot-timer))]
       [else
        (define event (os/read* 'event #f))
-       (ghost-write!)
+       (os/write
+        (list
+         (cons 'graphics
+               (if (even? (current-frame))
+                 gl:blank
+                 ghost-graphics))))
        (loop pos l-target dir lc scatter? switch-n
              (if (eq? event 'pellet)
                ;; XXX Add a sound effect when the activate?
@@ -889,7 +889,7 @@
             (os/thread (ghost next-ghost 10))
             (values (modulo (add1 next-ghost) 4)
                     (- ghost-return 10))]
-           [(eq? event 'pellet)            
+           [(eq? event 'pellet)
             (values next-ghost (sub1 dots-to-ghost))]
            [else
             (values next-ghost dots-to-ghost)]))
