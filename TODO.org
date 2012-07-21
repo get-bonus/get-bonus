@@ -28,16 +28,21 @@
   CLOSED: [2012-07-04 Wed 22:39]
 * DONE Rewrite maze with OS model
   CLOSED: [2012-07-08 Sun 00:32]
-* TODO Improve maze OS structure
-* TODO OS - fix connection to 3s
+* DONE Improve maze OS structure
+  CLOSED: [2012-07-18 Wed 18:40]
+* DONE OS - fix connection to 3s
+  CLOSED: [2012-07-21 Sat 13:06]
   There is a use in tennis that would be fixed
 
   And maze uses it for the background music
 * TODO Make a faster FPS counter
   Making a texture is slow. Maybe with character-based string textures
   it would be faster?
+
+  Maybe just log data and look at it afterward?
 * TODO Figure out how to use OpenGL depth bit for background/foreground
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
+* TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
 * TODO Change gl model to be memoized
 * TODO Make games return score information to dashboard for it to manager
   (Version, Level, Numeric Score) from game
@@ -61,6 +66,8 @@
   (play all games)
 
   Have it so you can highlight games to be played that way
+* TODO Death scream like Ziggurat (in dashboard?)
+* TODO Return achievements (to dashboard)
 * TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
 * TODO Make audio loading lazy (or other things that are slow on boot)
 * TODO Use trippy graphics in tennis & maze
@@ -72,6 +79,7 @@
 * TODO Figure out a way to do localization well
 * TODO Make more games
 * TODO Make something for Racket/emacs to find out what deps aren't needed
+* TODO Experiment with located events (in a 2D mesh) rather than flat events
 * TODO Make OS use futures for parallelism
   First experiment, 2012/07/01 failed... got a slower frame rate. I
   think the key is to make it just a future during the time that GL is

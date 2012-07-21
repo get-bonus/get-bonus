@@ -829,25 +829,14 @@
                   (background (λ (w) se:bgm)
                               #:gain 0.5
                               #:pause-f
-                              ;; XXX very bad
-                              (λ (w)
-                                (not
-                                 (zero?
-                                  (first
-                                   (hash-ref (os-cur-heap w)
-                                             'power-left
-                                             (list 0))))))))
+                              (compose positive?
+                                       (os-sound-reader 'power-left 0))))
             (cons 'sound
                   (background (λ (w) se:power-up)
                               #:gain 1.0
                               #:pause-f
-                              ;; XXX very bad
-                              (λ (w)
-                                (zero?
-                                 (first
-                                  (hash-ref (os-cur-heap w)
-                                            'power-left
-                                            (list 0)))))))))
+                              (compose zero?
+                                       (os-sound-reader 'power-left 0))))))
      (os/thread player)
      (os/write (list (cons 'static init-st)
                      (cons 'power-left 0)))

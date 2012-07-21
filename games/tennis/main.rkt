@@ -230,7 +230,6 @@
      (os/thread (ball initial-ball-speed))
      (os/write
       (list
-       ;; XXX fix sound lambda
        (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))
        (cons 'listener center-pos)))
      (let loop ([score 0])

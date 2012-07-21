@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/runtime-path
          racket/match
+         racket/contract
          racket/function
          racket/math
          racket/list
@@ -97,13 +98,20 @@
 
 (define nothing (gensym))
 (define (os/read* k [def nothing])
-  (match (os/read k)
+  (core-read* k (os/read k) def))
+
+(define (core-read* k vs def)
+  (match vs
     [(list v)
      v]
     [else
-     (if (not (eq? nothing def))
-       def
-       (error 'os/read* "~e does not have one value, has ~e" k else))]))
+     (if (eq? nothing def)
+       (error 'os/read* "~e does not have one value, has ~e" k else)
+       def)]))
+
+(define (os-sound-reader k [def nothing])
+  (λ (os)
+    (core-read* k (hash-ref (os-cur-heap os) k empty) def)))
 
 (define boot
   (match-lambda
@@ -153,4 +161,27 @@
      (match-define (os cur-h _ _ _) w)
      (first (hash-ref cur-h 'done? (list #f))))))
 
-(provide (all-defined-out))
+(provide
+ (contract-out
+  [os/exit
+   (-> any/c any)]
+  [os/read
+   (-> symbol? list?)]
+  [os/write
+   (-> (listof (cons/c symbol? any/c))
+       any)]
+  [os/thread
+   (-> (-> any)
+       any)]
+  [os/read*
+   (->* (symbol?)
+        (any/c)
+        any/c)]
+  [big-bang/os
+   (-> number? number? psn?
+       #:sound-scale number?
+       (-> any)
+       any)]
+  [os-sound-reader
+   (->* (symbol?) (any/c)
+        (-> os? any/c))]))
