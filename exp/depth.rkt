@@ -30,18 +30,18 @@
               (gl-load-identity)
               (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
               (gl-push-matrix)
-              (glOrtho 0 width 0 height 0. 1.)
+              (glOrtho 0 width 0 height 0. 10.)
               (glDepthRange 0. 1.)
 
               (gl-push-attrib)
               (glClearColor 0. 0. 0. 1.)
-              (glClearDepth 1.)
+              (glClearDepth 10.)
               (gl-clear 'color-buffer-bit 'depth-buffer-bit)
 
               (gl-disable 'texture-2d)
 
               (gl-push-matrix)
-              (gl-translate 0. 0. 0.5)
+              (gl-translate 0. 0. 5.)
               (glColor4f 0. 1. 0. 1.)
               (glRectf 0 0 (/ width 4) (/ height 4))
               (gl-pop-matrix)
@@ -53,7 +53,7 @@
               (gl-pop-matrix)
 
               (gl-push-matrix)
-              (gl-translate 0. 0. 1.)
+              (gl-translate 0. 0. 10.)
               (glColor4f 1. 0. 0. 1.)
               (glRectf 0 0 (/ width 2) (/ height 2))
               (gl-pop-matrix)
