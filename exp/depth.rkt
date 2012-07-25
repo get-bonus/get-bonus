@@ -25,13 +25,13 @@
               (gl-alpha-func 'greater 0)
               (gl-disable 'lighting)
               (gl-disable 'dither)
-              (gl-enable 'blend)
+              
               (gl-matrix-mode 'modelview)
               (gl-load-identity)
               (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
               (gl-push-matrix)
               (glOrtho 0 width 0 height 0. 10.)
-              (glDepthRange 0. 1.)
+              (glDepthRange 0. 10.)
 
               (gl-push-attrib)
               (glClearColor 0. 0. 0. 1.)
@@ -39,6 +39,9 @@
               (gl-clear 'color-buffer-bit 'depth-buffer-bit)
 
               (gl-disable 'texture-2d)
+
+              (gl-enable 'blend)
+              (glBlendFunc GL_ONE GL_ZERO)
 
               (gl-push-matrix)
               (gl-translate 0. 0. 5.)

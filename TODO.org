@@ -41,6 +41,12 @@
 
   Maybe just log data and look at it afterward?
 * TODO Figure out how to use OpenGL depth bit for background/foreground
+  A lot of people online seem to suggest it is bad to use the Z buffer
+  because of transparency issues. Strange.
+* TODO Change controller model
+  SNES style
+  D-pad is booleans
+  Have another right interpretation of dpad
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
 * TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
 * TODO Change gl model to be memoized
