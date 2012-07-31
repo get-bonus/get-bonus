@@ -18,30 +18,17 @@
               (gl-viewport 0 0 width height)
               (gl-matrix-mode 'projection)
               (gl-load-identity)
-              (gl-enable 'texture-2d)
               (gl-enable 'depth-test)
-              (gl-depth-func 'less)
-              (gl-enable 'alpha-test)
-              (gl-alpha-func 'greater 0)
-              (gl-disable 'lighting)
-              (gl-disable 'dither)
-              
+
               (gl-matrix-mode 'modelview)
               (gl-load-identity)
-              (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
               (gl-push-matrix)
-              (glOrtho 0 width 0 height 0. 10.)
-              (glDepthRange 0. 10.)
+              ;; The trick: http://mlucassmith.tumblr.com/post/10869898438/why-i-hate-glortho-and-all-its-offspring
+              (glOrtho 0 width 0 height 0. -11.)
 
               (gl-push-attrib)
               (glClearColor 0. 0. 0. 1.)
-              (glClearDepth 10.)
               (gl-clear 'color-buffer-bit 'depth-buffer-bit)
-
-              (gl-disable 'texture-2d)
-
-              (gl-enable 'blend)
-              (glBlendFunc GL_ONE GL_ZERO)
 
               (gl-push-matrix)
               (gl-translate 0. 0. 5.)
@@ -61,7 +48,6 @@
               (glRectf 0 0 (/ width 2) (/ height 2))
               (gl-pop-matrix)
 
-              (gl-enable 'texture-2d)
               (gl-pop-attrib)
 
               (gl-pop-matrix)

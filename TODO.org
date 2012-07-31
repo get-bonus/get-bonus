@@ -43,6 +43,10 @@
 * TODO Figure out how to use OpenGL depth bit for background/foreground
   A lot of people online seem to suggest it is bad to use the Z buffer
   because of transparency issues. Strange.
+  
+  Now use it
+* TODO Read this thing about opengl optimization
+  http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq=1
 * TODO Change controller model
   SNES style
   D-pad is booleans
