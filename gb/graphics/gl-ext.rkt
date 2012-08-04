@@ -32,7 +32,7 @@
          (exact->inexact (/ (send c red) 255))
          (exact->inexact (/ (send c green) 255))
          (exact->inexact (/ (send c blue) 255))
-         (- 1. (send c alpha)) cs))
+         (send c alpha) cs))
 
 (define (above2 top bot)
   (seqn (translate 0. (cmd-max-y bot) top) bot))

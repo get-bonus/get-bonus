@@ -35,27 +35,12 @@
   There is a use in tennis that would be fixed
 
   And maze uses it for the background music
-* TODO Make a faster FPS counter
-  Making a texture is slow. Maybe with character-based string textures
-  it would be faster?
-
-  Maybe just log data and look at it afterward?
-* TODO Figure out how to use OpenGL depth bit for background/foreground
+* DONE Figure out how to use OpenGL depth bit for background/foreground
+  CLOSED: [2012-08-04 Sat 14:05]
   A lot of people online seem to suggest it is bad to use the Z buffer
   because of transparency issues. Strange.
   
   Now use it
-* TODO Read this thing about opengl optimization
-  http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq=1
-* TODO OS suppress updates
-  Make a critical region system call that gives a process sole access
-  to the system... leaving the other processes stalled with their last
-  writes persisting from frame to frame
-
-  This might be a good way to implement "friction" or "bullet time" as
-  well as other effects, like menus.
-
-  Just an idea. Might be a bad idea?
 * TODO Maybe change graphics to fixed pixels?
   Render to a buffer and then display the buffer?
   ---
@@ -68,6 +53,27 @@
   http://duriansoftware.com/joe/An-intro-to-modern-OpenGL.-Chapter-2.2:-Shaders.html
   ---
   Hopefully this will make planning and text better
+* TODO Make it so gl:Color doesn't have an alpha arg
+  Because by using Z buffer for layers, translucent pixels don't work
+  across layers... so maybe it is better to just disallow it?
+* TODO Make a faster FPS counter
+  Making a texture is slow. Maybe with character-based string textures
+  it would be faster?
+
+  Maybe just log data and look at it afterward?
+
+  I don't know if I really am measuring this correctly... see OpenGL wiki
+* TODO Read this thing about opengl optimization
+  http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq=1
+* TODO OS suppress updates
+  Make a critical region system call that gives a process sole access
+  to the system... leaving the other processes stalled with their last
+  writes persisting from frame to frame
+
+  This might be a good way to implement "friction" or "bullet time" as
+  well as other effects, like menus.
+
+  Just an idea. Might be a bad idea?
 * TODO Change controller model
   SNES style
   D-pad is booleans
