@@ -26,7 +26,7 @@
          (exact->inexact (/ (send c red) 255))
          (exact->inexact (/ (send c green) 255))
          (exact->inexact (/ (send c blue) 255))
-         (- 1. (send c alpha)) cs))
+         (send c alpha) cs))
 (define (background/% c . cs)
   (apply background 
          (exact->inexact (/ (send c red) 255))

@@ -47,10 +47,33 @@
   Now use it
 * TODO Read this thing about opengl optimization
   http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq=1
+* TODO OS suppress updates
+  Make a critical region system call that gives a process sole access
+  to the system... leaving the other processes stalled with their last
+  writes persisting from frame to frame
+
+  This might be a good way to implement "friction" or "bullet time" as
+  well as other effects, like menus.
+
+  Just an idea. Might be a bad idea?
+* TODO Maybe change graphics to fixed pixels?
+  Render to a buffer and then display the buffer?
+  ---
+  Take the SNES w x h and make it wider, see exp/wide.rkt
+  ---
+  Maybe use bsnes's snesshaders to do the scaling?
+
+  http://filthypants.blogspot.com/2011/05/more-emulator-pixel-shaders-crt-updated.html
+
+  http://duriansoftware.com/joe/An-intro-to-modern-OpenGL.-Chapter-2.2:-Shaders.html
+  ---
+  Hopefully this will make planning and text better
 * TODO Change controller model
   SNES style
   D-pad is booleans
   Have another right interpretation of dpad
+
+  Get a USB snes controller for home
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
 * TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
 * TODO Change gl model to be memoized
@@ -77,6 +100,10 @@
 
   Have it so you can highlight games to be played that way
 * TODO Death scream like Ziggurat (in dashboard?)
+  Or other stingers, but worry about being too annoying and not
+  instant restarting
+* TODO Find a unified common score display
+  Should I display all points: this session / this game / all games?
 * TODO Return achievements (to dashboard)
 * TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
 * TODO Make audio loading lazy (or other things that are slow on boot)

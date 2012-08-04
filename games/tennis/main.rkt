@@ -239,23 +239,25 @@
        (os/write
         (list
          (cons 'done? (zero? balls))
-         (cons 'graphics/first
-               (gl:seqn
-                bgm
-                (let ()
-                  (define score-t
-                    (gl:string->texture
-                     #:size 30
-                     (format "~a" score-n)))
-                  (gl:translate
-                   (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
-                   (- height (gl:texture-dh score-t))
-                   (gl:seqn
-                    (gl:color 1. 1. 1. 0.
-                              (gl:rectangle (gl:texture-dw score-t)
-                                            (gl:texture-dh score-t)))
-                    (gl:color 0. 0. 0. 1.
-                              (gl:texture score-t)))))))))
+         (cons 'graphics
+               (gl:layer
+                10.0
+                (gl:seqn
+                 bgm
+                 (let ()
+                   (define score-t
+                     (gl:string->texture
+                      #:size 30
+                      (format "~a" score-n)))
+                   (gl:translate
+                    (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
+                    (- height (gl:texture-dh score-t))
+                    (gl:seqn
+                     (gl:color 1. 1. 1. 1.
+                               (gl:rectangle (gl:texture-dw score-t)
+                                             (gl:texture-dh score-t)))
+                     (gl:color 0. 0. 0. 1.
+                               (gl:texture score-t))))))))))
        (loop score-n)))))
 
 (define game

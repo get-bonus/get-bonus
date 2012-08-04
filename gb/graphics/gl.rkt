@@ -16,13 +16,13 @@
 
 ;; Basic data structures
 ; XXX gc lists
-(struct cmd (count-box list-ref-box min-x min-y max-x max-y t))
+(struct cmd (count-box list-ref-box min-x min-y min-z max-x max-y max-z t))
 
 (define compiling? (make-parameter #f))
 (define THRESHOLD 10)
 (define run
   (match-lambda
-    [(cmd (and cb (box count)) (and lrb (box #f)) _ _ _ _ t)
+    [(cmd (and cb (box count)) (and lrb (box #f)) _ _ _ _ _ _ t)
      (define ncount (add1 count))
      (set-box! cb ncount)
      (if (and (ncount . >= . THRESHOLD)
@@ -38,21 +38,21 @@
            (t)
            (glEndList))
          (t))]
-    [(cmd _ (box the-list) _ _ _ _ _)
+    [(cmd _ (box the-list) _ _ _ _ _ _ _)
      (glCallList the-list)]))
 
-(define-syntax-rule (λg (min-x min-y max-x max-y) e ...)
-  (cmd (box 0) (box #f) min-x min-y max-x max-y (λ () e ...)))
+(define-syntax-rule (λg (min-x min-y min-z max-x max-y max-z) e ...)
+  (cmd (box 0) (box #f) min-x min-y min-z max-x max-y max-z (λ () e ...)))
 
 ;; Basic shapes
 (define (point x y)
-  (λg (x y x y)
+  (λg (x y 0 x y 0)
       (gl-begin 'points)
       (gl-vertex x y)
       (gl-end)))
 
 (define (line x1 y1 x2 y2)
-  (λg ((min x1 x2) (min y1 y2) (max x1 x2) (max y1 y2))
+  (λg ((min x1 x2) (min y1 y2) 0 (max x1 x2) (max y1 y2) 0)
       (gl-begin 'lines)
       (gl-vertex x1 y1)
       (gl-vertex x2 y2)
@@ -64,7 +64,7 @@
          (gl-enable 'texture-2d)))
   
 (define (rectangle w h [mode 'solid])
-  (λg ((min 0 w) (min 0 h) (max 0 w) (max 0 h))
+  (λg ((min 0 w) (min 0 h) 0 (max 0 w) (max 0 h) 0)
    (no-texture
     (case mode
       [(solid)
@@ -93,7 +93,7 @@
 
 ; XXX Make it so circle is a constant, so it will be efficient re: list detection
 (define circle:solid
-  (λg (-1 -1 1 1)
+  (λg (-1 -1 0 1 1 0)
    (no-texture
     (gl-begin 'triangle-fan)
     (begin
@@ -103,7 +103,7 @@
         (gl-vertex s c)))
     (gl-end))))
 (define circle:outline
-  (λg (-1 -1 1 1)
+  (λg (-1 -1 0 1 1 0)
    (no-texture
     (gl-begin 'line-strip)
     (begin
@@ -122,13 +122,13 @@
   (define-stateful define-state pre post)
   (define-syntax-rule 
     (define-state ((id pre-a (... ...)) a (... ...))
-      (min-x min-y max-x max-y)
-      (n-min-x n-min-y n-max-x n-max-y)
+      (min-x min-y min-z max-x max-y max-z)
+      (n-min-x n-min-y n-min-z n-max-x n-max-y n-max-z)
       setup (... ...))
     (define (id a (... ...) . ics)
       (define ic (apply seqn ics))
-      (match-define (cmd _ _ min-x min-y max-x max-y _) ic)
-      (λg (n-min-x n-min-y n-max-x n-max-y)
+      (match-define (cmd _ _ min-x min-y min-z max-x max-y max-z _) ic)
+      (λg (n-min-x n-min-y n-min-z n-max-x n-max-y n-max-z)
           (pre pre-a (... ...))
           setup (... ...)
           (run ic)
@@ -138,21 +138,30 @@
   gl-push-matrix gl-pop-matrix)
 
 (define-matrix ((translate) x y)
-  (min-x min-y max-x max-y)
-  ((+ min-x x) (+ min-y y) (+ max-x x) (+ max-y y))
+  (min-x min-y min-z max-x max-y max-z)
+  ((+ min-x x) (+ min-y y) min-z 
+   (+ max-x x) (+ max-y y) max-z)
   (gl-translate x y 0))
+(define-matrix ((layer) z)
+  (min-x min-y min-z max-x max-y max-z)
+  (min-x min-y (+ min-z z) 
+   max-x max-y (+ max-z z))
+  (gl-translate 0 0 z))
 (define-matrix ((scale) x y)
-  (min-x min-y max-x max-y)
-  ((* min-x x) (* min-y y) (* max-x x) (* max-y y))
+  (min-x min-y min-z max-x max-y max-z)
+  ((* min-x x) (* min-y y) min-z
+   (* max-x x) (* max-y y) max-z)
   (gl-scale x y 0))
 (define-matrix ((rotate) angle)
-  (min-x min-y max-x max-y)
+  (min-x min-y min-z max-x max-y max-z)
   ;; XXX Don't know if this is correct
   ;; XXX share angle
   ((* min-x (make-polar 0 angle)) 
    (* min-y (make-polar 0 angle))
+   min-z
    (* max-x (make-polar 0 angle))
-   (* max-y (make-polar 0 angle)))
+   (* max-y (make-polar 0 angle))
+   max-z)
   (gl-rotate angle 0 0 1))
 
 (define (mirror w . ics)
@@ -164,18 +173,18 @@
   gl-push-attrib gl-pop-attrib)
 
 (define-attrib ((color 'current-bit) r g b a)
-  (min-x min-y max-x max-y)
-  (min-x min-y max-x max-y)
+  (min-x min-y min-z max-x max-y max-z)
+  (min-x min-y min-z max-x max-y max-z)
   (glColor4f r g b a))
 (define-attrib ((background 'color-buffer-bit) r g b a)
-  (min-x min-y max-x max-y)
-  (min-x min-y max-x max-y)
+  (min-x min-y min-z max-x max-y max-z)
+  (min-x min-y min-z max-x max-y max-z)
   (glClearColor r g b a)
-  (gl-clear 'color-buffer-bit))
+  (gl-clear 'color-buffer-bit 'depth-buffer-bit))
 
 ;; Combiners
 (define blank
-  (λg (0 0 0 0)
+  (λg (0 0 0 0 0 0)
       (void)))
 
 (define seqn
@@ -185,9 +194,11 @@
     [cs
      (define min-x (apply min (map cmd-min-x cs)))
      (define min-y (apply min (map cmd-min-y cs)))
+     (define min-z (apply min (map cmd-min-z cs)))
      (define max-x (apply max (map cmd-max-x cs)))
      (define max-y (apply max (map cmd-max-y cs)))
-     (λg (min-x min-y max-x max-y)
+     (define max-z (apply max (map cmd-max-z cs)))
+     (λg (min-x min-y min-z max-x max-y max-z)
          (for-each run cs))]))
 
 ;; Textures
@@ -264,11 +275,12 @@
                   [tx1 0] [ty1 0]
                   [tw 1] [th 1])
   (λg 
-   ((min 0 w) (min 0 h) (max 0 w) (max 0 h))
+   ((min 0 w) (min 0 h) 0 (max 0 w) (max 0 h) 0)
    (load-texture! t)
-   ; I thought it would be more elegant to use glPushAttrib before this, but it turns out
-   ; that that is *really* slow. My frame-rate dropped from 60 to 5. Yikes. I hope I am
-   ; not doing other stupid things like that.
+   ;; I thought it would be more elegant to use glPushAttrib before
+   ;; this, but it turns out that that is *really* slow. My frame-rate
+   ;; dropped from 60 to 5. Yikes. I hope I am not doing other stupid
+   ;; things like that.
    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
    (draw-texture! 
     (unbox (texture-r t)) 
@@ -335,7 +347,8 @@
 ;; Focus
 (define (gl-viewport/restrict mw mh
                               vw vh 
-                              cx cy)
+                              cx cy
+                              min-z max-z)
   (define x1 (- cx (/ vw 2)))
   (define x2 (+ cx (/ vw 2)))
   (define y1 (- cy (/ vh 2)))
@@ -347,7 +360,7 @@
   (define y1p (max 0.0 y1))
   (define y2p (min mh y2))
   
-  (gluOrtho2D 
+  (glOrtho
    ; If x2 has gone off, then add more to the left
    (if (= x2 x2p)
        x1p
@@ -361,20 +374,23 @@
        (+ y1p (- y2p y2)))
    (if (= y1 y1p)
        y2p
-       (+ y2p (- y1p y1)))))
+       (+ y2p (- y1p y1)))
+   min-z
+   (min -1. (* -1 max-z))))
 
 (define (focus mw mh
                vw vh 
                cx cy
                cmd)
   (λg
-   ((cmd-min-x cmd) (cmd-min-y cmd)
-    (cmd-max-x cmd) (cmd-max-y cmd))
+   ((cmd-min-x cmd) (cmd-min-y cmd) (cmd-min-z cmd)
+    (cmd-max-x cmd) (cmd-max-y cmd) (cmd-max-z cmd))
    (gl-push-matrix)
    (gl-viewport/restrict 
     mw mh
     vw vh 
-    cx cy)
+    cx cy
+    (cmd-min-z cmd) (cmd-max-z cmd))
    (run cmd)
    (gl-pop-matrix)))
 
@@ -384,10 +400,13 @@
   (gl-matrix-mode 'projection)
   (gl-load-identity)
   (gl-enable 'texture-2d)
-  (gl-disable 'depth-test)
+  (gl-enable 'depth-test)
+  (gl-depth-func 'lequal)
   (gl-disable 'lighting)
   (gl-disable 'dither)
   (gl-enable 'blend)
+  (gl-enable 'alpha-test)
+  (gl-alpha-func 'greater 0.0)
   (gl-matrix-mode 'modelview)
   (gl-load-identity)
   (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
@@ -424,6 +443,7 @@
  [rotate ((real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [mirror ((real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [scale ((real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
+ [layer ((real?) () #:rest (listof cmd?) . ->* . cmd?)] 
  [translate ((real? real?) () #:rest (listof cmd?) . ->* . cmd?)]
  [color ((inexact? inexact? inexact? inexact?) () #:rest (listof cmd?) . ->* . cmd?)]
  [background ((inexact? inexact? inexact? inexact?) () #:rest (listof cmd?) . ->* . cmd?)]

@@ -471,7 +471,7 @@
 
 (define (quads->display qs)
   (gl:color
-   0. 0. 1. 0.
+   0. 0. 1. 1.
    (gl:for*/gl
     ([x (in-range width)]
      [y (in-range height)])
@@ -883,23 +883,25 @@
          (cons 'event event)
          (cons 'done?
                (zero? lives-p))
-         (cons 'graphics/first
-               (gl:translate
-                1. 1.
-                (gl:background
-                 0. 0. 0. 0.
-                 (gl:color
-                  1. 1. 1. 1.
-                  (gl:center-texture-at
-                   (psn (/ width 2.) (+ height 1.5))
-                   title)
-                  (gl:translate
-                   0. (+ height 0.5)
-                   (gl:texture
-                    (gl:string->texture
-                     #:size 50
-                     (format "~a" score-n)))))
-                 (static-display st))))
+         (cons 'graphics
+               (gl:layer
+                10.0
+                (gl:translate
+                 1. 1.
+                 (gl:background
+                  0. 0. 0. 0.
+                  (gl:color
+                   1. 1. 1. 1.
+                   (gl:center-texture-at
+                    (psn (/ width 2.) (+ height 1.5))
+                    title)
+                   (gl:translate
+                    0. (+ height 0.5)
+                    (gl:texture
+                     (gl:string->texture
+                      #:size 50
+                      (format "~a" score-n)))))
+                  (static-display st)))))
          (cons 'static
                st-n)
          (cons 'power-left

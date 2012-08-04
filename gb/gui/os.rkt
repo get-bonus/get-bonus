@@ -133,7 +133,7 @@
    #:tick
    (λ (w cs)
      ;; XXX this is not a good place
-     (printf "FPS: ~a\n"
+     #;(printf "FPS: ~a\n"
              (real->decimal-string
               (current-rate) 1))
      (match-define (os cur-h next-h cur-ps next-ps) w)
@@ -148,9 +148,7 @@
               (psn-x center-pos) (psn-y center-pos)
               (gl:background 0. 0. 0. 1.0
                              (apply gl:seqn
-                                    (append
-                                     (hash-ref new-cur-h 'graphics/first empty)
-                                     (hash-ref new-cur-h 'graphics empty)))))
+                                    (hash-ref new-cur-h 'graphics empty))))
              (hash-ref new-cur-h 'sound empty)))
    #:listener
    (λ (w)

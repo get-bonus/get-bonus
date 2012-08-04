@@ -19,15 +19,18 @@
               (gl-matrix-mode 'projection)
               (gl-load-identity)
               (gl-enable 'depth-test)
+              ;; Otherwise we won't see the red square
+              (gl-depth-func 'lequal)
 
               (gl-matrix-mode 'modelview)
               (gl-load-identity)
               (gl-push-matrix)
               ;; The trick: http://mlucassmith.tumblr.com/post/10869898438/why-i-hate-glortho-and-all-its-offspring
-              (glOrtho 0 width 0 height 0. -11.)
+              (glOrtho 0 width 0 height 0. -10.)
 
               (gl-push-attrib)
               (glClearColor 0. 0. 0. 1.)
+              ;; Can't use glClearDepth
               (gl-clear 'color-buffer-bit 'depth-buffer-bit)
 
               (gl-push-matrix)
