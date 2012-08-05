@@ -41,6 +41,7 @@
   because of transparency issues. Strange.
   
   Now use it
+* TODO Switch to RacketGL throughout
 * TODO Maybe change graphics to fixed pixels?
   Render to a buffer and then display the buffer?
   ---
