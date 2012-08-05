@@ -53,6 +53,8 @@
   http://duriansoftware.com/joe/An-intro-to-modern-OpenGL.-Chapter-2.2:-Shaders.html
   ---
   Hopefully this will make planning and text better
+  --
+  I'm using exp/buffer.rkt to experiment and it is MESSED up.
 * TODO Make it so gl:Color doesn't have an alpha arg
   Because by using Z buffer for layers, translucent pixels don't work
   across layers... so maybe it is better to just disallow it?
