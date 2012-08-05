@@ -130,3 +130,13 @@
   First experiment, 2012/07/01 failed... got a slower frame rate. I
   think the key is to make it just a future during the time that GL is
   rendering.
+* TODO Add challenges/achievements/training to NES/SNES games
+  Hook up with an emulator core to drop into a game with save states
+  and then monitor its execution for score, etc
+
+  Can you beat this Mega Man stage with one life?
+
+  How fast can you do X in this game?
+
+  Wrap this in a package that switches from game to game like I
+  want... it may be perfection
