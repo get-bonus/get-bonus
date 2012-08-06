@@ -9,6 +9,7 @@
          gb/audio/3s
          gb/data/ltq
          (prefix-in gl: gb/graphics/gl)
+         gb/graphics/crt
          gb/input/controller)
 
 (define RATE 1/60)
@@ -91,7 +92,10 @@
          (exit 1))
        (send glctx call-as-current
              (λ ()
-               (when last-cmd (gl:draw last-cmd))
+               (when last-cmd
+                 (draw-on-crt (send c get-width) (send c get-height)
+                              ;;screen-width screen-height 
+                              (λ () (gl:draw last-cmd))))
                (send glctx swap-buffers))))
      (λ (k)
        (keyboard-monitor-submit! km k))))

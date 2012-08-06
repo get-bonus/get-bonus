@@ -94,6 +94,7 @@ void main()
   overscan = vec2(0.99,0.99);
   // aspect ratio
   aspect = vec2(1.0, 0.75);
+  //aspect = vec2(1.0, 0.5625); // JM - Is this the right aspect ratio for 16:9?
   // lengths are measured in units of (approximately) the width of the monitor
   // simulated distance from viewer to monitor
   d = 2.0;
