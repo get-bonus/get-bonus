@@ -444,9 +444,6 @@
   (match-define (struct* static ([quads quads])) st)
   (define-values (q r c) (xy->quad*r*c x y))
   (quad-ref (hash-ref quads q) r c))
-(define (static-display st)
-  (gl:seqn (static-map-display st)
-           (static-objs-display st)))
 (define (place-power-up q)
   (match-define (quad-objs pellet-count r*c->obj) q)
   (match-define (cons r c) power-up-cell)
@@ -763,7 +760,9 @@
       (list
        (cons ai-sym pos)
        (cons 'graphics
-             (ghost-graphics pos l-target dir power-left-n)))))
+             (gl:layer
+              1.0
+              (ghost-graphics pos l-target dir power-left-n))))))
     (if death?
       (os/exit ai-n)
       (loop np target ndir
@@ -806,13 +805,15 @@
       (cons 'player-pos nnp)
       (cons 'player-dir actual-dir)
       (cons 'graphics
-            (gl:translate
-             1. 1.
+            (gl:layer
+             0.0
              (gl:translate
-              (psn-x nnp) (psn-y nnp)
-              (gl:rotate
-               (rad->deg actual-dir)
-               (player-animation (current-frame))))))))
+              1. 1.
+              (gl:translate
+               (psn-x nnp) (psn-y nnp)
+               (gl:rotate
+                (rad->deg actual-dir)
+                (player-animation (current-frame)))))))))
     (loop nnp actual-dir next-dir-n)))
 
 (define (game-start)
@@ -884,24 +885,27 @@
          (cons 'done?
                (zero? lives-p))
          (cons 'graphics
-               (gl:layer
-                10.0
-                (gl:translate
-                 1. 1.
-                 (gl:background
-                  0. 0. 0. 0.
-                  (gl:color
-                   1. 1. 1. 1.
-                   (gl:center-texture-at
-                    (psn (/ width 2.) (+ height 1.5))
-                    title)
-                   (gl:translate
-                    0. (+ height 0.5)
-                    (gl:texture
-                     (gl:string->texture
-                      #:size 50
-                      (format "~a" score-n)))))
-                  (static-display st)))))
+               (gl:translate
+                1. 1.
+                (gl:background
+                 0. 0. 0. 0.
+                 (gl:color
+                  1. 1. 1. 1.
+                  (gl:center-texture-at
+                   (psn (/ width 2.) (+ height 1.5))
+                   title)
+                  (gl:translate
+                   0. (+ height 0.5)
+                   (gl:texture
+                    (gl:string->texture
+                     #:size 50
+                     (format "~a" score-n)))))
+                 (gl:layer
+                  10.0
+                  (static-map-display st))
+                 (gl:layer
+                  2.0
+                  (static-objs-display st)))))
          (cons 'static
                st-n)
          (cons 'power-left
