@@ -56,10 +56,37 @@
 (define-values (width height quad:template)
   (path->quadrant template-map))
 
+(define h-width
+  (/ width 2))
+(define h-height
+  (/ height 2))
+(define (r*c->i vr vc)
+  (+ (* vr h-width) vc))
+(define (quad-ref quad vr vc)
+  (bytes-ref quad (r*c->i vr vc)))
+
+(define quad:templates
+  (for*/list ([top? (in-list '(#t #f))]
+              [doubled (in-range 5)])
+    (define t (bytes-copy quad:template))
+    (for ([row (in-list (list 2 (if top? 3 4) 5))])
+      (let loop ([i 2] [which 0])
+        (unless (= i 15)
+          (cond
+            [(= which doubled)
+             (bytes-set! t (r*c->i row (+ 0 i)) wall)
+             (bytes-set! t (r*c->i row (+ 1 i)) wall)
+             (loop (+ i 3) (+ 1 which))]
+            [else
+             (bytes-set! t (r*c->i row (+ 0 i)) wall)
+             (loop (+ i 2) (+ 1 which))]))))
+    t))
+
 ;; XXX incorporate ghost position (so that I don't put a ghost in a
 ;; wall if I'm switching the state of a quad)
 (define (generate-quad)
-  (define new-quad (bytes-copy quad:template))
+  (define the-template (list-ref/random quad:templates))
+  (define new-quad (bytes-copy the-template))
   (define cells
     (for*/list ([r (in-range h-height)]
                 [c (in-range h-width)])
@@ -80,7 +107,7 @@
       (quad-ref new-quad r c)
       hall))
   (define (original-wall? c)
-    (= wall (quad-ref quad:template (car c) (cdr c))))
+    (= wall (quad-ref the-template (car c) (cdr c))))
   (define (not-wall? c)
     (not (= wall (quad-cell-ref c))))
   (define (non-wall-neighbors cn)
@@ -226,15 +253,6 @@
     (gl:translate
      (- (* s .5)) (- (* s .5))
      (gl:rectangle s s))))
-
-(define h-width
-  (/ width 2))
-(define h-height
-  (/ height 2))
-(define (r*c->i vr vc)
-  (+ (* vr h-width) vc))
-(define (quad-ref quad vr vc)
-  (bytes-ref quad (r*c->i vr vc)))
 
 (define (locate-cell quad value)
   (for*/or ([r (in-range h-height)]
@@ -634,7 +652,7 @@
      (+ outside-jail 1.)))
   (define (ghost-graphics pos l-target dir power-left-n)
     (gl:translate
-     0. 1.
+     0. 0.
      (gl:seqn
       (gl:translate
        (psn-x pos) (psn-y pos)
@@ -808,7 +826,7 @@
             (gl:layer
              0.0
              (gl:translate
-              0. 1.
+              0. 0.
               (gl:translate
                (psn-x nnp) (psn-y nnp)
                (gl:rotate
@@ -818,7 +836,7 @@
 
 (define (game-start)
   (big-bang/os
-   width (+ height 4) center-pos
+   width (+ height 2) center-pos
    #:sound-scale (/ width 2.)
    (λ ()
      (define init-st (make-static))
@@ -886,7 +904,7 @@
                (zero? lives-p))
          (cons 'graphics
                (gl:translate
-                0. 1.
+                0. 0.
                 (gl:background
                  0. 0. 0. 0.
                  (gl:color
