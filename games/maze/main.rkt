@@ -600,8 +600,8 @@
     (values st obj)))
 
 (define (scatter-tile)
-  (psn (* (random) width)
-       (* (random) height)))
+  (psn (round (* (random) width))
+       (round (* (random) height))))
 
 ;; XXX score multiplier
 (define pellet-pts 10)
@@ -634,7 +634,7 @@
      (+ outside-jail 1.)))
   (define (ghost-graphics pos l-target dir power-left-n)
     (gl:translate
-     1. 1.
+     0. 1.
      (gl:seqn
       (gl:translate
        (psn-x pos) (psn-y pos)
@@ -808,7 +808,7 @@
             (gl:layer
              0.0
              (gl:translate
-              1. 1.
+              0. 1.
               (gl:translate
                (psn-x nnp) (psn-y nnp)
                (gl:rotate
@@ -818,7 +818,7 @@
 
 (define (game-start)
   (big-bang/os
-   (+ width 2) (+ height 3) center-pos
+   width (+ height 4) center-pos
    #:sound-scale (/ width 2.)
    (λ ()
      (define init-st (make-static))
@@ -886,7 +886,7 @@
                (zero? lives-p))
          (cons 'graphics
                (gl:translate
-                1. 1.
+                0. 1.
                 (gl:background
                  0. 0. 0. 0.
                  (gl:color

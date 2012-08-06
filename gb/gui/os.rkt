@@ -133,7 +133,7 @@
    #:tick
    (λ (w cs)
      ;; XXX this is not a good place
-     (printf "FPS: ~a\n"
+     #;(printf "FPS: ~a\n"
              (real->decimal-string
               (current-rate) 1))
      (match-define (os cur-h next-h cur-ps next-ps) w)
