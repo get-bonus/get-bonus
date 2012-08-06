@@ -41,8 +41,8 @@
   because of transparency issues. Strange.
   
   Now use it
-* TODO Switch to RacketGL throughout
-* TODO Maybe change graphics to fixed pixels?
+* DONE Maybe change graphics to fixed pixels?
+  CLOSED: [2012-08-05 Sun 19:45]
   Render to a buffer and then display the buffer?
   ---
   Take the SNES w x h and make it wider, see exp/wide.rkt
@@ -56,6 +56,16 @@
   Hopefully this will make planning and text better
   --
   I'm using exp/buffer.rkt to experiment and it is MESSED up.
+* TODO Switch to RacketGL throughout
+* TODO Make XML shader reading more robust
+  In case there is just a fragment, vertex, etc (see bsnes examples)
+* TODO Allow multi-pass shaders (such as CRT halation)
+  See libretro or retroarch
+* TODO Rewrite maze & tennis to use CRT size directly
+* TODO Make fixed-size fonts better
+* TODO Use SNES sprites for Ms. Pac-Man in maze
+* TODO maze - sometimes the white ghost disappears... it's weird
+* TODO tennis - balls can bounce infinitely off wall
 * TODO Make it so gl:Color doesn't have an alpha arg
   Because by using Z buffer for layers, translucent pixels don't work
   across layers... so maybe it is better to just disallow it?

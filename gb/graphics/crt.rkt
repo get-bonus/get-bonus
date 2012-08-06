@@ -28,6 +28,9 @@
 ;; shader stuff based on bsnes_v085-source/bsnes/ruby/video/opengl.hpp
 (define shader_program #f)
 
+;; This width and height is based on the SNES, which was 256x239. The
+;; smallest 16:9 rectangle that this fits in is 432x243, so we'll use
+;; that. This makes the GBIES basically a "widescreen" SNES.
 (define crt-width 432)
 (define crt-height 243)
 (define texture-width crt-width)

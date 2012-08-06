@@ -140,7 +140,7 @@ void main()
 #define CURVATURE
 
 // Enable 3x oversampling of the beam profile
-#define OVERSAMPLE
+//#define OVERSAMPLE
 
 // Use the older, purely gaussian beam profile
 #define USEGAUSSIAN
