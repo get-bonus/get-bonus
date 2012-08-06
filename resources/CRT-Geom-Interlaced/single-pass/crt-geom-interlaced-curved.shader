@@ -93,8 +93,8 @@ void main()
   // overscan (e.g. 1.02 for 2% overscan)
   overscan = vec2(0.99,0.99);
   // aspect ratio
-  aspect = vec2(1.0, 0.75);
-  //aspect = vec2(1.0, 0.5625); // JM - Is this the right aspect ratio for 16:9?
+  //aspect = vec2(1.0, 0.75);
+  aspect = vec2(1.0, 0.5625); // JM - Is this the right aspect ratio for 16:9?
   // lengths are measured in units of (approximately) the width of the monitor
   // simulated distance from viewer to monitor
   d = 2.0;
@@ -143,7 +143,7 @@ void main()
 #define OVERSAMPLE
 
 // Use the older, purely gaussian beam profile
-//#define USEGAUSSIAN
+#define USEGAUSSIAN
 
 // Macros.
 #define FIX(c) max(abs(c), 1e-5);
