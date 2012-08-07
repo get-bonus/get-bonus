@@ -129,8 +129,9 @@
      (list
       (cons 'lhs-y lhs-y-n)
       (cons 'graphics
-            (gl:translate lhs-x (- lhs-y-n paddle-hh)
-                          lhs-paddle))))
+            (cons 0
+                  (gl:translate lhs-x (- lhs-y-n paddle-hh)
+                                lhs-paddle)))))
     (loop lhs-y-n)))
 
 (define (ball-bounce dir mx my [dy 0.])
@@ -208,9 +209,10 @@
      (list*
       (cons 'score? score?)
       (cons 'graphics
-            (gl:translate (psn-x ball-pos-n) (psn-y ball-pos-n)
-                          (gl:rotate (* (/ 180 pi) ball-dir-n)
-                                     gl:ball)))
+            (cons 0
+                  (gl:translate (psn-x ball-pos-n) (psn-y ball-pos-n)
+                                (gl:rotate (* (/ 180 pi) ball-dir-n)
+                                           gl:ball))))
       (append
        sounds
        (if new-ball?
@@ -240,7 +242,7 @@
         (list
          (cons 'done? (zero? balls))
          (cons 'graphics
-               (gl:layer
+               (cons
                 10.0
                 (gl:seqn
                  bgm

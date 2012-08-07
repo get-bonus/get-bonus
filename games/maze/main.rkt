@@ -676,10 +676,11 @@
       (os/write
        (list
         (cons 'graphics
-              (if (even? (current-frame))
-                gl:blank
-                (ghost-graphics outside-jail outside-jail 'left
-                                (os/read* 'power-left))))))
+              (cons 0
+                    (if (even? (current-frame))
+                      gl:blank
+                      (ghost-graphics outside-jail outside-jail 'left
+                                      (os/read* 'power-left)))))))
       (wait-loop (if (eq? event 'pellet)
                    ;; XXX Add a sound effect when the activate?
                    (max 0 (sub1 dot-timer))
@@ -778,7 +779,7 @@
       (list
        (cons ai-sym pos)
        (cons 'graphics
-             (gl:layer
+             (cons
               1.0
               (ghost-graphics pos l-target dir power-left-n))))))
     (if death?
@@ -823,15 +824,13 @@
       (cons 'player-pos nnp)
       (cons 'player-dir actual-dir)
       (cons 'graphics
-            (gl:layer
+            (cons
              0.0
              (gl:translate
-              0. 0.
-              (gl:translate
-               (psn-x nnp) (psn-y nnp)
-               (gl:rotate
-                (rad->deg actual-dir)
-                (player-animation (current-frame)))))))))
+              (psn-x nnp) (psn-y nnp)
+              (gl:rotate
+               (rad->deg actual-dir)
+               (player-animation (current-frame))))))))
     (loop nnp actual-dir next-dir-n)))
 
 (define (game-start)
@@ -903,10 +902,9 @@
          (cons 'done?
                (zero? lives-p))
          (cons 'graphics
-               (gl:translate
-                0. 0.
-                (gl:background
-                 0. 0. 0. 0.
+               (cons
+                10.
+                (gl:seqn
                  (gl:color
                   1. 1. 1. 1.
                   (gl:center-texture-at
@@ -918,12 +916,8 @@
                     (gl:string->texture
                      #:size 50
                      (format "~a" score-n)))))
-                 (gl:layer
-                  10.0
-                  (static-map-display st))
-                 (gl:layer
-                  2.0
-                  (static-objs-display st)))))
+                 (static-map-display st)
+                 (static-objs-display st))))
          (cons 'static
                st-n)
          (cons 'power-left

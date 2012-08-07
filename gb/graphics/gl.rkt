@@ -90,7 +90,6 @@
 (define-compile-time-vector circle-coss
   (for/list ([angle (in-range 0 360 circle-step)]) (cos angle)))
 
-; XXX Make it so circle is a constant, so it will be efficient re: list detection
 (define circle:solid
   (λg (-1 -1 0 1 1 0)
    (no-texture
@@ -399,8 +398,8 @@
   (gl-matrix-mode 'projection)
   (gl-load-identity)
   (gl-enable 'texture-2d)
-  (gl-enable 'depth-test)
-  (gl-depth-func 'lequal)
+  #;(gl-enable 'depth-test)
+  #;(gl-depth-func 'lequal)
   (gl-disable 'lighting)
   (gl-disable 'dither)
   (gl-enable 'blend)

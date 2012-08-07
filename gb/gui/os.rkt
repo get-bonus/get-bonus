@@ -142,13 +142,16 @@
      (printf "FPS: ~a\n"
              (real->decimal-string
               (current-rate) 1))     
+     (define gl-list
+       (sort (hash-ref new-cur-h 'graphics empty)
+             >= #:key car))
      (values new-w
              (gl:focus
               width height width height
               (psn-x center-pos) (psn-y center-pos)
-              (gl:background 0. 0. 0. 1.0
+              (gl:background 0. 0. 0. 0.0
                              (apply gl:seqn 
-                                    (hash-ref new-cur-h 'graphics empty))))
+                                    (map cdr gl-list))))
              (hash-ref new-cur-h 'sound empty)))
    #:listener
    (λ (w)

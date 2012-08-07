@@ -61,7 +61,10 @@
   In this case, I'm not sure it is a good idea, because we already use
   a 16:9 frame and it is convenient to imaging that the 1x1 boxes in
   the maze are the real thing and the 16x9 pixels are just the display
-* TODO maze - sometimes the white ghost disappears... it's weird
+* DONE maze - sometimes the white ghost disappears... it's weird
+  CLOSED: [2012-08-06 Mon 19:10]
+  It was a problem with depth. Annoying. I'll have to revisit depth
+  later.
 * TODO Switch to RacketGL throughout
 * TODO Make XML shader reading more robust
   In case there is just a fragment, vertex, etc (see bsnes examples)
