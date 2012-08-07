@@ -137,7 +137,7 @@
                 (filter inside-maze?
                         (non-wall-neighbors r*c)))))
   (visit player-entry-cell)
-
+  
   (let ()
     (local-require data/heap
                    unstable/function)
@@ -187,6 +187,11 @@
   (for ([r*c (in-list cells)])
     (when (= conn (quad-cell-ref r*c))
       (bytes-set! new-quad (r*c->i (car r*c) (cdr r*c)) hall)))
+
+  (for ([new-val (in-list (list power-up fruit))])
+    (for/or ([r*c (shuffle cells)])
+      (and (= hall (quad-cell-ref r*c))
+           (bytes-set! new-quad (r*c->i (car r*c) (cdr r*c)) new-val))))
   new-quad)
 
 (define center-pos
@@ -500,7 +505,7 @@
        gl:blank)))))
 
 (struct quad-objs (pellet-count r*c->obj))
-(define (populate-quad q [old-q #f])
+(define (populate-quad q [old-q #f] [old-qo #f])
   (define-values
     (pc fm)
     (for*/fold ([ct 0] [fm (fmatrix h-height h-width)])
@@ -518,7 +523,7 @@
     (if (and old-q
              (let ()
                (define old-fruit-cell (quad-fruit-cell old-q))
-               (fmatrix-ref (quad-objs-r*c->obj old-q)
+               (fmatrix-ref (quad-objs-r*c->obj old-qo)
                             (car old-fruit-cell) (cdr old-fruit-cell)
                             #f)))
       (place-fruit q im2)
@@ -603,7 +608,7 @@
             (hash-ref quad->objs-p oq))
           (define quad->objs-n
             (hash-set quad->objs-p oq
-                      (populate-quad nq old-objs)))
+                      (populate-quad nq (hash-ref quads oq) old-objs)))
           (values (struct-copy
                    static st
                    [quads quads-n]
