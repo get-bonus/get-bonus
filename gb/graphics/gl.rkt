@@ -7,12 +7,12 @@
          sgl/gl
          sgl/gl-vectors)
 
-; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL
-; XXX Send fewer GL functions generally
-; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
-; XXX Register a finalizer that will run glDeleteTextures
-; XXX The matrix stack can only be 32 deep
-; XXX Character-based texts (complicates centering)
+;; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL?
+;; XXX Send fewer GL functions generally
+;; XXX Something funny might happen with (x,y) really being corners of pixels (not centers)
+;; XXX Register a finalizer that will run glDeleteTextures
+;; XXX The matrix stack can only be 32 deep
+;; XXX Character-based texts (complicates centering)
 
 ;; Basic data structures
 ; XXX gc lists
@@ -28,9 +28,8 @@
      (if (and (ncount . >= . THRESHOLD)
               (not (compiling?)))
          (parameterize ([compiling? #t])
-           ; By resetting the current texture,
-           ; we ensure that the binding will be 
-           ; in the call list.
+           ;; By resetting the current texture, we ensure that the
+           ;; binding will be in the call list.
            (set-box! (current-texture) #f)
            (define n (glGenLists 1))
            (set-box! lrb n)

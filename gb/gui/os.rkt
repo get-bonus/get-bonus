@@ -132,22 +132,22 @@
    #:sound-scale sound-scale
    #:tick
    (λ (w cs)
-     ;; XXX this is not a good place
-     #;(printf "FPS: ~a\n"
-             (real->decimal-string
-              (current-rate) 1))
      (match-define (os cur-h next-h cur-ps next-ps) w)
      (hash-set! cur-h 'controller (list (first cs)))
      (define new-w
        (boot
         (os cur-h next-h cur-ps next-ps)))
      (match-define (os new-cur-h _ _ _) new-w)
+     ;; XXX this is not a good place
+     (printf "FPS: ~a\n"
+             (real->decimal-string
+              (current-rate) 1))     
      (values new-w
              (gl:focus
               width height width height
               (psn-x center-pos) (psn-y center-pos)
               (gl:background 0. 0. 0. 1.0
-                             (apply gl:seqn
+                             (apply gl:seqn 
                                     (hash-ref new-cur-h 'graphics empty))))
              (hash-ref new-cur-h 'sound empty)))
    #:listener
