@@ -67,7 +67,15 @@
   later.
 * DONE tennis - use CRT size directly?
   CLOSED: [2012-08-06 Mon 19:49]
-* TODO Switch to RacketGL throughout
+* DONE Change controller model
+  CLOSED: [2012-08-09 Thu 15:58]
+  SNES style
+  D-pad is booleans
+  Have another right interpretation of dpad
+
+  Get a USB snes controller for home
+* DONE Switch to RacketGL throughout
+  CLOSED: [2012-08-09 Thu 16:28]
 * TODO Make XML shader reading more robust
   In case there is just a fragment, vertex, etc (see bsnes examples)
 * TODO Allow multi-pass shaders (such as CRT halation)
@@ -89,6 +97,8 @@
   I don't know if I really am measuring this correctly... see OpenGL wiki
 * TODO Read this thing about opengl optimization
   http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq=1
+
+  http://www.opengl.org/wiki/FAQ#Are_glTranslate.2FglRotate.2FglScale_hardware_accelerated.3F
 * TODO OS suppress updates
   Make a critical region system call that gives a process sole access
   to the system... leaving the other processes stalled with their last
@@ -98,12 +108,6 @@
   well as other effects, like menus.
 
   Just an idea. Might be a bad idea?
-* TODO Change controller model
-  SNES style
-  D-pad is booleans
-  Have another right interpretation of dpad
-
-  Get a USB snes controller for home
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
 * TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
 * TODO tennis - score based on total number of balls in play

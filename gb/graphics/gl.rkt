@@ -3,9 +3,8 @@
          racket/contract
          racket/match
          (for-syntax racket/base)
-         sgl
-         sgl/gl
-         sgl/gl-vectors)
+         (planet stephanh/RacketGL/rgl)
+         ffi/vector)
 
 ;; XXX Maybe implement clipping inside of this code, rather than relying on OpenGL?
 ;; XXX Send fewer GL functions generally
@@ -46,36 +45,36 @@
 ;; Basic shapes
 (define (point x y)
   (λg (x y 0 x y 0)
-      (gl-begin 'points)
-      (gl-vertex x y)
-      (gl-end)))
+      (glBegin GL_POINTS)
+      (glVertex2d x y)
+      (glEnd)))
 
 (define (line x1 y1 x2 y2)
   (λg ((min x1 x2) (min y1 y2) 0 (max x1 x2) (max y1 y2) 0)
-      (gl-begin 'lines)
-      (gl-vertex x1 y1)
-      (gl-vertex x2 y2)
-      (gl-end)))
+      (glBegin GL_LINES)
+      (glVertex2d x1 y1)
+      (glVertex2d x2 y2)
+      (glEnd)))
 
 (define-syntax-rule (no-texture e ...)
-  (begin (gl-disable 'texture-2d)
+  (begin (glDisable GL_TEXTURE_2D)
          e ...
-         (gl-enable 'texture-2d)))
+         (glEnable GL_TEXTURE_2D)))
   
 (define (rectangle w h [mode 'solid])
   (λg ((min 0 w) (min 0 h) 0 (max 0 w) (max 0 h) 0)
    (no-texture
     (case mode
       [(solid)
-       (glRectf 0 0 w h)]
+       (glRectd 0 0 w h)]
       [(outline)
-       (gl-begin 'line-loop)
+       (glBegin GL_LINE_LOOP)
        (begin
-         (gl-vertex 0 0)
-         (gl-vertex w 0)
-         (gl-vertex w h)
-         (gl-vertex 0 h))
-       (gl-end)]))))
+         (glVertex2i 0 0)
+         (glVertex2d w 0.0)
+         (glVertex2d w h)
+         (glVertex2d 0.0 h))
+       (glEnd)]))))
 
 (define-syntax-rule (define-compile-time-vector i e)
   (begin
@@ -93,22 +92,22 @@
 (define circle:solid
   (λg (-1 -1 0 1 1 0)
    (no-texture
-    (gl-begin 'triangle-fan)
+    (glBegin GL_TRIANGLE_FAN)
     (begin
-      (gl-vertex 0 0)
+      (glVertex2i 0 0)
       (for ([s (in-vector circle-sins)]
             [c (in-vector circle-coss)])
-        (gl-vertex s c)))
-    (gl-end))))
+        (glVertex2d s c)))
+    (glEnd))))
 (define circle:outline
   (λg (-1 -1 0 1 1 0)
    (no-texture
-    (gl-begin 'line-strip)
+    (glBegin GL_LINE_STRIP)
     (begin
       (for ([s (in-vector circle-sins)]
             [c (in-vector circle-coss)])
-        (gl-vertex s c)))
-    (gl-end))))
+        (glVertex2d s c)))
+    (glEnd))))
   
 (define (circle [mode 'solid])
   (case mode
@@ -133,23 +132,23 @@
           (post)))))
 
 (define-stateful define-matrix 
-  gl-push-matrix gl-pop-matrix)
+  glPushMatrix glPopMatrix)
 
 (define-matrix ((translate) x y)
   (min-x min-y min-z max-x max-y max-z)
   ((+ min-x x) (+ min-y y) min-z 
    (+ max-x x) (+ max-y y) max-z)
-  (gl-translate x y 0))
+  (glTranslated x y 0))
 (define-matrix ((layer) z)
   (min-x min-y min-z max-x max-y max-z)
   (min-x min-y (+ min-z z) 
    max-x max-y (+ max-z z))
-  (gl-translate 0 0 z))
+  (glTranslated 0 0 z))
 (define-matrix ((scale) x y)
   (min-x min-y min-z max-x max-y max-z)
   ((* min-x x) (* min-y y) min-z
    (* max-x x) (* max-y y) max-z)
-  (gl-scale x y 0))
+  (glScaled x y 0))
 (define-matrix ((rotate) angle)
   (min-x min-y min-z max-x max-y max-z)
   ;; XXX Don't know if this is correct
@@ -160,7 +159,7 @@
    (* max-x (make-polar 0 angle))
    (* max-y (make-polar 0 angle))
    max-z)
-  (gl-rotate angle 0 0 1))
+  (glRotated angle 0 0 1))
 
 (define (mirror w . ics)
   (translate w 0.0
@@ -168,17 +167,17 @@
            (apply seqn ics))))
 
 (define-stateful define-attrib
-  gl-push-attrib gl-pop-attrib)
+  glPushAttrib glPopAttrib)
 
-(define-attrib ((color 'current-bit) r g b a)
+(define-attrib ((color GL_CURRENT_BIT) r g b a)
   (min-x min-y min-z max-x max-y max-z)
   (min-x min-y min-z max-x max-y max-z)
-  (glColor4f r g b a))
-(define-attrib ((background 'color-buffer-bit) r g b a)
+  (glColor4d r g b a))
+(define-attrib ((background GL_COLOR_BUFFER_BIT) r g b a)
   (min-x min-y min-z max-x max-y max-z)
   (min-x min-y min-z max-x max-y max-z)
   (glClearColor r g b a)
-  (gl-clear 'color-buffer-bit 'depth-buffer-bit))
+  (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT)))
 
 ;; Combiners
 (define blank
@@ -205,17 +204,16 @@
 
 (define (argb->rgba argb)
   (define length (bytes-length argb))
-  (define rgba (make-gl-ubyte-vector length))
+  (define rgba (make-u8vector length))
   (for ([i (in-range 0 length 4)])
-    (gl-vector-set! rgba (+ i 0) (bytes-ref argb (+ i 1)))
-    (gl-vector-set! rgba (+ i 1) (bytes-ref argb (+ i 2)))
-    (gl-vector-set! rgba (+ i 2) (bytes-ref argb (+ i 3)))
-    (gl-vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0))))
+    (u8vector-set! rgba (+ i 0) (bytes-ref argb (+ i 1)))
+    (u8vector-set! rgba (+ i 1) (bytes-ref argb (+ i 2)))
+    (u8vector-set! rgba (+ i 2) (bytes-ref argb (+ i 3)))
+    (u8vector-set! rgba (+ i 3) (bytes-ref argb (+ i 0))))
   rgba)
 
 (define (bytes->text-ref w h bs)
-  (define texts (glGenTextures 1))
-  (define text-ref (gl-vector-ref texts 0))
+  (define text-ref (u32vector-ref (glGenTextures 1) 0))
   
   (set-box! (current-texture) text-ref)
   (glBindTexture GL_TEXTURE_2D text-ref)
@@ -261,17 +259,17 @@
 
 (define (draw-texture! text-ref w h tx1 ty1 tw th)
   (bind-texture-ref! text-ref)
-  (gl-begin 'quads)
-  (gl-tex-coord tx1 (+ ty1 th)) (gl-vertex 0 0)
-  (gl-tex-coord (+ tx1 tw) (+ ty1 th)) (gl-vertex w 0) 
-  (gl-tex-coord (+ tx1 tw) ty1) (gl-vertex w h)
-  (gl-tex-coord tx1 ty1) (gl-vertex 0 h)
-  (gl-end))
+  (glBegin GL_QUADS)
+  (glTexCoord2d tx1 (+ ty1 th)) (glVertex2i 0 0)
+  (glTexCoord2d (+ tx1 tw) (+ ty1 th)) (glVertex2d w 0.0) 
+  (glTexCoord2d (+ tx1 tw) ty1) (glVertex2d w h)
+  (glTexCoord2d tx1 ty1) (glVertex2d 0.0 h)
+  (glEnd))
   
 (define (texture* t 
                   [w (texture-dw t)] [h (texture-dh t)]
-                  [tx1 0] [ty1 0]
-                  [tw 1] [th 1])
+                  [tx1 0.0] [ty1 0.0]
+                  [tw 1.0] [th 1.0])
   (λg 
    ((min 0 w) (min 0 h) 0 (max 0 w) (max 0 h) 0)
    (load-texture! t)
@@ -343,10 +341,10 @@
                 [dh 1]))))
 
 ;; Focus
-(define (gl-viewport/restrict mw mh
-                              vw vh 
-                              cx cy
-                              min-z max-z)
+(define (glViewport/restrict mw mh
+                             vw vh 
+                             cx cy
+                             min-z max-z)
   (define x1 (- cx (/ vw 2)))
   (define x2 (+ cx (/ vw 2)))
   (define y1 (- cy (/ vh 2)))
@@ -383,31 +381,32 @@
   (λg
    ((cmd-min-x cmd) (cmd-min-y cmd) (cmd-min-z cmd)
     (cmd-max-x cmd) (cmd-max-y cmd) (cmd-max-z cmd))
-   (gl-push-matrix)
-   (gl-viewport/restrict 
+   (glPushMatrix)
+   (glViewport/restrict 
     mw mh
     vw vh 
     cx cy
     (cmd-min-z cmd) (cmd-max-z cmd))
    (run cmd)
-   (gl-pop-matrix)))
+   (glPopMatrix)))
 
 ;; Top Level
 (define current-texture (make-parameter #f))
 (define (draw cmd)
-  (gl-matrix-mode 'projection)
-  (gl-load-identity)
-  (gl-enable 'texture-2d)
-  #;(gl-enable 'depth-test)
-  #;(gl-depth-func 'lequal)
-  (gl-disable 'lighting)
-  (gl-disable 'dither)
-  (gl-enable 'blend)
-  (gl-enable 'alpha-test)
-  (gl-alpha-func 'greater 0.0)
-  (gl-matrix-mode 'modelview)
-  (gl-load-identity)
-  (glTexEnvf GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
+  (glMatrixMode GL_PROJECTION)
+  (glLoadIdentity)
+  (glEnable GL_TEXTURE_2D)
+  (when #f
+    (glEnable GL_DEPTH_TEST)
+    (glDepthFunc GL_LEQUAL))
+  (glDisable GL_LIGHTING)
+  (glDisable GL_DITHER)
+  (glEnable GL_BLEND)
+  (glEnable GL_ALPHA_TEST)
+  (glAlphaFunc GL_GREATER 0.0)
+  (glMatrixMode GL_MODELVIEW)
+  (glLoadIdentity)
+  (glTexEnvi GL_TEXTURE_ENV GL_TEXTURE_ENV_MODE GL_MODULATE)
   (parameterize ([current-texture (box #f)])
     (run cmd)))
 
@@ -424,7 +423,7 @@
   (symbols 'solid 'outline))
 
 (define unit-integer?
-  (between/c 0 1))
+  (and/c real? (between/c 0 1)))
 
 (provide
  for/gl
