@@ -140,7 +140,7 @@
 
 (define (any-controller cs p)
   (for/or ([c (in-list cs)])
-    (equal? p (controller-dpad c))))
+    (equal? p (controller-ldpad c))))
 
 (struct smoother (frame w))
 

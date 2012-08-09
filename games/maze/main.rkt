@@ -808,7 +808,7 @@
     (define speed INIT-SPEED)
     (define c (os/read* 'controller))
     (define st (os/read* 'static))
-    (define stick (controller-dpad c))
+    (define stick (controller-ldpad c))
     (define next-dir-n
       ;; If the stick is stable,
       ;; then don't change the direction

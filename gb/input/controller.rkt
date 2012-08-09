@@ -14,11 +14,12 @@
 ;; XXX add something to communicate capabilties (like no third button,
 ;; home, etc)
 (struct controller
-        (dpad
-         a b c
-         x y z
-         back home start
-         l r)
+        (left right
+              up down
+              b a
+              y x
+              select start
+              l r)
         #:mutable
         #:transparent)
 
@@ -47,61 +48,97 @@
                [other
                 (error 'mapping "Controller ~e not supported (yet)" other)])))))]))
 
-(define ((axis i) js)
-  (vector-ref (joystick-state-axes js) i))
-(define (reverse-axis i)
-  (define a (axis i))
-  (λ (js)
-    (* -1 (a js))))
+(define ((neg-axis i) js)
+  (negative? (vector-ref (joystick-state-axes js) i)))
+(define ((pos-axis i) js)
+  (positive? (vector-ref (joystick-state-axes js) i)))
 (define ((button i) js)
   (= 1 (vector-ref (joystick-state-buttons js) i)))
-(define (button-axis i)
-  (define a (axis i))
-  (λ (js)
-    (= 1 (a js))))
 (define (mt js)
   #f)
 
-(define (controller-dpad-x cs)
-  (psn-x (controller-dpad cs)))
-(define (controller-dpad-y cs)
-  (psn-y (controller-dpad cs)))
-(define (set-controller-dpad-x! cs x)
-  (set-controller-dpad! cs (psn x (controller-dpad-y cs))))
-(define (set-controller-dpad-y! cs y)
-  (set-controller-dpad! cs (psn (controller-dpad-x cs) y)))
+(define-syntax (define-controller-dpad stx)
+  (syntax-case stx ()
+    [(_
+      ldpad
+      left right down up)
+     (with-syntax ([controller-ldpad (format-id #'ldpad "controller-~a" #'ldpad)]
+                   [controller-ldpad-x (format-id #'ldpad "controller-~a-x" #'ldpad)]
+                   [controller-ldpad-y (format-id #'ldpad "controller-~a-y" #'ldpad)]
+                   [controller-left (format-id #'left "controller-~a" #'left)]
+                   [controller-right (format-id #'right "controller-~a" #'right)]
+                   [controller-down (format-id #'up "controller-~a" #'down)]
+                   [controller-up (format-id #'down "controller-~a" #'up)])
+       (syntax/loc stx
+         (begin
+           (define (controller-ldpad-x cs)
+             (cond
+               [(controller-left cs)  -1.0]
+               [(controller-right cs) +1.0]
+               [else                   0.0]))
+           (define (controller-ldpad-y cs)
+             (cond
+               [(controller-down cs)  -1.0]
+               [(controller-up cs)    +1.0]
+               [else                   0.0]))
+           (define (controller-ldpad cs)
+             (psn (controller-ldpad-x cs)
+                  (controller-ldpad-y cs)))
+           (provide/contract
+            [controller-ldpad
+             (-> controller? psn?)]
+            [controller-ldpad-x
+             (-> controller? inexact?)]
+            [controller-ldpad-y
+             (-> controller? inexact?)]))))]))
+
+(define-controller-dpad ldpad
+  left right down up)
+(define-controller-dpad rdpad
+  y a b x)
 
 ;; XXX customize with files/gui?
 (define-mapping mapping
   (#"Generic X-Box pad"
-   [dpad-x (axis 6)]
-   [dpad-y (reverse-axis 7)]
+   [left (neg-axis 6)]
+   [right (pos-axis 6)]
+   [down (pos-axis 7)]
+   [up (neg-axis 7)]
    [a (button 0)]
    [b (button 1)]
-   [c (button-axis 5)]
    [x (button 2)]
    [y (button 3)]
-   [z (button 5)]
-   [back (button 6)]
-   [home (button 8)]
+   [select (button 6)]
    [start (button 7)]
    [l (button 4)]
-   [r (button-axis 2)])
+   [r (pos-axis 2)])
   (#"RetroUSB.com RetroPad"
-   [dpad-x (axis 0)]
-   [dpad-y (reverse-axis 1)]
+   [left (neg-axis 0)]
+   [right (pos-axis 0)]
+   [down (pos-axis 1)]
+   [up (neg-axis 1)]
    [a (button 0)]
    [b (button 1)]
-   [back (button 2)]
+   [select (button 2)]
    [start (button 3)]
    ;; XXX try with SNES controller to find x,y,l,r
-   [c mt]
    [x mt]
    [y mt]
-   [z mt]
-   [home mt]
    [l mt]
-   [r mt]))
+   [r mt])
+  (#"RetroUSB.com SNES RetroPort"
+   [left (neg-axis 0)]
+   [right (pos-axis 0)]
+   [down (pos-axis 1)]
+   [up (neg-axis 1)]
+   [a (button 5)]
+   [b (button 1)]
+   [select (button 2)]
+   [start (button 3)]
+   [x (button 4)]
+   [y (button 0)]
+   [l (button 6)]
+   [r (button 7)]))
 
 (define-syntax (define-keyboard-mapping stx)
   (syntax-parse stx
@@ -125,33 +162,28 @@
                (set-controller-field! c f))
              ...))))]))
 
-(define ((key-axis neg pos) ks)
-  (cond [(set-member? ks neg) -1.]
-        [(set-member? ks pos) +1.]
-        [else 0.]))
 (define ((key k) ks)
   (set-member? ks k))
 
 (define-keyboard-mapping keyboard-mapping
-  ([dpad-x (key-axis 'left 'right)]
-   [dpad-y (key-axis 'down 'up)]
-   [a (key #\z)]
-   [b (key #\x)]
-   [c (key #\c)]
-   [x (key #\a)]
-   [y (key #\s)]
-   [z (key #\d)]
-   [back (key #\tab)]
-   [home (key 'escape)]
+  ([left (key 'left)]
+   [right (key 'right)]
+   [down (key 'down)]
+   [up (key 'up)]
+   [b (key #\z)]
+   [a (key #\x)]
+   [y (key #\a)]
+   [x (key #\s)]
+   [select (key 'escape)]
    [start (key #\return)]
    [l (key #\q)]
-   [r (key #\e)]))
+   [r (key #\w)]))
 
 (define (null-controller)
-  (controller (psn 0. 0.)
-              #f #f #f
-              #f #f #f
-              #f #f #f
+  (controller #f #f #f #f
+              #f #f
+              #f #f
+              #f #f
               #f #f))
 
 (define (clamp n)
@@ -162,10 +194,6 @@
        (clamp (psn-y p))))
 
 (define (controller-merge orig new)
-  (set-controller-dpad! orig
-                        (clamp-psn
-                         (+ (controller-dpad orig)
-                            (controller-dpad new))))
   (define-syntax (merge-button stx)
     (syntax-parse stx
       [(_ b:id)
@@ -179,9 +207,10 @@
   (define-syntax-rule (merge-buttons b ...)
     (begin (merge-button b) ...))
   (merge-buttons
-   a b c
-   x y z
-   back home start
+   left right down up
+   a b
+   x y
+   select start
    l r))
 
 (define (make-controller-monitor #:keyboard [km #f])
@@ -220,15 +249,12 @@
 (provide/contract
  ;; XXX don't provide mutators
  [struct controller
-         ([dpad psn?]
-          [a boolean?] [b boolean?] [c boolean?]
-          [x boolean?] [y boolean?] [z boolean?]
-          [back boolean?] [home boolean?] [start boolean?]
+         ([left boolean?] [right boolean?]
+          [up boolean?] [down boolean?]
+          [b boolean?] [a boolean?]
+          [y boolean?] [x boolean?]
+          [select boolean?] [start boolean?]
           [l boolean?] [r boolean?])]
- [controller-dpad-x
-  (-> controller? inexact?)]
- [controller-dpad-y
-  (-> controller? inexact?)]
  [controller-monitor?
   (-> any/c boolean?)]
  ;; XXX remove make

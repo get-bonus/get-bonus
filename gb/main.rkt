@@ -82,10 +82,10 @@
      (match-define (game-st bgm? delay pos) w)
      (match-define (list* c _) cs)
      (define mod
-       (match (controller-dpad-y c)
-         [(? positive?) -1]
-         [(? negative?) +1]
-         [_              0]))
+       (cond 
+         [(controller-up c)   -1]
+         [(controller-down c) +1]
+         [else                 0]))
      (define-values
        (delay+ pos+)
        (cond

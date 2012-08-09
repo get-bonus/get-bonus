@@ -98,8 +98,8 @@
   (gl:texture/px
    bgm-img
    width height
-   315 265
-   336 189))
+   215 265
+   432 243))
 
 (define lhs-x
   (- .5 paddle-hw))
@@ -119,7 +119,7 @@
 (define (player-paddle)
   (let loop ([lhs-y 4.5])
     (define lhs-dy
-      (controller-dpad-y (os/read* 'controller)))
+      (controller-ldpad-y (os/read* 'controller)))
     (define lhs-y-n
       (clamp
        min-paddle-y
