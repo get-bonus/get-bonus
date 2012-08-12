@@ -76,6 +76,135 @@
   Get a USB snes controller for home
 * DONE Switch to RacketGL throughout
   CLOSED: [2012-08-09 Thu 16:28]
+* TODO Switch to a fully shader based rendering system
+  I have begun experimenting with this a lot.
+
+  --Why--
+
+  [[http://www.opengl.org/wiki/FAQ#Are_glTranslate.2FglRotate.2FglScale_hardware_accelerated.3F][This FAQ]] says that OpenGL doesn't accelerate the fixed-function
+  pipeline any longer. [[http://gamedev.stackexchange.com/questions/25411/basics-of-drawing-in-2d-with-opengl-3-shaders][This StackOverflow question]] suggests a general
+  structure. ([[http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq%3D1][This one]] also talks about the same stuff.)
+
+  --Plan--
+
+  My original plan was to have a single vector input to the shader
+  that was something like:
+
+  Translation: XY
+  Scale:       XY    (relative to the sprite, not the scene)
+  Rotation:    Theta (relative to the sprite, not the scene)
+  Color:       RGBA
+  Rectangle:   WH
+  Texture:     XYWH
+
+  where the vertex shader would move the basis of the vertex, which is
+  0,0 to the translated point, where it would then be scaled and
+  rotated.
+
+  the geometry shader would take this input and output the various
+  vertexes for a rectangle ([[http://openglbook.com/the-book/chapter-2-vertices-and-shapes/][this site]] talks about you need 6 for
+  GL_TRIANGLES but only 5 for GL_TRIANGLE_STRIP, but I don't know if
+  you can do that in a geometry shader)
+
+  the fragment shader would take the texture coordinates and grab the
+  pixels, blending in the color. For most sprites, I would set the
+  color to blank-ness and for opaque boxes, I would set the texture
+  coordinates to a blank place.
+
+  I hope this will allow me to have a single draw call.
+
+  -- Populating it --
+
+  My plan is to populate this vector by first, sorting the sprites
+  into their layers with the background towards the front of the
+  array. (My assumption is that background layers change less so it
+  will make the vector more stable.) The game would return, basically,
+  a list of rows of this vector and the engine would map through
+  them. However, it would keep track of what the previous lists were
+  and if they were eq? and in the same order, then they would not be
+  set! to decrease memory traffic.
+
+  I would assume that most translations, scaling, or rotations are not
+  stacked, so it is safe to compose them on the CPU.
+
+  -- Texture Atlas ---
+
+  Additionally, I would have a single texture for all sprites in the
+  game that was always available. This is called a [[https://en.wikipedia.org/wiki/Texture_atlas][Texture atlas]]. My
+  idea is to write a library that scans the directory Get Bonus is in
+  for all PNGs and stitches them together in a lossless way, doing
+  something basic for limiting the area, with the opportunity for
+  optimization later. This library would run at the start of every
+  startup and find the list of files and their checksums and see if
+  the cached PNG is still up to date. Similarly, this same program
+  would create PNGs for fonts.
+
+  I'm imaging an interface like
+
+  texture-coords : path -> coordinates
+
+  where the path would be relative to the Get Bonus directory and then
+  the coordinates would be in the atlas that was constructed.
+
+  I'd write a tool that would rip sprite sheets apart into their
+  pieces.
+
+  -- Notes --
+
+  I've decided to go with Cg rather than GLSL directly, because of its
+  separate compiler, seems to have good optimization technology, etc.
+
+  Most of Nvidia's materials seem to be very good (particularly the
+  manuals and examples that come with the toolkit.) [[http://filthypants.blogspot.com/2011/06/cg-shader-tutorial-for-emulators.html][Here's another]]
+  source for tutorials.
+
+  My current development machine is limited to OpenGL 3.2, which is
+  relevant to developing with Cg. I've written a basic FFI for Cg with
+  just what I need. It would be nice if there were spec files like
+  RacketGL uses for OpenGL.
+
+  -- Problems --
+
+  First, my idea for the layout will be complicates because
+  glVertexAttribPointer function can only give vertexes with 1 through
+  4 elements, not this many. I might able to do it as one big thing
+  anyways, by using strides and multiple attributes. (I could even do
+  a different attribute for each piece.)
+
+  Second, I don't totally understand the capabilities of geometry
+  shaders. Essentially what I'm doing is telling OpenGL that there is
+  only 1 "vertex" but then I'm expanding it into 6 by the geometry
+  shader. (In the call to glDrawArray, will I put in the number of
+  objects, or the number of objects times 6? Probably just the
+  number?) [[http://www.opengl.org/wiki/Tutorial4:_Using_Indices_and_Geometry_Shaders_(C_/SDL)][This tutorial]] might be a good place to start. (Also, there
+  are a few examples in the Nvidia CG toolkit.)
+
+  Third, my initial attempts at following [[http://openglbook.com/the-book/chapter-2-vertices-and-shapes/][this tutorial]] to get things
+  up in running (exp/pipe.rkt) has failed with my three rectangle
+  example. First, rectangles don't show up at all. Instead, a triangle
+  does. There's also a problem that only one triangle does---the front
+  most one. Second, they aren't appearing in the place that I expect
+  them to. I think [[http://www.opengl.org/wiki/FAQ#How_to_render_in_pixel_space][this FAQ question]] is a piece of the answer. I think
+  I should start from scratch and adapt his example directly (to
+  compare the drawings, for example) and go from there. ([[http://www.songho.ca/opengl/gl_vertexarray.html][This is
+  another tutorial]] that may be useful.)
+
+  I'm not totally certain about what the right thing to do with the
+  blending between alpha, the color, and the texture color. [[http://www.opengl.org/discussion_boards/showthread.php/166520-Alpha-blending-with-Cg-shaders][Here's a
+  thread]] that might have information. I also think I need to use
+  (glShadeModel GL_FLAT) so that the color isn't interpolated.
+
+  This is a very frustrating thing to be doing. I feel like a 142
+  student.
+
+  -- Useful paths --
+
+  CG documentation --- /usr/share/doc/nvidia-cg-toolkit
+  CG examples --- /usr/lib/nvidia-cg-toolkit/examples/OpenGL
+
+  I had to install nvidia-cg-toolkit from Nvidia directly
+  (Cg-3.1_April2012_x86_64.deb) because the Ubuntu one was broken.
+
 * TODO Make XML shader reading more robust
   In case there is just a fragment, vertex, etc (see bsnes examples)
 * TODO Allow multi-pass shaders (such as CRT halation)
@@ -95,18 +224,6 @@
   Maybe just log data and look at it afterward?
 
   I don't know if I really am measuring this correctly... see OpenGL wiki
-* TODO Switch to a fully shader based rendering system
-  http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq=1
-
-  http://www.opengl.org/wiki/FAQ#Are_glTranslate.2FglRotate.2FglScale_hardware_accelerated.3F
-
-  http://gamedev.stackexchange.com/questions/25411/basics-of-drawing-in-2d-with-opengl-3-shaders
-
-  https://en.wikipedia.org/wiki/Texture_atlas
-
-  http://filthypants.blogspot.com/2011/06/cg-shader-tutorial-for-emulators.html
-
-  Write an FFI for nVidia's CG runtime (try to reuse RacketGL spec generation)
 * TODO OS suppress updates
   Make a critical region system call that gives a process sole access
   to the system... leaving the other processes stalled with their last
