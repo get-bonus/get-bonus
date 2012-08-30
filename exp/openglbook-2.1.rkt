@@ -5,9 +5,7 @@
          racket/runtime-path
          xml
          cg
-         #;glew
          freeglut
-         #;RacketGL/glew
          (planet stephanh/RacketGL/rgl))
 
 (define WINDOW_TITLE_PREFIX "Chapter 2")
@@ -98,12 +96,8 @@
   (set! CurrentHeight Height)
   (glViewport 0 0 CurrentWidth CurrentHeight))
 
-(define tCount 0)
 (define (RenderFunction)
   (set! FrameCount (add1 FrameCount))
-  (set! tCount (add1 tCount))
-  (when (= tCount 60)
-    (exit 1))
 
   (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
 
@@ -133,29 +127,6 @@
   (DestroyShaders)
   (DestroyVBO))
 
-(require file/sha1)
-(define (debug-f32vector v)
-  (define bs
-    (make-sized-byte-string
-     (f32vector->cpointer v)
-     (* (ctype-sizeof _float) (f32vector-length v))))
-  (debug-f32vector/bs bs)
-  v)
-(define (debug-f32vector/bs bs)  
-  (for ([pt (in-range 3)])
-    (for ([fl (in-range 4)])
-      (display
-       (bytes->hex-string
-        (subbytes bs 
-                  (+ (* pt 4 4)
-                     (* fl 4))
-                  (+ (* pt 4 4)
-                     (* fl 4)
-                     4))))
-      (printf " "))
-    (printf "\n"))
-  (printf "\n\n"))
-
 (define (CreateVBO)
   (define Vertices
     (f32vector
@@ -176,25 +147,19 @@
   (set! VboId
     (u32vector-ref (glGenBuffers 1) 0))
   (glBindBuffer GL_ARRAY_BUFFER VboId)
-  (eprintf "~v ~v\n"
-           VboId
-           (gl-vector-sizeof Vertices))
-  (glBufferData GL_ARRAY_BUFFER
+    (glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Vertices)
-                (debug-f32vector Vertices)
+                Vertices
                 GL_STATIC_DRAW)
   (glVertexAttribPointer 0 4 GL_FLOAT #f 0 0)
   (glEnableVertexAttribArray 0)
 
   (set! ColorBufferId
     (u32vector-ref (glGenBuffers 1) 0))
-  (glBindBuffer GL_ARRAY_BUFFER ColorBufferId)
-  (eprintf "~v ~v\n"
-           ColorBufferId
-           (gl-vector-sizeof Colors))
+  (glBindBuffer GL_ARRAY_BUFFER ColorBufferId)  
   (glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Colors)
-                (debug-f32vector Colors)
+                Colors
                 GL_STATIC_DRAW)
   (glVertexAttribPointer 1 4 GL_FLOAT #f 0 0)
   (glEnableVertexAttribArray 1))
