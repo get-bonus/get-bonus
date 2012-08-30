@@ -211,6 +211,20 @@
   including using GLUT and everything. However, it is black. I
   originally assumed this was because of GLEW, but when I disable GLEW
   in the C code, it works, but not in my code. Mysterious.
+
+  I used 'apitrace' to determine that the OpenGL calls the two
+  programs were making were literally IDENTICAL. Still, they display
+  differently. My current guess is that the vertex arrays are being
+  populated differently.
+
+  After doing some tracing on the C side, I see that the bytes in my
+  vertex arrays are different than the ones on the C side. Yet, I'm
+  using f32vectors, which are supposed to be _float arrays. Weird.
+
+  ARRRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGHHHHHHHHHHH
+
+  I mixed up the sign on a vector coordinate. The byte difference was
+  just an error in printing on the C side.
   
 * TODO Try to get OpenGL to do collision detection for me
   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
