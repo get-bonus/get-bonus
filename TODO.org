@@ -204,6 +204,13 @@
   
   I had to install nvidia-cg-toolkit from Nvidia directly
   (Cg-3.1_April2012_x86_64.deb) because the Ubuntu one was broken.
+
+  -- Further investigation --
+
+  I transliterated the code from the tutorial into Racket precisely,
+  including using GLUT and everything. However, it is black. I
+  originally assumed this was because of GLEW, but when I disable GLEW
+  in the C code, it works, but not in my code. Mysterious.
   
 * TODO Try to get OpenGL to do collision detection for me
   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/

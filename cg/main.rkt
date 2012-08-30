@@ -1,34 +1,10 @@
 #lang racket/base
-(require (for-syntax racket/base
-                     unstable/syntax
-                     racket/syntax
-                     syntax/parse)
+(require gb/lib/ffi
          ffi/unsafe
          ffi/unsafe/define)
 
-(define-syntax-rule (fake id ...)
-  (begin
-    (define-syntax (id stx)
-      (syntax-case stx ()
-        [(_ . b)
-         (syntax/loc stx
-           (error 'id "not yet implemented: ~e" (list . b)))]
-        [b
-         (syntax/loc stx
-           (error 'id "not yet implemented: ~e" 'b))]))
-    ...
-    (provide id ...)))
-
 (define-ffi-definer define-cg (ffi-lib "libCg"))
 (define-ffi-definer define-cgGL (ffi-lib "libCgGL"))
-
-(define-syntax-rule (define* id v)
-  (begin (define id v)
-         (provide id)))
-
-(define-syntax-rule (define-cpointer-type* id ...)
-  (begin (define-cpointer-type id)
-         ...))
 
 (define-cpointer-type* _CGcontext _CGprofile _CGprogram _CGparameter)
 
@@ -39,13 +15,6 @@
 (define _CGenum _uint32)
 (define* CG_SOURCE                             4112)
 (define* CG_DEFERRED_PARAMETER_SETTING         4133)
-
-(define-syntax (define-enumy stx)
-  (syntax-parse stx
-    [(_ (~seq name:id (~datum =) val:expr) ...)
-     (syntax/loc stx
-       (begin (define* name val)
-              ...))]))
 
 (define _CGGLenum _uint32)
 (define-enumy
@@ -66,23 +35,6 @@
 (define _CGerror _uint32)
 (define* CG_NO_ERROR 0)
 (define* CG_COMPILER_ERROR 1)
-
-(define-syntax-rule (dup f (a ...) ...)
-  (begin (f a ...)
-         ...))
-(define-syntax (d stx)
-  (syntax-parse stx
-    [(_ (ffi [fun (in ...) (out ...)]
-             ...)
-        ...)
-     (with-syntax ([(define-ffi ...)
-                    (syntax-map (λ (f) (format-id f "define-~a" f))
-                                #'(ffi ...))])
-       (syntax/loc stx
-         (begin
-           (dup define-ffi [fun (_fun in ... -> out ...)] ...)
-           ...
-           (provide fun ... ...))))]))
 
 (d (cg
     [cgCreateContext
