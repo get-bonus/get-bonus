@@ -106,7 +106,7 @@
 
   (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
 
-  (glDrawArrays GL_TRIANGLES 0 3))
+  (glDrawArrays GL_TRIANGLES 0 6))
 
 (define (Cleanup)
   (DestroyShaders)
@@ -115,15 +115,23 @@
 (define (CreateVBO)
   (define Vertices
     (f32vector
+     -0.8  0.8 0.0 1.0
+      0.8  0.8 0.0 1.0
      -0.8 -0.8 0.0 1.0
-      0.0  0.8 0.0 1.0
+
+     -0.8 -0.8 0.0 1.0
+      0.8  0.8 0.0 1.0
       0.8 -0.8 0.0 1.0))
 
   (define Colors
     (f32vector
      1.0 0.0 0.0 1.0
      0.0 1.0 0.0 1.0
-     0.0 0.0 1.0 1.0))
+     0.0 0.0 1.0 1.0
+     
+     0.0 0.0 1.0 1.0
+     0.0 1.0 0.0 1.0
+     1.0 1.0 1.0 1.0))
 
   (set! VaoId
     (u32vector-ref (glGenVertexArrays 1) 0))
