@@ -1,13 +1,12 @@
 // Vertex pass-through program for 2D positions with color
-void vertex_main(float4 position  : POSITION,
-                 float4 color     : COLOR,
-                 uniform float4x4 modelViewProj,
+void vertex_main(float4 iPosition  : ATTR0,
+                 float4 iColor     : ATTR1,
 
                  out float4 oPosition : POSITION,
                  out float4 oColor    : COLOR)
 {
-  oPosition = mul(modelViewProj, position);
-  oColor    = color;
+  oPosition = iPosition;
+  oColor    = iColor;
 }
 
 // Geometry pass-through program for colored triangles
@@ -20,8 +19,8 @@ TRIANGLE void geometry_main(AttribArray<float4> position : POSITION,
 }
 
 // Fragment pass-through program
-void fragment_main(float4 color : COLOR,
+void fragment_main(float4 iColor : COLOR,
                    out float4 oColor : COLOR) 
 {
-  oColor = color;
+  oColor = iColor;
 }

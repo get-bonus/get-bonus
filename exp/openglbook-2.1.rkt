@@ -15,38 +15,26 @@
 
 (define FrameCount 0)
 
-(define VertexShaderId #f)
-(define FragmentShaderId #f)
-(define ProgramId #f)
 (define VaoId #f)
 (define VboId #f)
 (define ColorBufferId #f)
 
-(define VertexShader 
-  (string-append
-   	"#version 330\n"
+(define-runtime-path cg-path "../gb/graphics/ngl.cg")
 
-	"layout(location=0) in vec4 in_Position;\n"
-	"layout(location=1) in vec4 in_Color;\n"
-	"out vec4 ex_Color;\n"
+(define (check-for-cgError situation)
+  (define-values (err str) (cgGetLastErrorString))
+  (unless (= err CG_NO_ERROR)
+    (if (= err CG_COMPILER_ERROR)
+      (error 'cg "~a: ~a: ~a\n~a" situation err str (cgGetLastListing id:cgContext))
+      (error 'cg "~a: ~a: ~a" situation err str))))
 
-	"void main(void)\n"
-	"{\n"
-	"	gl_Position = in_Position;\n"
-	"	ex_Color = in_Color;\n"
-	"}\n"
-    ))
-(define FragmentShader 
-  (string-append
-	"#version 330\n"
-
-	"in vec4 ex_Color;\n"
-	"out vec4 out_Color;\n"
-
-	"void main(void)\n"
-	"{\n"
-	"	out_Color = ex_Color;\n"
-	"}\n"))
+(define id:cgContext #f)
+(define id:cgVertexProfile #f)
+(define id:cgVertexProgram #f)
+(define id:cgFragmentProfile #f)
+(define id:cgFragmentProgram #f)
+(define id:cgGeometryProfile #f)
+(define id:cgGeometryProgram #f)
 
 (module+ main
   (define frame
@@ -109,16 +97,15 @@
   (glDrawArrays GL_TRIANGLE_STRIP 0
                 (/ (f32vector-length Vertices) 4)))
 
-(define (Cleanup)
-  (DestroyShaders)
+(define (Cleanup)  
   (DestroyVBO))
 
 (define Vertices
   (f32vector
    -0.8  0.8 0.0 1.0
-   0.8  0.8 0.0 1.0
+    0.8  0.8 0.0 1.0
    -0.8 -0.8 0.0 1.0
-   0.8 -0.8 0.0 1.0))
+    0.8 -0.8 0.0 1.0))
 
 (define Colors
   (f32vector
@@ -165,30 +152,59 @@
   (glDeleteVertexArrays 1 (u32vector VaoId)))
 
 (define (CreateShaders)
-  (set! VertexShaderId (glCreateShader GL_VERTEX_SHADER))
-  (glShaderSource VertexShaderId 1 (vector VertexShader)
-                  (s32vector))
-  (glCompileShader VertexShaderId)  
+  (set! id:cgContext (cgCreateContext))
+  (check-for-cgError "creating context")
+  (cgGLSetDebugMode CG_TRUE)
+  (cgSetParameterSettingMode id:cgContext CG_DEFERRED_PARAMETER_SETTING)
 
-  (set! FragmentShaderId (glCreateShader GL_FRAGMENT_SHADER))
-  (glShaderSource FragmentShaderId 1 (vector FragmentShader)
-                  (s32vector))
-  (glCompileShader FragmentShaderId)  
+  (set! id:cgVertexProfile (cgGLGetLatestProfile CG_GL_VERTEX))
+  (cgGLSetOptimalOptions id:cgVertexProfile)
+  (check-for-cgError "selecting vertex profile")
+  (set! id:cgVertexProgram
+        (cgCreateProgramFromFile
+         id:cgContext CG_SOURCE
+         cg-path id:cgVertexProfile
+         "vertex_main"
+         #f))
+  (check-for-cgError "creating vertex program from file")
+  (cgGLLoadProgram id:cgVertexProgram)
+  (check-for-cgError "loading vertex program")  
 
-  (set! ProgramId (glCreateProgram))
-  (glAttachShader ProgramId VertexShaderId)
-  (glAttachShader ProgramId FragmentShaderId)
-  (glLinkProgram ProgramId)
-  
-  (glUseProgram ProgramId))
+  (set! id:cgFragmentProfile (cgGLGetLatestProfile CG_GL_FRAGMENT))
+  (check-for-cgError "selecting fragment profile")
+  (cgGLSetOptimalOptions id:cgFragmentProfile)
+  (set! id:cgFragmentProgram
+        (cgCreateProgramFromFile
+         id:cgContext CG_SOURCE
+         cg-path id:cgFragmentProfile
+         "fragment_main"
+         #f))
+  (check-for-cgError "creating fragment program from file")
+  (cgGLLoadProgram id:cgFragmentProgram)
+  (check-for-cgError "loading fragment program")
 
-(define (DestroyShaders)
-  (glUseProgram 0)
+  (set! id:cgGeometryProfile (cgGLGetLatestProfile CG_GL_GEOMETRY))
+  (check-for-cgError "selecting geometry profile")
+  (cgGLSetOptimalOptions id:cgGeometryProfile)
+  (set! id:cgGeometryProgram
+        (cgCreateProgramFromFile
+         id:cgContext CG_SOURCE
+         cg-path id:cgGeometryProfile
+         "geometry_main"
+         #f))
+  (check-for-cgError "creating geometry program from file")
+  (cgGLLoadProgram id:cgGeometryProgram)
+  (check-for-cgError "loading geometry program")
 
-  (glDetachShader ProgramId VertexShaderId)
-  (glDetachShader ProgramId FragmentShaderId)
-
-  (glDeleteShader FragmentShaderId)
-  (glDeleteShader VertexShaderId)  
-
-  (glDeleteProgram ProgramId))
+  (cgGLBindProgram id:cgVertexProgram)
+  (check-for-cgError "binding vertex program")
+  (cgGLEnableProfile id:cgVertexProfile)
+  (check-for-cgError "enabling vertex profile")
+  (cgGLBindProgram id:cgFragmentProgram)
+  (check-for-cgError "binding fragment program")
+  (cgGLEnableProfile id:cgFragmentProfile)
+  (check-for-cgError "enabling fragment profile")
+  (cgGLBindProgram id:cgGeometryProgram)
+  (check-for-cgError "binding geometry program")
+  (cgGLEnableProfile id:cgGeometryProfile)
+  (check-for-cgError "enabling geometry profile"))
