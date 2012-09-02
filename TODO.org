@@ -225,7 +225,12 @@
 
   I mixed up the sign on a vector coordinate. The byte difference was
   just an error in printing on the C side.
-  
+
+  Alright, now that I have a working program, I have to go back to
+  being in racket/gui or accept my new GLUT overlord. Or maybe GLFW?
+* TODO GLFW - Add support for getting the string identifiers of joysticks
+* TODO Investigate and potentially use DDS for textures
+  https://en.wikipedia.org/wiki/DirectDraw_Surface
 * TODO Try to get OpenGL to do collision detection for me
   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
 * TODO See if I can record a video directly

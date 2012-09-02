@@ -1,11 +1,10 @@
 #lang racket/base
-(require ffi/vector
+(require racket/gui
+         ffi/vector
          ffi/unsafe/cvector
-         ffi/unsafe
          racket/runtime-path
          xml
          cg
-         freeglut
          (planet stephanh/RacketGL/rgl))
 
 (define WINDOW_TITLE_PREFIX "Chapter 2")
@@ -50,13 +49,45 @@
 	"}\n"))
 
 (module+ main
-  (Initialize)
-  (glutMainLoop)
-  (exit 0))
+  (define frame
+    (new frame% [label "Example"]))
+  (define this-canvas%
+    (class canvas%
+      (define/override (on-size width height)
+        (define dc
+          (send this get-dc))
+        (define gc
+          (send dc get-gl-context))
+        (send gc
+              call-as-current
+              (λ ()
+                (do-drawing width height)
+                (send gc swap-buffers))))
+
+      (super-new)))
+
+  (define config
+    (new gl-config%))
+  (send config set-double-buffered #t)
+
+  (define c
+    (new this-canvas%
+         [parent frame]
+         [gl-config config]
+         [style '(gl no-autoclear)]))
+
+  (send frame show #t))
+
+(define init? #f)
+(define (do-drawing w h)
+  (unless init?
+    (Initialize)
+    (set! init? #t))
+
+  (ResizeFunction w h)
+  (RenderFunction))
 
 (define (Initialize)
-  (InitWindow)
-
   (printf "INFO: OpenGL Version ~a\n"
           (glGetString GL_VERSION))  
 
@@ -64,32 +95,6 @@
   (CreateVBO)
 
   (glClearColor 0.0 0.0 0.0 0.0))
-
-(define (InitWindow)
-  (glutInit (vector-length (current-command-line-arguments))
-            (current-command-line-arguments))
-
-  (glutInitContextVersion 3 3)
-  (glutInitContextFlags GLUT_FORWARD_COMPATIBLE)
-  (glutInitContextProfile GLUT_CORE_PROFILE)
-
-  (glutSetOption GLUT_ACTION_ON_WINDOW_CLOSE
-                 GLUT_ACTION_GLUTMAINLOOP_RETURNS)
-
-  (glutInitWindowSize CurrentWidth CurrentHeight)
-
-  (glutInitDisplayMode (bitwise-ior GLUT_DEPTH GLUT_DOUBLE GLUT_RGBA))
-
-  (set! WindowHandle (glutCreateWindow WINDOW_TITLE_PREFIX))
-
-  (when (< WindowHandle 1)
-    (error 'glutCreateWindow "ERROR: Could not create a new rendering window."))
-
-  (glutReshapeFunc ResizeFunction)
-  (glutDisplayFunc RenderFunction)
-  (glutIdleFunc IdleFunction)
-  (glutTimerFunc 0 TimerFunction 0)
-  (glutCloseFunc Cleanup))
 
 (define (ResizeFunction Width Height)
   (set! CurrentWidth Width)
@@ -101,27 +106,7 @@
 
   (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
 
-  (glDrawArrays GL_TRIANGLES 0 3)
-
-  (glutSwapBuffers)
-  (glutPostRedisplay))
-
-(define (IdleFunction)
-  (glutPostRedisplay))
-
-(define (TimerFunction Value)
-  (unless (zero? Value)
-    (define TempString
-      (format "~a: ~a Frames Per Second @ ~a x ~a"
-              WINDOW_TITLE_PREFIX
-              (* 4 FrameCount)
-              CurrentWidth
-              CurrentHeight))
-
-    (glutSetWindowTitle TempString))
-
-  (set! FrameCount 0)
-  (glutTimerFunc 250 TimerFunction 1))
+  (glDrawArrays GL_TRIANGLES 0 3))
 
 (define (Cleanup)
   (DestroyShaders)
