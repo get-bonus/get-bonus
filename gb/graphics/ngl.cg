@@ -27,7 +27,6 @@ POINT TRIANGLE_OUT void geometry_main(AttribArray<float4> position : POSITION,
     emitVertex(vec4(x - hw, y - hh, 0.0, 1.0) : POSITION, color[i]);
     emitVertex(vec4(x + hw, y + hh, 0.0, 1.0) : POSITION, color[i]);
     emitVertex(vec4(x + hw, y - hh, 0.0, 1.0) : POSITION, color[i]);
-
     EndPrimitive();
   }
 }

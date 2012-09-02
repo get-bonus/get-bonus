@@ -102,11 +102,15 @@
 
 (define Vertices
   (f32vector
-    0.0 0.0 0.8 0.8))
+    0.0 0.0 0.8 0.8
+    0.0 0.0 0.4 0.4
+    0.0 0.0 0.2 0.2))
 
 (define Colors
   (f32vector
-   1.0 0.0 0.0 1.0))
+   1.0 0.0 0.0 1.0
+   0.0 1.0 0.0 1.0
+   0.0 0.0 1.0 1.0))
 
 (define (CreateVBO)  
   (set! VaoId
