@@ -18,6 +18,7 @@
 (define VaoId #f)
 (define VboId #f)
 (define ColorBufferId #f)
+(define TexCoordBufferId #f)
 
 (define-runtime-path cg-path "../gb/graphics/ngl.cg")
 
@@ -112,6 +113,13 @@
    0.0 1.0 0.0 1.0
    0.0 0.0 1.0 1.0))
 
+;; XXX Actually do this
+(define TexCoords
+  (f32vector
+   0.0 0.0
+   0.0 0.0
+   0.0 0.0))
+
 (define (CreateVBO)  
   (set! VaoId
         (u32vector-ref (glGenVertexArrays 1) 0))
@@ -135,7 +143,17 @@
                 Colors
                 GL_STATIC_DRAW)
   (glVertexAttribPointer 1 4 GL_FLOAT #f 0 0)
-  (glEnableVertexAttribArray 1))
+  (glEnableVertexAttribArray 1)
+
+  (set! TexCoordBufferId
+        (u32vector-ref (glGenBuffers 1) 0))
+  (glBindBuffer GL_ARRAY_BUFFER TexCoordBufferId)  
+  (glBufferData GL_ARRAY_BUFFER
+                (gl-vector-sizeof TexCoords)
+                TexCoords
+                GL_STATIC_DRAW)
+  (glVertexAttribPointer 2 2 GL_FLOAT #f 0 0)
+  (glEnableVertexAttribArray 2))
 
 (define (DestroyVBO)
   (glDisableVertexAttribArray 1)
@@ -145,6 +163,7 @@
 
   (glDeleteBuffers 1 (u32vector ColorBufferId))
   (glDeleteBuffers 1 (u32vector VboId))
+  (glDeleteBuffers 1 (u32vector TexCoordBufferId))
 
   (glBindVertexArray 0)
   (glDeleteVertexArrays 1 (u32vector VaoId)))

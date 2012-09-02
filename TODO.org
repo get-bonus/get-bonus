@@ -230,6 +230,34 @@
 
   Alright, now that I have a working program, I have to go back to
   being in racket/gui or accept my new GLUT overlord. Or maybe GLFW?
+
+  --- Progress ---
+
+  I've switched away from GLUT from the tutorial and switched to using
+  Cg (seems like a good idea in some ways, performance and
+  expressiveness, but a bad in others (less documentation it seems.))
+
+  I've started to work on my custom shader. I've got it generating a
+  quad from a single point (with six vertices).
+
+  My next task is to work with textures. Right now I have the
+  information being passed along, but I need to have three things:
+  flat color quads, flat textured quads, and textured quads with a
+  color blended on top. I think I will test with the Pac-Man sprite
+  sheet. I think I need those examples before I can really try to
+  write the code.
+
+  TODO Switch examples to keep track of framerate in window title
+
+  TODO Stress test examples with a million sprites
+
+  TODO Deal with the model view projection and other aspects of
+  rotation and scaling
+
+  TODO Get quad geometry shader to use triangle_strip so I only need
+  to generate 4 vertices (maybe I need to call restartStrip() or
+  Append()?)
+
 * TODO Investigate and potentially use DDS for textures
   https://en.wikipedia.org/wiki/DirectDraw_Surface
 * TODO Try to get OpenGL to do collision detection for me

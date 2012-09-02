@@ -1,17 +1,23 @@
 // Vertex pass-through program for 2D positions with color
 void vertex_main(float4 iPosition  : ATTR0,
                  float4 iColor     : ATTR1,
+                 float2 iTexCoord  : ATTR2,
 
                  out float4 oPosition : POSITION,
-                 out float4 oColor    : COLOR)
+                 out float4 oColor    : COLOR,
+                 out float2 oTexCoord : TEXCOORD)
 {
   oPosition = iPosition;
   oColor    = iColor;
+  oTexCoord = iTexCoord;
 }
 
 // Geometry pass-through program for colored triangles
-POINT TRIANGLE_OUT void geometry_main(AttribArray<float4> position : POSITION,
-                            AttribArray<float4> color    : COLOR)
+POINT 
+TRIANGLE_OUT
+void geometry_main(AttribArray<float4> position : POSITION,
+                   AttribArray<float4> color    : COLOR,
+                   AttribArray<float2> texCoord : TEXCOORD)
 {
   for (int i=0; i<position.length; i++) {
     float x = position[i][0];
@@ -35,5 +41,6 @@ POINT TRIANGLE_OUT void geometry_main(AttribArray<float4> position : POSITION,
 void fragment_main(float4 iColor : COLOR,
                    out float4 oColor : COLOR) 
 {
+  // texture(picture, UV)
   oColor = iColor;
 }
