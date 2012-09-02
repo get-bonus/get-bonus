@@ -94,7 +94,7 @@
 
   (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
 
-  (glDrawArrays GL_TRIANGLE_STRIP 0
+  (glDrawArrays GL_POINTS 0
                 (/ (f32vector-length Vertices) 4)))
 
 (define (Cleanup)  
@@ -102,27 +102,21 @@
 
 (define Vertices
   (f32vector
-   -0.8  0.8 0.0 1.0
-    0.8  0.8 0.0 1.0
-   -0.8 -0.8 0.0 1.0
-    0.8 -0.8 0.0 1.0))
+    0.0 0.0 0.8 0.8))
 
 (define Colors
   (f32vector
-   1.0 0.0 0.0 1.0
-   0.0 1.0 0.0 1.0
-   0.0 0.0 1.0 1.0
-   1.0 1.0 1.0 1.0))
+   1.0 0.0 0.0 1.0))
 
 (define (CreateVBO)  
   (set! VaoId
-    (u32vector-ref (glGenVertexArrays 1) 0))
+        (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
   (set! VboId
-    (u32vector-ref (glGenBuffers 1) 0))
+        (u32vector-ref (glGenBuffers 1) 0))
   (glBindBuffer GL_ARRAY_BUFFER VboId)
-    (glBufferData GL_ARRAY_BUFFER
+  (glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Vertices)
                 Vertices
                 GL_STATIC_DRAW)
@@ -130,7 +124,7 @@
   (glEnableVertexAttribArray 0)
 
   (set! ColorBufferId
-    (u32vector-ref (glGenBuffers 1) 0))
+        (u32vector-ref (glGenBuffers 1) 0))
   (glBindBuffer GL_ARRAY_BUFFER ColorBufferId)  
   (glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Colors)

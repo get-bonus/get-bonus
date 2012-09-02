@@ -76,6 +76,8 @@
   Get a USB snes controller for home
 * DONE Switch to RacketGL throughout
   CLOSED: [2012-08-09 Thu 16:28]
+* DONE GLFW - Add support for getting the string identifiers of joysticks
+  CLOSED: [2012-09-01 Sat 22:03]
 * TODO Switch to a fully shader based rendering system
   I have begun experimenting with this a lot.
   
@@ -228,7 +230,6 @@
 
   Alright, now that I have a working program, I have to go back to
   being in racket/gui or accept my new GLUT overlord. Or maybe GLFW?
-* TODO GLFW - Add support for getting the string identifiers of joysticks
 * TODO Investigate and potentially use DDS for textures
   https://en.wikipedia.org/wiki/DirectDraw_Surface
 * TODO Try to get OpenGL to do collision detection for me
