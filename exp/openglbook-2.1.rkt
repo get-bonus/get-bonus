@@ -3,12 +3,11 @@
          ffi/vector
          racket/runtime-path
          xml
+         gb/gui/fullscreen
          (planet stephanh/RacketGL/rgl))
 
 (define CurrentWidth 800)
 (define CurrentHeight 600)
-
-(define FrameCount 0)
 
 (define VaoId #f)
 (define VboId #f)
@@ -25,34 +24,37 @@
 (define TextureAtlasId #f)
 
 (module+ main
-  (define frame
-    (new frame% [label "Example"]))
-  (define this-canvas%
-    (class canvas%
-      (define/override (on-size width height)
-        (define dc
-          (send this get-dc))
-        (define gc
-          (send dc get-gl-context))
-        (send gc
-              call-as-current
-              (λ ()
-                (do-drawing width height)
-                (send gc swap-buffers))))
+  (define-values
+    (the-frame the-canvas)
+    (make-fullscreen-canvas/ratio
+     ""
+     16 9
+     (λ (c)
+       (define dc (send c get-dc))
+       (define glctx (send dc get-gl-context))       
+       (send glctx call-as-current
+             (λ ()               
+               (do-drawing (send c get-width) 
+                           (send c get-height))               
+               (send glctx swap-buffers))))
+     (λ (k)
+       (void))))
 
-      (super-new)))
-
-  (define config
-    (new gl-config%))
-  (send config set-double-buffered #t)
-
-  (define c
-    (new this-canvas%
-         [parent frame]
-         [gl-config config]
-         [style '(gl no-autoclear)]))
-
-  (send frame show #t))
+  (let loop ()
+    (define before
+      (current-inexact-milliseconds))
+    (define next-time
+      (+ before (* 1/60 1000)))
+    (send the-canvas refresh-now)
+    (define after
+      (current-inexact-milliseconds))
+    (send the-frame set-label 
+          (format "~a FPS"
+                  (real->decimal-string
+                   (/ 1 (/ (- after before) 1000))
+                   2)))
+    (sync (alarm-evt next-time))
+    (loop)))
 
 (define init? #f)
 (define (do-drawing w h)
@@ -93,9 +95,15 @@
   (glViewport 0 0 CurrentWidth CurrentHeight))
 
 (define (RenderFunction)
-  (set! FrameCount (add1 FrameCount))
-
   (glClear GL_COLOR_BUFFER_BIT)
+
+  (f32vector-set! Transforms 8
+                  (sin (current-inexact-milliseconds)))
+  (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
+  (glBufferData GL_ARRAY_BUFFER
+                (gl-vector-sizeof Transforms)
+                Transforms
+                GL_STREAM_DRAW)
 
   (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
 
