@@ -14,6 +14,7 @@
 (define VboId #f)
 (define ColorBufferId #f)
 (define TexIndexesBufferId #f)
+(define TransformBufferId #f)
 
 (define ProgramId #f)
 (define VertexShaderId #f)
@@ -98,11 +99,15 @@
 
   (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
 
+;; One sprite = 4*(4 + 4 + 1 + 3) bytes
+;; GeForce 320M bandwidth = 17 Gb / s
+;; = 6.3 million sprites at 60FPS
+
 (define Vertices
   (f32vector
     0.0 0.0 1.0 1.0
     0.0 0.0 0.8 0.8
-    0.0 0.0 0.4 0.4
+    0.0 0.0 0.8 0.8
     0.0 0.0 0.2 0.2))
 
 (define Colors
@@ -118,6 +123,13 @@
    0
    0
    0))
+
+(define Transforms
+  (f32vector
+   1.0 1.0 0.0
+   1.0 1.0 0.0
+   0.5 0.5 (/ pi 4)
+   1.0 1.0 0.0))
 
 (define TextureAtlasIndex
   (f32vector
@@ -161,7 +173,8 @@
 
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
-  (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1))
+  (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
+  (define-vertex-attrib-array TransformBufferId Transforms 3 3))
 
 (define (print-shader-log glGetShaderInfoLog shader-name shader-id)
   (define-values (infoLen infoLog)

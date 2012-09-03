@@ -7,6 +7,7 @@ layout (triangle_strip, max_vertices=4) out;
 in VertexData {
   vec4 Color;
   vec4 TexCoord;
+  float Rotation;
 } vertexData[];
 
 out vec4 Color;
@@ -22,10 +23,16 @@ void main()
     float hw = pos.z;
     float hh = pos.w;
 
-    vec4 ul = vec4(x - hw, y + hh, 0.0, 1.0);
-    vec4 ur = vec4(x + hw, y + hh, 0.0, 1.0);
-    vec4 ll = vec4(x - hw, y - hh, 0.0, 1.0);
-    vec4 lr = vec4(x + hw, y - hh, 0.0, 1.0);
+    float Angle = vertexData[i].Rotation;
+    mat4 RotationMatrix = mat4( cos( Angle ), -sin( Angle ), 0.0, 0.0,
+                                sin( Angle ),  cos( Angle ), 0.0, 0.0,
+                                         0.0,           0.0, 1.0, 0.0,
+                                         0.0,           0.0, 0.0, 1.0 );
+
+    vec4 ul = vec4(x - hw, y + hh, 0.0, 1.0) * RotationMatrix;
+    vec4 ur = vec4(x + hw, y + hh, 0.0, 1.0) * RotationMatrix;
+    vec4 ll = vec4(x - hw, y - hh, 0.0, 1.0) * RotationMatrix;
+    vec4 lr = vec4(x + hw, y - hh, 0.0, 1.0) * RotationMatrix;
 
     vec4 Tpos = vertexData[i].TexCoord;
     float Tllx = Tpos.x;

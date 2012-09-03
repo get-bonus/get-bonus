@@ -260,13 +260,10 @@
   Basic textures are done. A few more things to do though. Changed the
   texture coordinate representation. Got indexed textures to work, but
   there's the annoying magic number length in the vertex shader. And
-  I don't like the way I did it, but eh. What can you do?
+  I don't like the way I did it, but eh. What can you do? Just did
+  rotation and scaling on the sprite level.
 
   TODO Do texture/color blending
-
-  TODO Rotation
-
-  TODO Scaling
 
   TODO Combine into a single vector with strides
 
