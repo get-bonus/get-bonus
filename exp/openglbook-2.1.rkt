@@ -23,14 +23,6 @@
 (define TextureAtlasIndex_UniformId #f)
 (define TextureAtlasId #f)
 
-(define-syntax-rule (define-shader-source id path)
-  (begin (define-runtime-path id-path path)
-         (define id (file->bytes id-path))))
-
-(define-shader-source VertexShader "../gb/graphics/ngl.vertex.glsl")
-(define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
-(define-shader-source GeometryShader "../gb/graphics/ngl.geometry.glsl")
-
 (module+ main
   (define frame
     (new frame% [label "Example"]))
@@ -108,7 +100,7 @@
 
 (define Vertices
   (f32vector
-    0.0 0.0 0.9 0.9
+    0.0 0.0 1.0 1.0
     0.0 0.0 0.8 0.8
     0.0 0.0 0.4 0.4
     0.0 0.0 0.2 0.2))
@@ -132,12 +124,16 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 1.0 1.0))
 
-(define TextureCoords
-  (f32vector
-   0.0 0.0 1.0 1.0
-   0.0 0.0 0.0 0.0
-   0.0 0.0 0.0 0.0
-   0.0 0.0 0.0 0.0))
+(define-syntax-rule (define-shader-source id path)
+  (begin (define-runtime-path id-path path)
+         (define id (file->string id-path))))
+
+(define-shader-source VertexShader-p "../gb/graphics/ngl.vertex.glsl")
+(define VertexShader 
+  (format VertexShader-p 
+          (/ (f32vector-length TextureAtlasIndex) 4)))
+(define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
+(define-shader-source GeometryShader "../gb/graphics/ngl.geometry.glsl")
 
 (define-syntax-rule
   (define-vertex-attrib-array VboId Vertices Index HowMany)

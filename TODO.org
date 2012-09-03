@@ -257,12 +257,12 @@
 
   --- Progress 09/03 ---
 
-  Basic textures are done. A few more things to do though. Changed
-  the texture coordinate representation.
+  Basic textures are done. A few more things to do though. Changed the
+  texture coordinate representation. Got indexed textures to work, but
+  there's the annoying magic number length in the vertex shader. And
+  I don't like the way I did it, but eh. What can you do?
 
   TODO Do texture/color blending
-
-  TODO Do indexed textures
 
   TODO Rotation
 
