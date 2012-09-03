@@ -255,7 +255,13 @@
   working, so now I'm just generating 4 vertices, which is nice. Next
   up is texturing, which I've done a bit of.
 
-  TODO Do basic textures
+  --- Progress 09/03 ---
+
+  Basic textures are done. A few more things to do though.
+
+  TODO Change texture coord representation
+
+  TODO Do texture/color blending
 
   TODO Do indexed textures
 
@@ -274,10 +280,29 @@
   TODO Deal with the model view projection
 * DONE GLFW - Add support for getting the string identifiers of joysticks
   CLOSED: [2012-09-01 Sat 22:03]
-* TODO Wait until GLFW has consistent joystick state intra-frame
+* TODO GLFW - Wait for consistent joystick state intra-frame
   So glfwPollEvents calls pollJoystickEvents and Win32 caches
-* TODO Investigate and potentially use DDS for textures
+* TODO Investigate and potentially using DDS for textures
   https://en.wikipedia.org/wiki/DirectDraw_Surface
+* TODO Resource manager
+  A DSL for defining resources...
+
+  - All
+    + Source URL
+    + Copyright holder
+    + Title
+  - Music
+    + Category
+    + Conversion to Ogg
+  - Image
+    + Sprite layout (w/ names)
+    + Conversion to texture atlas
+  - Fonts
+    + Conversion to texture atlas
+
+  This would run beforehand, create some files/directory structure,
+  and then drop and runtime information file so texture coords could
+  be looked up.
 * TODO The Get Bonus rendering system should have built-in support for TATE games
   Virtual, Rotate Left, and Rotate Right
 * TODO Try to get OpenGL to do collision detection for me

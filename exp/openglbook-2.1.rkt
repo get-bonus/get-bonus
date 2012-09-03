@@ -20,6 +20,8 @@
 (define FragmentShaderId #f)
 (define GeometryShaderId #f)
 
+(define TextureAtlasId #f)
+
 (define-syntax-rule (define-shader-source id path)
   (begin (define-runtime-path id-path path)
          (define id (file->bytes id-path))))
@@ -67,9 +69,17 @@
   (ResizeFunction w h)
   (RenderFunction))
 
+(define-runtime-path texture-atlas-path "../resources/SMB-Tiles.png")
+
 (define (Initialize)
   (printf "INFO: OpenGL Version ~a\n"
           (glGetString GL_VERSION))  
+
+  (set! TextureAtlasId
+        (load-texture texture-atlas-path
+                      #:mipmap #f))
+  (glBindTexture GL_TEXTURE_2D
+                 TextureAtlasId)
 
   (CreateShaders)
   (CreateVBO)
@@ -90,19 +100,24 @@
 
 (define Vertices
   (f32vector
+    0.0 0.0 1.0 1.0
     0.0 0.0 0.8 0.8
     0.0 0.0 0.4 0.4
     0.0 0.0 0.2 0.2))
 
 (define Colors
   (f32vector
+   0.0 0.0 0.0 1.0
    1.0 0.0 0.0 1.0
    0.0 1.0 0.0 1.0
    0.0 0.0 1.0 1.0))
 
-;; XXX Actually do this
+;; XXX Change this from (center x, center y) (half-width, half-height)
+;; to (lower-left x, lower-right y) (width, height) (because I think
+;; it is easier to figure that out in pixel arts)
 (define TexCoords
   (f32vector
+   0.5 0.5 0.5 0.5
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0))
