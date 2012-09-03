@@ -121,11 +121,11 @@
    0.0 0.0 1.0 1.0))
 
 (define TexIndexes
-  (f32vector
-   1.0
-   0.0
-   0.0
-   0.0))
+  (u32vector
+   1
+   0
+   0
+   0))
 
 (define TextureAtlasIndex
   (f32vector
@@ -148,8 +148,14 @@
                        (gl-vector-sizeof Vertices)
                        Vertices
                        GL_STATIC_DRAW)
-         (glVertexAttribPointer Index HowMany (gl-vector->type Vertices)
-                                #f 0 0)
+         (define type (gl-vector->type Vertices))
+         (cond
+           [(= type GL_FLOAT)
+            (glVertexAttribPointer Index HowMany type
+                                   #f 0 0)]
+           [else
+            (glVertexAttribIPointer Index HowMany type
+                                    0 0)])
          (glEnableVertexAttribArray Index)))
 
 (define (CreateVBO)  
