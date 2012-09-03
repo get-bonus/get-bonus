@@ -13,13 +13,14 @@
 (define VaoId #f)
 (define VboId #f)
 (define ColorBufferId #f)
-(define TexCoordBufferId #f)
+(define TexIndexesBufferId #f)
 
 (define ProgramId #f)
 (define VertexShaderId #f)
 (define FragmentShaderId #f)
 (define GeometryShaderId #f)
 
+(define TextureAtlasIndex_UniformId #f)
 (define TextureAtlasId #f)
 
 (define-syntax-rule (define-shader-source id path)
@@ -85,6 +86,12 @@
   (CreateShaders)
   (CreateVBO)
 
+  (set! TextureAtlasIndex_UniformId
+        (glGetUniformLocation ProgramId "TextureAtlasIndex"))
+  (glUniform4fv TextureAtlasIndex_UniformId
+                (/ (f32vector-length TextureAtlasIndex) 4)
+                TextureAtlasIndex)
+
   (glClearColor 1.0 1.0 1.0 0.0))
 
 (define (ResizeFunction Width Height)
@@ -101,7 +108,7 @@
 
 (define Vertices
   (f32vector
-    0.0 0.0 1.0 1.0
+    0.0 0.0 0.9 0.9
     0.0 0.0 0.8 0.8
     0.0 0.0 0.4 0.4
     0.0 0.0 0.2 0.2))
@@ -113,14 +120,27 @@
    0.0 1.0 0.0 1.0
    0.0 0.0 1.0 1.0))
 
-(define TexCoords
+(define TexIndexes
+  (f32vector
+   1.0
+   0.0
+   0.0
+   0.0))
+
+(define TextureAtlasIndex
+  (f32vector
+   0.0 0.0 0.0 0.0
+   0.0 0.0 1.0 1.0))
+
+(define TextureCoords
   (f32vector
    0.0 0.0 1.0 1.0
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0))
 
-(define-syntax-rule (define-vertex-attrib-array VboId Vertices Index)
+(define-syntax-rule
+  (define-vertex-attrib-array VboId Vertices Index HowMany)
   (begin (set! VboId
                (u32vector-ref (glGenBuffers 1) 0))
          (glBindBuffer GL_ARRAY_BUFFER VboId)
@@ -128,7 +148,8 @@
                        (gl-vector-sizeof Vertices)
                        Vertices
                        GL_STATIC_DRAW)
-         (glVertexAttribPointer Index 4 GL_FLOAT #f 0 0)
+         (glVertexAttribPointer Index HowMany (gl-vector->type Vertices)
+                                #f 0 0)
          (glEnableVertexAttribArray Index)))
 
 (define (CreateVBO)  
@@ -136,11 +157,11 @@
         (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
-  (define-vertex-attrib-array VboId Vertices 0)
-  (define-vertex-attrib-array ColorBufferId Colors 1)
-  (define-vertex-attrib-array TexCoordBufferId TexCoords 2))
+  (define-vertex-attrib-array VboId Vertices 0 4)
+  (define-vertex-attrib-array ColorBufferId Colors 1 4)
+  (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1))
 
-(define (print-shader-log shader-name shader-id)
+(define (print-shader-log glGetShaderInfoLog shader-name shader-id)
   (define-values (infoLen infoLog)
     (glGetShaderInfoLog shader-id 1024))
   (unless (zero? infoLen)
@@ -160,7 +181,7 @@
            (glShaderSource VertexShaderId 1 (vector VertexShader)
                            (s32vector))
            (glCompileShader VertexShaderId)
-           (print-shader-log 'VertexShader VertexShaderId)
+           (print-shader-log glGetShaderInfoLog 'VertexShader VertexShaderId)
            (glAttachShader ProgramId VertexShaderId)))
 
   (compile-shader VertexShaderId GL_VERTEX_SHADER
@@ -171,5 +192,6 @@
                   GeometryShader)
 
   (glLinkProgram ProgramId)
+  (print-shader-log glGetProgramInfoLog 'Program ProgramId)
   
   (glUseProgram ProgramId))
