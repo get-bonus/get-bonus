@@ -28,15 +28,15 @@ void main()
     vec4 lr = vec4(x + hw, y - hh, 0.0, 1.0);
 
     vec4 Tpos = vertexData[i].TexCoord;
-    float Tx = Tpos.x;
-    float Ty = Tpos.y;
-    float Thw = Tpos.z;
-    float Thh = Tpos.w;
+    float Tllx = Tpos.x;
+    float Tlly = Tpos.y;
+    float Tw = Tpos.z;
+    float Th = Tpos.w;
 
-    vec2 Tul = vec2(Tx - Thw, Ty + Thh);
-    vec2 Tur = vec2(Tx + Thw, Ty + Thh);
-    vec2 Tll = vec2(Tx - Thw, Ty - Thh);
-    vec2 Tlr = vec2(Tx + Thw, Ty - Thh);
+    vec2 Tll = vec2(Tllx, Tlly);
+    vec2 Tul = vec2(Tllx, Tlly + Th);
+    vec2 Tur = vec2(Tllx + Tw, Tlly + Th);
+    vec2 Tlr = vec2(Tllx + Tw, Tlly);
 
     Color = vertexData[i].Color;
 

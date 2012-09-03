@@ -257,9 +257,8 @@
 
   --- Progress 09/03 ---
 
-  Basic textures are done. A few more things to do though.
-
-  TODO Change texture coord representation
+  Basic textures are done. A few more things to do though. Changed
+  the texture coordinate representation.
 
   TODO Do texture/color blending
 

@@ -78,7 +78,8 @@
   (set! TextureAtlasId
         (load-texture texture-atlas-path
                       #:mipmap #f))
-  (glBindTexture GL_TEXTURE_2D
+  ;; load-texture does this
+  #;(glBindTexture GL_TEXTURE_2D
                  TextureAtlasId)
 
   (CreateShaders)
@@ -112,12 +113,9 @@
    0.0 1.0 0.0 1.0
    0.0 0.0 1.0 1.0))
 
-;; XXX Change this from (center x, center y) (half-width, half-height)
-;; to (lower-left x, lower-right y) (width, height) (because I think
-;; it is easier to figure that out in pixel arts)
 (define TexCoords
   (f32vector
-   0.5 0.5 0.5 0.5
+   0.0 0.0 1.0 1.0
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0))
