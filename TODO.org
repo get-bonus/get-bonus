@@ -76,8 +76,6 @@
   Get a USB snes controller for home
 * DONE Switch to RacketGL throughout
   CLOSED: [2012-08-09 Thu 16:28]
-* DONE GLFW - Add support for getting the string identifiers of joysticks
-  CLOSED: [2012-09-01 Sat 22:03]
 * TODO Switch to a fully shader based rendering system
   I have begun experimenting with this a lot.
   
@@ -231,7 +229,7 @@
   Alright, now that I have a working program, I have to go back to
   being in racket/gui or accept my new GLUT overlord. Or maybe GLFW?
 
-  --- Progress ---
+  --- Progress 09/01 ---
 
   I've switched away from GLUT from the tutorial and switched to using
   Cg (seems like a good idea in some ways, performance and
@@ -247,19 +245,41 @@
   sheet. I think I need those examples before I can really try to
   write the code.
 
+  --- Progress 09/02 ---
+
+  Today I switched back to GLSL after reading about some problems
+  with Cg and failing to get triangle strips to work. I find it
+  really weird and annoying to write three files though, where the
+  names of identifiers have to be the same. It's strange. But after I
+  did the transition, then I was able to get the triangle strip
+  working, so now I'm just generating 4 vertices, which is nice. Next
+  up is texturing, which I've done a bit of.
+
+  TODO Do basic textures
+
+  TODO Do indexed textures
+
+  TODO Rotation
+
+  TODO Scaling
+
+  TODO Combine into a single vector with strides
+
+  TODO Consider using only integers so they always align with pixels
+
   TODO Switch examples to keep track of framerate in window title
 
   TODO Stress test examples with a million sprites
 
-  TODO Deal with the model view projection and other aspects of
-  rotation and scaling
-
-  TODO Get quad geometry shader to use triangle_strip so I only need
-  to generate 4 vertices (maybe I need to call restartStrip() or
-  Append()?)
-
+  TODO Deal with the model view projection
+* DONE GLFW - Add support for getting the string identifiers of joysticks
+  CLOSED: [2012-09-01 Sat 22:03]
+* TODO Wait until GLFW has consistent joystick state intra-frame
+  So glfwPollEvents calls pollJoystickEvents and Win32 caches
 * TODO Investigate and potentially use DDS for textures
   https://en.wikipedia.org/wiki/DirectDraw_Surface
+* TODO The Get Bonus rendering system should have built-in support for TATE games
+  Virtual, Rotate Left, and Rotate Right
 * TODO Try to get OpenGL to do collision detection for me
   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
 * TODO See if I can record a video directly

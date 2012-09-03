@@ -1,17 +1,12 @@
 #lang racket/base
 (require racket/gui
          ffi/vector
-         ffi/unsafe/cvector
          racket/runtime-path
          xml
-         cg
          (planet stephanh/RacketGL/rgl))
-
-(define WINDOW_TITLE_PREFIX "Chapter 2")
 
 (define CurrentWidth 800)
 (define CurrentHeight 600)
-(define WindowHandle 0)
 
 (define FrameCount 0)
 
@@ -20,22 +15,18 @@
 (define ColorBufferId #f)
 (define TexCoordBufferId #f)
 
-(define-runtime-path cg-path "../gb/graphics/ngl.cg")
+(define ProgramId #f)
+(define VertexShaderId #f)
+(define FragmentShaderId #f)
+(define GeometryShaderId #f)
 
-(define (check-for-cgError situation)
-  (define-values (err str) (cgGetLastErrorString))
-  (unless (= err CG_NO_ERROR)
-    (if (= err CG_COMPILER_ERROR)
-      (error 'cg "~a: ~a: ~a\n~a" situation err str (cgGetLastListing id:cgContext))
-      (error 'cg "~a: ~a: ~a" situation err str))))
+(define-syntax-rule (define-shader-source id path)
+  (begin (define-runtime-path id-path path)
+         (define id (file->bytes id-path))))
 
-(define id:cgContext #f)
-(define id:cgVertexProfile #f)
-(define id:cgVertexProgram #f)
-(define id:cgFragmentProfile #f)
-(define id:cgFragmentProgram #f)
-(define id:cgGeometryProfile #f)
-(define id:cgGeometryProgram #f)
+(define-shader-source VertexShader "../gb/graphics/ngl.vertex.glsl")
+(define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
+(define-shader-source GeometryShader "../gb/graphics/ngl.geometry.glsl")
 
 (module+ main
   (define frame
@@ -83,7 +74,7 @@
   (CreateShaders)
   (CreateVBO)
 
-  (glClearColor 0.0 0.0 0.0 0.0))
+  (glClearColor 1.0 1.0 1.0 0.0))
 
 (define (ResizeFunction Width Height)
   (set! CurrentWidth Width)
@@ -93,13 +84,9 @@
 (define (RenderFunction)
   (set! FrameCount (add1 FrameCount))
 
-  (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+  (glClear GL_COLOR_BUFFER_BIT)
 
-  (glDrawArrays GL_POINTS 0
-                (/ (f32vector-length Vertices) 4)))
-
-(define (Cleanup)  
-  (DestroyVBO))
+  (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
 
 (define Vertices
   (f32vector
@@ -116,112 +103,60 @@
 ;; XXX Actually do this
 (define TexCoords
   (f32vector
-   0.0 0.0
-   0.0 0.0
-   0.0 0.0))
+   0.0 0.0 0.0 0.0
+   0.0 0.0 0.0 0.0
+   0.0 0.0 0.0 0.0))
+
+(define-syntax-rule (define-vertex-attrib-array VboId Vertices Index)
+  (begin (set! VboId
+               (u32vector-ref (glGenBuffers 1) 0))
+         (glBindBuffer GL_ARRAY_BUFFER VboId)
+         (glBufferData GL_ARRAY_BUFFER
+                       (gl-vector-sizeof Vertices)
+                       Vertices
+                       GL_STATIC_DRAW)
+         (glVertexAttribPointer Index 4 GL_FLOAT #f 0 0)
+         (glEnableVertexAttribArray Index)))
 
 (define (CreateVBO)  
   (set! VaoId
         (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
-  (set! VboId
-        (u32vector-ref (glGenBuffers 1) 0))
-  (glBindBuffer GL_ARRAY_BUFFER VboId)
-  (glBufferData GL_ARRAY_BUFFER
-                (gl-vector-sizeof Vertices)
-                Vertices
-                GL_STATIC_DRAW)
-  (glVertexAttribPointer 0 4 GL_FLOAT #f 0 0)
-  (glEnableVertexAttribArray 0)
+  (define-vertex-attrib-array VboId Vertices 0)
+  (define-vertex-attrib-array ColorBufferId Colors 1)
+  (define-vertex-attrib-array TexCoordBufferId TexCoords 2))
 
-  (set! ColorBufferId
-        (u32vector-ref (glGenBuffers 1) 0))
-  (glBindBuffer GL_ARRAY_BUFFER ColorBufferId)  
-  (glBufferData GL_ARRAY_BUFFER
-                (gl-vector-sizeof Colors)
-                Colors
-                GL_STATIC_DRAW)
-  (glVertexAttribPointer 1 4 GL_FLOAT #f 0 0)
-  (glEnableVertexAttribArray 1)
-
-  (set! TexCoordBufferId
-        (u32vector-ref (glGenBuffers 1) 0))
-  (glBindBuffer GL_ARRAY_BUFFER TexCoordBufferId)  
-  (glBufferData GL_ARRAY_BUFFER
-                (gl-vector-sizeof TexCoords)
-                TexCoords
-                GL_STATIC_DRAW)
-  (glVertexAttribPointer 2 2 GL_FLOAT #f 0 0)
-  (glEnableVertexAttribArray 2))
-
-(define (DestroyVBO)
-  (glDisableVertexAttribArray 1)
-  (glDisableVertexAttribArray 0)
-
-  (glBindBuffer GL_ARRAY_BUFFER 0)
-
-  (glDeleteBuffers 1 (u32vector ColorBufferId))
-  (glDeleteBuffers 1 (u32vector VboId))
-  (glDeleteBuffers 1 (u32vector TexCoordBufferId))
-
-  (glBindVertexArray 0)
-  (glDeleteVertexArrays 1 (u32vector VaoId)))
+(define (print-shader-log shader-name shader-id)
+  (define-values (infoLen infoLog)
+    (glGetShaderInfoLog shader-id 1024))
+  (unless (zero? infoLen)
+    (eprintf "~a: ~a\n"
+             shader-name
+             (subbytes infoLog 0 infoLen))
+    (exit 1)))
 
 (define (CreateShaders)
-  (set! id:cgContext (cgCreateContext))
-  (check-for-cgError "creating context")
-  (cgGLSetDebugMode CG_TRUE)
-  (cgSetParameterSettingMode id:cgContext CG_DEFERRED_PARAMETER_SETTING)
+  (set! ProgramId (glCreateProgram))
 
-  (set! id:cgVertexProfile (cgGLGetLatestProfile CG_GL_VERTEX))
-  (cgGLSetOptimalOptions id:cgVertexProfile)
-  (check-for-cgError "selecting vertex profile")
-  (set! id:cgVertexProgram
-        (cgCreateProgramFromFile
-         id:cgContext CG_SOURCE
-         cg-path id:cgVertexProfile
-         "vertex_main"
-         #f))
-  (check-for-cgError "creating vertex program from file")
-  (cgGLLoadProgram id:cgVertexProgram)
-  (check-for-cgError "loading vertex program")  
+  (define-syntax-rule 
+    (compile-shader VertexShaderId
+                    GL_VERTEX_SHADER
+                    VertexShader)
+    (begin (set! VertexShaderId (glCreateShader GL_VERTEX_SHADER))
+           (glShaderSource VertexShaderId 1 (vector VertexShader)
+                           (s32vector))
+           (glCompileShader VertexShaderId)
+           (print-shader-log 'VertexShader VertexShaderId)
+           (glAttachShader ProgramId VertexShaderId)))
 
-  (set! id:cgFragmentProfile (cgGLGetLatestProfile CG_GL_FRAGMENT))
-  (check-for-cgError "selecting fragment profile")
-  (cgGLSetOptimalOptions id:cgFragmentProfile)
-  (set! id:cgFragmentProgram
-        (cgCreateProgramFromFile
-         id:cgContext CG_SOURCE
-         cg-path id:cgFragmentProfile
-         "fragment_main"
-         #f))
-  (check-for-cgError "creating fragment program from file")
-  (cgGLLoadProgram id:cgFragmentProgram)
-  (check-for-cgError "loading fragment program")
+  (compile-shader VertexShaderId GL_VERTEX_SHADER
+                  VertexShader)
+  (compile-shader FragmentShaderId GL_FRAGMENT_SHADER
+                  FragmentShader)
+  (compile-shader GeometryShaderId GL_GEOMETRY_SHADER
+                  GeometryShader)
 
-  (set! id:cgGeometryProfile (cgGLGetLatestProfile CG_GL_GEOMETRY))
-  (check-for-cgError "selecting geometry profile")
-  (cgGLSetOptimalOptions id:cgGeometryProfile)
-  (set! id:cgGeometryProgram
-        (cgCreateProgramFromFile
-         id:cgContext CG_SOURCE
-         cg-path id:cgGeometryProfile
-         "geometry_main"
-         #f))
-  (check-for-cgError "creating geometry program from file")
-  (cgGLLoadProgram id:cgGeometryProgram)
-  (check-for-cgError "loading geometry program")
-
-  (cgGLBindProgram id:cgVertexProgram)
-  (check-for-cgError "binding vertex program")
-  (cgGLEnableProfile id:cgVertexProfile)
-  (check-for-cgError "enabling vertex profile")
-  (cgGLBindProgram id:cgFragmentProgram)
-  (check-for-cgError "binding fragment program")
-  (cgGLEnableProfile id:cgFragmentProfile)
-  (check-for-cgError "enabling fragment profile")
-  (cgGLBindProgram id:cgGeometryProgram)
-  (check-for-cgError "binding geometry program")
-  (cgGLEnableProfile id:cgGeometryProfile)
-  (check-for-cgError "enabling geometry profile"))
+  (glLinkProgram ProgramId)
+  
+  (glUseProgram ProgramId))
