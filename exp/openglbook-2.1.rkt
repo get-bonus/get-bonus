@@ -6,9 +6,6 @@
          gb/gui/fullscreen
          (planet stephanh/RacketGL/rgl))
 
-(define CurrentWidth 800)
-(define CurrentHeight 600)
-
 (define VaoId #f)
 (define VboId #f)
 (define ColorBufferId #f)
@@ -90,17 +87,15 @@
   (glClearColor 1.0 1.0 1.0 0.0))
 
 (define (ResizeFunction Width Height)
-  (set! CurrentWidth Width)
-  (set! CurrentHeight Height)
-  (glViewport 0 0 CurrentWidth CurrentHeight))
+  (glViewport 0 0 Width Height))
 
 (define (RenderFunction)
   (glClear GL_COLOR_BUFFER_BIT)
 
-  (f32vector-set! Transforms 8
+  #;(f32vector-set! Transforms 8
                   (sin (current-inexact-milliseconds)))
-  (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
-  (glBufferData GL_ARRAY_BUFFER
+  #;(glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
+  #;(glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Transforms)
                 Transforms
                 GL_STREAM_DRAW)
@@ -111,33 +106,40 @@
 ;; GeForce 320M bandwidth = 17 Gb / s
 ;; = 6.3 million sprites at 60FPS
 
-(define Vertices
-  (f32vector
-    0.0 0.0 1.0 1.0
-    0.0 0.0 0.8 0.8
-    0.0 0.0 0.8 0.8
-    0.0 0.0 0.2 0.2))
+(define (random-in lo hi)
+  (define rng (- hi lo))
+  (+ lo (* (random) (+ rng 1))))
 
-(define Colors
-  (f32vector
-   0.0 0.0 0.0 1.0
-   1.0 0.0 0.0 1.0
-   0.0 1.0 0.0 1.0
-   0.0 0.0 1.0 1.0))
+(define HowManySprites 2000)
+(define Vertices (make-f32vector (* HowManySprites 4)))
+(define Colors (make-f32vector (* HowManySprites 4)))
+(define TexIndexes (make-u32vector HowManySprites))
+(define Transforms (make-f32vector (* HowManySprites 3)))
 
-(define TexIndexes
-  (u32vector
-   1
-   0
-   0
-   0))
+(for ([i (in-range HowManySprites)])
+  (f32vector-set! Vertices (+ (* i 4) 0) (random-in -1.0 1.0))
+  (f32vector-set! Vertices (+ (* i 4) 1) (random-in -1.0 1.0))
+  (f32vector-set! Vertices (+ (* i 4) 2) (random))
+  (f32vector-set! Vertices (+ (* i 4) 3) (random))
 
-(define Transforms
-  (f32vector
-   1.0 1.0 0.0
-   1.0 1.0 0.0
-   0.5 0.5 (/ pi 4)
-   1.0 1.0 0.0))
+  (f32vector-set! Colors (+ (* i 4) 0) (random))
+  (f32vector-set! Colors (+ (* i 4) 1) (random))
+  (f32vector-set! Colors (+ (* i 4) 2) (random))
+  (f32vector-set! Colors (+ (* i 4) 3) (random))
+
+  (u32vector-set! TexIndexes i (random 2))
+
+  (f32vector-set! Transforms (+ (* i 3) 0) (random))
+  (f32vector-set! Transforms (+ (* i 3) 1) (random))
+  (f32vector-set! Transforms (+ (* i 3) 2) (random)))
+
+(printf "Total size: ~a kb\n"
+        (real->decimal-string
+         (/ (apply + 
+                   (map gl-vector-sizeof
+                        (list Vertices Colors 
+                              TexIndexes Transforms)))
+            1024)))
 
 (define TextureAtlasIndex
   (f32vector

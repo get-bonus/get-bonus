@@ -261,17 +261,17 @@
   texture coordinate representation. Got indexed textures to work, but
   there's the annoying magic number length in the vertex shader. And
   I don't like the way I did it, but eh. What can you do? Just did
-  rotation and scaling on the sprite level.
+  rotation and scaling on the sprite level. Dramatically increased
+  number of sprites to benchmark. 500 @ 60 FPS with just a transfer
+  of the entire transform array.
 
   TODO Do texture/color blending
+
+  TODO Optimize
 
   TODO Combine into a single vector with strides
 
   TODO Consider using only integers so they always align with pixels
-
-  TODO Switch examples to keep track of framerate in window title
-
-  TODO Stress test examples with a million sprites
 
   TODO Deal with the model view projection
 * DONE GLFW - Add support for getting the string identifiers of joysticks
