@@ -7,7 +7,8 @@ layout (triangle_strip, max_vertices=4) out;
 in VertexData {
   vec4 Color;
   vec4 TexCoord;
-  float Rotation;
+  float cosA;
+  float sinA;
 } vertexData[];
 
 out vec4 Color;
@@ -23,47 +24,50 @@ void main()
     float hw = pos.z;
     float hh = pos.w;
 
-    float Angle = vertexData[i].Rotation;
-    mat4 RotationMatrix = mat4( cos( Angle ), -sin( Angle ), 0.0, 0.0,
-                                sin( Angle ),  cos( Angle ), 0.0, 0.0,
-                                         0.0,           0.0, 1.0, 0.0,
-                                         0.0,           0.0, 0.0, 1.0 );
+    float cosA = vertexData[i].cosA;
+    float sinA = vertexData[i].sinA;
+    float left = x - hw;
+    float right = x + hw;
+    float upper = y + hh;
+    float lower = y - hh;
 
-    vec4 ul = vec4(x - hw, y + hh, 0.0, 1.0) * RotationMatrix;
-    vec4 ur = vec4(x + hw, y + hh, 0.0, 1.0) * RotationMatrix;
-    vec4 ll = vec4(x - hw, y - hh, 0.0, 1.0) * RotationMatrix;
-    vec4 lr = vec4(x + hw, y - hh, 0.0, 1.0) * RotationMatrix;
+    float leftS = left * sinA;
+    float leftC = left * cosA;
+    float rightS = right * sinA;
+    float rightC = right * cosA;
+
+    float lowerS = lower * sinA;
+    float lowerC = lower * cosA;
+    float upperS = upper * sinA;
+    float upperC = upper * cosA;
+
+    vec2 ul = vec2(leftC - upperS, leftS + upperC);
+    //vec2 ur = vec2(rightC - upperS, rightS + upperC);
+    vec2 ll = vec2(leftC - lowerS, leftS + lowerC);
+    //vec2 lr = vec2(rightC - lowerS, rightS + lowerC);
 
     vec4 Tpos = vertexData[i].TexCoord;
-    float Tllx = Tpos.x;
-    float Tlly = Tpos.y;
     float Tw = Tpos.z;
     float Th = Tpos.w;
 
-    vec2 Tll = vec2(Tllx, Tlly);
-    vec2 Tul = vec2(Tllx, Tlly + Th);
-    vec2 Tur = vec2(Tllx + Tw, Tlly + Th);
-    vec2 Tlr = vec2(Tllx + Tw, Tlly);
-
     Color = vertexData[i].Color;
 
-    gl_Position = ul;
-    TexCoord = Tll;
+    gl_Position = vec4(ul, 0.0, 1.0);
+    TexCoord = Tpos.xy;
     EmitVertex();
 
-    gl_Position = ur;
-    TexCoord = Tlr;
+    gl_Position += vec4(rightC - leftC, rightS - leftS, 0.0, 0.0);
+    //gl_Position = vec4(ur, 0.0, 1.0);
+    TexCoord += vec2(Tw, 0);
     EmitVertex();
 
-    gl_Position = ll;
-    TexCoord = Tul;
+    gl_Position = vec4(ll, 0.0, 1.0);
+    TexCoord += vec2(-Tw, Th);
     EmitVertex();
 
-    gl_Position = lr;
-    TexCoord = Tur;
+    gl_Position += vec4(rightC - leftC, rightS - leftS, 0.0, 0.0);
+    //gl_Position = vec4(lr, 0.0, 1.0);
+    TexCoord += vec2(Tw, 0);
     EmitVertex();
-
-    EndPrimitive();
-
   }
 }
