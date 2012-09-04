@@ -92,10 +92,19 @@
 (define (RenderFunction)
   (glClear GL_COLOR_BUFFER_BIT)
 
-  #;(f32vector-set! Transforms 8
-                  (sin (current-inexact-milliseconds)))
-  #;(glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
-  #;(glBufferData GL_ARRAY_BUFFER
+  (define (fmodulo x y)
+    (- x (* y (floor (/ x y)))))
+  
+  (define rot 
+    (* (* 2 pi)
+       (/ (fmodulo (current-inexact-milliseconds)
+                   360)
+          360)))
+  (for ([i (in-range HowManySprites)])
+    (f32vector-set! Transforms (+ (* i 3) 2)
+                    rot))
+  (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
+  (glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Transforms)
                 Transforms
                 GL_STREAM_DRAW)
@@ -110,7 +119,7 @@
   (define rng (- hi lo))
   (+ lo (* (random) (+ rng 1))))
 
-(define HowManySprites 2000)
+(define HowManySprites 512)
 (define Vertices (make-f32vector (* HowManySprites 4)))
 (define Colors (make-f32vector (* HowManySprites 4)))
 (define TexIndexes (make-u32vector HowManySprites))
