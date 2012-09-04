@@ -11,6 +11,7 @@
 (define ColorBufferId #f)
 (define TexIndexesBufferId #f)
 (define TransformBufferId #f)
+(define CornersBufferId #f)
 
 (define ProgramId #f)
 (define VertexShaderId #f)
@@ -19,6 +20,8 @@
 
 (define TextureAtlasIndex_UniformId #f)
 (define TextureAtlasId #f)
+(define CornerMapping_Pos_UniformId #f)
+(define CornerMapping_Tex_UniformId #f)
 
 (module+ main
   (define-values
@@ -83,6 +86,16 @@
   (glUniform4fv TextureAtlasIndex_UniformId
                 (/ (f32vector-length TextureAtlasIndex) 4)
                 TextureAtlasIndex)
+  (set! CornerMapping_Pos_UniformId
+        (glGetUniformLocation ProgramId "CornerMapping_Pos"))
+  (glUniform2iv CornerMapping_Pos_UniformId
+                (/ (s32vector-length CornerMapping_Pos) 2)
+                CornerMapping_Pos)
+  (set! CornerMapping_Tex_UniformId
+        (glGetUniformLocation ProgramId "CornerMapping_Tex"))
+  (glUniform2iv CornerMapping_Tex_UniformId
+                (/ (s32vector-length CornerMapping_Tex) 2)
+                CornerMapping_Tex)
 
   (glClearColor 1.0 1.0 1.0 0.0))
 
@@ -104,57 +117,120 @@
     (for ([i (in-range HowManySprites)])
       (f32vector-set! Transforms (+ (* i 3) 2)
                       rot)))
-  (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
-  (glBufferData GL_ARRAY_BUFFER
+  #;(glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
+  #;(glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Transforms)
                 Transforms
                 GL_STREAM_DRAW)
 
-  (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
-
-;; One sprite = 4*(4 + 4 + 1 + 3) bytes
-;; GeForce 320M bandwidth = 17 Gb / s
-;; = 6.3 million sprites at 60FPS
+  (glDrawArrays GL_TRIANGLES 0
+                (/ (f32vector-length Vertices) 4)))
 
 (define (random-in lo hi)
   (define rng (- hi lo))
   (+ lo (* (random) (+ rng 1))))
 
-(define HowManySprites 512)
-(define Vertices (make-f32vector (* HowManySprites 4)))
-(define Colors (make-f32vector (* HowManySprites 4)))
-(define TexIndexes (make-u32vector HowManySprites))
-(define Transforms (make-f32vector (* HowManySprites 3)))
+(define HowManySprites 256)
 
-(for ([i (in-range HowManySprites)])
-  (f32vector-set! Vertices (+ (* i 4) 0) (random-in -1.0 1.0))
-  (f32vector-set! Vertices (+ (* i 4) 1) (random-in -1.0 1.0))
-  (f32vector-set! Vertices (+ (* i 4) 2) (random))
-  (f32vector-set! Vertices (+ (* i 4) 3) (random))
+(define HowManyVertexes (* HowManySprites 4))
+(define Vertices (make-f32vector (* HowManyVertexes 4)))
+(define Colors (make-f32vector (* HowManyVertexes 4)))
+(define TexIndexes (make-u32vector HowManyVertexes))
+(define Transforms (make-f32vector (* HowManyVertexes 3)))
+(define Corners (make-u32vector HowManyVertexes))
 
-  (f32vector-set! Colors (+ (* i 4) 0) (random))
-  (f32vector-set! Colors (+ (* i 4) 1) (random))
-  (f32vector-set! Colors (+ (* i 4) 2) (random))
-  (f32vector-set! Colors (+ (* i 4) 3) (random))
+(for ([s (in-range HowManySprites)])
+  (define x (random-in -1.0 1.0))
+  (define y (random-in -1.0 1.0))
+  (define hw (random))
+  (define hh (random))
 
-  (u32vector-set! TexIndexes i (random 2))
+  (define r (random))
+  (define g (random))
+  (define b (random))
+  (define a (random))
 
-  (f32vector-set! Transforms (+ (* i 3) 0) (random))
-  (f32vector-set! Transforms (+ (* i 3) 1) (random))
-  (f32vector-set! Transforms (+ (* i 3) 2) (random)))
+  (define tex (random 2))
 
-(printf "Total size: ~a kb\n"
-        (real->decimal-string
-         (/ (apply + 
-                   (map gl-vector-sizeof
-                        (list Vertices Colors 
-                              TexIndexes Transforms)))
-            1024)))
+  (define mx 1. #;(random))
+  (define my 1. #;(random))
+  (define theta 0. #;(random))
+
+  (for ([corner (in-range 4)])
+    (f32vector-set! Vertices (+ (* (+ (* s 4) corner) 4) 0) x)
+    (f32vector-set! Vertices (+ (* (+ (* s 4) corner) 4) 1) y)
+    (f32vector-set! Vertices (+ (* (+ (* s 4) corner) 4) 2) hw)
+    (f32vector-set! Vertices (+ (* (+ (* s 4) corner) 4) 3) hh)
+
+    (f32vector-set! Colors (+ (* (+ (* s 4) corner) 4) 0) r)
+    (f32vector-set! Colors (+ (* (+ (* s 4) corner) 4) 1) g)
+    (f32vector-set! Colors (+ (* (+ (* s 4) corner) 4) 2) b)
+    (f32vector-set! Colors (+ (* (+ (* s 4) corner) 4) 3) a)
+
+    (u32vector-set! TexIndexes (+ (* s 4) corner) tex)
+
+    (f32vector-set! Transforms (+ (* (+ (* s 4) corner) 3) 0) mx)
+    (f32vector-set! Transforms (+ (* (+ (* s 4) corner) 3) 1) my)
+    (f32vector-set! Transforms (+ (* (+ (* s 4) corner) 3) 2) theta)
+
+    (u32vector-set! Corners (+ (* s 4) corner) corner)))
+
+(begin
+  (define one-frame-size
+    (apply +
+           (map gl-vector-sizeof
+                (list Vertices Colors 
+                      TexIndexes Transforms
+                      Corners))))
+
+  (printf "               Sprites: ~a\n"
+          HowManySprites)
+  (printf "               1 frame: ~a Kb\n"
+          (real->decimal-string
+           (/ one-frame-size 1024)))
+  (printf "                60 FPS: ~a Mb/s\n"
+          (real->decimal-string
+           (/ (* 60 one-frame-size) (* 2 1024))))
+  (printf "     1 sprite @ 60 FPS: ~a Kb/s\n"
+          (real->decimal-string
+           (/ (/ (* 60 one-frame-size) HowManySprites)
+              1024)))
+  (printf "GeForce 320M bandwidth: ~a Gb/s\n"
+          (real->decimal-string
+           17.056))
+  (printf "           Max sprites: ~a\n"
+          (real->decimal-string
+           (/ (* 17.056 1024 1024 1024)
+              (/ (* 60 one-frame-size) HowManySprites))))
+  (printf "  Intel 4000 bandwidth: ~a Gb/s\n"
+          (real->decimal-string
+           25.6))
+  (printf "           Max sprites: ~a\n"
+          (real->decimal-string
+           (/ (* 25.6 1024 1024 1024)
+              (/ (* 60 one-frame-size) HowManySprites)))))
 
 (define TextureAtlasIndex
   (f32vector
    0.0 0.0 0.0 0.0
    0.0 0.0 1.0 1.0))
+
+(define CornerMapping_Pos
+  (s32vector
+   ;;   hw-mult hh-mult
+   #;ul      -1      +1
+   #;ur      +1      +1
+   #;ll      -1      -1
+   #;lr      +1      -1
+   ))
+(define CornerMapping_Tex
+  (s32vector
+   ;;   tw-mult th-mult
+   #;ll       0       0 
+   #;lr       0       1 
+   #;ul       1       1 
+   #;ur       1       0 
+   ))
 
 (define-syntax-rule (define-shader-source id path)
   (begin (define-runtime-path id-path path)
@@ -194,7 +270,8 @@
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
   (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
-  (define-vertex-attrib-array TransformBufferId Transforms 3 3))
+  (define-vertex-attrib-array TransformBufferId Transforms 3 3)
+  (define-vertex-attrib-array CornersBufferId Corners 4 1))
 
 (define (print-shader-log glGetShaderInfoLog shader-name shader-id)
   (define-values (infoLen infoLog)
@@ -223,7 +300,7 @@
                   VertexShader)
   (compile-shader FragmentShaderId GL_FRAGMENT_SHADER
                   FragmentShader)
-  (compile-shader GeometryShaderId GL_GEOMETRY_SHADER
+  #;(compile-shader GeometryShaderId GL_GEOMETRY_SHADER
                   GeometryShader)
 
   (glLinkProgram ProgramId)
