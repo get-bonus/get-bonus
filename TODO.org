@@ -270,10 +270,32 @@
   think I shouldn't worry about performance until after I apply it to
   the games.
 
+  I tried to remove the Geometry Shader to improve performance. The
+  first idea was to use Instanced drawing and draw 4 instances for
+  each sprite (one for each corner); unfortunately, instancing is for
+  meshes, not for vertices, so I couldn't use the instance id to
+  identify the corner and assemble them together. So that failed.
+
+  Next, I tried to generate 4 vertices per sprite on the CPU, but
+  with all the exact same positions and then a uniform that contained
+  which corner the vertex corresponded to. The first problem with
+  this was that TRIANGLE_STRIP tries to connect every single sprite
+  together, which is wrong. So, I changed to use glMultiDrawArrays
+  with big s32vectors to identify the start of each strip. This was
+  miserably slow.
+
+  My next idea (not yet implemented) is to use glDrawElements where
+  the indexes are always 0...LastSprite and the indexes are just the
+  center positions and I still use a uniform to identify the
+  corner. And I would use glPrimitiveRestartIndex to restart the strip
+  up again.
+
   TODO Do texture/color blending
 
   TODO Optimize -- maybe remove the geometry shader? or look into:
-  https://github.com/aras-p/glsl-optimizer
+  https://github.com/aras-p/glsl-optimizer 
+
+  TODO Read about http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
 
   TODO Combine into a single vector with strides
 

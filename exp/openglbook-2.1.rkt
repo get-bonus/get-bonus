@@ -112,10 +112,6 @@
 
   (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
 
-;; One sprite = 4*(4 + 4 + 1 + 3) bytes
-;; GeForce 320M bandwidth = 17 Gb / s
-;; = 6.3 million sprites at 60FPS
-
 (define (random-in lo hi)
   (define rng (- hi lo))
   (+ lo (* (random) (+ rng 1))))
@@ -143,13 +139,39 @@
   (f32vector-set! Transforms (+ (* i 3) 1) (random))
   (f32vector-set! Transforms (+ (* i 3) 2) (random)))
 
-(printf "Total size: ~a kb\n"
-        (real->decimal-string
-         (/ (apply + 
-                   (map gl-vector-sizeof
-                        (list Vertices Colors 
-                              TexIndexes Transforms)))
-            1024)))
+(begin
+  (define one-frame-size
+    (apply +
+           (map gl-vector-sizeof
+                (list Vertices Colors 
+                      TexIndexes Transforms))))
+
+  (printf "               Sprites: ~a\n"
+          HowManySprites)
+  (printf "               1 frame: ~a Kb\n"
+          (real->decimal-string
+           (/ one-frame-size 1024)))
+  (printf "                60 FPS: ~a Mb/s\n"
+          (real->decimal-string
+           (/ (* 60 one-frame-size) (* 2 1024))))
+  (printf "     1 sprite @ 60 FPS: ~a Kb/s\n"
+          (real->decimal-string
+           (/ (/ (* 60 one-frame-size) HowManySprites)
+              1024)))
+  (printf "GeForce 320M bandwidth: ~a Gb/s\n"
+          (real->decimal-string
+           17.056))
+  (printf "           Max sprites: ~a\n"
+          (real->decimal-string
+           (/ (* 17.056 1024 1024 1024)
+              (/ (* 60 one-frame-size) HowManySprites))))
+  (printf "  Intel 4000 bandwidth: ~a Gb/s\n"
+          (real->decimal-string
+           25.6))
+  (printf "           Max sprites: ~a\n"
+          (real->decimal-string
+           (/ (* 25.6 1024 1024 1024)
+              (/ (* 60 one-frame-size) HowManySprites)))))
 
 (define TextureAtlasIndex
   (f32vector
