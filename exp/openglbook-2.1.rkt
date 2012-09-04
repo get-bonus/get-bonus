@@ -92,17 +92,18 @@
 (define (RenderFunction)
   (glClear GL_COLOR_BUFFER_BIT)
 
-  (define (fmodulo x y)
-    (- x (* y (floor (/ x y)))))
-  
-  (define rot 
-    (* (* 2 pi)
-       (/ (fmodulo (current-inexact-milliseconds)
-                   360)
-          360)))
-  (for ([i (in-range HowManySprites)])
-    (f32vector-set! Transforms (+ (* i 3) 2)
-                    rot))
+  (when #f
+    (define (fmodulo x y)
+      (- x (* y (floor (/ x y)))))
+    
+    (define rot 
+      (* (* 2 pi)
+         (/ (fmodulo (current-inexact-milliseconds)
+                     360)
+            360)))
+    (for ([i (in-range HowManySprites)])
+      (f32vector-set! Transforms (+ (* i 3) 2)
+                      rot)))
   (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
   (glBufferData GL_ARRAY_BUFFER
                 (gl-vector-sizeof Transforms)

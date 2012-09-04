@@ -263,11 +263,17 @@
   I don't like the way I did it, but eh. What can you do? Just did
   rotation and scaling on the sprite level. Dramatically increased
   number of sprites to benchmark. 500 @ 60 FPS with just a transfer
-  of the entire transform array.
+  of the entire transform array. I tried to optimize by caching
+  values and moving things into the vertex shader, but it did
+  nothing. I wonder if geometry shaders are slow? I'm also interested
+  to find out if rendering at the lower resolution would be better. I
+  think I shouldn't worry about performance until after I apply it to
+  the games.
 
   TODO Do texture/color blending
 
-  TODO Optimize
+  TODO Optimize -- maybe remove the geometry shader? or look into:
+  https://github.com/aras-p/glsl-optimizer
 
   TODO Combine into a single vector with strides
 
@@ -299,6 +305,8 @@
   This would run beforehand, create some files/directory structure,
   and then drop and runtime information file so texture coords could
   be looked up.
+* TODO Master Grafx2
+  https://code.google.com/p/grafx2/
 * TODO The Get Bonus rendering system should have built-in support for TATE games
   Virtual, Rotate Left, and Rotate Right
 * TODO Try to get OpenGL to do collision detection for me
