@@ -104,6 +104,11 @@
   (define (this-update-canvas cmd)
     (ltq-add! frame-ltq)
     (set! last-cmd cmd)
+    (send the-frame 
+          set-label
+          (format "FPS: ~a"
+                  (real->decimal-string
+                   (current-rate) 1)))
     (send the-canvas refresh-now))
 
   (define done-ch (make-channel))

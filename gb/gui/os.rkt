@@ -138,10 +138,6 @@
        (boot
         (os cur-h next-h cur-ps next-ps)))
      (match-define (os new-cur-h _ _ _) new-w)
-     ;; XXX this is not a good place
-     (printf "FPS: ~a\n"
-             (real->decimal-string
-              (current-rate) 1))     
      (define gl-list
        (sort (hash-ref new-cur-h 'graphics empty)
              >= #:key car))

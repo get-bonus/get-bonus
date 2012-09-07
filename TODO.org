@@ -76,6 +76,14 @@
   Get a USB snes controller for home
 * DONE Switch to RacketGL throughout
   CLOSED: [2012-08-09 Thu 16:28]
+* DONE Make a faster FPS counter
+  CLOSED: [2012-09-07 Fri 15:50]
+  Making a texture is slow. Maybe with character-based string textures
+  it would be faster?
+  
+  Maybe just log data and look at it afterward?
+  
+  I don't know if I really am measuring this correctly... see OpenGL wiki
 * TODO Switch to a fully shader based rendering system
   I have begun experimenting with this a lot.
   
@@ -302,8 +310,11 @@
   TODO Consider using only integers so they always align with pixels
 
   TODO Deal with the model view projection
-* DONE GLFW - Add support for getting the string identifiers of joysticks
-  CLOSED: [2012-09-01 Sat 22:03]
+* TODO Don't use fullscreen's margin hack to get 16:9 instead just render to texture and then put on the screen centered
+  Maybe even render to 720p because on my 1080p desktop machine the
+  CRT emulation drops to 30fps, but I normally get 60fps on my
+  1440x900 laptop display
+* TODO GLFW - Wait for getting the string identifiers of joysticks
 * TODO GLFW - Wait for consistent joystick state intra-frame
   So glfwPollEvents calls pollJoystickEvents and Win32 caches
 * TODO Investigate and potentially using DDS for textures
@@ -347,13 +358,7 @@
 * TODO Make it so gl:Color doesn't have an alpha arg
   Because by using Z buffer for layers, translucent pixels don't work
   across layers... so maybe it is better to just disallow it?
-* TODO Make a faster FPS counter
-  Making a texture is slow. Maybe with character-based string textures
-  it would be faster?
-  
-  Maybe just log data and look at it afterward?
-  
-  I don't know if I really am measuring this correctly... see OpenGL wiki
+* TODO Change FPS counter to count frame time instead
 * TODO OS suppress updates
   Make a critical region system call that gives a process sole access
   to the system... leaving the other processes stalled with their last
