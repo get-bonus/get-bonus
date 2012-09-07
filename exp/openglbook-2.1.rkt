@@ -116,28 +116,63 @@
   (define rng (- hi lo))
   (+ lo (* (random) (+ rng 1))))
 
+(struct sprite (x y w h r g b a tex mx my theta) #:transparent)
+
+(define (install-object! i o)
+  (match-define (sprite x y w h r g b a tex mx my theta) o)
+
+  (f32vector-set! Vertices (+ (* i 4) 0) x)
+  (f32vector-set! Vertices (+ (* i 4) 1) y)
+  (f32vector-set! Vertices (+ (* i 4) 2) w)
+  (f32vector-set! Vertices (+ (* i 4) 3) h)
+
+  (f32vector-set! Colors (+ (* i 4) 0) r)
+  (f32vector-set! Colors (+ (* i 4) 1) g)
+  (f32vector-set! Colors (+ (* i 4) 2) b)
+  (f32vector-set! Colors (+ (* i 4) 3) a)
+
+  (u32vector-set! TexIndexes i tex)
+
+  (f32vector-set! Transforms (+ (* i 3) 0) mx)
+  (f32vector-set! Transforms (+ (* i 3) 1) my)
+  (f32vector-set! Transforms (+ (* i 3) 2) theta))
+
 (define HowManySprites 512)
 (define Vertices (make-f32vector (* HowManySprites 4)))
 (define Colors (make-f32vector (* HowManySprites 4)))
 (define TexIndexes (make-u32vector HowManySprites))
 (define Transforms (make-f32vector (* HowManySprites 3)))
 
-(for ([i (in-range HowManySprites)])
-  (f32vector-set! Vertices (+ (* i 4) 0) (random-in -1.0 1.0))
-  (f32vector-set! Vertices (+ (* i 4) 1) (random-in -1.0 1.0))
-  (f32vector-set! Vertices (+ (* i 4) 2) (random))
-  (f32vector-set! Vertices (+ (* i 4) 3) (random))
+(define objects
+  (for/list ([i (in-range HowManySprites)])
+    (sprite (random-in -1.0 1.0)
+            (random-in -1.0 1.0)
+            (random)
+            (random)
+            
+            (random)
+            (random)
+            (random)
+            (random)
+            
+            (random 2)
 
-  (f32vector-set! Colors (+ (* i 4) 0) (random))
-  (f32vector-set! Colors (+ (* i 4) 1) (random))
-  (f32vector-set! Colors (+ (* i 4) 2) (random))
-  (f32vector-set! Colors (+ (* i 4) 3) (random))
+            (random)
+            (random)
+            (random))))
 
-  (u32vector-set! TexIndexes i (random 2))
+(define (install-objects! t)
+  (let loop ([offset 0] [t t])
+    (match t
+      [(list)
+       offset]
+      [(cons b a)
+       (loop (loop offset b) a)]
+      [(? sprite? o)
+       (install-object! offset o)
+       (add1 offset)])))
 
-  (f32vector-set! Transforms (+ (* i 3) 0) (random))
-  (f32vector-set! Transforms (+ (* i 3) 1) (random))
-  (f32vector-set! Transforms (+ (* i 3) 2) (random)))
+(install-objects! objects)
 
 (begin
   (define one-frame-size

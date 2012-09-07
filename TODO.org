@@ -298,6 +298,8 @@
   corner. And I would use glPrimitiveRestartIndex to restart the strip
   up again.
 
+  TODO Get object width/height from sprite pixel width/height
+
   TODO Do texture/color blending
 
   TODO Optimize -- maybe remove the geometry shader? or look into:
@@ -386,6 +388,7 @@
 * TODO Add "compare with ..." to game info
 * TODO Make Anki-like SRS system in dashboard
 * TODO Make icons for dashboards vs text
+  Or mimic the Wii interface
 * TODO Make games in dashboard have capabilities
   1P, 2P Round-robin, 2P VS, 2P Co-op, etc
 * TODO Make play modes in dashboard
