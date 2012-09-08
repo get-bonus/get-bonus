@@ -345,8 +345,8 @@
 
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
-  (define-vertex-attrib-array TexCoordBufferId TexCoords 2 2)
-  #;(define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
+  #;(define-vertex-attrib-array TexCoordBufferId TexCoords 2 2)
+  (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
   (define-vertex-attrib-array TransformBufferId Transforms 3 3)
   (define-vertex-attrib-array CornersBufferId Corners 4 1)
 
