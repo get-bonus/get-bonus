@@ -8,6 +8,7 @@
 
 (define VaoId #f)
 (define VboId #f)
+(define IndexBufferId #f)
 (define ColorBufferId #f)
 (define TexIndexesBufferId #f)
 (define TransformBufferId #f)
@@ -15,7 +16,6 @@
 (define ProgramId #f)
 (define VertexShaderId #f)
 (define FragmentShaderId #f)
-(define GeometryShaderId #f)
 
 (define TextureAtlasIndex_UniformId #f)
 (define TextureAtlasId #f)
@@ -103,47 +103,108 @@
             360)))
     (for ([i (in-range HowManySprites)])
       (f32vector-set! Transforms (+ (* i 3) 2)
-                      rot)))
-  (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
-  (glBufferData GL_ARRAY_BUFFER
-                (gl-vector-sizeof Transforms)
-                Transforms
-                GL_STREAM_DRAW)
+                      rot))
 
-  (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
+    (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
+    (glBufferData GL_ARRAY_BUFFER
+                  (gl-vector-sizeof Transforms)
+                  Transforms
+                  GL_STREAM_DRAW))
+
+  (glDrawElements GL_TRIANGLES (* HowManySprites IndicesPerSprite)
+                  GL_UNSIGNED_INT 0))
 
 (define (random-in lo hi)
   (define rng (- hi lo))
   (+ lo (* (random) (+ rng 1))))
 
-(struct sprite (x y w h r g b a tex mx my theta) #:transparent)
+(struct sprite (x y hw hh r g b a tex mx my theta) #:transparent)
 
 (define (install-object! i o)
-  (match-define (sprite x y w h r g b a tex mx my theta) o)
+  (printf "~a\n" i)
+  (match-define (sprite x y hw hh r g b a tex mx my theta) o)
 
-  (f32vector-set! Vertices (+ (* i 4) 0) x)
-  (f32vector-set! Vertices (+ (* i 4) 1) y)
-  (f32vector-set! Vertices (+ (* i 4) 2) w)
-  (f32vector-set! Vertices (+ (* i 4) 3) h)
+  (define-syntax-rule
+    (v! vector-set! vector 
+        how-many-per-index index fudge
+        element ...)
+    (begin
+      (printf "\t~a ~a\n" 'vector index)
+      (for ([e (in-list (list element ...))]
+            [i (in-naturals)])
+        (define idx (+ fudge (+ (* how-many-per-index index) i)))
+        (printf "\t\t~a -> ~a <- ~a\n" i idx e)
+        (vector-set! vector idx e))))
 
-  (f32vector-set! Colors (+ (* i 4) 0) r)
-  (f32vector-set! Colors (+ (* i 4) 1) g)
-  (f32vector-set! Colors (+ (* i 4) 2) b)
-  (f32vector-set! Colors (+ (* i 4) 3) a)
+  (define ul-i (+ (* 4 i) 0))
+  (define ur-i (+ (* 4 i) 1))
+  (define ll-i (+ (* 4 i) 2))
+  (define lr-i (+ (* 4 i) 3))
+  (v! u32vector-set! Indices
+      6 i 0
+      ul-i ur-i ll-i
+      ll-i ur-i lr-i)
 
+  (v! f32vector-set! Vertices
+      (* 4 4) i 0
+      ;; ul
+      (- x hw) (+ y hh) 0.0 1.0
+      ;; ur
+      (+ x hw) (+ y hh) 0.0 1.0
+      ;; ll
+      (- x hw) (- y hh) 0.0 1.0
+      ;; lr
+      (+ x hw) (- y hh) 0.0 1.0)
+  (v! f32vector-set! Colors
+      (* 4 4) i 0
+      ;; ul
+      r g b a
+      ;; ur
+      r g b a
+      ;; ll
+      r g b a
+      ;; lr
+      r g b a)
+
+  ;; XXX
   (u32vector-set! TexIndexes i tex)
 
   (f32vector-set! Transforms (+ (* i 3) 0) mx)
   (f32vector-set! Transforms (+ (* i 3) 1) my)
   (f32vector-set! Transforms (+ (* i 3) 2) theta))
 
-(define HowManySprites 512)
-(define Vertices (make-f32vector (* HowManySprites 4)))
-(define Colors (make-f32vector (* HowManySprites 4)))
-(define TexIndexes (make-u32vector HowManySprites))
-(define Transforms (make-f32vector (* HowManySprites 3)))
+(define HowManySprites 
+  #;4 
+  (* 1 512))
+(define IndicesPerSprite 6)
+(define VertsPerSprite 4)
+
+(define Indices
+  (make-u32vector (* HowManySprites IndicesPerSprite)))
+
+(define Vertices
+  (make-f32vector (* (* HowManySprites VertsPerSprite) 4)))
+(define Colors
+  (make-f32vector (* (* HowManySprites VertsPerSprite) 4)))
+(define TexIndexes
+  (make-u32vector (* HowManySprites VertsPerSprite)))
+(define Transforms
+  (make-f32vector (* HowManySprites VertsPerSprite 3)))
 
 (define objects
+  #;(list (sprite 0.0 0.0 0.8 0.8
+                1.0 0.0 0.0 1.0
+                0 1.0 1.0 0.0)
+        (sprite 0.0 0.0 0.4 0.4
+                0.0 1.0 0.0 1.0
+                0 1.0 1.0 0.0)
+        (sprite 0.0 0.0 0.2 0.2
+                0.0 0.0 1.0 1.0
+                0 1.0 1.0 0.0)
+        (sprite 0.0 0.0 0.1 0.1
+                0.0 0.0 0.0 1.0
+                0 1.0 1.0 0.0))
+  
   (for/list ([i (in-range HowManySprites)])
     (sprite (random-in -1.0 1.0)
             (random-in -1.0 1.0)
@@ -178,7 +239,7 @@
   (define one-frame-size
     (apply +
            (map gl-vector-sizeof
-                (list Vertices Colors 
+                (list Indices Vertices Colors 
                       TexIndexes Transforms))))
 
   (printf "               Sprites: ~a\n"
@@ -186,9 +247,9 @@
   (printf "               1 frame: ~a Kb\n"
           (real->decimal-string
            (/ one-frame-size 1024)))
-  (printf "                60 FPS: ~a Mb/s\n"
+  (printf "                60 FPS: ~a Gb/s\n"
           (real->decimal-string
-           (/ (* 60 one-frame-size) (* 2 1024))))
+           (/ (* 60 one-frame-size) (* 1024 1024 1024))))
   (printf "     1 sprite @ 60 FPS: ~a Kb/s\n"
           (real->decimal-string
            (/ (/ (* 60 one-frame-size) HowManySprites)
@@ -222,7 +283,6 @@
   (format VertexShader-p 
           (/ (f32vector-length TextureAtlasIndex) 4)))
 (define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
-(define-shader-source GeometryShader "../gb/graphics/ngl.geometry.glsl")
 
 (define-syntax-rule
   (define-vertex-attrib-array VboId Vertices Index HowMany)
@@ -250,8 +310,16 @@
 
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
-  (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
-  (define-vertex-attrib-array TransformBufferId Transforms 3 3))
+  #;(define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
+  #;(define-vertex-attrib-array TransformBufferId Transforms 3 3)
+
+  (set! IndexBufferId
+        (u32vector-ref (glGenBuffers 1) 0))
+  (glBindBuffer GL_ELEMENT_ARRAY_BUFFER IndexBufferId)
+  (glBufferData GL_ELEMENT_ARRAY_BUFFER
+                (gl-vector-sizeof Indices)
+                Indices
+                GL_STATIC_DRAW))
 
 (define (print-shader-log glGetShaderInfoLog shader-name shader-id)
   (define-values (infoLen infoLog)
@@ -280,9 +348,7 @@
                   VertexShader)
   (compile-shader FragmentShaderId GL_FRAGMENT_SHADER
                   FragmentShader)
-  (compile-shader GeometryShaderId GL_GEOMETRY_SHADER
-                  GeometryShader)
-
+  
   (glLinkProgram ProgramId)
   (print-shader-log glGetProgramInfoLog 'Program ProgramId)
   

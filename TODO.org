@@ -298,7 +298,19 @@
   corner. And I would use glPrimitiveRestartIndex to restart the strip
   up again.
 
-  TODO Get object width/height from sprite pixel width/height
+  --- Progress 09/07 ---
+
+  I implemented the glDrawElements with glPrimitiveRestartIndex and
+  got 3 FPS with 1024 sprites. After going to a triangle-based
+  rendering (so, six vertices per sprite), I was able to get 15 FPS
+  with 1024 sprites (on my full laptop screen). 512 sprites is only
+  30 FPS (slower than the geometry-shader based version.)
+
+  
+  
+
+  TODO Get object width/height from sprite pixel width/height and
+  just use scaling
 
   TODO Do texture/color blending
 
