@@ -323,15 +323,19 @@
   card... and it gets the exact same performance. Argh! And it uses
   less memory to upload the scene!
 
+  I think it is time to just implement this for the games and see
+  what happens.
+
   TODO Get object width/height from sprite pixel width/height and
   just use scaling
 
   TODO Do texture/color blending
 
-  TODO Optimize -- maybe remove the geometry shader? or look into:
-  https://github.com/aras-p/glsl-optimizer 
+  TODO Optimize -- Removing the geometry shader didn't seem to
+  help. But would it be wise to try an external glsl optimizer like:
+  https://github.com/aras-p/glsl-optimizer
 
-  TODO Read about
+  TODO Read about for optimizing the streaming of data to the GPU:
   http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
 
   TODO Combine into a single vector with strides
