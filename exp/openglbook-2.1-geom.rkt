@@ -90,21 +90,16 @@
 (define (ResizeFunction Width Height)
   (glViewport 0 0 Width Height))
 
+(define Frame 0)
 (define (RenderFunction)
   (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
-  (when #f
-    (define (fmodulo x y)
-      (- x (* y (floor (/ x y)))))
-    
-    (define rot 
-      (* (* 2 pi)
-         (/ (fmodulo (current-inexact-milliseconds)
-                     360)
-            360)))
+  (set! Frame (modulo (add1 Frame) 60))
+
+  (when (zero? Frame)
     (for ([i (in-range HowManySprites)])
       (f32vector-set! Transforms (+ (* i 3) 2)
-                      rot)))
+                      (add1 (f32vector-ref Transforms (+ (* i 3) 2))))))
   
   ;; Reload all data every frame
   (load-buffer-data VboId Vertices)
