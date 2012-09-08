@@ -167,6 +167,9 @@
       ;; lr
       r g b a)
 
+  ;; XXX Using indexing (if fast)
+  (u32vector-set! TexIndexes i tex)
+
   (define Tllx (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 0)))
   (define Tlly (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 1)))
   (define   Tw (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 2)))
@@ -183,12 +186,16 @@
       ;; Tur
       (+ Tllx Tw) (+ Tlly Th))
 
-  ;; XXX
-  (u32vector-set! TexIndexes i tex)
-
-  (f32vector-set! Transforms (+ (* i 3) 0) mx)
-  (f32vector-set! Transforms (+ (* i 3) 1) my)
-  (f32vector-set! Transforms (+ (* i 3) 2) theta))
+  (v! f32vector-set! Transforms
+      (* 4 3) i 0
+      ;; ul
+      mx my theta
+      ;; ur
+      mx my theta
+      ;; ll
+      mx my theta
+      ;; lr
+      mx my theta))
 
 (define HowManySprites 
   #;4 
@@ -332,7 +339,7 @@
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
   (define-vertex-attrib-array TexCoordBufferId TexCoords 2 2)
   #;(define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
-  #;(define-vertex-attrib-array TransformBufferId Transforms 3 3)
+  (define-vertex-attrib-array TransformBufferId Transforms 3 3)
 
   (set! IndexBufferId
         (u32vector-ref (glGenBuffers 1) 0))
