@@ -2,8 +2,8 @@
  
 layout(location=0) in vec4 in_Position;
 layout(location=1) in vec4 in_Color;
-//layout(location=2) in vec2 in_TexCoord;
-layout(location=2) in int in_TexIndex;
+layout(location=2) in vec2 in_TexCoord;
+//layout(location=2) in int in_TexIndex;
 layout(location=3) in vec3 in_Transforms;
 layout(location=4) in int in_Corner;
 
@@ -53,15 +53,5 @@ void main(void)
   gl_Position = vec4(pos_2d, 0.0, 1.0);
 
   Color = in_Color;
-
-  vec4 TexInfo = TextureAtlasIndex[in_TexIndex];
-  float Tllx = TexInfo.x;
-  float Tlly = TexInfo.y;
-  float Tw = TexInfo.z;
-  float Th = TexInfo.w;
-
-  vec2 in_TexCoord = vec2( Tllx + Tw * Tw_factor[in_Corner],
-                           Tlly + Th * Th_factor[in_Corner] );
-
   TexCoord = in_TexCoord;
 }
