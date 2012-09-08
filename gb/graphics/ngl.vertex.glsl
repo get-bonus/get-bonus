@@ -35,8 +35,15 @@ void main(void)
                                        0.0,           0.0, 1.0, 0.0,
                                        0.0,           0.0, 0.0, 1.0 );
 
+  vec4 pos = in_Position;
+  float x = pos.x;
+  float y = pos.y;
+  float hw = pos.z;
+  float hh = pos.w;
+  float mx = in_Transforms.x;
+  float my = in_Transforms.y;
 
-  vec4 pos_pre = vec4(in_Position.xy, 0.0, 1.0);
+  vec4 pos_pre = vec4(x + hw * mx, y + hh * my, 0.0, 1.0);
 
   gl_Position = pos_pre * RotationMatrix;
 
