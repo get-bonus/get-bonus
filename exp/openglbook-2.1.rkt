@@ -167,8 +167,9 @@
       ;; lr
       r g b a)
 
-  ;; XXX Using indexing (if fast)
-  (u32vector-set! TexIndexes i tex)
+  (v! u32vector-set! TexIndexes
+      (* 4 1) i 0
+      tex tex tex tex)
 
   (define Tllx (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 0)))
   (define Tlly (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 1)))
