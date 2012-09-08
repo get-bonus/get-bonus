@@ -114,20 +114,16 @@
 (struct sprite (x y hw hh r g b a tex mx my theta) #:transparent)
 
 (define (install-object! i o)
-  (printf "~a\n" i)
   (match-define (sprite x y hw hh r g b a tex mx my theta) o)
 
   (define-syntax-rule
     (v! vector-set! vector 
         how-many-per-index index fudge
         element ...)
-    (begin
-      (printf "\t~a ~a\n" 'vector index)
-      (for ([e (in-list (list element ...))]
-            [i (in-naturals)])
-        (define idx (+ fudge (+ (* how-many-per-index index) i)))
-        (printf "\t\t~a -> ~a <- ~a\n" i idx e)
-        (vector-set! vector idx e))))
+    (for ([e (in-list (list element ...))]
+          [i (in-naturals)])
+      (define idx (+ fudge (+ (* how-many-per-index index) i)))
+      (vector-set! vector idx e)))
 
   (define ul-i (+ (* 4 i) 0))
   (define ur-i (+ (* 4 i) 1))

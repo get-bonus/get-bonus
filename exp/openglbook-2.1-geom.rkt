@@ -186,9 +186,9 @@
   (printf "               1 frame: ~a Kb\n"
           (real->decimal-string
            (/ one-frame-size 1024)))
-  (printf "                60 FPS: ~a Mb/s\n"
+  (printf "                60 FPS: ~a Gb/s\n"
           (real->decimal-string
-           (/ (* 60 one-frame-size) (* 2 1024))))
+           (/ (* 60 one-frame-size) (* 1024 1024 1024))))
   (printf "     1 sprite @ 60 FPS: ~a Kb/s\n"
           (real->decimal-string
            (/ (/ (* 60 one-frame-size) HowManySprites)
