@@ -11,15 +11,12 @@
 (define IndexBufferId #f)
 (define ColorBufferId #f)
 (define TexCoordBufferId #f)
-(define CornersBufferId #f)
-(define TexIndexesBufferId #f)
 (define TransformBufferId #f)
 
 (define ProgramId #f)
 (define VertexShaderId #f)
 (define FragmentShaderId #f)
 
-(define TextureAtlasIndex_UniformId #f)
 (define TextureAtlasId #f)
 
 (module+ main
@@ -79,12 +76,6 @@
 
   (CreateShaders)
   (CreateVBO)
-
-  (set! TextureAtlasIndex_UniformId
-        (glGetUniformLocation ProgramId "TextureAtlasIndex"))
-  (glUniform4fv TextureAtlasIndex_UniformId
-                (/ (f32vector-length TextureAtlasIndex) 4)
-                TextureAtlasIndex)
 
   (glClearColor 1.0 1.0 1.0 0.0))
 
@@ -168,14 +159,7 @@
       ;; lr
       r g b a)
 
-  (v! u32vector-set! Corners
-      (* 4 1) i 0
-      0 1 2 3)
-
-  (v! u32vector-set! TexIndexes
-      (* 4 1) i 0
-      tex tex tex tex)
-
+  ;; XXX Pre-compute this for all sprites
   (define Tllx (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 0)))
   (define Tlly (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 1)))
   (define   Tw (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 2)))
@@ -205,7 +189,7 @@
 
 (define HowManySprites 
   #;4 
-  (* 1 512))
+  (* 2 512))
 (define IndicesPerSprite 6)
 (define VertsPerSprite 4)
 
@@ -218,13 +202,10 @@
   (make-f32vector (* (* HowManySprites VertsPerSprite) 4)))
 (define TexCoords
   (make-f32vector (* (* HowManySprites VertsPerSprite) 2)))
-(define Corners
-  (make-u32vector (* HowManySprites VertsPerSprite)))
-(define TexIndexes
-  (make-u32vector (* HowManySprites VertsPerSprite)))
 (define Transforms
   (make-f32vector (* HowManySprites VertsPerSprite 3)))
 
+;; XXX Put this in a nicer place now that it isn't necessary
 (define TextureAtlasIndex
   (f32vector
    0.0 0.0 0.0 0.0
@@ -279,8 +260,7 @@
     (apply +
            (map gl-vector-sizeof
                 (list Indices Vertices Colors 
-                      TexCoords Corners
-                      TexIndexes Transforms))))
+                      TexCoords Transforms))))
 
   (printf "               Sprites: ~a\n"
           HowManySprites)
@@ -313,10 +293,7 @@
   (begin (define-runtime-path id-path path)
          (define id (file->string id-path))))
 
-(define-shader-source VertexShader-p "../gb/graphics/ngl.vertex.glsl")
-(define VertexShader 
-  (format VertexShader-p 
-          (/ (f32vector-length TextureAtlasIndex) 4)))
+(define-shader-source VertexShader "../gb/graphics/ngl.vertex.glsl")
 (define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
 
 (define-syntax-rule
@@ -346,9 +323,7 @@
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
   (define-vertex-attrib-array TexCoordBufferId TexCoords 2 2)
-  #;(define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
   (define-vertex-attrib-array TransformBufferId Transforms 3 3)
-  (define-vertex-attrib-array CornersBufferId Corners 4 1)
 
   (set! IndexBufferId
         (u32vector-ref (glGenBuffers 1) 0))

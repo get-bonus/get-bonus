@@ -312,7 +312,11 @@
 
   Doing the corner calculation of hw/hh slowed it down to 30 FPS. So I
   reverted it. Same with a corner calculation of the tex coordinates,
-  which means the index is pointless.
+  which means the index is pointless. I've now removed some of the
+  extra stuff that supported all these experiments (the corner vertex
+  array and the texture atlas index uniform. Didn't seem to have any
+  effect on performance, but memory usage is down.) Now the shader is
+  pretty dirt simple.
 
   TODO Get object width/height from sprite pixel width/height and
   just use scaling
@@ -322,7 +326,8 @@
   TODO Optimize -- maybe remove the geometry shader? or look into:
   https://github.com/aras-p/glsl-optimizer 
 
-  TODO Read about http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
+  TODO Read about
+  http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
 
   TODO Combine into a single vector with strides
 
