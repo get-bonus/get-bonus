@@ -5,8 +5,14 @@ layout(location=1) in vec4 in_Color;
 layout(location=2) in vec2 in_TexCoord;
 //layout(location=2) in int in_TexIndex;
 layout(location=3) in vec3 in_Transforms;
+layout(location=4) in int in_Corner;
 
 uniform vec4 TextureAtlasIndex[~a];
+
+float hw_factor[4] = float[]( -1, +1, -1, +1 );
+float hh_factor[4] = float[]( +1, +1, -1, -1 );
+float Tw_factor[4] = float[](  0,  1,  0,  1 );
+float Th_factor[4] = float[](  0,  0,  1,  1 );
 
 /*
 out VertexData {

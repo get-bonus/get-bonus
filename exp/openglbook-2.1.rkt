@@ -11,6 +11,7 @@
 (define IndexBufferId #f)
 (define ColorBufferId #f)
 (define TexCoordBufferId #f)
+(define CornersBufferId #f)
 (define TexIndexesBufferId #f)
 (define TransformBufferId #f)
 
@@ -167,6 +168,10 @@
       ;; lr
       r g b a)
 
+  (v! u32vector-set! Corners
+      (* 4 1) i 0
+      0 1 2 3)
+
   (v! u32vector-set! TexIndexes
       (* 4 1) i 0
       tex tex tex tex)
@@ -213,6 +218,8 @@
   (make-f32vector (* (* HowManySprites VertsPerSprite) 4)))
 (define TexCoords
   (make-f32vector (* (* HowManySprites VertsPerSprite) 2)))
+(define Corners
+  (make-u32vector (* HowManySprites VertsPerSprite)))
 (define TexIndexes
   (make-u32vector (* HowManySprites VertsPerSprite)))
 (define Transforms
@@ -272,7 +279,7 @@
     (apply +
            (map gl-vector-sizeof
                 (list Indices Vertices Colors 
-                      TexCoords
+                      TexCoords Corners
                       TexIndexes Transforms))))
 
   (printf "               Sprites: ~a\n"
@@ -341,6 +348,7 @@
   (define-vertex-attrib-array TexCoordBufferId TexCoords 2 2)
   #;(define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
   (define-vertex-attrib-array TransformBufferId Transforms 3 3)
+  (define-vertex-attrib-array CornersBufferId Corners 4 1)
 
   (set! IndexBufferId
         (u32vector-ref (glGenBuffers 1) 0))
