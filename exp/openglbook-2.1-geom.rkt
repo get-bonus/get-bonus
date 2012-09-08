@@ -3,6 +3,7 @@
          ffi/vector
          racket/runtime-path
          xml
+         gb/graphics/texture-atlas-lib
          gb/gui/fullscreen
          (planet stephanh/RacketGL/rgl))
 
@@ -81,8 +82,8 @@
   (set! TextureAtlasIndex_UniformId
         (glGetUniformLocation ProgramId "TextureAtlasIndex"))
   (glUniform4fv TextureAtlasIndex_UniformId
-                (/ (f32vector-length TextureAtlasIndex) 4)
-                TextureAtlasIndex)
+                (texture-atlas-size the-texture-atlas)
+                (texture-atlas-vector the-texture-atlas))
 
   (glEnable GL_DEPTH_TEST)
   (glClearColor 1.0 1.0 1.0 0.0))
@@ -108,6 +109,14 @@
   (load-buffer-data TransformBufferId Transforms)
 
   (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
+
+(define the-texture-atlas
+  (texture-atlas/size 2))
+
+(define-sprite sprite:none
+  the-texture-atlas 0.0 0.0 0.0 0.0)
+(define-sprite sprite:everything
+  the-texture-atlas 0.0 0.0 1.0 1.0)
 
 (define (random-in lo hi)
   (define rng (- hi lo))
@@ -152,7 +161,9 @@
             (random)
             (random)
             
-            (random 2)
+            (if (zero? (random 2))
+              sprite:none
+              sprite:everything)
 
             (random)
             (random)
@@ -205,19 +216,13 @@
            (/ (* 25.6 1024 1024 1024)
               (/ (* 60 one-frame-size) HowManySprites)))))
 
-(define TextureAtlasIndex
-  (f32vector
-   0.0 0.0 0.0 0.0
-   0.0 0.0 1.0 1.0))
-
 (define-syntax-rule (define-shader-source id path)
   (begin (define-runtime-path id-path path)
          (define id (file->string id-path))))
 
 (define-shader-source VertexShader-p "../gb/graphics/geom/ngl.vertex.glsl")
 (define VertexShader 
-  (format VertexShader-p 
-          (/ (f32vector-length TextureAtlasIndex) 4)))
+  (format VertexShader-p (texture-atlas-size the-texture-atlas)))
 (define-shader-source FragmentShader "../gb/graphics/geom/ngl.fragment.glsl")
 (define-shader-source GeometryShader "../gb/graphics/geom/ngl.geometry.glsl")
 
