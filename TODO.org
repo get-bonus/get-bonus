@@ -309,7 +309,9 @@
   When I added rotation, the performance didn't change. But when I
   added scaling in the shader it INCREASED! I can reliably do 1024
   sprites @ 30 FPS and 512 sprites @ over 60 FPS.
-  
+
+  Doing the corner calculation of hw/hh slowed it down to 30 FPS. So
+  I reverted it.
 
   TODO Get object width/height from sprite pixel width/height and
   just use scaling

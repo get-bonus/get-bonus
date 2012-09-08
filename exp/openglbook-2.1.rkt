@@ -150,13 +150,13 @@
   (v! f32vector-set! Vertices
       (* 4 4) i 0
       ;; ul
-      x y hw hh
+      x y (- hw) (+ hh)
       ;; ur
-      x y hw hh
+      x y (+ hw) (+ hh)
       ;; ll
-      x y hw hh
+      x y (- hw) (- hh)
       ;; lr
-      x y hw hh)
+      x y (+ hw) (- hh))
   (v! f32vector-set! Colors
       (* 4 4) i 0
       ;; ul
