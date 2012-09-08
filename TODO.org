@@ -326,6 +326,13 @@
   I think it is time to just implement this for the games and see
   what happens.
 
+  TODO Investigate culling and/or depth testing [maybe I am losing
+  efficiency by drawing over things that are already there and if I
+  would not then it would be faster. However, there's a disadvantage
+  here because it means that certain kinds of transparency won't
+  work. But, this might not be a big deal because IIRC the SNES
+  didn't have transparency either.] (painter's algorithm)
+
   TODO Get object width/height from sprite pixel width/height and
   just use scaling
 

@@ -84,13 +84,14 @@
                 (/ (f32vector-length TextureAtlasIndex) 4)
                 TextureAtlasIndex)
 
+  (glEnable GL_DEPTH_TEST)
   (glClearColor 1.0 1.0 1.0 0.0))
 
 (define (ResizeFunction Width Height)
   (glViewport 0 0 Width Height))
 
 (define (RenderFunction)
-  (glClear GL_COLOR_BUFFER_BIT)
+  (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
   (when #f
     (define (fmodulo x y)
@@ -103,12 +104,13 @@
             360)))
     (for ([i (in-range HowManySprites)])
       (f32vector-set! Transforms (+ (* i 3) 2)
-                      rot))
-    (glBindBuffer GL_ARRAY_BUFFER TransformBufferId)
-    (glBufferData GL_ARRAY_BUFFER
-                  (gl-vector-sizeof Transforms)
-                  Transforms
-                  GL_STREAM_DRAW))
+                      rot)))
+  
+  ;; Reload all data every frame
+  (load-buffer-data VboId Vertices)
+  (load-buffer-data ColorBufferId Colors)
+  (load-buffer-data TexIndexesBufferId TexIndexes)
+  (load-buffer-data TransformBufferId Transforms)
 
   (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
 
@@ -224,15 +226,18 @@
 (define-shader-source FragmentShader "../gb/graphics/geom/ngl.fragment.glsl")
 (define-shader-source GeometryShader "../gb/graphics/geom/ngl.geometry.glsl")
 
+(define (load-buffer-data VboId Vertices)
+  (glBindBuffer GL_ARRAY_BUFFER VboId)
+  (glBufferData GL_ARRAY_BUFFER
+                (gl-vector-sizeof Vertices)
+                Vertices
+                GL_STREAM_DRAW))
+
 (define-syntax-rule
   (define-vertex-attrib-array VboId Vertices Index HowMany)
   (begin (set! VboId
                (u32vector-ref (glGenBuffers 1) 0))
-         (glBindBuffer GL_ARRAY_BUFFER VboId)
-         (glBufferData GL_ARRAY_BUFFER
-                       (gl-vector-sizeof Vertices)
-                       Vertices
-                       GL_STATIC_DRAW)
+         (load-buffer-data VboId Vertices)
          (define type (gl-vector->type Vertices))
          (cond
            [(= type GL_FLOAT)
