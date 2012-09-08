@@ -318,6 +318,11 @@
   effect on performance, but memory usage is down.) Now the shader is
   pretty dirt simple.
 
+  After all this, I went back and checked out what the situation was
+  with the geometry shader version that did everything on the
+  card... and it gets the exact same performance. Argh! And it uses
+  less memory to upload the scene!
+
   TODO Get object width/height from sprite pixel width/height and
   just use scaling
 
