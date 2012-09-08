@@ -2,6 +2,7 @@
  
 layout(location=0) in vec4 in_Position;
 layout(location=1) in vec4 in_Color;
+layout(location=2) in vec2 in_TexCoord;
 //layout(location=2) in int in_TexIndex;
 //layout(location=3) in vec3 in_Transforms;
 
@@ -16,6 +17,7 @@ out VertexData {
 */
 
 out vec4 Color;
+out vec2 TexCoord;
 
 void main(void)
 {
@@ -29,4 +31,5 @@ void main(void)
 
   gl_Position = in_Position;
   Color = in_Color;
+  TexCoord = in_TexCoord;
 }

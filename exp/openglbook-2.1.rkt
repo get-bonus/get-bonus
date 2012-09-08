@@ -10,6 +10,7 @@
 (define VboId #f)
 (define IndexBufferId #f)
 (define ColorBufferId #f)
+(define TexCoordBufferId #f)
 (define TexIndexesBufferId #f)
 (define TransformBufferId #f)
 
@@ -166,6 +167,22 @@
       ;; lr
       r g b a)
 
+  (define Tllx (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 0)))
+  (define Tlly (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 1)))
+  (define   Tw (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 2)))
+  (define   Th (f32vector-ref TextureAtlasIndex (+ (* 4 tex) 3)))
+
+  (v! f32vector-set! TexCoords
+      (* 4 2) i 0
+      ;; Tll
+      Tllx Tlly
+      ;; Tlr
+      (+ Tllx Tw) Tlly
+      ;; Tul
+      Tllx (+ Tlly Th)
+      ;; Tur
+      (+ Tllx Tw) (+ Tlly Th))
+
   ;; XXX
   (u32vector-set! TexIndexes i tex)
 
@@ -186,10 +203,17 @@
   (make-f32vector (* (* HowManySprites VertsPerSprite) 4)))
 (define Colors
   (make-f32vector (* (* HowManySprites VertsPerSprite) 4)))
+(define TexCoords
+  (make-f32vector (* (* HowManySprites VertsPerSprite) 2)))
 (define TexIndexes
   (make-u32vector (* HowManySprites VertsPerSprite)))
 (define Transforms
   (make-f32vector (* HowManySprites VertsPerSprite 3)))
+
+(define TextureAtlasIndex
+  (f32vector
+   0.0 0.0 0.0 0.0
+   0.0 0.0 1.0 1.0))
 
 (define objects
   #;(list (sprite 0.0 0.0 0.8 0.8
@@ -240,6 +264,7 @@
     (apply +
            (map gl-vector-sizeof
                 (list Indices Vertices Colors 
+                      TexCoords
                       TexIndexes Transforms))))
 
   (printf "               Sprites: ~a\n"
@@ -268,11 +293,6 @@
           (real->decimal-string
            (/ (* 25.6 1024 1024 1024)
               (/ (* 60 one-frame-size) HowManySprites)))))
-
-(define TextureAtlasIndex
-  (f32vector
-   0.0 0.0 0.0 0.0
-   0.0 0.0 1.0 1.0))
 
 (define-syntax-rule (define-shader-source id path)
   (begin (define-runtime-path id-path path)
@@ -310,6 +330,7 @@
 
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
+  (define-vertex-attrib-array TexCoordBufferId TexCoords 2 2)
   #;(define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
   #;(define-vertex-attrib-array TransformBufferId Transforms 3 3)
 
