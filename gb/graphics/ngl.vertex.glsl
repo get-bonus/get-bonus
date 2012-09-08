@@ -42,8 +42,8 @@ void main(void)
   vec4 pos = in_Position;
   float x = pos.x;
   float y = pos.y;
-  float hw = pos.z;
-  float hh = pos.w;
+  float hw = pos.z * hw_factor[in_Corner];
+  float hh = pos.w * hh_factor[in_Corner];
   float mx = in_Transforms.x;
   float my = in_Transforms.y;
 
