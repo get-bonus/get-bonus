@@ -305,6 +305,10 @@
   rendering (so, six vertices per sprite), I was able to get 15 FPS
   with 1024 sprites (on my full laptop screen). 512 sprites is only
   20 or 30 FPS (slower than the geometry-shader based version.)
+
+  When I added rotation, the performance didn't change. But when I
+  added scaling in the shader it INCREASED! I can reliably do 1024
+  sprites @ 30 FPS and 512 sprites @ over 60 FPS.
   
 
   TODO Get object width/height from sprite pixel width/height and

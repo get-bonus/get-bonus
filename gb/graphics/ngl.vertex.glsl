@@ -30,10 +30,8 @@ void main(void)
   */
 
   float Angle = in_Transforms.z;
-  mat4 RotationMatrix = mat4( cos( Angle ), -sin( Angle ), 0.0, 0.0,
-                              sin( Angle ),  cos( Angle ), 0.0, 0.0,
-                                       0.0,           0.0, 1.0, 0.0,
-                                       0.0,           0.0, 0.0, 1.0 );
+  mat2 RotationMatrix = mat2( cos( Angle ), -sin( Angle ),
+                              sin( Angle ),  cos( Angle ) );
 
   vec4 pos = in_Position;
   float x = pos.x;
@@ -43,9 +41,10 @@ void main(void)
   float mx = in_Transforms.x;
   float my = in_Transforms.y;
 
-  vec4 pos_pre = vec4(x + hw * mx, y + hh * my, 0.0, 1.0);
+  vec2 pos_2d_pre = vec2(x + hw * mx, y + hh * my);
+  vec2 pos_2d = pos_2d_pre * RotationMatrix;
 
-  gl_Position = pos_pre * RotationMatrix;
+  gl_Position = vec4(pos_2d, 0.0, 1.0);
 
   Color = in_Color;
   TexCoord = in_TexCoord;
