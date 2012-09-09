@@ -113,9 +113,9 @@
 (define the-texture-atlas
   (texture-atlas/size 2))
 
-(define-sprite sprite:none
+(define-texture texture:none
   the-texture-atlas 0.0 0.0 0.0 0.0)
-(define-sprite sprite:everything
+(define-texture texture:everything
   the-texture-atlas 0.0 0.0 1.0 1.0)
 
 (define (random-in lo hi)
@@ -162,8 +162,8 @@
             (random)
             
             (if (zero? (random 2))
-              sprite:none
-              sprite:everything)
+              texture:none
+              texture:everything)
 
             (random)
             (random)
