@@ -220,11 +220,11 @@
   (begin (define-runtime-path id-path path)
          (define id (file->string id-path))))
 
-(define-shader-source VertexShader-p "../gb/graphics/geom/ngl.vertex.glsl")
+(define-shader-source VertexShader-p "../gb/graphics/ngl.vertex.glsl")
 (define VertexShader 
   (format VertexShader-p (texture-atlas-size the-texture-atlas)))
-(define-shader-source FragmentShader "../gb/graphics/geom/ngl.fragment.glsl")
-(define-shader-source GeometryShader "../gb/graphics/geom/ngl.geometry.glsl")
+(define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
+(define-shader-source GeometryShader "../gb/graphics/ngl.geometry.glsl")
 
 (define (load-buffer-data VboId Vertices)
   (glBindBuffer GL_ARRAY_BUFFER VboId)
