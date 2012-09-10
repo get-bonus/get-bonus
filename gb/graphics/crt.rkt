@@ -33,6 +33,7 @@
 ;; that. This makes the GBIES basically a "widescreen" SNES.
 (define crt-width 432)
 (define crt-height 243)
+
 (define texture-width crt-width)
 (define texture-height crt-height)
 (define (draw-on-crt screen-width screen-height do-the-drawing)

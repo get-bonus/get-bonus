@@ -83,8 +83,12 @@
   
   Maybe just log data and look at it afterward?
   
-  I don't know if I really am measuring this correctly... see OpenGL wiki
-* TODO Switch to a fully shader based rendering system
+  I don't know if I really am measuring this correctly... see OpenGL
+  wiki
+
+  Decided to show it in the window label
+* DONE Switch to a fully shader based rendering system
+  CLOSED: [2012-09-09 Sun 23:43]
   I have begun experimenting with this a lot.
   
   --Why--
@@ -326,34 +330,158 @@
   I think it is time to just implement this for the games and see
   what happens.
 
-  TODO Investigate culling and/or depth testing [maybe I am losing
-  efficiency by drawing over things that are already there and if I
-  would not then it would be faster. However, there's a disadvantage
-  here because it means that certain kinds of transparency won't
-  work. But, this might not be a big deal because IIRC the SNES
-  didn't have transparency either.] (painter's algorithm)
+  Later that day I turned on depth testing and got super fast
+  performance. Basically before I was drawing every single sprite over
+  previously drawn ones, which cost a lot of time. Now the GPU can
+  ignore "background" sprites that are covered. This will influence
+  what order I sent them to the card and how I do
+  blending/transparency/ etc. But I get insane performance, so it is
+  probably worth it.
+* TODO NGL - Pre-generate texture files for every letter in the alphabet for a font at a certain pixel height.
+* TODO NGL - Assemble texture atlas from data files
+  Use gb/graphics/texture-atlas-lib to produce a static database
+  after munging some image files and calling something functions
+* TODO NGL - Growable vector management library
+  Should work for an ffi/vector, including copying from old to
+  new. Doubling when you go over the limit.
+* TODO NGL - Take the geometry shader version and turn it into an abstraction
+  - Initialize with a texture atlas
+  - Take a tree of sprites and render it out
+  - Produce a cache along the way so that not all sprite information
+    needs to be updated in the buffer (premature-optimization)
+  - Use that same information to not upload data to card unless there
+    is a change (premature-optimization)
 
-  TODO Get object width/height from sprite pixel width/height and
-  just use scaling
+  - Make sure to undo changes to the OpenGL state
 
-  TODO Do texture/color blending
+  - Figure out a good way to share state (such as shader programs and
+    texture atlas buffer) between different loops. (Perhaps put it
+    underneath big-bang rather than inside each game so that they are
+    all automatically shared.)
+* TODO NGL - Make a system for specifying sprites granularly
+  Perhaps use parameters for the current translate/rotate/scale,
+  since the shader has no stack. For now, this should have layering
+  built in.
+* TODO NGL - Deal with the model view projection in the shader
+  My games rely on a different resolution than the actual screen
+* TODO NGL - Use with actual games that I have
+* TODO NGL - Investigate the interaction of depth testing with transparency
+  At the very least, I should be able to have fully opaque or fully
+  transparent texture colors and get it to work. It is possible that
+  I will have to call discard() in the fragment shader to ignore the
+  effect on the depth buffer of the fully transparent texture
 
-  TODO Optimize -- Removing the geometry shader didn't seem to
-  help. But would it be wise to try an external glsl optimizer like:
+  Ideally, I'd be able to draw every sprite from back to front and
+  get perfect transparencies.
+
+  It might be more feasible to make layers something NGL knows about
+  and have it draw each layer into a separate screen-sized texture
+  that are all blended together afterward. (The SNES had only one
+  layer that could be transparent over the others.)
+
+  Also, here's another idea that uses front-to-back drawing order:
+  http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
+
+  Investigate this.
+* TODO NGL - See if I need to set up culling specially
+  And perhaps cull slightly wider than that the screen because I
+  believe culling happens before geometry shaders (?) so I need to
+  make sure the point is in the cull
+* TODO NGL - Maybe get the object width/height from sprite pixel width/height
+  Then only scaling will be interesting, w/h will come from the
+  texture atlas. But at that point the atlas should contain pixels
+  rather than UVs and I'll have to the adjustment math on the
+  GPU. Investigate this.
+* TODO NGL - Consider using an external GLSL optimizer
   https://github.com/aras-p/glsl-optimizer
-
-  TODO Read about for optimizing the streaming of data to the GPU:
+* TODO NGL - Read about optimizing the streaming of data to the GPU
   http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
 
-  TODO Combine into a single vector with strides
+  However, note that even with a huge number of sprites, the amount
+  of memory is miniscule.
+* TODO NGL - Figure out the proper way to do texture/color blending
+  Right now I only support fully color or fully texture. It would be
+  nice to support a tinted texture
+* TODO NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
+* TODO NGL - Consider using only integers so they are always pixel aligned
+* TODO NGL / Fullscreen / Big-bang - New architecture
 
-  TODO Consider using only integers so they always align with pixels
+  fullscreen : (void -> void) 
+               (key-event -> void)
+            -> width height (void -> void)
+               (string -> void)
 
-  TODO Deal with the model view projection
-* TODO Don't use fullscreen's margin hack to get 16:9 instead just render to texture and then put on the screen centered
-  Maybe even render to 720p because on my 1080p desktop machine the
-  CRT emulation drops to 30fps, but I normally get 60fps on my
-  1440x900 laptop display
+  You give a drawing function, you give it a function that gets key
+  events. It gives the max width, the max height, a function that
+  forces a re-draw, and a function that updates the window
+  lable. [Doesn't need OpenGL, but will call swap-buffers.] [Sets the
+  viewport]
+
+  aspect-draw : full-width full-height
+                aspect-width aspect-height max
+             -> actual-width actual-height 
+                ((-> void) -> void)
+
+  You give it the actual WxH of the screen and the desired aspect
+  ratio (16:9) plus a maximum constant (such as 80 for 720p, which
+  seems to be my laptop's maximum performance for the CRT shader) and
+  it will return the actual width/height allocated for it, plus a
+  function that receives a drawing function that is drawn on to the
+  actual width/height screen and then put in the center of the real
+  screen. In the future, this function could receive the rotation to
+  have TATE built in. [Uses OpenGL natively] [Sets the viewport]
+
+  draw-in-texture : texture-width texture-height
+                 -> texture-id
+                    ((-> void) -> void)
+
+  (Used by aspect-draw) Using OpenGL, it calls a drawing function you
+  give it later and draws into the texture. It returns the texture id
+  before hand so you can use it. [Sets the viewport]
+
+  draw-on-crt : crt-width crt-height
+                screen-width screen-height
+             -> ((-> void) -> void)
+
+  (Uses draw-in-texture) Using OpenGL and the CRT shader, calls the
+  drawing function with a small texture [Sets the viewport] and then
+  takes that texture and draws it to the default location (in our
+  case, another texture) but with the CRT effect run out it. [In the
+  future, modify this so that the final screen can be drawn in two
+  passes for halation.]
+
+  In the future, this will make it super easy to switch to GLFW,
+  because only fullscreen is changed. Plus I think aspect-draw in
+  OpenGL will be nicer than the margin hack I use now
+
+  (define-values (full-w full-h label! redraw!)
+   (fullscreen draw! receive-key!))
+  (define-values (actual-w actual-h aspect-draw!)
+   (aspect-draw full-w full-h 16 9 80))
+  (define crt-draw!
+   (draw-on-crt 432 243 actual-w actual-h))
+  (define (draw!)
+   (aspect-draw! 
+    (λ ()
+     (crt-draw! 
+      (λ () 
+       (ngl-draw! last-sprites))))))
+  (define (receive-key! ke)
+   (update-controller! ke))
+  (define (frame-time! time)
+   (if debug?
+    (label! "Get Bonus - ~a FPS" ...)
+    (label! "Get Bonus")))
+  (define last-sprites empty)
+
+  (let big-bang-loop ()
+   (define frame-start (current-inexact-milliseconds))
+   (set! last-sprites (run-the-game controller-state))
+   (redraw!)
+   (frame-time! (- (current-inexact-milliseconds) frame-start))
+   (sleep-until (+ frame-start (/ 1/60 1000)))   
+   (big-bang-loop))
+
 * TODO GLFW - Wait for getting the string identifiers of joysticks
 * TODO GLFW - Wait for consistent joystick state intra-frame
   So glfwPollEvents calls pollJoystickEvents and Win32 caches
