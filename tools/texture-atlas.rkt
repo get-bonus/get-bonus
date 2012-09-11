@@ -102,7 +102,16 @@
 (define-runtime-path atlas.rkt "../r.rkt")
 
 (module+ main
-  (define pngs (find-files (λ (x) (equal? #"png" (filename-extension x))) r))
+  (define pngs 
+    (find-files (λ (x) (equal? #"png" (filename-extension x))) r))
+  (define pngs+bms
+    (for/list ([p (in-list pngs)])
+      (define bm (make-object bitmap% p 'png/alpha))
+      (define bm-w (send bm get-width))
+      (define bm-h (send bm get-height))
+      (vector p bm bm-w bm-h)))
+  (define pngs+bms/sorted
+    (sort pngs+bms <= #:key (λ (v) (vector-ref v 3))))
 
   ;; Here's a source for doing this better than I do it here:
   ;; http://clb.demon.fi/projects/rectangle-bin-packing
@@ -122,9 +131,10 @@
         (for/fold ([shelf-install! void]
                    [w 0]
                    [max-h 0])
-            ([p (in-list pngs)]
+            ([p+bm (in-list pngs+bms/sorted)]
              [i (in-naturals)]
-             #:when (= shelf-i (modulo i shelves)))
+             #:when (= shelf-i (quotient i shelves)))
+          (match-define (vector p bm bm-w bm-h) p+bm)
           (define p-id
             (string->symbol
              (regexp-replace
@@ -133,9 +143,6 @@
                (find-relative-path (simple-form-path r)
                                    (simple-form-path p)))
               "")))
-          (define bm (make-object bitmap% p 'png/alpha))
-          (define bm-w (send bm get-width))
-          (define bm-h (send bm get-height))
           (values
            (λ (bm-dc)
              (send bm-dc draw-bitmap

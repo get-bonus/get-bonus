@@ -346,6 +346,10 @@
 * DONE NGL - Use texture atlas in demo
   CLOSED: [2012-09-11 Tue 15:50]
   This required dropping the index.
+* TODO NGL - Make texture atlas creation more efficient
+  http://clb.demon.fi/projects/rectangle-bin-packing
+
+  or just use Nvidia's tools
 * TODO NGL - Allow texture atlas to have sub-file textures
   (i.e. my existing sprite sheets)
 * TODO NGL - Experiment with pixel coords rather than relative coords in texture atlas
