@@ -4,13 +4,14 @@
          racket/runtime-path
          xml
          gb/graphics/texture-atlas-lib
+         "../r.rkt"
          gb/gui/fullscreen
          (planet stephanh/RacketGL/rgl))
 
 (define VaoId #f)
 (define VboId #f)
 (define ColorBufferId #f)
-(define TexIndexesBufferId #f)
+(define TexCoordsBufferId #f)
 (define TransformBufferId #f)
 
 (define ProgramId #f)
@@ -63,7 +64,7 @@
   (ResizeFunction w h)
   (RenderFunction))
 
-(define-runtime-path texture-atlas-path "../resources/SMB-Tiles.png")
+(define-runtime-path texture-atlas-path "../r.png")
 
 (define (Initialize)
   (printf "INFO: OpenGL Version ~a\n"
@@ -78,12 +79,6 @@
 
   (CreateShaders)
   (CreateVBO)
-
-  (set! TextureAtlasIndex_UniformId
-        (glGetUniformLocation ProgramId "TextureAtlasIndex"))
-  (glUniform4fv TextureAtlasIndex_UniformId
-                (texture-atlas-size the-texture-atlas)
-                (texture-atlas-vector the-texture-atlas))
 
   (glEnable GL_DEPTH_TEST)
   (glClearColor 1.0 1.0 1.0 0.0))
@@ -105,18 +100,10 @@
   ;; Reload all data every frame
   (load-buffer-data VboId Vertices)
   (load-buffer-data ColorBufferId Colors)
-  (load-buffer-data TexIndexesBufferId TexIndexes)
+  (load-buffer-data TexCoordsBufferId TexCoords)
   (load-buffer-data TransformBufferId Transforms)
 
   (glDrawArrays GL_POINTS 0 (/ (f32vector-length Vertices) 4)))
-
-(define the-texture-atlas
-  (texture-atlas/size 2))
-
-(define-texture texture:none
-  the-texture-atlas 0.0 0.0 0.0 0.0)
-(define-texture texture:everything
-  the-texture-atlas 0.0 0.0 1.0 1.0)
 
 (define (random-in lo hi)
   (define rng (- hi lo))
@@ -137,16 +124,21 @@
   (f32vector-set! Colors (+ (* i 4) 2) b)
   (f32vector-set! Colors (+ (* i 4) 3) a)
 
-  (u32vector-set! TexIndexes i tex)
+  (for ([j (in-range 4)])
+    (f32vector-set! TexCoords (+ (* i 4) j) 
+                    (f32vector-ref
+                     (texture-atlas-vector
+                      the-texture-atlas)
+                     (+ (* tex 4) j))))
 
   (f32vector-set! Transforms (+ (* i 3) 0) mx)
   (f32vector-set! Transforms (+ (* i 3) 1) my)
   (f32vector-set! Transforms (+ (* i 3) 2) theta))
 
-(define HowManySprites (* 5 512))
+(define HowManySprites (* 4 512))
 (define Vertices (make-f32vector (* HowManySprites 4)))
 (define Colors (make-f32vector (* HowManySprites 4)))
-(define TexIndexes (make-u32vector HowManySprites))
+(define TexCoords (make-f32vector (* HowManySprites 4)))
 (define Transforms (make-f32vector (* HowManySprites 3)))
 
 (define objects
@@ -160,10 +152,15 @@
             (random)
             (random)
             (random)
-            
-            (if (zero? (random 2))
-              texture:none
-              texture:everything)
+
+            (list-ref
+             (list none
+                   exp/tetrispiecess
+                   exp/ryu
+                   exp/potosvillage
+                   exp/pacman
+                   exp/SMB-Tiles)
+             (random 6))
 
             (random)
             (random)
@@ -187,7 +184,7 @@
     (apply +
            (map gl-vector-sizeof
                 (list Vertices Colors 
-                      TexIndexes Transforms))))
+                      TexCoords Transforms))))
 
   (printf "               Sprites: ~a\n"
           HowManySprites)
@@ -220,9 +217,7 @@
   (begin (define-runtime-path id-path path)
          (define id (file->string id-path))))
 
-(define-shader-source VertexShader-p "../gb/graphics/ngl.vertex.glsl")
-(define VertexShader 
-  (format VertexShader-p (texture-atlas-size the-texture-atlas)))
+(define-shader-source VertexShader "../gb/graphics/ngl.vertex.glsl")
 (define-shader-source FragmentShader "../gb/graphics/ngl.fragment.glsl")
 (define-shader-source GeometryShader "../gb/graphics/ngl.geometry.glsl")
 
@@ -255,7 +250,7 @@
 
   (define-vertex-attrib-array VboId Vertices 0 4)
   (define-vertex-attrib-array ColorBufferId Colors 1 4)
-  (define-vertex-attrib-array TexIndexesBufferId TexIndexes 2 1)
+  (define-vertex-attrib-array TexCoordsBufferId TexCoords 2 4)
   (define-vertex-attrib-array TransformBufferId Transforms 3 3))
 
 (define (print-shader-log glGetShaderInfoLog shader-name shader-id)

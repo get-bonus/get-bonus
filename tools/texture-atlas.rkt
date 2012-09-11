@@ -174,7 +174,7 @@
        `(require gb/graphics/texture-atlas-lib))
       (pretty-display
        `(define the-texture-atlas
-          (texture-atlas/size ,how-many)))
+          (texture-atlas/size (add1 ,how-many))))
       (pretty-display
        `(define texture-atlas-width
           ,tot-w))
@@ -187,6 +187,12 @@
                  texture-atlas-height))
       (printf "\n")
 
+      (pretty-display
+       `(define-texture
+          none
+          the-texture-atlas
+          0.0 0.0 0.0 0.0))
+      
       (install! atlas-bm-dc)))
 
   (send atlas-bm save-file
