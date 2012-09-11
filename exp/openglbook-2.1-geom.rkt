@@ -143,7 +143,7 @@
   (f32vector-set! Transforms (+ (* i 3) 1) my)
   (f32vector-set! Transforms (+ (* i 3) 2) theta))
 
-(define HowManySprites (* 2 512))
+(define HowManySprites (* 5 512))
 (define Vertices (make-f32vector (* HowManySprites 4)))
 (define Colors (make-f32vector (* HowManySprites 4)))
 (define TexIndexes (make-u32vector HowManySprites))
