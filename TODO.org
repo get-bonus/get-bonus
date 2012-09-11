@@ -337,10 +337,15 @@
   what order I sent them to the card and how I do
   blending/transparency/ etc. But I get insane performance, so it is
   probably worth it.
-* TODO NGL - Pre-generate texture files for every letter in the alphabet for a font at a certain pixel height.
-* TODO NGL - Assemble texture atlas from data files
+* DONE NGL - Pre-generate texture files for every letter in the alphabet for a font at a certain pixel height.
+  CLOSED: [2012-09-11 Tue 14:15]
+* DONE NGL - Assemble texture atlas from data files
+  CLOSED: [2012-09-11 Tue 15:23]
   Use gb/graphics/texture-atlas-lib to produce a static database
   after munging some image files and calling something functions
+* TODO NGL - Use texture atlas in demo
+* TODO NGL - Allow texture atlas to have sub-file textures
+  (i.e. my existing sprite sheets)
 * TODO NGL - Growable vector management library
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.
