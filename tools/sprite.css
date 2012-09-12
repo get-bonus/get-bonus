@@ -1,0 +1,20 @@
+body {
+    background: #ffffff;
+}
+
+img {
+    border: 1px dashed;;
+}
+
+table {
+    width: 100%;
+    text-align: center;
+}
+
+td:nth-child(1) {
+    text-align: right;
+}
+td:nth-child(2) {
+    text-align: left;
+}
+    
