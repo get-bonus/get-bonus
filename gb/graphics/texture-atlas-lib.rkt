@@ -11,14 +11,15 @@
 (define (texture-atlas/size size)
   (texture-atlas 
    size
-   (make-f32vector (* 4 size))
+   (make-u32vector (* 4 size))
    0))
 
 (define (insert-texture! the-texture-atlas Tllx Tlly Tw Th)
   (match-define (texture-atlas _ vec last-texture)
                 the-texture-atlas)
-  (f32vector-set!* vec (* 4 last-texture)
-                   Tllx Tlly Tw Th)
+  (vector-set!* u32vector-set!
+                vec (* 4 last-texture)
+                Tllx Tlly Tw Th)
   (set-texture-atlas-next-texture! the-texture-atlas (add1 last-texture))
   last-texture)
 
@@ -44,4 +45,4 @@
       exact-nonnegative-integer?)]
  [texture-atlas-vector
   (-> texture-atlas?
-      f32vector?)])
+      u32vector?)])

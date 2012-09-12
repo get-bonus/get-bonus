@@ -346,13 +346,18 @@
 * DONE NGL - Use texture atlas in demo
   CLOSED: [2012-09-11 Tue 15:50]
   This required dropping the index.
+* DONE NGL - Experiment with pixel coords rather than relative coords in texture atlas
+  CLOSED: [2012-09-12 Wed 09:36]
+* TODO NGL - Hard code texture index more
+  Rather than using define-texture
+
+  And optimize given that I won't be using the indexing system
 * TODO NGL - Make texture atlas creation more efficient
   http://clb.demon.fi/projects/rectangle-bin-packing
 
   or just use Nvidia's tools
 * TODO NGL - Allow texture atlas to have sub-file textures
   (i.e. my existing sprite sheets)
-* TODO NGL - Experiment with pixel coords rather than relative coords in texture atlas
 * TODO NGL - Growable vector management library
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.

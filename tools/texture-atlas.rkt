@@ -43,6 +43,7 @@
           (send dc set-brush "white" 'transparent)
           (send dc erase)
           (send dc set-brush "black" 'transparent)
+          (send dc set-font f)
           (send dc draw-text char-s (/ MAX-W 2) (/ MAX-H 2))
 
           dc))
@@ -113,9 +114,6 @@
   (define pngs+bms/sorted
     (sort pngs+bms <= #:key (λ (v) (vector-ref v 3))))
 
-  ;; Here's a source for doing this better than I do it here:
-  ;; http://clb.demon.fi/projects/rectangle-bin-packing
-
   (define how-many (length pngs))
   (define shelves (inexact->exact (ceiling (sqrt how-many))))
 
@@ -147,12 +145,12 @@
            (λ (bm-dc)
              (send bm-dc draw-bitmap
                    bm w h)
-             #;(pretty-display
+             (pretty-display
               `(define-texture
                  ,p-id
                  the-texture-atlas
                  ,w ,h ,bm-w ,bm-h))
-             (pretty-display
+             #;(pretty-display
               `(define-texture
                  ,p-id
                  the-texture-atlas
@@ -198,7 +196,7 @@
        `(define-texture
           none
           the-texture-atlas
-          0.0 0.0 0.0 0.0))
+          0 0 0 0))
       
       (install! atlas-bm-dc)))
 

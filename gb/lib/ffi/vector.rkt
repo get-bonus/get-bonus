@@ -1,11 +1,10 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     syntax/parse)
-         ffi/vector)
+                     syntax/parse))
 
-(define-syntax (f32vector-set!* stx)
+(define-syntax (vector-set!* stx)
   (syntax-parse stx
-    [(_ vec:id offset:expr element:expr ...)
+    [(_ f32vector-set!:id vec:id offset:expr element:expr ...)
      (with-syntax
          ([(element-i ...)
            (for/list ([i (in-range (length (syntax->list #'(element ...))))])
@@ -15,4 +14,4 @@
            (f32vector-set! vec (+ offset-v element-i) element)
            ...)))]))
 
-(provide f32vector-set!*)
+(provide vector-set!*)

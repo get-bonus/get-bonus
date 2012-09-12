@@ -19,7 +19,8 @@
 (define FragmentShaderId #f)
 (define GeometryShaderId #f)
 
-(define TextureAtlasIndex_UniformId #f)
+(define TextureAtlasWidth_UniformId #f)
+(define TextureAtlasHeight_UniformId #f)
 (define TextureAtlasId #f)
 
 (module+ main
@@ -80,6 +81,13 @@
   (CreateShaders)
   (CreateVBO)
 
+  (set! TextureAtlasWidth_UniformId
+        (glGetUniformLocation ProgramId "TextureAtlasWidth"))
+  (glUniform1i TextureAtlasWidth_UniformId texture-atlas-width)
+  (set! TextureAtlasHeight_UniformId
+        (glGetUniformLocation ProgramId "TextureAtlasHeight"))
+  (glUniform1i TextureAtlasHeight_UniformId texture-atlas-height)
+
   (glEnable GL_DEPTH_TEST)
   (glClearColor 1.0 1.0 1.0 0.0))
 
@@ -125,8 +133,8 @@
   (f32vector-set! Colors (+ (* i 4) 3) a)
 
   (for ([j (in-range 4)])
-    (f32vector-set! TexCoords (+ (* i 4) j) 
-                    (f32vector-ref
+    (u32vector-set! TexCoords (+ (* i 4) j) 
+                    (u32vector-ref
                      (texture-atlas-vector
                       the-texture-atlas)
                      (+ (* tex 4) j))))
@@ -138,7 +146,7 @@
 (define HowManySprites (* 4 512))
 (define Vertices (make-f32vector (* HowManySprites 4)))
 (define Colors (make-f32vector (* HowManySprites 4)))
-(define TexCoords (make-f32vector (* HowManySprites 4)))
+(define TexCoords (make-u32vector (* HowManySprites 4)))
 (define Transforms (make-f32vector (* HowManySprites 3)))
 
 (define objects
