@@ -348,15 +348,18 @@
   This required dropping the index.
 * DONE NGL - Experiment with pixel coords rather than relative coords in texture atlas
   CLOSED: [2012-09-12 Wed 09:36]
-* TODO Jake
+* DONE Jake
+  CLOSED: [2012-10-04 Thu 14:01]
   My own Make system. I'm crazy.
-* TODO NGL - Font generation
-  There's no reason to have them all the same width, just the same height.
-* TODO NGL - Find a better mono font
-* TODO NGL - Allow texture atlas to have sub-file textures
+* DONE NGL - Allow texture atlas to have sub-file textures
+  CLOSED: [2012-10-04 Thu 15:07]
   (i.e. my existing sprite sheets)
 
   Or just make the cutting up tool better (probably a better solution)
+* TODO NGL - Font generation
+  There's no reason to have them all the same width, just the same height.
+* TODO NGL - Find a better mono font
+* TODO NGL - Generate digests of copyrighted images
 * TODO NGL - Growable vector management library
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.
@@ -535,6 +538,7 @@
   be looked up.
 * TODO Master Grafx2 or aseprite or make my own keyboard based system
   https://code.google.com/p/grafx2/
+* TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
 * TODO The Get Bonus rendering system should have built-in support for TATE games
   Virtual, Rotate Left, and Rotate Right
 * TODO Try to get OpenGL to do collision detection for me

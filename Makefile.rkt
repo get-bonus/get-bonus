@@ -3,6 +3,7 @@
          racket/list
          racket/match
          racket/path
+         racket/port
          racket/system
          racket/file
          setup/dirs)
@@ -11,6 +12,8 @@
   (define cmd (apply format fmt args))
   (displayln cmd)
   (system cmd))
+
+;; XXX generalize to not rely on CWD = SRC-DIR
 
 (jake
  (define r-pth "r")
@@ -37,8 +40,9 @@
                                               reverse rest reverse)
                                      src)))))
             (app (compose bytes->path
-                          (λ (x) (regexp-replace #rx#"_rkt.zo$" x #".rkt"))
+                          (λ (x) (regexp-replace* #rx#"_" x #"."))
                           path->bytes
+                          (λ (x) (path-replace-suffix x #""))
                           file-name-from-path)
                  file)
             zo-pth)
@@ -48,6 +52,8 @@
                  (path-replace-suffix zo-pth #".dep"))
                (if (file-exists? dep-pth)
                  (map (match-lambda
+                       [(? bytes? b)
+                        (bytes->path b)]
                        [(list-rest 'collects cp)
                         (compiled
                          (apply build-path (find-collects-dir)
@@ -75,11 +81,35 @@
                [letter (in-string "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")])
      (build-path dir (format "~a.png" letter))))
 
+ (define r.src-pth
+   "r.src")
+
+ (define SPRITE-DEFS
+   (find-files (λ (x) (equal? #"rkt" (filename-extension x))) r.src-pth))
+ (define SPRITE-LISTS
+   (map (λ (x) (path-replace-suffix x #".rktd")) SPRITE-DEFS))
+
+ (rule (and (app (compose (λ (x) (map path->string x)) explode-path)
+                 (list (== r.src-pth) inner ... (app filename-extension #"rktd")))
+            sprite-list)
+       (list (compiled (path-replace-suffix sprite-list #".rkt"))
+             (path-replace-suffix sprite-list #""))
+       (system* racket-pth
+                "-t"
+                (path-replace-suffix sprite-list #".rkt")
+                "--"
+                (path-replace-suffix sprite-list #"")
+                sprite-list
+                r-pth))
+
  (rule (or "r.png" "r.rkt")
        (list (compiled "tools/texture-atlas.rkt")
-             FONT-FILES)
+             FONT-FILES
+             SPRITE-LISTS)
        (apply system* racket-pth
               "-t"
               "tools/texture-atlas.rkt"
               "r.png" "r.rkt"
-              FONT-FILES)))
+              (flatten (list FONT-FILES
+                             (map file->list
+                                  SPRITE-LISTS))))))
