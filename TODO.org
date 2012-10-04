@@ -348,6 +348,8 @@
   This required dropping the index.
 * DONE NGL - Experiment with pixel coords rather than relative coords in texture atlas
   CLOSED: [2012-09-12 Wed 09:36]
+* TODO Jake
+  My own Make system. I'm crazy.
 * TODO NGL - Font generation
   There's no reason to have them all the same width, just the same height.
 * TODO NGL - Find a better mono font
@@ -355,7 +357,6 @@
   (i.e. my existing sprite sheets)
 
   Or just make the cutting up tool better (probably a better solution)
-* TODO NGL - String rendering using the pre-rendered fonts
 * TODO NGL - Growable vector management library
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.
@@ -377,8 +378,11 @@
   Perhaps use parameters for the current translate/rotate/scale,
   since the shader has no stack. For now, this should have layering
   built in.
+* TODO NGL - String rendering using the pre-rendered fonts
 * TODO NGL - Deal with the model view projection in the shader
   My games rely on a different resolution than the actual screen
+
+  Or, have layers in "absolute" or "relative" coords
 * TODO NGL - Use with actual games that I have
 * TODO NGL - Investigate the interaction of depth testing with transparency
   At the very least, I should be able to have fully opaque or fully
@@ -529,7 +533,7 @@
   This would run beforehand, create some files/directory structure,
   and then drop and runtime information file so texture coords could
   be looked up.
-* TODO Master Grafx2
+* TODO Master Grafx2 or aseprite or make my own keyboard based system
   https://code.google.com/p/grafx2/
 * TODO The Get Bonus rendering system should have built-in support for TATE games
   Virtual, Rotate Left, and Rotate Right
