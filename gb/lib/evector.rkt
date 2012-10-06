@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/match)
+(require racket/contract
+         racket/match)
 
 (struct evector (make-base
                  base-ref
@@ -25,6 +26,7 @@
      (set-evector-effective-len! ev new-len)]
     [else
      (define next-len (max (* 2 actual-len) new-len))
+     (eprintf "expanding to ~a\n" next-len)
      (define new-base (make-base next-len))
      (for ([i (in-range effective-len)])
        (base-set! new-base i (base-ref base i)))
@@ -48,12 +50,43 @@
    k
    val))
 
+(provide
+ (contract-out
+  [evector?
+   (-> any/c
+       boolean?)]
+  [make-evector
+   (-> (-> exact-nonnegative-integer? any/c)
+       (-> any/c exact-nonnegative-integer? any/c)
+       (-> any/c exact-nonnegative-integer? any/c void)
+       exact-nonnegative-integer?
+       evector?)]
+  [evector-length
+   (-> evector?
+       exact-nonnegative-integer?)]
+  [set-evector-length!
+   (-> evector?
+       exact-nonnegative-integer?
+       void)]
+  [evector-ref
+   (-> evector?
+       exact-nonnegative-integer?
+       any/c)]
+  [evector-set!
+   (-> evector?
+       exact-nonnegative-integer?
+       any/c
+       void)]))
+
 (module+ test
   (require rackunit)
   (define N 100)
   (define e (make-evector make-bytes bytes-ref bytes-set! 10))
-  (for ([i (in-range N)])
+  (for* ([try (in-range 2)]
+         [i (in-range N)])
     (set-evector-length! e (add1 i))
+    (check-equal? (evector-length e) (add1 i)
+                  (format "~a len" i))
     (evector-set! e i i)
     (for ([j (in-range N)])
       (if (j . <= . i)
@@ -61,4 +94,6 @@
                       (format "~a ~a valid" i j))
         (check-exn exn:fail?
                    (λ () (evector-ref  e j))
-                   (format "~a ~a invalid" i j))))))
+                   (format "~a ~a invalid" i j)))))
+  (define ep (make-evector make-bytes bytes-ref bytes-set! 10))
+  (set-evector-length! ep 100))
