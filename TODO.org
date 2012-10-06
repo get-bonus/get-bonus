@@ -363,7 +363,8 @@
   CLOSED: [2012-10-06 Sat 14:17]
 * DONE NGL - Generate digests of copyrighted images
   CLOSED: [2012-10-06 Sat 15:40]
-* TODO NGL - Growable vector management library
+* DONE NGL - Growable vector management library
+  CLOSED: [2012-10-06 Sat 16:04]
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.
 * TODO NGL - Take the geometry shader version and turn it into an abstraction
