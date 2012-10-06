@@ -356,9 +356,11 @@
   (i.e. my existing sprite sheets)
 
   Or just make the cutting up tool better (probably a better solution)
-* TODO NGL - Font generation
+* DONE NGL - Font generation
+  CLOSED: [2012-10-06 Sat 14:15]
   There's no reason to have them all the same width, just the same height.
-* TODO NGL - Find a better mono font
+* DONE NGL - Find a better mono font
+  CLOSED: [2012-10-06 Sat 14:17]
 * TODO NGL - Generate digests of copyrighted images
 * TODO NGL - Growable vector management library
   Should work for an ffi/vector, including copying from old to

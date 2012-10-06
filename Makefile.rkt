@@ -17,9 +17,10 @@
 
 (jake
  (define r-pth "r")
+ (define r.free-pth "r.free")
 
  (rule "all"
-       (list "r.png"))
+       (list "r.free.png" "r.png" "r.rkt"))
 
  (define racket-pth
    (find-executable-path "racket"))
@@ -53,7 +54,7 @@
                (if (file-exists? dep-pth)
                  (map (match-lambda
                        [(? bytes? b)
-                        (bytes->path b)]
+                        (compiled (bytes->path b))]
                        [(list-rest 'collects cp)
                         (compiled
                          (apply build-path (find-collects-dir)
@@ -100,16 +101,31 @@
                 "--"
                 (path-replace-suffix sprite-list #"")
                 sprite-list
-                r-pth))
+                r-pth
+                (if (member "copyrighted" inner)
+                  r.free-pth
+                  r-pth)))
 
- (rule (or "r.png" "r.rkt")
+ (define ->path
+   (match-lambda
+    [(? path? x)
+     x]
+    [(? path-string? x)
+     (string->path x)]
+    [(? bytes? x)
+     (bytes->path x)]))
+
+ (rule (or "r.free.png" "r.png" "r.rkt")
        (list (compiled "tools/texture-atlas.rkt")
              FONT-FILES
              SPRITE-LISTS)
        (apply system* racket-pth
               "-t"
               "tools/texture-atlas.rkt"
-              "r.png" "r.rkt"
-              (flatten (list FONT-FILES
-                             (map file->list
-                                  SPRITE-LISTS))))))
+              "r.free.png" "r.png" "r.rkt" 
+              r-pth r.free-pth
+              (map (λ (x)
+                     (regexp-replace #rx"^r/" (path->string (->path x)) ""))
+                   (flatten (list FONT-FILES
+                                  (map file->list
+                                       SPRITE-LISTS)))))))
