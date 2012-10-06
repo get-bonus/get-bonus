@@ -45,6 +45,12 @@
     (define color-weight (/ 1 (* w h)))
 
     (define a-color (make-object color%))
+    
+    (define some-pixels (make-bytes 10))
+    (define (alpha? x y)
+      (send bm-dc get-argb-pixels x y 1 1 some-pixels #t #f)
+      (zero? (bytes-ref some-pixels 0)))
+
     (define-values
       (total-red total-green total-blue count)
       (for*/fold ([total-red 0]
@@ -53,16 +59,16 @@
                   [count 0])
           ([x (in-range w)]
            [y (in-range h)])
-        (send the-src-bm-dc get-pixel (+ lx x) (+ ly y) a-color)
-        (if (= 1.0 (send a-color alpha))
-          (values (+ total-red (send a-color red))
-                  (+ total-green (send a-color green))
-                  (+ total-blue (send a-color blue))
-                  (+ count 1))
+        (send bm-dc get-pixel x y a-color)
+        (if (alpha? x y)
           (values total-red
                   total-green
                   total-blue
-                  count))))
+                  count)
+          (values (+ total-red (send a-color red))
+                  (+ total-green (send a-color green))
+                  (+ total-blue (send a-color blue))
+                  (+ count 1)))))
 
     (define (to-byte tot)
       (inexact->exact 
@@ -80,15 +86,12 @@
     (send free-bm-dc set-brush
           average-color 'solid)
 
-    (send free-bm-dc draw-rectangle
-          0 0 w h)
-    #;
     (for* ([x (in-range w)]
            [y (in-range h)])
-      (send the-src-bm-dc get-pixel (+ lx x) (+ ly y) a-color)
-      (when (= 1.0 (send a-color alpha))
-        (send free-bm-dc draw-point
-              x y)))
+      (send bm-dc get-pixel x y a-color)
+      (unless (alpha? x y)
+        (send free-bm-dc set-pixel
+              x y average-color)))
 
     (define free-sprite-pth
       (build-path the-free-dest-root (format "~a.png" name)))

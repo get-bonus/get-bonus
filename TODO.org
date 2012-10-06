@@ -361,7 +361,8 @@
   There's no reason to have them all the same width, just the same height.
 * DONE NGL - Find a better mono font
   CLOSED: [2012-10-06 Sat 14:17]
-* TODO NGL - Generate digests of copyrighted images
+* DONE NGL - Generate digests of copyrighted images
+  CLOSED: [2012-10-06 Sat 15:40]
 * TODO NGL - Growable vector management library
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.
