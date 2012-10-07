@@ -1,9 +1,11 @@
 #lang racket/base
 (require "../r.rkt"
          racket/class
+         racket/match
          racket/runtime-path
          gb/gui/fullscreen
-         gb/graphics/ngl)
+         gb/graphics/ngl
+         gb/graphics/ngli)
 
 (define-runtime-path texture-atlas-path "../r.png")
 
@@ -13,27 +15,26 @@
   (define HowManySprites (* 4 512))
   (define objects
     (for/list ([i (in-range HowManySprites)])
-      (sprite-info
+      (transform
+       #:d
        (random-in -1.0 1.0)
        (random-in -1.0 1.0)
-       (random)
+       #:rgba
+       (random) (random)
+       (random) (random)
+       #:m
+       (random) (random)
+       #:rot
        (random)
 
-       (random)
-       (random)
-       (random)
-       (random)
-
-       (list-ref
-        (list none
-              tennis/bg
-              tennis/ball
-              tennis/paddle)
-        (random 4))
-
-       (random)
-       (random)
-       (random))))
+       (rectangle
+        (random) (random)
+        (list-ref
+         (list none
+               tennis/bg
+               tennis/ball
+               tennis/paddle)
+         (random 4))))))
 
   (define draw #f)
 

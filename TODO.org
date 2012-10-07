@@ -381,6 +381,11 @@
 * DONE NGL - undo changes to OpenGL state
   CLOSED: [2012-10-07 Sun 14:42]
 * DONE texture atlas - remove the giant vector and replace with small ones
+* DONE NGL - Make a system for specifying sprites granularly
+  CLOSED: [2012-10-07 Sun 15:32]
+  Perhaps use parameters for the current translate/rotate/scale,
+  since the shader has no stack. For now, this should have layering
+  built in.
 * TODO NGL - cache shader vector modifications to skip some parts of object tree
   premature optimization
 * TODO NGL - cache shader vector uploads to skip some segments
@@ -388,11 +393,7 @@
 
   (Probably not useful, because I hit very high frame rates even when
   updating vectors thousands of elements long)
-* TODO NGL - add contracts
-* TODO NGL - Make a system for specifying sprites granularly
-  Perhaps use parameters for the current translate/rotate/scale,
-  since the shader has no stack. For now, this should have layering
-  built in.
+* TODO NGL - add contracts to ngl and ngli
 * TODO NGL - String rendering using the pre-rendered fonts
 * TODO NGL - Deal with the model view projection in the shader
   My games rely on a different resolution than the actual screen
