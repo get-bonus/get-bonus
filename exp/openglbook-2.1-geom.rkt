@@ -13,26 +13,27 @@
   (define HowManySprites (* 4 512))
   (define objects
     (for/list ([i (in-range HowManySprites)])
-      (sprite (random-in -1.0 1.0)
-              (random-in -1.0 1.0)
-              (random)
-              (random)
+      (sprite-info
+       (random-in -1.0 1.0)
+       (random-in -1.0 1.0)
+       (random)
+       (random)
 
-              (random)
-              (random)
-              (random)
-              (random)
+       (random)
+       (random)
+       (random)
+       (random)
 
-              (list-ref
-               (list none
-                     tennis/bg
-                     tennis/ball
-                     tennis/paddle)
-               (random 4))
+       (list-ref
+        (list none
+              tennis/bg
+              tennis/ball
+              tennis/paddle)
+        (random 4))
 
-              (random)
-              (random)
-              (random))))
+       (random)
+       (random)
+       (random))))
 
   (define draw #f)
 
@@ -51,7 +52,6 @@
                  (set! draw
                        (make-draw
                         texture-atlas-path
-                        the-texture-atlas
                         texture-atlas-width texture-atlas-height
                         (send c get-width)
                         (send c get-height))))
@@ -61,9 +61,9 @@
                (when (zero? Frame)
                  (set! objects
                        (for/list ([o (in-list objects)])
-                         (struct-copy sprite o
+                         (struct-copy sprite-info o
                                       [theta
-                                       (add1 (sprite-theta o))]))))
+                                       (add1 (sprite-info-theta o))]))))
 
                (draw objects)
                (send glctx swap-buffers))))

@@ -376,10 +376,19 @@
   CLOSED: [2012-10-07 Sun 11:53]
 * DONE NGL - use evector
   CLOSED: [2012-10-07 Sun 12:32]
-* TODO NGL - don't use global variables
-* TODO NGL - undo changes to OpenGL state
+* DONE NGL - don't use global variables
+  CLOSED: [2012-10-07 Sun 14:42]
+* DONE NGL - undo changes to OpenGL state
+  CLOSED: [2012-10-07 Sun 14:42]
+* DONE texture atlas - remove the giant vector and replace with small ones
 * TODO NGL - cache shader vector modifications to skip some parts of object tree
+  premature optimization
 * TODO NGL - cache shader vector uploads to skip some segments
+  premature optimization
+
+  (Probably not useful, because I hit very high frame rates even when
+  updating vectors thousands of elements long)
+* TODO NGL - add contracts
 * TODO NGL - Make a system for specifying sprites granularly
   Perhaps use parameters for the current translate/rotate/scale,
   since the shader has no stack. For now, this should have layering

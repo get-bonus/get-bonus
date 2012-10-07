@@ -6,15 +6,16 @@
          gb/lib/evector
          gb/graphics/texture-atlas-lib
          (planet stephanh/RacketGL/rgl))
+
 (provide make-draw
-         (struct-out sprite))
+         (struct-out sprite-info))
 
 (define-evector f32:
   make-f32vector f32vector-ref f32vector-set!)
 (define-evector u32:
   make-u32vector u32vector-ref u32vector-set!)
 
-(struct sprite (x y w h r g b a tex mx my theta))
+(struct sprite-info (x y w h r g b a tex mx my theta))
 
 (define-syntax-rule (define-shader-source id path)
   (begin (define-runtime-path id-path path)
@@ -25,7 +26,6 @@
 (define-shader-source GeometryShader "ngl.geometry.glsl")
 
 (define (make-draw texture-atlas-path
-                   the-texture-atlas
                    texture-atlas-width
                    texture-atlas-height
                    w h)
@@ -36,7 +36,7 @@
   (define Transforms (f32:make-vector (* InitialSprites 3)))
 
   (define (install-object! i o)
-    (match-define (sprite x y w h r g b a tex mx my theta) o)
+    (match-define (sprite-info x y w h r g b a tex mx my theta) o)
 
     (f32:vector-safe-set! Vertices (+ (* i 4) 0) x)
     (f32:vector-safe-set! Vertices (+ (* i 4) 1) y)
@@ -50,10 +50,7 @@
 
     (for ([j (in-range 4)])
       (u32:vector-safe-set! TexCoords (+ (* i 4) j)
-                            (u32vector-ref
-                             (texture-atlas-vector
-                              the-texture-atlas)
-                             (+ (* tex 4) j))))
+                            (u32vector-ref tex j)))
 
     (f32:vector-safe-set! Transforms (+ (* i 3) 0) mx)
     (f32:vector-safe-set! Transforms (+ (* i 3) 1) my)
@@ -66,7 +63,7 @@
          offset]
         [(cons b a)
          (loop (loop offset b) a)]
-        [(? sprite? o)
+        [o
          (install-object! offset o)
          (add1 offset)])))
 

@@ -65,7 +65,6 @@
              (pretty-display
               `(define-texture
                  ,p-id
-                 the-texture-atlas
                  ,w ,h ,bm-w ,bm-h))
              (shelf-install! bm-dc))
            (λ (bm-dc)
@@ -96,24 +95,19 @@
       (pretty-display
        `(require gb/graphics/texture-atlas-lib))
       (pretty-display
-       `(define the-texture-atlas
-          (texture-atlas/size (add1 ,how-many))))
-      (pretty-display
        `(define texture-atlas-width
           ,tot-w))
       (pretty-display
        `(define texture-atlas-height
           ,tot-h))
       (pretty-display
-       `(provide the-texture-atlas
-                 texture-atlas-width
+       `(provide texture-atlas-width
                  texture-atlas-height))
       (printf "\n")
 
       (pretty-display
        `(define-texture
           none
-          the-texture-atlas
           0 0 0 0))
       
       (install! atlas-bm-dc)
