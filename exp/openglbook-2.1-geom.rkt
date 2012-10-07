@@ -34,6 +34,8 @@
               (random)
               (random))))
 
+  (define draw #f)
+
   (define-values
     (the-frame the-canvas)
     (make-fullscreen-canvas/ratio
@@ -42,8 +44,18 @@
      (λ (c)
        (define dc (send c get-dc))
        (define glctx (send dc get-gl-context))
+
        (send glctx call-as-current
              (λ ()
+               (unless draw
+                 (set! draw
+                       (make-draw
+                        texture-atlas-path
+                        the-texture-atlas
+                        texture-atlas-width texture-atlas-height
+                        (send c get-width)
+                        (send c get-height))))
+
                (set! Frame (modulo (add1 Frame) 60))
 
                (when (zero? Frame)
@@ -53,12 +65,7 @@
                                       [theta
                                        (add1 (sprite-theta o))]))))
 
-               (draw texture-atlas-path
-                     the-texture-atlas
-                     texture-atlas-width texture-atlas-height
-                     (send c get-width)
-                     (send c get-height)
-                     objects)
+               (draw objects)
                (send glctx swap-buffers))))
      (λ (k)
        (void))))

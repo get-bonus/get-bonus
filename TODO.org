@@ -376,6 +376,7 @@
   CLOSED: [2012-10-07 Sun 11:53]
 * DONE NGL - use evector
   CLOSED: [2012-10-07 Sun 12:32]
+* TODO NGL - don't use global variables
 * TODO NGL - undo changes to OpenGL state
 * TODO NGL - cache shader vector modifications to skip some parts of object tree
 * TODO NGL - cache shader vector uploads to skip some segments
