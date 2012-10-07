@@ -26,7 +26,6 @@
      (set-evector-effective-len! ev new-len)]
     [else
      (define next-len (max (* 2 actual-len) new-len))
-     (eprintf "expanding to ~a\n" next-len)
      (define new-base (make-base next-len))
      (for ([i (in-range effective-len)])
        (base-set! new-base i (base-ref base i)))
@@ -49,6 +48,11 @@
    (evector-base ev)
    k
    val))
+(define (evector-safe-set! ev k val)
+  (set-evector-length!
+   ev
+   (max (add1 k) (evector-length ev)))
+  (evector-set! ev k val))
 
 (provide
  (contract-out
@@ -76,10 +80,16 @@
    (-> evector?
        exact-nonnegative-integer?
        any/c
+       void)]
+  [evector-safe-set!
+   (-> evector?
+       exact-nonnegative-integer?
+       any/c
        void)]))
 
 (module+ test
-  (require rackunit)
+  (require rackunit
+           racket/function)
   (define N 100)
   (define e (make-evector make-bytes bytes-ref bytes-set! 10))
   (for* ([try (in-range 2)]
@@ -96,4 +106,11 @@
                    (λ () (evector-ref  e j))
                    (format "~a ~a invalid" i j)))))
   (define ep (make-evector make-bytes bytes-ref bytes-set! 10))
-  (set-evector-length! ep 100))
+  (define order (build-list N (λ (i) (random N))))
+  (for ([i (in-list order)]
+        [which (in-naturals)])
+    (evector-safe-set! ep i i)
+    (for ([j (in-list order)]
+          [_ (in-range which)])
+      (check-equal? (evector-ref ep j) j
+                    (format "~a ~a valid" i j)))))
