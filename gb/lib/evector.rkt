@@ -8,7 +8,7 @@
 (define-signature vector^
   (make-vector vector-ref vector-set!))
 (define-signature evector^ extends vector^
-  (vector? vector-length set-vector-length! vector-safe-set!))
+  (vector? vector-length set-vector-length! vector-safe-set! vector-base))
 
 ;; These are broken because contracts can't refer to other
 ;; bidings... which is totally useless and stupid.
@@ -51,6 +51,8 @@
 
   (define vector?
     evector?)
+  (define vector-base
+    evector-base)
 
   (define (make-vector initial-len)
     (evector (base:make-vector initial-len)
@@ -99,21 +101,20 @@
   (syntax-case stx ()
     [(_ prefix:
         prefix:make-vector prefix:vector-ref prefix:vector-set!)
-     (replace-context
-      stx
-      (syntax/loc stx
-        (define-values/invoke-unit
-          (compound-unit
-           (import) (export OUTPUT)
-           (link (((PREFIX : vector^))
-                  (unit (import)
-                        (export vector^)
-                        (define make-vector prefix:make-vector )
-                        (define vector-ref prefix:vector-ref)
-                        (define vector-set! prefix:vector-set!)))
-                 (((OUTPUT : evector^)) evector@ PREFIX)))
-          (import)
-          (export (prefix prefix: evector^)))))]))
+     (quasisyntax/loc stx
+       (define-values/invoke-unit
+         (compound-unit
+          (import) (export OUTPUT)
+          (link (((PREFIX : vector^))
+                 (unit (import)
+                       (export vector^)
+                       (define make-vector prefix:make-vector )
+                       (define vector-ref prefix:vector-ref)
+                       (define vector-set! prefix:vector-set!)))
+                (((OUTPUT : evector^)) evector@ PREFIX)))
+         (import)
+         (export (prefix #,(replace-context stx #'prefix:)
+                         #,(replace-context stx #'evector^)))))]))
 
 (provide
  vector^
