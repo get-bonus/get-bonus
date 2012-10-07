@@ -93,7 +93,8 @@
  (rule (and (app (compose (λ (x) (map path->string x)) explode-path)
                  (list (== r.src-pth) inner ... (app filename-extension #"rktd")))
             sprite-list)
-       (list (compiled (path-replace-suffix sprite-list #".rkt"))
+       (list (compiled "tools/sprite-digest.rkt")
+             (compiled (path-replace-suffix sprite-list #".rkt"))
              (path-replace-suffix sprite-list #""))
        (system* racket-pth
                 "-t"
@@ -101,10 +102,15 @@
                 "--"
                 (path-replace-suffix sprite-list #"")
                 sprite-list
-                r-pth
-                (if (member "copyrighted" inner)
-                  r.free-pth
-                  r-pth)))
+                r-pth)
+       (when (member "copyrighted" inner)
+         (for ([some-sprite (in-list (file->list sprite-list))])
+           (system* racket-pth
+                    "-t"
+                    "tools/sprite-digest.rkt"
+                    "--"
+                    (build-path r-pth some-sprite)
+                    (build-path r.free-pth some-sprite)))))
 
  (define ->path
    (match-lambda
@@ -122,7 +128,7 @@
        (apply system* racket-pth
               "-t"
               "tools/texture-atlas.rkt"
-              "r.free.png" "r.png" "r.rkt" 
+              "r.free.png" "r.png" "r.rkt"
               r-pth r.free-pth
               (map (λ (x)
                      (regexp-replace #rx"^r/" (path->string (->path x)) ""))

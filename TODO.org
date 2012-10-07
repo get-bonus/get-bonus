@@ -367,10 +367,11 @@
   CLOSED: [2012-10-06 Sat 16:04]
   Should work for an ffi/vector, including copying from old to
   new. Doubling when you go over the limit.
-* TODO NGL - Improve digest creation
-  Make it its own program and part of Jake file
 * DONE gb/lib/evector - make it static (like a unit)
   CLOSED: [2012-10-07 Sun 11:00]
+* DONE NGL - Improve digest creation
+  CLOSED: [2012-10-07 Sun 11:14]
+  Make it its own program and part of Jake file
 * TODO NGL - Take the geometry shader version and turn it into an abstraction
   - Initialize with a texture atlas
   - Take a tree of sprites and render it out
