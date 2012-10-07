@@ -1,12 +1,14 @@
 #lang racket/base
 (require racket/contract
          racket/match
-         racket/unit)
+         racket/unit
+         (for-syntax racket/base
+                     syntax/strip-context))
 
 (define-signature vector^
-  (vector? make-vector vector-ref vector-set! vector-length))
+  (make-vector vector-ref vector-set!))
 (define-signature evector^ extends vector^
-  (set-vector-length! vector-safe-set!))
+  (vector? vector-length set-vector-length! vector-safe-set!))
 
 ;; These are broken because contracts can't refer to other
 ;; bidings... which is totally useless and stupid.
@@ -93,52 +95,39 @@
      (max (add1 k) (vector-length ev)))
     (vector-set! ev k val)))
 
+(define-syntax (define-evector stx)
+  (syntax-case stx ()
+    [(_ prefix:
+        prefix:make-vector prefix:vector-ref prefix:vector-set!)
+     (replace-context
+      stx
+      (syntax/loc stx
+        (define-values/invoke-unit
+          (compound-unit
+           (import) (export OUTPUT)
+           (link (((PREFIX : vector^))
+                  (unit (import)
+                        (export vector^)
+                        (define make-vector prefix:make-vector )
+                        (define vector-ref prefix:vector-ref)
+                        (define vector-set! prefix:vector-set!)))
+                 (((OUTPUT : evector^)) evector@ PREFIX)))
+          (import)
+          (export (prefix prefix: evector^)))))]))
+
 (provide
  vector^
  evector^
- evector@)
-
-(define-syntax-rule
-  (define-evector prefix:
-    (prefix:vector? prefix:make-vector prefix:vector-ref
-                    prefix:vector-set! prefix:vector-length))
-  (begin
-    (define-unit prefix@
-      (import)
-      (export vector^)
-      (define vector? prefix:vector?)
-      (define make-vector prefix:make-vector )
-      (define vector-ref prefix:vector-ref)
-      (define vector-set! prefix:vector-set!)
-      (define vector-length prefix:vector-length))
-
-    (define-values/invoke-unit 
-      (compound-unit/infer 
-       (import) (export evector^)
-       (link (((PREFIX : vector^)) prefix@)
-             (() evector@ PREFIX)))
-      (import)
-      (export (prefix prefix: evector^)))))
+ evector@
+ define-evector)
 
 (module+ test
   (require rackunit)
 
-  (define-unit bytes@
-    (import)
-    (export vector^)
-    (define vector? bytes?)
-    (define make-vector make-bytes)
-    (define vector-ref bytes-ref)
-    (define vector-set! bytes-set!)
-    (define vector-length bytes-length))
-
-  (define-values/invoke-unit 
-    (compound-unit/infer 
-     (import) (export evector^)
-     (link (((BYTES : vector^)) bytes@)
-           (() evector@ BYTES)))
-    (import)
-    (export (prefix e: evector^)))
+  (define-evector e:
+    make-bytes bytes-ref bytes-set!)
+  (define-evector v:
+    make-vector vector-ref vector-set!)
 
   (define N 100)
   (define e (e:make-vector 10))
