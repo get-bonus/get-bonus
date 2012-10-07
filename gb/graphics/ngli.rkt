@@ -1,6 +1,6 @@
 #lang racket/base
 (require gb/graphics/ngl
-         ffi/vector
+         gb/graphics/texture-atlas-lib
          (for-syntax racket/base
                      syntax/parse))
 
@@ -14,7 +14,7 @@
 (define current-b (make-parameter 0.0))
 (define current-a (make-parameter 1.0))
 
-(define none (u32vector 0 0 0 0))
+(define none (texture 0 0 0 0))
 
 (define (rectangle w h [tex none])
   (sprite-info (current-dx) (current-dy)
@@ -25,7 +25,7 @@
                (current-theta)))
 (define (sprite* r g b a tex)
   (sprite-info (current-dx) (current-dy)
-               (* 1.0 (u32vector-ref tex 2)) (* 1.0 (u32vector-ref tex 3))
+               (* 1.0 (texture-width tex)) (* 1.0 (texture-height tex))
                r g b a
                tex
                (current-mx) (current-my)
