@@ -404,6 +404,9 @@
   Or, have layers in "absolute" or "relative" coords
 * TODO NGL - Fix texel specifications 
   There are blurriness (the next sprite?) on the edges
+* TODO NGL - Some random number of sprites aren't drawn at all
+  That's why my demos have to make tons of sprites for them to show
+  up (try just drawing one)
 * TODO NGL - String rendering using the pre-rendered fonts
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
