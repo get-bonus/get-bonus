@@ -404,6 +404,8 @@
   Or, have layers in "absolute" or "relative" coords
 * TODO NGL - Fix texel specifications 
   There are blurriness (the next sprite?) on the edges
+
+  (2 * i + 1) / (2 * n) ?
 * TODO NGL - Some random number of sprites aren't drawn at all
   That's why my demos have to make tons of sprites for them to show
   up (try just drawing one)
