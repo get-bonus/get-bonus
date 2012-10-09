@@ -397,7 +397,8 @@
   Rather than using define-texture
 
   And optimize given that I won't be using the indexing system
-* TODO NGL - Deal with the model view projection in the shader
+* DONE NGL - Deal with the model view projection in the shader
+  CLOSED: [2012-10-09 Tue 14:45]
   My games rely on a different resolution than the actual screen
 
   Or, have layers in "absolute" or "relative" coords
@@ -479,6 +480,9 @@
    (frame-time! (- (current-inexact-milliseconds) frame-start))
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
+* TODO NGL - Add absolute and relative layers
+  For example, the score display is absolute, but the game is
+  relative (my games don't use this concept yet)
 * TODO NGL - add contracts to ngl and ngli
 * TODO NGL - Investigate the interaction of depth testing with transparency
   At the very least, I should be able to have fully opaque or fully

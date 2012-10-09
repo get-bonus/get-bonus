@@ -28,7 +28,7 @@
 (define (make-draw texture-atlas-path
                    texture-atlas-width
                    texture-atlas-height
-                   w h)
+                   width height)
   (define InitialSprites (* 2 512))
   (define Vertices (f32:make-vector (* InitialSprites 4)))
   (define Colors (f32:make-vector (* InitialSprites 4)))
@@ -109,6 +109,11 @@
                texture-atlas-width)
   (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasHeight")
                texture-atlas-height)
+  (printf "~a\n" (list width height))
+  (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
+               width)
+  (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
+               height)
   (glUseProgram 0)
 
   ;; Create VBOs
@@ -152,8 +157,6 @@
   (glBindVertexArray 0)
 
   (define (draw objects)
-    (glViewport 0 0 w h)
-
     (glUseProgram ProgramId)
 
     (glBindVertexArray VaoId)

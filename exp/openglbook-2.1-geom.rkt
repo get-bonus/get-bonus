@@ -14,11 +14,21 @@
 
   (define HowManySprites (* 4 512))
   (define objects
+    #;(build-list 
+     HowManySprites
+     (λ (i)
+       (transform
+        #:d (if (even? i) 8.0 4.0) 4.5
+        (rectangle 
+         (/ 1.0 16.0)
+         (/ 1.0 9.0)
+         tennis/ball))))
+    
     (for/list ([i (in-range HowManySprites)])
       (transform
        #:d
-       (random-in -1.0 1.0)
-       (random-in -1.0 1.0)
+       (random-in 5.0 10.0)
+       (random-in 3.0  6.0)
        #:rgba
        (random) (random)
        (random) (random)
@@ -54,8 +64,7 @@
                        (make-draw
                         texture-atlas-path
                         texture-atlas-width texture-atlas-height
-                        (send c get-width)
-                        (send c get-height))))
+                        16.0 9.0)))
 
                (set! Frame (modulo (add1 Frame) 60))
 
