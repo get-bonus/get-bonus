@@ -14,16 +14,39 @@
 
   (define HowManySprites (* 4 512))
   (define objects
-    #;(build-list 
+
+    (build-list
      HowManySprites
      (λ (i)
        (transform
-        #:d (if (even? i) 8.0 4.0) 4.5
-        (rectangle 
-         (/ 1.0 16.0)
-         (/ 1.0 9.0)
-         tennis/ball))))
-    
+        #:d 8.0 4.5
+        (rectangle 1.0 1.0
+                   tennis/ball
+                   #;
+                   fonts/modern/12/T))))
+
+    #;
+
+    (transform
+     #:d 8.0 4.5
+     (list
+    (rectangle 1.0 1.0
+                 fonts/modern/12/T)
+      (transform
+       #:dx 1.0
+       (rectangle 1.0 1.0
+                  fonts/modern/12/E))
+      (transform
+       #:dx 2.0
+       (rectangle 1.0 1.0
+                  fonts/modern/12/S))
+      (transform
+       #:dx 3.0
+       (rectangle 1.0 1.0
+                  fonts/modern/12/T))))
+
+    #;
+
     (for/list ([i (in-range HowManySprites)])
       (transform
        #:d

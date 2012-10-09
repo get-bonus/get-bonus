@@ -12,7 +12,7 @@
 (define current-r (make-parameter 0.0))
 (define current-g (make-parameter 0.0))
 (define current-b (make-parameter 0.0))
-(define current-a (make-parameter 1.0))
+(define current-a (make-parameter 0.0))
 
 (define none (texture 0 0 0 0))
 
@@ -31,7 +31,7 @@
                (current-mx) (current-my)
                (current-theta)))
 (define (sprite tex)
-  (sprite* 0.0 0.0 0.0 1.0 tex))
+  (sprite* 0.0 0.0 0.0 0.0 tex))
 (define (sprite/tint tex)
   (sprite* (current-r) (current-g) (current-b) (current-a) tex))
 

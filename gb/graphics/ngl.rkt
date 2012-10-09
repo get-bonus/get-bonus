@@ -157,8 +157,6 @@
   (glBindVertexArray 0)
 
   (define (draw objects)
-    (glUseProgram ProgramId)
-
     (glBindVertexArray VaoId)
 
     (glEnableVertexAttribArray 0)
@@ -168,13 +166,6 @@
 
     (glBindTexture GL_TEXTURE_2D
                    TextureAtlasId)
-
-    (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
-
-    (glEnable GL_DEPTH_TEST)
-    (glClearColor 1.0 1.0 1.0 0.0)
-
-    (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
     (install-objects! objects)
 
@@ -188,6 +179,20 @@
     (load-buffer-data f32:vector-length f32:vector-base
                       TransformBufferId Transforms)
     (glBindBuffer GL_ARRAY_BUFFER 0)
+
+    (glUseProgram ProgramId)
+
+    (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+
+    (glEnable GL_DEPTH_TEST)
+    (glClearColor 1.0 1.0 1.0 0.0)
+
+    (glEnable GL_BLEND)
+    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
+    (glEnable GL_ALPHA_TEST)
+    (glAlphaFunc GL_GREATER 0.0)
+
+    (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
     (glDrawArrays GL_POINTS 0 (/ (f32:vector-length Vertices) 4))
 
