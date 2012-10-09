@@ -402,6 +402,8 @@
   My games rely on a different resolution than the actual screen
 
   Or, have layers in "absolute" or "relative" coords
+* TODO NGL - Fix texel specifications 
+  There are blurriness (the next sprite?) on the edges
 * TODO NGL - String rendering using the pre-rendered fonts
 * TODO NGL / Fullscreen / Big-bang - New architecture
 

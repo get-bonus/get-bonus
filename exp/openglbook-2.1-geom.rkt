@@ -86,7 +86,7 @@
                  (set! draw
                        (make-draw
                         texture-atlas-path
-                        texture-atlas-width texture-atlas-height
+                        texture-atlas-size
                         16.0 9.0)))
 
                (set! Frame (modulo (add1 Frame) 60))

@@ -1,8 +1,7 @@
 #lang racket/base
 (require gb/graphics/texture-atlas-lib)
-(define texture-atlas-width 1161)
-(define texture-atlas-height 826)
-(provide texture-atlas-width texture-atlas-height)
+(define texture-atlas-size 2048)
+(provide texture-atlas-size)
 
 (define-texture none 0 0 0 0)
 (define-texture tennis/bg 156 583 432 243)

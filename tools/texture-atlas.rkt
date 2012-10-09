@@ -36,7 +36,7 @@
   (define how-many (length pngs))
   (define shelves (inexact->exact (ceiling (sqrt how-many))))
 
-  (define-values (install! free-install! tot-w tot-h)
+  (define-values (install! free-install! s-tot-w s-tot-h)
     (for/fold ([install! void]
                [free-install! void]
                [max-w 0]
@@ -83,11 +83,19 @@
        (max max-w shelf-w)
        (+ h shelf-h))))
 
-  (define atlas-bm (make-object bitmap% tot-w tot-h #f #t))
+  (define tex-size
+    (expt
+     2
+     (inexact->exact
+      (ceiling
+       (/ (log (max s-tot-w s-tot-h))
+          (log 2))))))
+
+  (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas-bm-dc (new bitmap-dc% [bitmap atlas-bm]))
-  (define atlas.free-bm (make-object bitmap% tot-w tot-h #f #t))
+  (define atlas.free-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas.free-bm-dc (new bitmap-dc% [bitmap atlas.free-bm]))
-  
+
   (with-output-to-file atlas.rkt
     #:exists 'replace
     (λ ()
@@ -95,21 +103,17 @@
       (pretty-display
        `(require gb/graphics/texture-atlas-lib))
       (pretty-display
-       `(define texture-atlas-width
-          ,tot-w))
+       `(define texture-atlas-size
+          ,tex-size))
       (pretty-display
-       `(define texture-atlas-height
-          ,tot-h))
-      (pretty-display
-       `(provide texture-atlas-width
-                 texture-atlas-height))
+       `(provide texture-atlas-size))
       (printf "\n")
 
       (pretty-display
        `(define-texture
           none
           0 0 0 0))
-      
+
       (install! atlas-bm-dc)
       (free-install! atlas.free-bm-dc)))
 

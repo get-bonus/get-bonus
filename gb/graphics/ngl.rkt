@@ -26,8 +26,7 @@
 (define-shader-source GeometryShader "ngl.geometry.glsl")
 
 (define (make-draw texture-atlas-path
-                   texture-atlas-width
-                   texture-atlas-height
+                   texture-atlas-size
                    width height)
   (define InitialSprites (* 2 512))
   (define Vertices (f32:make-vector (* InitialSprites 4)))
@@ -105,10 +104,8 @@
   (print-shader-log glGetProgramInfoLog 'Program ProgramId)
 
   (glUseProgram ProgramId)
-  (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasWidth")
-               texture-atlas-width)
-  (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasHeight")
-               texture-atlas-height)
+  (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasSize")
+               texture-atlas-size)
   (printf "~a\n" (list width height))
   (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
                width)
