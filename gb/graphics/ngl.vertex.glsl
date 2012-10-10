@@ -22,8 +22,8 @@ void main(void)
   vertexData.Color = in_Color;
 
   vertexData.TexCoord =
-    vec4(float(in_TexCoord.x) / float(TextureAtlasSize),
-         float(in_TexCoord.y) / float(TextureAtlasSize),
-         float(in_TexCoord.z) / float(TextureAtlasSize),
-         float(in_TexCoord.w) / float(TextureAtlasSize));
+    vec4(float(in_TexCoord.x),
+         float(in_TexCoord.y),
+         float(in_TexCoord.z),
+         float(in_TexCoord.w));
 }

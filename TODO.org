@@ -406,9 +406,21 @@
   There are blurriness (the next sprite?) on the edges
 
   (2 * i + 1) / (2 * n) ?
+
+  Maybe change the texture mode to not blur?
+
+  Can't use integers in fragment, because it's not a flat shade
+
+  I tried to switch to POW-of-2 texture atlases... the code is
+  simpler, which is nice and the blurring is not so bad, but it isn't
+  fixed. I think this is a good change though, because I know I'll
+  never have floating-point representation weirdness.
+
+  I was able to get around this quite a lot, but it is still a bit
+  messed up, because the bottom of the sprites is being chopped off
 * TODO NGL - Some random number of sprites aren't drawn at all
   That's why my demos have to make tons of sprites for them to show
-  up (try just drawing one)
+  up (try just drawing one, two, three, four, etc, to test)
 * TODO NGL - String rendering using the pre-rendered fonts
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
