@@ -56,9 +56,7 @@
          [char-max-y 0])
         ([char-dc (in-list char-dcs)]
          [x (in-range MAX-W)]
-         #:unless (< char-min-x x char-max-x)
-         [y (in-range MAX-H)]
-         #:unless (< char-min-y y char-max-y))
+         [y (in-range MAX-H)])
       (send char-dc get-pixel x y char-color%)
       (match (send char-color% red)
         [255
