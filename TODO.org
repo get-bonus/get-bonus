@@ -402,7 +402,8 @@
   My games rely on a different resolution than the actual screen
 
   Or, have layers in "absolute" or "relative" coords
-* TODO NGL - Fix texel specifications 
+* DONE NGL - Fix texel specifications 
+  CLOSED: [2012-10-10 Wed 19:17]
   There are blurriness (the next sprite?) on the edges
 
   (2 * i + 1) / (2 * n) ?
