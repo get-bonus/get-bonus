@@ -106,7 +106,6 @@
   (glUseProgram ProgramId)
   (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasSize")
                texture-atlas-size)
-  (printf "~a\n" (list width height))
   (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
                width)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
@@ -118,10 +117,10 @@
     (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
-  (define (load-buffer-data f32:vector-length f32:vector-base VboId Vertices)
+  (define (load-buffer-data f32:vector-length f32:vector-base gl-type VboId Vertices)
     (glBindBuffer GL_ARRAY_BUFFER VboId)
     (glBufferData GL_ARRAY_BUFFER
-                  (f32:vector-length Vertices)
+                  (* (gl-type-sizeof gl-type) (f32:vector-length Vertices))
                   (f32:vector-base Vertices)
                   GL_STREAM_DRAW))
 
@@ -131,7 +130,7 @@
     (begin (define VboId
              (u32vector-ref (glGenBuffers 1) 0))
            (load-buffer-data f32:vector-length f32:vector-base
-                             VboId Vertices)
+                             type VboId Vertices)
            (cond
              [(= type GL_FLOAT)
               (glVertexAttribPointer Index HowMany type
@@ -146,7 +145,7 @@
   (define-vertex-attrib-array f32:vector-length f32:vector-base
     ColorBufferId Colors 1 4 GL_FLOAT)
   (define-vertex-attrib-array u32:vector-length u32:vector-base
-    TexCoordsBufferId TexCoords 2 4 GL_INT)
+    TexCoordsBufferId TexCoords 2 4 GL_UNSIGNED_INT)
   (define-vertex-attrib-array f32:vector-length f32:vector-base
     TransformBufferId Transforms 3 3 GL_FLOAT)
   (glBindBuffer GL_ARRAY_BUFFER 0)
@@ -164,17 +163,17 @@
     (glBindTexture GL_TEXTURE_2D
                    TextureAtlasId)
 
-    (install-objects! objects)
+    (define offset (install-objects! objects))
 
     ;; Reload all data every frame
     (load-buffer-data f32:vector-length f32:vector-base
-                      VboId Vertices)
+                      GL_FLOAT VboId Vertices)
     (load-buffer-data f32:vector-length f32:vector-base
-                      ColorBufferId Colors)
+                      GL_FLOAT ColorBufferId Colors)
     (load-buffer-data u32:vector-length u32:vector-base
-                      TexCoordsBufferId TexCoords)
+                      GL_UNSIGNED_INT TexCoordsBufferId TexCoords)
     (load-buffer-data f32:vector-length f32:vector-base
-                      TransformBufferId Transforms)
+                      GL_FLOAT TransformBufferId Transforms)
     (glBindBuffer GL_ARRAY_BUFFER 0)
 
     (glUseProgram ProgramId)
@@ -191,7 +190,9 @@
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
-    (glDrawArrays GL_POINTS 0 (/ (f32:vector-length Vertices) 4))
+    (define count 
+      (/ (f32:vector-length Vertices) 4))
+    (glDrawArrays GL_POINTS 0 count)
 
     (glPopAttrib)
 

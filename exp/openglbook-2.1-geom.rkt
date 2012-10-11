@@ -25,33 +25,26 @@
                    tennis/ball
                    #;
                    fonts/modern/12/T))))
-
     
-
-    (build-list
-     HowManySprites
-     (λ (i)
-       (match (modulo i 4)
-         [0
-          (transform
-           #:d 8.0 4.5
-           (rectangle 1.0 1.0
-                      fonts/modern/12/T))]
-         [1
-          (transform
-           #:d 10.0 4.5
-           (rectangle 1.0 1.0
-                      fonts/modern/12/E))]
-         [2
-          (transform
-           #:d 12.0 4.5
-           (rectangle 1.0 1.0
-                      fonts/modern/12/S))]
-         [3
-          (transform
-           #:d 14.0 4.5
-           (rectangle 1.0 1.0
-                      fonts/modern/12/T))])))
+    (list
+     (transform
+      #:d 8.0 4.5
+      (rectangle 1.0 1.0
+                 fonts/modern/12/T))     
+     (transform
+      #:d 10.0 4.5
+      (rectangle 1.0 1.0
+                 fonts/modern/12/E))
+     
+     (transform
+      #:d 12.0 4.5
+      (rectangle 1.0 1.0
+                 fonts/modern/12/S))
+     
+     (transform
+      #:d 14.0 4.5
+      (rectangle 1.0 1.0
+                 fonts/modern/12/T)))
 
 #;
   

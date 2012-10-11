@@ -419,7 +419,8 @@
 
   I was able to get around this quite a lot, but it is still a bit
   messed up, because the bottom of the sprites is being chopped off
-* TODO NGL - Some random number of sprites aren't drawn at all
+* DONE NGL - Some random number of sprites aren't drawn at all
+  CLOSED: [2012-10-11 Thu 15:40]
   That's why my demos have to make tons of sprites for them to show
   up (try just drawing one, two, three, four, etc, to test)
 * TODO NGL - String rendering using the pre-rendered fonts
@@ -501,6 +502,7 @@
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
 * TODO NGL - Use with actual games that I have
+* TODO NGL - change in_TexCoord to float
 * TODO make-font - support non-alphanumeric
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is
