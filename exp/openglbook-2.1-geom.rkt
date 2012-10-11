@@ -13,19 +13,7 @@
   (define Frame 0)
 
   (define HowManySprites (* 4 512))
-  (define objects
-
-#;
-    (build-list
-     HowManySprites
-     (λ (i)
-       (transform
-        #:d 8.0 4.5
-        (rectangle 1.0 1.0
-                   tennis/ball
-                   #;
-                   fonts/modern/12/T))))
-    
+  (define objects    
     (list
      (transform
       #:d 8.0 4.5
@@ -45,9 +33,7 @@
       #:d 11.0 4.5
       (rectangle 0.5 0.5
                  fonts/modern/12/T)))
-
 #;
-  
     (for/list ([i (in-range HowManySprites)])
       (transform
        #:d
