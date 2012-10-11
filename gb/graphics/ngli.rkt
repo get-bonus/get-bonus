@@ -16,16 +16,16 @@
 
 (define none (texture 0 0 0 0))
 
-(define (rectangle w h [tex none])
+(define (rectangle hw hh [tex none])
   (sprite-info (current-dx) (current-dy)
-               w h
+               hw hh
                (current-r) (current-g) (current-b) (current-a)
                tex
                (current-mx) (current-my)
                (current-theta)))
 (define (sprite* r g b a tex)
   (sprite-info (current-dx) (current-dy)
-               (* 1.0 (texture-width tex)) (* 1.0 (texture-height tex))
+               (* 0.5 (texture-width tex)) (* 0.5 (texture-height tex))
                r g b a
                tex
                (current-mx) (current-my)

@@ -29,21 +29,21 @@
     (list
      (transform
       #:d 8.0 4.5
-      (rectangle 1.0 1.0
+      (rectangle 0.5 0.5
                  fonts/modern/12/T))     
      (transform
-      #:d 10.0 4.5
-      (rectangle 1.0 1.0
+      #:d 9.0 4.5
+      (rectangle 0.5 0.5
                  fonts/modern/12/E))
      
      (transform
-      #:d 12.0 4.5
-      (rectangle 1.0 1.0
+      #:d 10.0 4.5
+      (rectangle 0.5 0.5
                  fonts/modern/12/S))
      
      (transform
-      #:d 14.0 4.5
-      (rectangle 1.0 1.0
+      #:d 11.0 4.5
+      (rectangle 0.5 0.5
                  fonts/modern/12/T)))
 
 #;
