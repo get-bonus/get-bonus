@@ -9,10 +9,10 @@
 
 (module+ main
   (command-line #:program "make-font"
-                #:args (r family-str size-str)
-                (main r (string->symbol family-str) (string->number size-str))))
+                #:args (r family-str size-str chars)
+                (main r (string->symbol family-str) (string->number size-str) chars)))
 
-(define (main r family size)
+(define (main r family size chars)
   (define MAX-W 150)
   (define MAX-H 150)
 
@@ -27,9 +27,6 @@
                 (number->string size)))
 
   (make-directory* font-dir)
-  
-  (define chars
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 
   (define char-dcs
     (for/list ([char (in-string chars)])

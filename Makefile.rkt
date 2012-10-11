@@ -75,11 +75,13 @@
  (rule (app (compose (λ (x) (map path->string x)) explode-path)
             (list (== r-pth) "fonts" family size _))
        (list (compiled "tools/make-font.rkt"))
-       (system* racket-pth "-t" "tools/make-font.rkt" r-pth family size))
+       (system* racket-pth "-t" "tools/make-font.rkt" r-pth family size FONT-CHARS))
 
+ (define FONT-CHARS
+   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
  (define FONT-FILES
    (for*/list ([dir (in-list FONT-DIRS)]
-               [letter (in-string "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")])
+               [letter (in-string FONT-CHARS)])
      (build-path dir (format "~a.png" letter))))
 
  (define r.src-pth
