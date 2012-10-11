@@ -13,5 +13,6 @@ void main(void)
 
   // XXX Do proper blending, allow color to set the alpha, etcs
   vec2 TexCoord_uv = vec2(floor(TexCoord.x)+0.5, floor(TexCoord.y)+0.5) / TextureAtlasSize;
+  // vec2 TexCoord_uv = TexCoord / TextureAtlasSize;
   out_Color = Color + texture2D(TextureAtlas, TexCoord_uv);
 }

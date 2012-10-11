@@ -500,6 +500,8 @@
    (frame-time! (- (current-inexact-milliseconds) frame-start))
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
+* TODO NGL - Use with actual games that I have
+* TODO make-font - support non-alphanumeric
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
@@ -536,7 +538,6 @@
   of memory is miniscule.
 * TODO NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
 * TODO NGL - Consider using only integers so they are always pixel aligned
-* TODO NGL - Use with actual games that I have
 * TODO NGL - Figure out the proper way to do texture/color blending
   Right now I only support fully color or fully texture. It would be
   nice to support a tinted texture
