@@ -1,6 +1,6 @@
 #version 330
 #extension GL_EXT_geometry_shader4 : enable
- 
+
 layout (points) in;
 layout (triangle_strip, max_vertices=4) out;
 
@@ -8,7 +8,7 @@ in VertexData {
   vec4 Color;
   vec4 TexCoord;
   float Rotation;
-} vertexData[];
+} vertexData[1];
 
 uniform float ViewportWidth;
 uniform float ViewportHeight;
@@ -48,55 +48,54 @@ void main()
                                 0.0, ViewportHeight,
                                 1.0, -1.0);
 
-  for(int i = 0; i < gl_VerticesIn; i++)
-  {
-    vec4 pos = gl_in[i].gl_Position;
+  int i = 0;
 
-    float x = pos.x;
-    float y = pos.y;
-    mat4 TranslateMatrix = glTranslate(x, y, 0.0);
+  vec4 pos = gl_in[i].gl_Position;
 
-    float Angle = vertexData[i].Rotation;
-    mat4 RotationMatrix = glRotate(Angle, 0.0, 0.0, 1.0);
+  float x = pos.x;
+  float y = pos.y;
+  mat4 TranslateMatrix = glTranslate(x, y, 0.0);
 
-    mat4 ZeMatrix = RotationMatrix * TranslateMatrix * ViewportMatrix;
+  float Angle = vertexData[i].Rotation;
+  mat4 RotationMatrix = glRotate(Angle, 0.0, 0.0, 1.0);
 
-    float hw = pos.z;
-    float hh = pos.w;
-    vec4 ul = vec4(- hw, + hh, 0.0, 1.0) * ZeMatrix;
-    vec4 ur = vec4(+ hw, + hh, 0.0, 1.0) * ZeMatrix;
-    vec4 ll = vec4(- hw, - hh, 0.0, 1.0) * ZeMatrix;
-    vec4 lr = vec4(+ hw, - hh, 0.0, 1.0) * ZeMatrix;
+  mat4 ZeMatrix = RotationMatrix * TranslateMatrix * ViewportMatrix;
 
-    vec4 Tpos = vertexData[i].TexCoord;
-    float Tllx = Tpos.x;
-    float Tlly = Tpos.y;
-    float Tw = Tpos.z;
-    float Th = Tpos.w;
+  float hw = pos.z;
+  float hh = pos.w;
+  vec4 ul = vec4(- hw, + hh, 0.0, 1.0) * ZeMatrix;
+  vec4 ur = vec4(+ hw, + hh, 0.0, 1.0) * ZeMatrix;
+  vec4 ll = vec4(- hw, - hh, 0.0, 1.0) * ZeMatrix;
+  vec4 lr = vec4(+ hw, - hh, 0.0, 1.0) * ZeMatrix;
 
-    vec2 Tll = vec2(Tllx, Tlly);
-    vec2 Tul = vec2(Tllx, Tlly + Th);
-    vec2 Tur = vec2(Tllx + Tw, Tlly + Th);
-    vec2 Tlr = vec2(Tllx + Tw, Tlly);
+  vec4 Tpos = vertexData[i].TexCoord;
+  float Tllx = Tpos.x;
+  float Tlly = Tpos.y;
+  float Tw = Tpos.z;
+  float Th = Tpos.w;
 
-    Color = vertexData[i].Color;
+  vec2 Tll = vec2(Tllx, Tlly);
+  vec2 Tul = vec2(Tllx, Tlly + Th);
+  vec2 Tur = vec2(Tllx + Tw, Tlly + Th);
+  vec2 Tlr = vec2(Tllx + Tw, Tlly);
 
-    gl_Position = ul;
-    TexCoord = Tll;
-    EmitVertex();
+  Color = vertexData[i].Color;
 
-    gl_Position = ur;
-    TexCoord = Tlr;
-    EmitVertex();
+  gl_Position = ul;
+  TexCoord = Tll;
+  EmitVertex();
 
-    gl_Position = ll;
-    TexCoord = Tul;
-    EmitVertex();
+  gl_Position = ur;
+  TexCoord = Tlr;
+  EmitVertex();
 
-    gl_Position = lr;
-    TexCoord = Tur;
-    EmitVertex();
+  gl_Position = ll;
+  TexCoord = Tul;
+  EmitVertex();
 
-    EndPrimitive();
-  }
+  gl_Position = lr;
+  TexCoord = Tur;
+  EmitVertex();
+
+  EndPrimitive();
 }

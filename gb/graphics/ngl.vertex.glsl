@@ -5,8 +5,6 @@ layout(location=1) in vec4 in_Color;
 layout(location=2) in uvec4 in_TexCoord;
 layout(location=3) in vec3 in_Transforms;
 
-uniform int TextureAtlasSize;
-
 out VertexData {
   vec4 Color;
   vec4 TexCoord;
