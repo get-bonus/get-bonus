@@ -36,7 +36,7 @@
   (define (png-h v)
     (vector-ref v 3))  
 
-  (local-require gb/lib/pow2-bin)
+  (local-require gb/lib/korf-bin)
   (define-values
     (tex-size places)
     (pack png-w png-h

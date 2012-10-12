@@ -106,64 +106,20 @@
           [#f (esc #f)]
           [(? layout? ly) ly]))))
 
-  (cond
-    [(empty? l)
-     (values 0 empty)]
-    [else
-     (define l/sorted
-       (sort l > #:key e-h))
-     (define (e-area e)
-       (* (e-w e) (e-h e)))
-     (define total-width
-       (apply + (map e-w l/sorted)))
-     (define total-area
-       (apply + (map e-area l/sorted)))
-     (define narrowest-w
-       (apply min (map e-w l/sorted)))
+  (define l/sorted
+    (sort l > #:key e-h))
 
-     (define-values
-       (best-pow2 best-ly)
-       (let loop ([best-pow2 +inf.0]
-                  [best-ly #f]
-                  [try-pow2
-                   (num->pow2
-                    (max total-width
-                         (e-h (first l/sorted))))])
-         (printf "~a\n" (list best-pow2 try-pow2))
-         (cond
-           [(< (expt 2 try-pow2) narrowest-w)
-            (printf "narrowest\n")
-            (values best-pow2 best-ly)]
-           [(< total-area
-               (expt 2 (add1 try-pow2)))
-            (printf "total-area\n")
-            (values best-pow2 best-ly)]
-           [(> try-pow2
-               best-pow2)
-            (printf "try > best\n")
-            (loop best-pow2 best-ly
-                  (sub1 try-pow2))]
-           [else
-            (match (place (expt 2 try-pow2) (expt 2 try-pow2) l/sorted)
-              [#f
-               (printf "try not feasible\n")
-               (values best-pow2 best-ly)]
-              [(? layout? result-ly)
-               (define result-w (layout-w result-ly))
-               (define result-h (layout-h result-ly))
-               (define result-pow2
-                 (num->pow2
-                  (max result-w result-h)))
-               (cond
-                 [(< result-pow2 best-pow2)
-                  (loop result-pow2 result-ly
-                        (sub1 result-pow2))]
-                 [else
-                  (printf "try not better\n")
-                  (values best-pow2 best-ly)])])])))
+  (define-values (best-pow2 best-ly)
+    (let loop ([try-pow2 0])
+      (printf "trying pow2 = ~a\n" try-pow2)
+      (match (place (expt 2 try-pow2) (expt 2 try-pow2) l/sorted)
+        [#f
+         (loop (add1 try-pow2))]
+        [(? layout? result-ly)
+         (values try-pow2 result-ly)])))
 
-     (values (expt 2 best-pow2)
-             (layout->placements 0 0 best-ly))]))
+  (values (expt 2 best-pow2)
+          (layout->placements 0 0 best-ly)))
 
 (provide
  (struct-out placement)

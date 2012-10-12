@@ -430,6 +430,37 @@
   CLOSED: [2012-10-11 Thu 20:04]
 * DONE NGL - String rendering using the pre-rendered fonts
   CLOSED: [2012-10-11 Thu 20:04]
+* DONE NGL - Make texture atlas creation more efficient
+  CLOSED: [2012-10-12 Fri 00:04]
+  I changed from using the "shelf" algorithm to the power-of-2 tree
+  algorithm. The code in the texture-atlas is much nicer, although
+  the actual pow2-bin-pack is pretty whack. It turns out that this is
+  a worse implementation:
+
+  - Original "shelf": 180K
+  - Pow2 smallest-to-biggest: 192K
+  - Pow2 biggest-to-smallest: 188K
+
+  But I think I will keep it because I prefer it.
+
+  What I would like to do in the future is:
+  - define a better interface to different bin packers, so I can keep
+    the texture atlas code in its current beautiful state.
+  - use the above (and below) implementations (plus maybe the NP
+    complete one?
+  - find the best or try each of them and select the smallest.
+
+  I made the interface and ended up implementing this:
+
+    http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
+
+  And I got down to 160K! I think it is probably basically optimal!
+
+  I'll leave these ideas here for the millennium:
+
+  http://clb.demon.fi/projects/rectangle-bin-packing
+
+  or just use Nvidia's tools
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
   fullscreen : (void -> void) 
@@ -555,30 +586,6 @@
 
   (Probably not useful, because I hit very high frame rates even when
   updating vectors thousands of elements long)
-* TODO NGL - Make texture atlas creation more efficient
-  I changed from using the "shelf" algorithm to the power-of-2 tree
-  algorithm. The code in the texture-atlas is much nicer, although
-  the actual pow2-bin-pack is pretty whack. It turns out that this is
-  a worse implementation:
-
-  - Original "shelf": 180K
-  - Pow2 smallest-to-biggest: 192K
-  - Pow2 biggest-to-smallest: 188K
-
-  But I think I will keep it because I prefer it.
-
-  What I would like to do in the future is:
-  - define a better interface to different bin packers, so I can keep
-    the texture atlas code in its current beautiful state.
-  - use the above (and below) implementations (plus maybe the NP
-    complete one?
-  - find the best or try each of them and select the smallest.
-
-    http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
-
-  http://clb.demon.fi/projects/rectangle-bin-packing
-
-  or just use Nvidia's tools
 * TODO GLFW - Wait for getting the string identifiers of joysticks
 * TODO GLFW - Wait for consistent joystick state intra-frame
   So glfwPollEvents calls pollJoystickEvents and Win32 caches
