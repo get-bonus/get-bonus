@@ -574,6 +574,8 @@
     complete one?
   - find the best or try each of them and select the smallest.
 
+    http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
+
   http://clb.demon.fi/projects/rectangle-bin-packing
 
   or just use Nvidia's tools

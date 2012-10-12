@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/match
+         racket/list
          racket/contract)
 (module+ test
   (require rackunit))
@@ -604,27 +605,44 @@
   (check-equal? (num->pow2 5) 3)
   (check-equal? (num->pow2 10) 4))
 
-(define (pack e-size l)
-  (for/fold ([t (tree-empty)])
-      ([i (in-list l)])
-    (define pow
-      (num->pow2 
-       (e-size i)))
-    (tree-join t
-               (tree-singleton pow i))))
+(struct placement (x y e))
+
+(define (tree->placements w h t)
+  (match t
+    [(tree-empty)
+     empty]
+    [(tree-branch pow ul ur ll lr)
+     (define unit (expt 2 (sub1 pow)))
+     (append (tree->placements w h ul)
+             (tree->placements (+ w unit) h ur)
+             (tree->placements w (+ h unit) ll)
+             (tree->placements (+ w unit) (+ h unit) lr))]
+    [(tree-singleton _ e)
+     (list (placement w h e))]))
+
+(define (pack e-x e-y l)
+  (define (e-size e)
+    (max (e-x e)
+         (e-y e)))
+  (define t
+    (for/fold ([t (tree-empty)])
+        ([i (in-list l)])
+      (define pow
+        (num->pow2
+         (e-size i)))
+      (tree-join t
+                 (tree-singleton pow i))))
+  (values (expt 2 (tree-size t))
+          (tree->placements 0 0 t)))
 
 (provide
- (struct-out tree-singleton)
- (struct-out tree-empty)
- (struct-out tree-branch)
+ (struct-out placement)
  (contract-out
-  [tree-size
-   (-> tree?
-       number?)]
   [pack
    (-> (-> any/c number?)
+       (-> any/c number?)
        (listof any/c)
-       tree?)]))
+       (values number? (listof placement?)))]))
 
 (module+ main
   (define N 30)

@@ -32,53 +32,46 @@
           bm))
       (vector p bm bm-w bm-h free-bm)))
 
+  (define (png-w v)
+    (vector-ref v 2))
+  (define (png-h v)
+    (vector-ref v 3))
   (define (png-size v)
-    (max (vector-ref v 2)
-         (vector-ref v 3)))
+    (max (png-w v) (png-h v)))
   (define pngs+bms/sorted
     (sort pngs+bms >=
           #:key
           png-size))
 
-  (define t
-    (pack png-size
+  (define-values
+    (tex-size places)
+    (pack png-w png-h
           pngs+bms/sorted))
-
-  (define tex-size
-    (expt 2 (tree-size t)))
 
   (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas-bm-dc (new bitmap-dc% [bitmap atlas-bm]))
   (define atlas.free-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas.free-bm-dc (new bitmap-dc% [bitmap atlas.free-bm]))
 
-  (define (install! dc free? w h t)
-    (match t
-      [(tree-empty)
-       (void)]
-      [(tree-branch pow ul ur ll lr)
-       (define unit (expt 2 (sub1 pow)))
-       (install! dc free? w h ul)
-       (install! dc free? (+ w unit) h ur)
-       (install! dc free? w (+ h unit) ll)
-       (install! dc free? (+ w unit) (+ h unit) lr)]
-      [(tree-singleton _ (vector p bm bm-w bm-h free-bm))
-       (define p-id
-         (string->symbol
-          (regexp-replace
-           #rx".png$"
-           p
-           "")))
+  (define (install! dc free?)
+    (for ([pl (in-list places)])
+      (match-define (placement w h (vector p bm bm-w bm-h free-bm)) pl)
+      (define p-id
+        (string->symbol
+         (regexp-replace
+          #rx".png$"
+          p
+          "")))
 
-       (unless free?
-         (pretty-display
-          `(define-texture
-             ,p-id
-             ,w ,h ,bm-w ,bm-h)))
+      (unless free?
+        (pretty-display
+         `(define-texture
+            ,p-id
+            ,w ,h ,bm-w ,bm-h)))
 
-       (send dc draw-bitmap
-             (if free? free-bm bm)
-             w h)]))
+      (send dc draw-bitmap
+            (if free? free-bm bm)
+            w h)))
 
   (with-output-to-file atlas.rkt
     #:exists 'replace
@@ -98,8 +91,8 @@
           none
           0 0 0 0))
 
-      (install! atlas-bm-dc #f 0 0 t)
-      (install! atlas.free-bm-dc #t 0 0 t)))
+      (install! atlas-bm-dc #f)
+      (install! atlas.free-bm-dc #t)))
 
   (send atlas-bm save-file
         atlas.png
