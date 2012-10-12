@@ -604,14 +604,12 @@
   (check-equal? (num->pow2 5) 3)
   (check-equal? (num->pow2 10) 4))
 
-(define (pack e-x e-y l)
+(define (pack e-size l)
   (for/fold ([t (tree-empty)])
       ([i (in-list l)])
-    (define x (e-x i))
-    (define y (e-y i))
     (define pow
-      (max (num->pow2 x)
-           (num->pow2 y)))
+      (num->pow2 
+       (e-size i)))
     (tree-join t
                (tree-singleton pow i))))
 
@@ -625,7 +623,6 @@
        number?)]
   [pack
    (-> (-> any/c number?)
-       (-> any/c number?)
        (listof any/c)
        tree?)]))
 

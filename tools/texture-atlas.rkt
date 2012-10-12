@@ -31,13 +31,17 @@
           (make-object bitmap% free-p 'png/alpha)
           bm))
       (vector p bm bm-w bm-h free-bm)))
+
+  (define (png-size v)
+    (max (vector-ref v 2)
+         (vector-ref v 3)))
   (define pngs+bms/sorted
-    (sort pngs+bms >= #:key (λ (v) (max (vector-ref v 2)
-                                        (vector-ref v 3)))))
+    (sort pngs+bms >=
+          #:key
+          png-size))
 
   (define t
-    (pack (λ (v) (vector-ref v 2))
-          (λ (v) (vector-ref v 3))
+    (pack png-size
           pngs+bms/sorted))
 
   (define tex-size
@@ -65,7 +69,7 @@
            #rx".png$"
            p
            "")))
-       
+
        (unless free?
          (pretty-display
           `(define-texture
