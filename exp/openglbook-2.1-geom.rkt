@@ -1,56 +1,14 @@
 #lang racket/base
-(require "../r.rkt"
-         racket/class
+(require racket/class
          racket/match
          racket/runtime-path
          gb/gui/fullscreen
+         gb/graphics/r
+         gb/graphics/string
          gb/graphics/ngl
          gb/graphics/ngli)
 
 (define-runtime-path texture-atlas-path "../r.png")
-
-(require (for-syntax racket/base
-                     racket/syntax
-                     syntax/parse)
-         gb/graphics/texture-atlas-lib
-         racket/list
-         racket/match)
-(define-syntax (make-char-factory stx)
-  (syntax-parse stx
-    [(_ family:id size:nat)
-     (define (format-char char)
-       (format-id stx "fonts/~a/~a/~a" #'family (syntax->datum #'size) char))
-     (quasisyntax/loc stx
-       (match-lambda
-        ;; XXX This table is needed in a few places (Makefile.rkt, make-font.rkt, and here.)
-        [#\T #,(format-char 'T)]
-        [#\E #,(format-char 'E)]
-        [#\S #,(format-char 'S)]))]))
-
-(define (make-string-factory char-factory)
-  (λ (some-string
-      #:hw [hw #f]
-      #:hh [hh #f])
-    (define maker
-      (if (and hw hh)
-        (λ (tex) (rectangle hw hh tex))
-        sprite))
-    (define tex-offset
-      (if (and hw hh)
-        (λ (tex) (* 2.0 hw))
-        texture-width))
-    (define-values
-      (tot-offset l)
-      (for/fold ([offset 0.0]
-                 [l empty])
-          ([c (in-string some-string)])
-        (define tex (char-factory c))
-        (define this-offset (tex-offset tex))
-        (values (+ offset this-offset)
-                (cons (transform #:dx offset
-                                 (maker tex))
-                      l))))
-    l))
 
 (define modern/12/string
   (make-string-factory (make-char-factory modern 12)))

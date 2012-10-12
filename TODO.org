@@ -423,7 +423,13 @@
   CLOSED: [2012-10-11 Thu 15:40]
   That's why my demos have to make tons of sprites for them to show
   up (try just drawing one, two, three, four, etc, to test)
-* TODO NGL - String rendering using the pre-rendered fonts
+* DONE make-font - support non-alphanumeric
+  CLOSED: [2012-10-11 Thu 20:04]
+  By using char->integer
+* DONE NGL - move r.rkt to gb/r
+  CLOSED: [2012-10-11 Thu 20:04]
+* DONE NGL - String rendering using the pre-rendered fonts
+  CLOSED: [2012-10-11 Thu 20:04]
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
   fullscreen : (void -> void) 
@@ -503,7 +509,6 @@
    (big-bang-loop))
 * TODO NGL - Use with actual games that I have
 * TODO NGL - change in_TexCoord to float
-* TODO make-font - support non-alphanumeric
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
@@ -559,6 +564,9 @@
   So glfwPollEvents calls pollJoystickEvents and Win32 caches
 * TODO Investigate and potentially using DDS for textures
   https://en.wikipedia.org/wiki/DirectDraw_Surface
+* TODO Make a tool for downloading the copyrighted images/music
+  List the URL, a checksum, and then have the tool download them if
+  they aren't there and verify if they are.
 * TODO Resource manager
   A DSL for defining resources...
 

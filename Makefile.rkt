@@ -6,7 +6,8 @@
          racket/port
          racket/system
          racket/file
-         setup/dirs)
+         setup/dirs
+         gb/graphics/font-lib)
 
 (define (systemf fmt . args)
   (define cmd (apply format fmt args))
@@ -20,7 +21,7 @@
  (define r.free-pth "r.free")
 
  (rule "all"
-       (list "r.free.png" "r.png" "r.rkt"))
+       (list "r.free.png" "r.png" "gb/graphics/r.rkt"))
 
  (define racket-pth
    (find-executable-path "racket"))
@@ -75,13 +76,11 @@
  (rule (app (compose (λ (x) (map path->string x)) explode-path)
             (list (== r-pth) "fonts" family size _))
        (list (compiled "tools/make-font.rkt"))
-       (system* racket-pth "-t" "tools/make-font.rkt" r-pth family size FONT-CHARS))
+       (system* racket-pth "-t" "tools/make-font.rkt" r-pth family size))
 
- (define FONT-CHARS
-   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
  (define FONT-FILES
    (for*/list ([dir (in-list FONT-DIRS)]
-               [letter (in-string FONT-CHARS)])
+               [letter (in-range CHAR-START (add1 CHAR-END))])
      (build-path dir (format "~a.png" letter))))
 
  (define r.src-pth
@@ -123,14 +122,14 @@
     [(? bytes? x)
      (bytes->path x)]))
 
- (rule (or "r.free.png" "r.png" "r.rkt")
+ (rule (or "r.free.png" "r.png" "gb/graphics/r.rkt")
        (list (compiled "tools/texture-atlas.rkt")
              FONT-FILES
              SPRITE-LISTS)
        (apply system* racket-pth
               "-t"
               "tools/texture-atlas.rkt"
-              "r.free.png" "r.png" "r.rkt"
+              "r.free.png" "r.png" "gb/graphics/r.rkt"
               r-pth r.free-pth
               (map (λ (x)
                      (regexp-replace #rx"^r/" (path->string (->path x)) ""))

@@ -5,14 +5,17 @@
          racket/match
          racket/class
          racket/draw
-         racket/cmdline)
+         racket/cmdline
+         gb/graphics/font-lib)
 
 (module+ main
   (command-line #:program "make-font"
-                #:args (r family-str size-str chars)
-                (main r (string->symbol family-str) (string->number size-str) chars)))
+                #:args (r family-str size-str)
+                (main r 
+                      (string->symbol family-str)
+                      (string->number size-str))))
 
-(define (main r family size chars)
+(define (main r family size)
   (define MAX-W 150)
   (define MAX-H 150)
 
@@ -29,7 +32,8 @@
   (make-directory* font-dir)
 
   (define char-dcs
-    (for/list ([char (in-string chars)])
+    (for/list ([char-i (in-range CHAR-START (add1 CHAR-END))])
+      (define char (integer->char char-i))
       (define char-s (string char))
 
       (define target (make-bitmap MAX-W MAX-H #t))
@@ -67,12 +71,11 @@
   (define char-w (- char-max-x char-min-x))
   (define char-h (- char-max-y char-min-y))
 
-  (for ([char (in-string chars)]
+  (for ([char-i (in-range CHAR-START (add1 CHAR-END))]
         [char-src-dc (in-list char-dcs)])
-    (define char-s (string char))
     (define char-file
       (build-path font-dir
-                  (format "~a.png" char-s)))
+                  (format "~a.png" char-i)))
 
     (define char-bitmap (make-bitmap char-w char-h #t))
     (define char-dc (new bitmap-dc% [bitmap char-bitmap]))
