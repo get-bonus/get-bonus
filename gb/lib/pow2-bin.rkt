@@ -620,10 +620,14 @@
  (struct-out tree-empty)
  (struct-out tree-branch)
  (contract-out
-  [pack (-> (-> any/c number?)
-            (-> any/c number?)
-            (listof any/c)
-            tree?)]))
+  [tree-size
+   (-> tree?
+       number?)]
+  [pack
+   (-> (-> any/c number?)
+       (-> any/c number?)
+       (listof any/c)
+       tree?)]))
 
 (module+ main
   (define N 30)

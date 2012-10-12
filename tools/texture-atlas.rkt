@@ -5,7 +5,8 @@
          racket/class
          racket/draw
          racket/cmdline
-         racket/pretty)
+         racket/pretty
+         gb/lib/pow2-bin)
 
 (module+ main
   (command-line #:program "texture-atlas"
@@ -31,70 +32,49 @@
           bm))
       (vector p bm bm-w bm-h free-bm)))
   (define pngs+bms/sorted
-    (sort pngs+bms <= #:key (λ (v) (vector-ref v 3))))
+    (sort pngs+bms >= #:key (λ (v) (max (vector-ref v 2)
+                                        (vector-ref v 3)))))
 
-  (define how-many (length pngs))
-  (define shelves (inexact->exact (ceiling (sqrt how-many))))
-
-  (define-values (install! free-install! s-tot-w s-tot-h)
-    (for/fold ([install! void]
-               [free-install! void]
-               [max-w 0]
-               [h 0])
-        ([shelf-i (in-range shelves)])
-      (define-values
-        (shelf-install! shelf-free-install! shelf-w shelf-h)
-        (for/fold ([shelf-install! void]
-                   [shelf-free-install! void]
-                   [w 0]
-                   [max-h 0])
-            ([p+bm (in-list pngs+bms/sorted)]
-             [i (in-naturals)]
-             #:when (= shelf-i (quotient i shelves)))
-          (match-define (vector p bm bm-w bm-h free-bm) p+bm)
-          (define p-id
-            (string->symbol
-             (regexp-replace
-              #rx".png$"
-              p
-              "")))
-          (values
-           (λ (bm-dc)
-             (send bm-dc draw-bitmap
-                   bm w h)
-             (pretty-display
-              `(define-texture
-                 ,p-id
-                 ,w ,h ,bm-w ,bm-h))
-             (shelf-install! bm-dc))
-           (λ (bm-dc)
-             (send bm-dc draw-bitmap
-                   free-bm w h)
-             (shelf-free-install! bm-dc))
-           (+ w bm-w)
-           (max max-h bm-h))))
-      (values
-       (λ (bm-dc)
-         (shelf-install! bm-dc)
-         (install! bm-dc))
-       (λ (bm-dc)
-         (shelf-free-install! bm-dc)
-         (free-install! bm-dc))
-       (max max-w shelf-w)
-       (+ h shelf-h))))
+  (define t
+    (pack (λ (v) (vector-ref v 2))
+          (λ (v) (vector-ref v 3))
+          pngs+bms/sorted))
 
   (define tex-size
-    (expt
-     2
-     (inexact->exact
-      (ceiling
-       (/ (log (max s-tot-w s-tot-h))
-          (log 2))))))
+    (expt 2 (tree-size t)))
 
   (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas-bm-dc (new bitmap-dc% [bitmap atlas-bm]))
   (define atlas.free-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas.free-bm-dc (new bitmap-dc% [bitmap atlas.free-bm]))
+
+  (define (install! dc free? w h t)
+    (match t
+      [(tree-empty)
+       (void)]
+      [(tree-branch pow ul ur ll lr)
+       (define unit (expt 2 (sub1 pow)))
+       (install! dc free? w h ul)
+       (install! dc free? (+ w unit) h ur)
+       (install! dc free? w (+ h unit) ll)
+       (install! dc free? (+ w unit) (+ h unit) lr)]
+      [(tree-singleton _ (vector p bm bm-w bm-h free-bm))
+       (define p-id
+         (string->symbol
+          (regexp-replace
+           #rx".png$"
+           p
+           "")))
+       
+       (unless free?
+         (pretty-display
+          `(define-texture
+             ,p-id
+             ,w ,h ,bm-w ,bm-h)))
+
+       (send dc draw-bitmap
+             (if free? free-bm bm)
+             w h)]))
 
   (with-output-to-file atlas.rkt
     #:exists 'replace
@@ -114,8 +94,8 @@
           none
           0 0 0 0))
 
-      (install! atlas-bm-dc)
-      (free-install! atlas.free-bm-dc)))
+      (install! atlas-bm-dc #f 0 0 t)
+      (install! atlas.free-bm-dc #t 0 0 t)))
 
   (send atlas-bm save-file
         atlas.png
