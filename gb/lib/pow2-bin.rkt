@@ -624,9 +624,11 @@
   (define (e-size e)
     (max (e-x e)
          (e-y e)))
+  (define l/sorted
+    (sort l >= #:key e-size))
   (define t
     (for/fold ([t (tree-empty)])
-        ([i (in-list l)])
+        ([i (in-list l/sorted)])
       (define pow
         (num->pow2
          (e-size i)))

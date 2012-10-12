@@ -35,18 +35,12 @@
   (define (png-w v)
     (vector-ref v 2))
   (define (png-h v)
-    (vector-ref v 3))
-  (define (png-size v)
-    (max (png-w v) (png-h v)))
-  (define pngs+bms/sorted
-    (sort pngs+bms >=
-          #:key
-          png-size))
+    (vector-ref v 3))  
 
   (define-values
     (tex-size places)
     (pack png-w png-h
-          pngs+bms/sorted))
+          pngs+bms))
 
   (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
   (define atlas-bm-dc (new bitmap-dc% [bitmap atlas-bm]))
