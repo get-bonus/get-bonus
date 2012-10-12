@@ -5,8 +5,7 @@
          racket/class
          racket/draw
          racket/cmdline
-         racket/pretty
-         gb/lib/pow2-bin)
+         racket/pretty)
 
 (module+ main
   (command-line #:program "texture-atlas"
@@ -37,6 +36,7 @@
   (define (png-h v)
     (vector-ref v 3))  
 
+  (local-require gb/lib/pow2-bin)
   (define-values
     (tex-size places)
     (pack png-w png-h
