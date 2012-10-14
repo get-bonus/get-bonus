@@ -452,7 +452,7 @@
 
   I made the interface and ended up implementing this:
 
-    http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
+  http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
 
   And I got down to 160K! I think it is probably basically optimal!
 
@@ -544,7 +544,7 @@
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
 * TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
-* TODO NGL - add contracts to ngl and ngli
+* TODO NGL - add contracts to ngl and ngli and string
 * TODO NGL - Investigate the interaction of depth testing with transparency
   At the very least, I should be able to have fully opaque or fully
   transparent texture colors and get it to work. It is possible that
@@ -591,6 +591,9 @@
   So glfwPollEvents calls pollJoystickEvents and Win32 caches
 * TODO Investigate and potentially using DDS for textures
   https://en.wikipedia.org/wiki/DirectDraw_Surface
+
+  Maybe not worth it because my texture atlas is small and I don't
+  want any lossy compression?
 * TODO Make a tool for downloading the copyrighted images/music
   List the URL, a checksum, and then have the tool download them if
   they aren't there and verify if they are.

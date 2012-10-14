@@ -67,7 +67,7 @@
        (system* raco-pth "make" (build-path src file)))
 
  (define FONT-SIZES (list 8 10 12 14 16 20))
- (define FONT-FAMILIES (list "decorative" "roman" "script" "swiss" "modern"))
+ (define FONT-FAMILIES (list "roman" "modern"))
  (define FONT-DIRS
    (for*/list ([size (in-list FONT-SIZES)]
                [family (in-list FONT-FAMILIES)])
