@@ -78,6 +78,7 @@
      #:keyboard km))
 
   (define last-cmd #f)
+  (define draw-on-crt #f)
   (define-values
     (the-frame the-canvas)
     (make-fullscreen-canvas/ratio
@@ -93,9 +94,12 @@
        (send glctx call-as-current
              (λ ()
                (when last-cmd
-                 (draw-on-crt (send c get-width) (send c get-height)
-                              ;;screen-width screen-height 
-                              (λ () (gl:draw last-cmd))))
+                 (unless draw-on-crt
+                   (set! draw-on-crt
+                         (make-draw-on-crt 
+                          (send c get-width) 
+                          (send c get-height))))
+                 (draw-on-crt (λ () (gl:draw last-cmd))))
                (send glctx swap-buffers))))
      (λ (k)
        (keyboard-monitor-submit! km k))))
