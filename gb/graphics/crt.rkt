@@ -2,24 +2,12 @@
 (require ffi/vector
          ffi/cvector
          ffi/unsafe
-         racket/runtime-path
+         gb/graphics/gl-util
          racket/match
-         xml
          (planet stephanh/RacketGL/rgl))
 
-(define (cdata-string* c)
-  (define s (cdata-string c))
-  (substring s 9 (- (string-length s) 3)))
-
-(module+ test
-  (require rackunit)
-  (check-equal? (cdata-string* (cdata #f #f "<![CDATA[‹content›]]>"))
-                "‹content›"))
-
-(define-runtime-path resources "../../resources")
-(define shader-path
-  (build-path resources "CRT-Geom-Interlaced"
-              "single-pass" "crt-geom-interlaced-curved.shader"))
+(define-shader-source fragment-source "crt.fragment.glsl")
+(define-shader-source vertex-source "crt.vertex.glsl")
 
 ;; http://www.songho.ca/opengl/gl_fbo.html
 (define myFBO #f)
@@ -101,52 +89,16 @@
   (unless shader_program
     (set! shader_program (glCreateProgram))
 
-    (match-define
-     (list
-      'shader
-      '((language "GLSL")) _ ...
-      (list 'vertex (list _ ...) vertex-cdata)
-      _ ...
-      (list 'fragment (list _ ...) fragment-cdata)
-      _ ...)
-     (xml->xexpr
-      (document-element
-       (call-with-input-file shader-path read-xml))))
+    (define&compile-shader fragment_shader
+      GL_FRAGMENT_SHADER
+      shader_program fragment-source)
 
-    (define fragment_source (cdata-string* fragment-cdata))
-    (define vertex_source (cdata-string* vertex-cdata))
-
-    (define fragment_shader (glCreateShader GL_FRAGMENT_SHADER))
-    (glShaderSource fragment_shader 1 (vector fragment_source)
-                    (s32vector (string-length fragment_source)))
-    (glCompileShader fragment_shader)
-
-    (define (check-shader-compilation which fragment_shader)
-      (define shader-vec (s32vector 0))
-      (glGetShaderiv fragment_shader GL_COMPILE_STATUS shader-vec)
-      (unless (= 1 (s32vector-ref shader-vec 0))
-        (define status (s32vector-ref shader-vec 0))
-        (glGetShaderiv fragment_shader GL_INFO_LOG_LENGTH shader-vec)
-        (define max-length (s32vector-ref shader-vec 0))
-        (define-values (len log-bs)
-          (glGetShaderInfoLog fragment_shader max-length))
-        (eprintf "~a failed to compile: ~a\n"
-                 which log-bs)
-        (exit 1)))
-
-    (check-shader-compilation "fragment shader" fragment_shader)
-
-    (glAttachShader shader_program fragment_shader)
-
-    (define vertex_shader (glCreateShader GL_VERTEX_SHADER))
-    (glShaderSource vertex_shader 1 (vector vertex_source)
-                    (s32vector (string-length vertex_source)))
-    (glCompileShader vertex_shader)
-    (check-shader-compilation "vertex shader" vertex_shader)
-
-    (glAttachShader shader_program vertex_shader)
+    (define&compile-shader vertex_shader
+      GL_VERTEX_SHADER
+      shader_program vertex-source)
 
     (glLinkProgram shader_program)
+    (print-shader-log glGetProgramInfoLog 'Program shader_program)
 
     (glUseProgram shader_program)
 

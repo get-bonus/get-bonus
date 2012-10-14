@@ -1,8 +1,7 @@
 #lang racket/base
 (require racket/match
-         racket/file
          ffi/vector
-         racket/runtime-path
+         gb/graphics/gl-util
          gb/lib/evector
          gb/graphics/texture-atlas-lib
          (planet stephanh/RacketGL/rgl))
@@ -16,10 +15,6 @@
   make-u32vector u32vector-ref u32vector-set!)
 
 (struct sprite-info (x y w h r g b a tex mx my theta))
-
-(define-syntax-rule (define-shader-source id path)
-  (begin (define-runtime-path id-path path)
-         (define id (file->string id-path))))
 
 (define-shader-source VertexShader "ngl.vertex.glsl")
 (define-shader-source FragmentShader "ngl.fragment.glsl")
@@ -71,34 +66,14 @@
                   #:mipmap #f))
 
   ;; Create Shaders
-  (define ProgramId (glCreateProgram))
-
-  (define (print-shader-log glGetShaderInfoLog shader-name shader-id)
-    (define-values (infoLen infoLog)
-      (glGetShaderInfoLog shader-id 1024))
-    (unless (zero? infoLen)
-      (eprintf "~a: ~a\n"
-               shader-name
-               (subbytes infoLog 0 infoLen))
-      (exit 1)))
-
-  (define-syntax-rule
-    (define&compile-shader VertexShaderId
-      GL_VERTEX_SHADER
-      VertexShader)
-    (begin (define VertexShaderId (glCreateShader GL_VERTEX_SHADER))
-           (glShaderSource VertexShaderId 1 (vector VertexShader)
-                           (s32vector))
-           (glCompileShader VertexShaderId)
-           (print-shader-log glGetShaderInfoLog 'VertexShader VertexShaderId)
-           (glAttachShader ProgramId VertexShaderId)))
+  (define ProgramId (glCreateProgram))  
 
   (define&compile-shader VertexShaderId GL_VERTEX_SHADER
-    VertexShader)
+    ProgramId VertexShader)
   (define&compile-shader FragmentShaderId GL_FRAGMENT_SHADER
-    FragmentShader)
+    ProgramId FragmentShader)
   (define&compile-shader GeometryShaderId GL_GEOMETRY_SHADER
-    GeometryShader)
+    ProgramId GeometryShader)
 
   (glLinkProgram ProgramId)
   (print-shader-log glGetProgramInfoLog 'Program ProgramId)
