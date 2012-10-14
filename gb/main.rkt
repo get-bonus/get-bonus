@@ -60,6 +60,8 @@
 
   (define (pointer)
     (string->sprites "->" #:hw 0.5 #:hh 0.5))
+  ;; XXX This can be optimized to only generate the menu sprite layout
+  ;; a single time.
   (define (menu pos)
     (cons
      (transform
