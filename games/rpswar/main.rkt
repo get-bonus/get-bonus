@@ -162,11 +162,11 @@
                 [else #f]))
         (define nw (input w ke))
         (values (smoother 1 nw)
-                (render nw)
+                (λ () (gl:draw (render nw)))
                 empty)]
        [(smoother i w)
         (values (smoother (modulo (add1 i) 1) w)
-                (render w)
+                (λ () (gl:draw (render w)))
                 empty)]))))
 
 (define game

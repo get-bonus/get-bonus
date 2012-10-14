@@ -142,12 +142,14 @@
        (sort (hash-ref new-cur-h 'graphics empty)
              >= #:key car))
      (values new-w
-             (gl:focus
-              width height width height
-              (psn-x center-pos) (psn-y center-pos)
-              (gl:background 0. 0. 0. 0.0
-                             (apply gl:seqn 
-                                    (map cdr gl-list))))
+             (λ ()
+               (gl:draw
+                (gl:focus
+                 width height width height
+                 (psn-x center-pos) (psn-y center-pos)
+                 (gl:background 0. 0. 0. 0.0
+                                (apply gl:seqn
+                                       (map cdr gl-list))))))
              (hash-ref new-cur-h 'sound empty)))
    #:listener
    (λ (w)

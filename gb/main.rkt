@@ -82,7 +82,7 @@
      (match-define (game-st bgm? delay pos) w)
      (match-define (list* c _) cs)
      (define mod
-       (cond 
+       (cond
          [(controller-up c)   -1]
          [(controller-down c) +1]
          [else                 0]))
@@ -101,12 +101,14 @@
        ((game-info-start (list-ref games pos+))))
      (values
       (game-st #t delay+ pos+)
-      (gl:focus
-       width height width height
-       (psn-x center-pos) (psn-y center-pos)
-       (gl:background
-        0. 0. 0. 1.
-        (gl:menu pos+)))
+      (λ ()
+        (gl:draw
+         (gl:focus
+          width height width height
+          (psn-x center-pos) (psn-y center-pos)
+          (gl:background
+           0. 0. 0. 1.
+           (gl:menu pos+)))))
       (if bgm?
         empty
         (list (background (λ (w) se:bgm) #:gain 0.1)))))

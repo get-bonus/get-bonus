@@ -8,7 +8,6 @@
          gb/data/psn
          gb/audio/3s
          gb/data/ltq
-         (prefix-in gl: gb/graphics/gl)
          gb/graphics/crt
          gb/input/controller)
 
@@ -99,7 +98,7 @@
                          (make-draw-on-crt 
                           (send c get-width) 
                           (send c get-height))))
-                 (draw-on-crt (λ () (gl:draw last-cmd))))
+                 (draw-on-crt last-cmd))
                (send glctx swap-buffers))))
      (λ (k)
        (keyboard-monitor-submit! km k))))
@@ -146,7 +145,7 @@
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)
-                   (values any/c gl:cmd? sound-scape/c)))
+                   (values any/c procedure? sound-scape/c)))
        (#:sound-scale real?
                       #:listener (-> any/c psn?)
                       #:done? (-> any/c boolean?))
