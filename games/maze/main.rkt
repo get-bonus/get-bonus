@@ -940,7 +940,7 @@
         next-ghost-n dots-to-ghost-n)))))
 
 (define game
-  (game-info "ハングリーマン"
+  (game-info "Maze"
              game-start))
 
 (provide game)

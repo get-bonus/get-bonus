@@ -461,6 +461,10 @@
   http://clb.demon.fi/projects/rectangle-bin-packing
 
   or just use Nvidia's tools
+* TODO NGL - Fonts are still messed up
+  (See gb/main's menu)
+* TODO Convert gb/main to use crt-w and crt-h vs 16:9
+* TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
   fullscreen : (void -> void) 
@@ -538,7 +542,6 @@
    (frame-time! (- (current-inexact-milliseconds) frame-start))
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
-* TODO NGL - Use with actual games that I have
 * TODO NGL - change in_TexCoord to float
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is

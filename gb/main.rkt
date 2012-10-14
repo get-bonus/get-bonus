@@ -8,9 +8,8 @@
          gb/gui/world
          gb/meta
          gb/input/controller
-         (prefix-in gl:
-                    (combine-in gb/graphics/gl
-                                gb/graphics/gl-ext)))
+         gb/graphics/r
+         gb/graphics/ngl-main)
 
 (begin-for-syntax
   (require racket/runtime-path)
@@ -33,6 +32,8 @@
                    game))
            ...))))]))
 
+(define-runtime-path texture-atlas-path "../r.png")
+
 (define game-code->info
   (static-games))
 (define games
@@ -54,24 +55,23 @@
   (append l (list x)))
 
 (define (go)
-  (define gl:pointer
-    (gl:texture
-     (gl:string->texture #:size 60 "→")))
-  (define (gl:menu pos)
-    (gl:color
-     1. 1. 1. 1.
-     (gl:above
-      (apply gl:above
-             (for/list ([g (in-list games)]
-                        [i (in-naturals)])
-               (define t
-                 (gl:translate
-                  1.0 0.0
-                  (gl:texture
-                   (gl:string->texture #:size 30 (game-info-name g)))))
-               (if (= pos i)
-                 (gl:seqn gl:pointer t)
-                 t))))))
+  (define string->sprites
+    (make-string-factory (make-char-factory modern 12)))
+
+  (define (pointer)
+    (string->sprites "->" #:hw 0.5 #:hh 0.5))
+  (define (menu pos)
+    (cons
+     (transform
+      #:dy (+ 0.5 (* 1.0 pos))
+      (pointer))
+     (for/list ([g (in-list games)]
+                [i (in-naturals)])
+       (transform
+        #:d 2.0 (+ 0.5 (* 1.0 i))
+        (string->sprites (game-info-name g) #:hw 0.5 #:hh 0.5)))))
+
+  (define draw #f)
 
   (big-bang
    (game-st #f 0 0)
@@ -83,8 +83,8 @@
      (match-define (list* c _) cs)
      (define mod
        (cond
-         [(controller-up c)   -1]
-         [(controller-down c) +1]
+         [(controller-up c)   +1]
+         [(controller-down c) -1]
          [else                 0]))
      (define-values
        (delay+ pos+)
@@ -102,13 +102,12 @@
      (values
       (game-st #t delay+ pos+)
       (λ ()
-        (gl:draw
-         (gl:focus
-          width height width height
-          (psn-x center-pos) (psn-y center-pos)
-          (gl:background
-           0. 0. 0. 1.
-           (gl:menu pos+)))))
+        (unless draw
+          (set! draw (make-draw texture-atlas-path
+                                texture-atlas-size
+                                16.0 9.0)))
+
+        (draw (menu pos+)))
       (if bgm?
         empty
         (list (background (λ (w) se:bgm) #:gain 0.1)))))
