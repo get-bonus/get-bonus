@@ -5,7 +5,6 @@
          (prefix-in gl:
                     (combine-in gb/graphics/gl
                                 gb/graphics/gl-ext))
-         gb/graphics/sprites
          gb/data/mvector
          gb/gui/fullscreen
          gb/gui/os
