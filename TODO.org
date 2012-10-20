@@ -468,8 +468,16 @@
   I think maybe the korf layout is off by one? (But my demo looks fine)
 * DONE Convert gb/main to use crt-w and crt-h vs 16:9
   CLOSED: [2012-10-20 Sat 14:14]
-* TODO NGL - change in_TexCoord to float
-* TODO NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
+* DONE NGL - change in_TexCoord to float
+  CLOSED: [2012-10-20 Sat 14:43]
+* DONE NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
+  CLOSED: [2012-10-20 Sat 14:43]
+
+  Going with a big f32vector instead
+* DONE NGL - Consider using only integers so they are always pixel aligned
+  CLOSED: [2012-10-20 Sat 14:43]
+
+  It is much nicer to use floats everywhere for other reasons.
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
@@ -582,7 +590,6 @@
 
   However, note that even with a huge number of sprites, the amount
   of memory is miniscule.
-* TODO NGL - Consider using only integers so they are always pixel aligned
 * TODO NGL - Figure out the proper way to do texture/color blending
   Right now I only support fully color or fully texture. It would be
   nice to support a tinted texture

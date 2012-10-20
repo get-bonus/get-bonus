@@ -3,6 +3,7 @@
          ffi/vector
          gb/graphics/gl-util
          gb/lib/evector
+         racket/function
          gb/graphics/texture-atlas-lib
          (planet stephanh/RacketGL/rgl))
 
@@ -22,31 +23,45 @@
                    texture-atlas-size
                    width height)
   (define InitialSprites (* 2 512))
-  (define Vertices (f32:make-vector (* InitialSprites 4)))
-  (define Colors (f32:make-vector (* InitialSprites 4)))
-  (define TexCoords (f32:make-vector (* InitialSprites 4)))
-  (define Transforms (f32:make-vector (* InitialSprites 3)))
+  (define SpriteData-components
+    (+ 4 4 4 3))
+  (match-define 
+   (list SpriteData-X SpriteData-Y SpriteData-HW SpriteData-HH
+         SpriteData-R SpriteData-G SpriteData-B SpriteData-A
+         SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
+         SpriteData-MX SpriteData-MY SpriteData-ROT)
+   (build-list SpriteData-components identity))
+  (define SpriteData 
+    (f32:make-vector 
+     (* InitialSprites 
+        SpriteData-components)))
 
   (define (install-object! i o)
     (match-define (sprite-info x y w h r g b a tex mx my theta) o)
 
-    (f32:vector-safe-set! Vertices (+ (* i 4) 0) x)
-    (f32:vector-safe-set! Vertices (+ (* i 4) 1) y)
-    (f32:vector-safe-set! Vertices (+ (* i 4) 2) w)
-    (f32:vector-safe-set! Vertices (+ (* i 4) 3) h)
-
-    (f32:vector-safe-set! Colors (+ (* i 4) 0) r)
-    (f32:vector-safe-set! Colors (+ (* i 4) 1) g)
-    (f32:vector-safe-set! Colors (+ (* i 4) 2) b)
-    (f32:vector-safe-set! Colors (+ (* i 4) 3) a)
-
-    (for ([j (in-range 4)])
-      (f32:vector-safe-set! TexCoords (+ (* i 4) j)
-                            (f32vector-ref tex j)))
-
-    (f32:vector-safe-set! Transforms (+ (* i 3) 0) mx)
-    (f32:vector-safe-set! Transforms (+ (* i 3) 1) my)
-    (f32:vector-safe-set! Transforms (+ (* i 3) 2) theta))
+    (define-syntax-rule
+      (install! [SpriteData-X x] ...)
+      (begin
+        (f32:vector-safe-set! 
+         SpriteData 
+         (+ (* i SpriteData-components) SpriteData-X)
+         x)
+        ...))
+    (install! [SpriteData-X x]
+              [SpriteData-Y y]
+              [SpriteData-HW w]
+              [SpriteData-HH h]
+              [SpriteData-R r]
+              [SpriteData-G g]
+              [SpriteData-B b]
+              [SpriteData-A a]
+              [SpriteData-TX (f32vector-ref tex 0)]
+              [SpriteData-TY (f32vector-ref tex 1)]
+              [SpriteData-TW (f32vector-ref tex 2)]
+              [SpriteData-TH (f32vector-ref tex 3)]
+              [SpriteData-MX mx]
+              [SpriteData-MY my]
+              [SpriteData-ROT theta]))
 
   (define (install-objects! t)
     (let loop ([offset 0] [t t])
@@ -90,7 +105,9 @@
     (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
-  (define (load-buffer-data f32:vector-length f32:vector-base gl-type VboId Vertices)
+  (define 
+    (load-buffer-data 
+     f32:vector-length f32:vector-base gl-type VboId Vertices)
     (glBindBuffer GL_ARRAY_BUFFER VboId)
     (glBufferData GL_ARRAY_BUFFER
                   (* (gl-type-sizeof gl-type) (f32:vector-length Vertices))
@@ -98,29 +115,26 @@
                   GL_STREAM_DRAW))
 
   (define-syntax-rule
-    (define-vertex-attrib-array f32:vector-length f32:vector-base
-      VboId Vertices Index HowMany type)
-    (begin (define VboId
-             (u32vector-ref (glGenBuffers 1) 0))
-           (load-buffer-data f32:vector-length f32:vector-base
-                             type VboId Vertices)
-           (cond
-             [(= type GL_FLOAT)
-              (glVertexAttribPointer Index HowMany type
-                                     #f 0 0)]
-             [else
-              (glVertexAttribIPointer Index HowMany type
-                                      0 0)])
-           (glEnableVertexAttribArray Index)))
+    (define-vertex-attrib-array Index SpriteData-start HowMany type)
+    (begin 
+      (glVertexAttribPointer 
+       Index HowMany type
+       #f 
+       (* (gl-type-sizeof type)
+          SpriteData-components)
+       (* (gl-type-sizeof type)
+          SpriteData-start))
+      (glEnableVertexAttribArray Index)))
 
-  (define-vertex-attrib-array f32:vector-length f32:vector-base
-    VboId Vertices 0 4 GL_FLOAT)
-  (define-vertex-attrib-array f32:vector-length f32:vector-base
-    ColorBufferId Colors 1 4 GL_FLOAT)
-  (define-vertex-attrib-array f32:vector-length f32:vector-base
-    TexCoordsBufferId TexCoords 2 4 GL_FLOAT)
-  (define-vertex-attrib-array f32:vector-length f32:vector-base
-    TransformBufferId Transforms 3 3 GL_FLOAT)
+  (define VboId
+    (u32vector-ref (glGenBuffers 1) 0))
+  (load-buffer-data f32:vector-length f32:vector-base
+                    GL_FLOAT VboId SpriteData)
+
+  (define-vertex-attrib-array 0 SpriteData-X 4 GL_FLOAT)
+  (define-vertex-attrib-array 1 SpriteData-R 4 GL_FLOAT)
+  (define-vertex-attrib-array 2 SpriteData-TX 4 GL_FLOAT)
+  (define-vertex-attrib-array 3 SpriteData-MX 3 GL_FLOAT)
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
   (glBindVertexArray 0)
@@ -140,13 +154,7 @@
 
     ;; Reload all data every frame
     (load-buffer-data f32:vector-length f32:vector-base
-                      GL_FLOAT VboId Vertices)
-    (load-buffer-data f32:vector-length f32:vector-base
-                      GL_FLOAT ColorBufferId Colors)
-    (load-buffer-data f32:vector-length f32:vector-base
-                      GL_UNSIGNED_INT TexCoordsBufferId TexCoords)
-    (load-buffer-data f32:vector-length f32:vector-base
-                      GL_FLOAT TransformBufferId Transforms)
+                      GL_FLOAT VboId SpriteData)
     (glBindBuffer GL_ARRAY_BUFFER 0)
 
     (glUseProgram ProgramId)
@@ -164,7 +172,8 @@
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
     (define count 
-      (/ (f32:vector-length Vertices) 4))
+      (/ (f32:vector-length SpriteData) 
+         SpriteData-components))
     (glDrawArrays GL_POINTS 0 count)
 
     (glPopAttrib)
