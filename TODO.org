@@ -461,7 +461,8 @@
   http://clb.demon.fi/projects/rectangle-bin-packing
 
   or just use Nvidia's tools
-* TODO NGL - Fonts are still messed up
+* DONE NGL - Fonts are still messed up
+  CLOSED: [2012-10-20 Sat 14:01]
   (See gb/main's menu)
 
   I think maybe the korf layout is off by one? (But my demo looks fine)
