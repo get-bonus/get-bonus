@@ -463,6 +463,8 @@
   or just use Nvidia's tools
 * TODO NGL - Fonts are still messed up
   (See gb/main's menu)
+
+  I think maybe the korf layout is off by one? (But my demo looks fine)
 * TODO Convert gb/main to use crt-w and crt-h vs 16:9
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
