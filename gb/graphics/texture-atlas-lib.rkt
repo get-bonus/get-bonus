@@ -9,15 +9,15 @@
      (syntax/loc stx
        (begin
          (define texture
-           (u32vector Tllx Tlly Tw Th))
+           (f32vector Tllx Tlly Tw Th))
          (provide texture)))]))
 
 (define (texture x y w h)
-  (u32vector x y w h))
+  (f32vector x y w h))
 (define (texture-width v)
-  (u32vector-ref v 2))
+  (f32vector-ref v 2))
 (define (texture-height v)
-  (u32vector-ref v 3))
+  (f32vector-ref v 3))
 
 (provide define-texture
          texture

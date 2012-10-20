@@ -468,6 +468,8 @@
   I think maybe the korf layout is off by one? (But my demo looks fine)
 * DONE Convert gb/main to use crt-w and crt-h vs 16:9
   CLOSED: [2012-10-20 Sat 14:14]
+* TODO NGL - change in_TexCoord to float
+* TODO NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
@@ -546,7 +548,6 @@
    (frame-time! (- (current-inexact-milliseconds) frame-start))
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
-* TODO NGL - change in_TexCoord to float
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
@@ -581,7 +582,6 @@
 
   However, note that even with a huge number of sprites, the amount
   of memory is miniscule.
-* TODO NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
 * TODO NGL - Consider using only integers so they are always pixel aligned
 * TODO NGL - Figure out the proper way to do texture/color blending
   Right now I only support fully color or fully texture. It would be

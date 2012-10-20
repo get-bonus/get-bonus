@@ -11,8 +11,6 @@
 
 (define-evector f32:
   make-f32vector f32vector-ref f32vector-set!)
-(define-evector u32:
-  make-u32vector u32vector-ref u32vector-set!)
 
 (struct sprite-info (x y w h r g b a tex mx my theta))
 
@@ -26,7 +24,7 @@
   (define InitialSprites (* 2 512))
   (define Vertices (f32:make-vector (* InitialSprites 4)))
   (define Colors (f32:make-vector (* InitialSprites 4)))
-  (define TexCoords (u32:make-vector (* InitialSprites 4)))
+  (define TexCoords (f32:make-vector (* InitialSprites 4)))
   (define Transforms (f32:make-vector (* InitialSprites 3)))
 
   (define (install-object! i o)
@@ -43,8 +41,8 @@
     (f32:vector-safe-set! Colors (+ (* i 4) 3) a)
 
     (for ([j (in-range 4)])
-      (u32:vector-safe-set! TexCoords (+ (* i 4) j)
-                            (u32vector-ref tex j)))
+      (f32:vector-safe-set! TexCoords (+ (* i 4) j)
+                            (f32vector-ref tex j)))
 
     (f32:vector-safe-set! Transforms (+ (* i 3) 0) mx)
     (f32:vector-safe-set! Transforms (+ (* i 3) 1) my)
@@ -119,8 +117,8 @@
     VboId Vertices 0 4 GL_FLOAT)
   (define-vertex-attrib-array f32:vector-length f32:vector-base
     ColorBufferId Colors 1 4 GL_FLOAT)
-  (define-vertex-attrib-array u32:vector-length u32:vector-base
-    TexCoordsBufferId TexCoords 2 4 GL_UNSIGNED_INT)
+  (define-vertex-attrib-array f32:vector-length f32:vector-base
+    TexCoordsBufferId TexCoords 2 4 GL_FLOAT)
   (define-vertex-attrib-array f32:vector-length f32:vector-base
     TransformBufferId Transforms 3 3 GL_FLOAT)
   (glBindBuffer GL_ARRAY_BUFFER 0)
@@ -145,7 +143,7 @@
                       GL_FLOAT VboId Vertices)
     (load-buffer-data f32:vector-length f32:vector-base
                       GL_FLOAT ColorBufferId Colors)
-    (load-buffer-data u32:vector-length u32:vector-base
+    (load-buffer-data f32:vector-length f32:vector-base
                       GL_UNSIGNED_INT TexCoordsBufferId TexCoords)
     (load-buffer-data f32:vector-length f32:vector-base
                       GL_FLOAT TransformBufferId Transforms)

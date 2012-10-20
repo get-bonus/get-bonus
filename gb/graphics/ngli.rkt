@@ -14,7 +14,7 @@
 (define current-b (make-parameter 0.0))
 (define current-a (make-parameter 0.0))
 
-(define none (texture 0 0 0 0))
+(define none (texture 0.0 0.0 0.0 0.0))
 
 (define (rectangle hw hh [tex none])
   (sprite-info (current-dx) (current-dy)

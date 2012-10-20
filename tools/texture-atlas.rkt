@@ -57,11 +57,19 @@
           p
           "")))
 
+      (define (->float v)
+        (if (zero? v)
+          0.0
+          (* 1.0 v)))
+
       (unless free?
         (pretty-display
          `(define-texture
             ,p-id
-            ,w ,h ,bm-w ,bm-h)))
+            ,(->float w)
+            ,(->float h)
+            ,(->float bm-w)
+            ,(->float bm-h))))
 
       (send dc draw-bitmap
             (if free? free-bm bm)
@@ -83,7 +91,7 @@
       (pretty-display
        `(define-texture
           none
-          0 0 0 0))
+          0.0 0.0 0.0 0.0))
 
       (install! atlas-bm-dc #f)
       (install! atlas.free-bm-dc #t)))
