@@ -1,6 +1,7 @@
 #lang racket/base
 (require gb/graphics/ngl
          gb/graphics/texture-atlas-lib
+         racket/contract
          (for-syntax racket/base
                      syntax/parse))
 
@@ -56,7 +57,7 @@
     [(_ #:a a:expr . more:expr)
      (syntax/loc stx
        (parameterize ([current-a a])
-         (transform . more)))]    
+         (transform . more)))]
     ;; Rotation
     [(_ #:rot theta:expr . more:expr)
      (syntax/loc stx
@@ -91,7 +92,15 @@
      (syntax/loc stx
        (let () . body))]))
 
-(provide sprite
-         sprite/tint
-         rectangle
-         transform)
+(provide
+ transform
+ (contract-out
+  [sprite 
+   (-> texture? sprite-info?)]
+  [sprite/tint
+   (-> texture? sprite-info?)]
+  [rectangle
+   ;; XXX not really a flonum, a single-flonum
+   (->* (flonum? flonum?)
+        (texture?)
+        sprite-info?)]))

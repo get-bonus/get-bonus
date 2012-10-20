@@ -4,16 +4,42 @@
          gb/graphics/gl-util
          gb/lib/evector
          racket/function
+         racket/contract
          gb/graphics/texture-atlas-lib
          (planet stephanh/RacketGL/rgl))
 
-(provide make-draw
-         (struct-out sprite-info))
+(define sprite-tree/c
+  ;; XXX really a tree of sprite-info?, but that's expensive to check
+  any/c)
+
+(provide
+ (contract-out
+  [sprite-tree/c
+   contract?]
+  ;; XXX these functions really take single-flonum? not flonum? but
+  ;; most things with .0 in them are really double flonums in Racket.
+  [make-draw
+   (-> path-string? fixnum? flonum? flonum?
+       (-> sprite-tree/c void))]
+  (struct
+   sprite-info
+   ([x flonum?]
+    [y flonum?]
+    [hw flonum?]
+    [hh flonum?]
+    [r flonum?]
+    [g flonum?]
+    [b flonum?]
+    [a flonum?]
+    [tex texture?]
+    [mx flonum?]
+    [my flonum?]
+    [theta flonum?]))))
 
 (define-evector f32:
   make-f32vector f32vector-ref f32vector-set!)
 
-(struct sprite-info (x y w h r g b a tex mx my theta))
+(struct sprite-info (x y hw hh r g b a tex mx my theta))
 
 (define-shader-source VertexShader "ngl.vertex.glsl")
 (define-shader-source FragmentShader "ngl.fragment.glsl")
@@ -25,15 +51,15 @@
   (define InitialSprites (* 2 512))
   (define SpriteData-components
     (+ 4 4 4 3))
-  (match-define 
+  (match-define
    (list SpriteData-X SpriteData-Y SpriteData-HW SpriteData-HH
          SpriteData-R SpriteData-G SpriteData-B SpriteData-A
          SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
          SpriteData-MX SpriteData-MY SpriteData-ROT)
    (build-list SpriteData-components identity))
-  (define SpriteData 
-    (f32:make-vector 
-     (* InitialSprites 
+  (define SpriteData
+    (f32:make-vector
+     (* InitialSprites
         SpriteData-components)))
 
   (define (install-object! i o)
@@ -42,8 +68,8 @@
     (define-syntax-rule
       (install! [SpriteData-X x] ...)
       (begin
-        (f32:vector-safe-set! 
-         SpriteData 
+        (f32:vector-safe-set!
+         SpriteData
          (+ (* i SpriteData-components) SpriteData-X)
          x)
         ...))
@@ -79,7 +105,7 @@
                   #:mipmap #f))
 
   ;; Create Shaders
-  (define ProgramId (glCreateProgram))  
+  (define ProgramId (glCreateProgram))
 
   (define&compile-shader VertexShaderId GL_VERTEX_SHADER
     ProgramId VertexShader)
@@ -113,14 +139,14 @@
                   GL_STREAM_DRAW))
 
   (define-syntax-rule
-    (define-vertex-attrib-array 
+    (define-vertex-attrib-array
       Index SpriteData-start SpriteData-end type)
-    (begin 
+    (begin
       (define HowMany
         (add1 (- SpriteData-end SpriteData-start)))
-      (glVertexAttribPointer 
+      (glVertexAttribPointer
        Index HowMany type
-       #f 
+       #f
        (* (gl-type-sizeof type)
           SpriteData-components)
        (* (gl-type-sizeof type)
@@ -170,8 +196,8 @@
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
-    (define count 
-      (/ (f32:vector-length SpriteData) 
+    (define count
+      (/ (f32:vector-length SpriteData)
          SpriteData-components))
     (glDrawArrays GL_POINTS 0 count)
 

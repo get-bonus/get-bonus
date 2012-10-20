@@ -14,6 +14,12 @@
 
 (define (texture x y w h)
   (f32vector x y w h))
+;; XXX also 4 long
+(define texture? f32vector?)
+(define (texture-x v)
+  (f32vector-ref v 0))
+(define (texture-y v)
+  (f32vector-ref v 1))
 (define (texture-width v)
   (f32vector-ref v 2))
 (define (texture-height v)
@@ -21,5 +27,8 @@
 
 (provide define-texture
          texture
+         texture?
+         texture-x
+         texture-y
          texture-width
          texture-height)

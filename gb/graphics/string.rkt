@@ -4,9 +4,11 @@
                      gb/graphics/font-lib
                      syntax/parse)
          gb/graphics/r
+         gb/graphics/ngl
          gb/graphics/ngli
          gb/graphics/texture-atlas-lib         
          gb/graphics/font-lib
+         racket/contract
          racket/list
          racket/match)
 
@@ -50,5 +52,9 @@
                       l))))
     l))
 
-(provide make-string-factory
-         make-char-factory)
+(provide 
+ make-char-factory
+ (contract-out
+  [make-string-factory
+   (-> (-> char? texture?)
+       sprite-tree/c)]))

@@ -478,6 +478,8 @@
   CLOSED: [2012-10-20 Sat 14:43]
 
   It is much nicer to use floats everywhere for other reasons.
+* DONE NGL - add contracts to ngl and ngli and string
+  CLOSED: [2012-10-20 Sat 15:03]
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
@@ -560,7 +562,6 @@
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
 * TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
-* TODO NGL - add contracts to ngl and ngli and string
 * TODO NGL - Investigate the interaction of depth testing with transparency
   At the very least, I should be able to have fully opaque or fully
   transparent texture colors and get it to work. It is possible that
