@@ -46,32 +46,33 @@
   (define id (path->audio (build-path resource-path f))))
 (define-sound se:bgm "title.ogg")
 
-(define width 16.0)
-(define height 9.0)
+(define width crt-width)
+(define height crt-height)
 (define center-pos
-  (psn 8.0 4.5))
+  (psn (/ width 2.0)
+       (/ height 2.0)))
 
 (define (snoc l x)
   (append l (list x)))
 
 (define (go)
+  (define modern-12-char
+    (make-char-factory modern 12))
+  (define char-height
+    (texture-height (modern-12-char #\a)))
+  (define char-width
+    (texture-width (modern-12-char #\a)))
   (define string->sprites
-    (make-string-factory (make-char-factory modern 12)))
+    (make-string-factory modern-12-char))
 
-  (define (pointer)
-    (string->sprites "->" #:hw 0.5 #:hh 0.5))
-  ;; XXX This can be optimized to only generate the menu sprite layout
-  ;; a single time.
-  (define (menu pos)
-    (cons
-     (transform
-      #:dy (+ 0.5 (* 1.0 pos))
-      (pointer))
-     (for/list ([g (in-list games)]
-                [i (in-naturals)])
-       (transform
-        #:d 2.0 (+ 0.5 (* 1.0 i))
-        (string->sprites (game-info-name g) #:hw 0.5 #:hh 0.5)))))
+  (define (menu-entry-height pos)
+    (+ (/ char-height 2.0) (* char-height pos)))
+  (define menu
+    (for/list ([g (in-list games)]
+               [i (in-naturals)])
+      (transform
+       #:d (* 2.0 char-width) (menu-entry-height i)
+       (string->sprites (game-info-name g)))))
 
   (define draw #f)
 
@@ -105,11 +106,18 @@
       (game-st #t delay+ pos+)
       (λ ()
         (unless draw
-          (set! draw (make-draw texture-atlas-path
-                                texture-atlas-size
-                                16.0 9.0)))
+          (set! draw
+                (make-draw texture-atlas-path
+                           texture-atlas-size
+                           (* 1.0 width)
+                           (* 1.0 height))))
 
-        (draw (menu pos+)))
+        (draw
+         (cons
+          menu
+          (transform
+           #:dy (menu-entry-height pos)
+           (string->sprites ">>")))))
       (if bgm?
         empty
         (list (background (λ (w) se:bgm) #:gain 0.1)))))

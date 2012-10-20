@@ -466,7 +466,8 @@
   (See gb/main's menu)
 
   I think maybe the korf layout is off by one? (But my demo looks fine)
-* TODO Convert gb/main to use crt-w and crt-h vs 16:9
+* DONE Convert gb/main to use crt-w and crt-h vs 16:9
+  CLOSED: [2012-10-20 Sat 14:14]
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
