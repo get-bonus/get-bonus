@@ -38,7 +38,7 @@
 
   (define (install-object! i o)
     (match-define (sprite-info x y w h r g b a tex mx my theta) o)
-
+    ;; XXX Would it be faster to do a vector-copy! ?
     (define-syntax-rule
       (install! [SpriteData-X x] ...)
       (begin
@@ -105,9 +105,7 @@
     (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
-  (define 
-    (load-buffer-data 
-     f32:vector-length f32:vector-base gl-type VboId Vertices)
+  (define (load-buffer-data gl-type VboId Vertices)
     (glBindBuffer GL_ARRAY_BUFFER VboId)
     (glBufferData GL_ARRAY_BUFFER
                   (* (gl-type-sizeof gl-type) (f32:vector-length Vertices))
@@ -115,8 +113,11 @@
                   GL_STREAM_DRAW))
 
   (define-syntax-rule
-    (define-vertex-attrib-array Index SpriteData-start HowMany type)
+    (define-vertex-attrib-array 
+      Index SpriteData-start SpriteData-end type)
     (begin 
+      (define HowMany
+        (add1 (- SpriteData-end SpriteData-start)))
       (glVertexAttribPointer 
        Index HowMany type
        #f 
@@ -128,13 +129,12 @@
 
   (define VboId
     (u32vector-ref (glGenBuffers 1) 0))
-  (load-buffer-data f32:vector-length f32:vector-base
-                    GL_FLOAT VboId SpriteData)
+  (load-buffer-data GL_FLOAT VboId SpriteData)
 
-  (define-vertex-attrib-array 0 SpriteData-X 4 GL_FLOAT)
-  (define-vertex-attrib-array 1 SpriteData-R 4 GL_FLOAT)
-  (define-vertex-attrib-array 2 SpriteData-TX 4 GL_FLOAT)
-  (define-vertex-attrib-array 3 SpriteData-MX 3 GL_FLOAT)
+  (define-vertex-attrib-array 0 SpriteData-X SpriteData-HH GL_FLOAT)
+  (define-vertex-attrib-array 1 SpriteData-R SpriteData-A GL_FLOAT)
+  (define-vertex-attrib-array 2 SpriteData-TX SpriteData-TH GL_FLOAT)
+  (define-vertex-attrib-array 3 SpriteData-MX SpriteData-ROT GL_FLOAT)
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
   (glBindVertexArray 0)
@@ -153,8 +153,7 @@
     (define offset (install-objects! objects))
 
     ;; Reload all data every frame
-    (load-buffer-data f32:vector-length f32:vector-base
-                      GL_FLOAT VboId SpriteData)
+    (load-buffer-data GL_FLOAT VboId SpriteData)
     (glBindBuffer GL_ARRAY_BUFFER 0)
 
     (glUseProgram ProgramId)
