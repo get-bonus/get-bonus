@@ -480,6 +480,15 @@
   It is much nicer to use floats everywhere for other reasons.
 * DONE NGL - add contracts to ngl and ngli and string
   CLOSED: [2012-10-20 Sat 15:03]
+* DONE Make XML shader reading more robust
+  CLOSED: [2012-10-20 Sat 15:06]
+  In case there is just a fragment, vertex, etc (see bsnes examples)
+* DONE Make it so gl:Color doesn't have an alpha arg
+  CLOSED: [2012-10-20 Sat 15:06]
+  Because by using Z buffer for layers, translucent pixels don't work
+  across layers... so maybe it is better to just disallow it?
+* DONE Change gl model to be memoized
+  CLOSED: [2012-10-20 Sat 15:07]
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
@@ -562,6 +571,7 @@
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
 * TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
+  Will the GLSL compiler do it anyways?
 * TODO NGL - Investigate the interaction of depth testing with transparency
   At the very least, I should be able to have fully opaque or fully
   transparent texture colors and get it to work. It is possible that
@@ -584,8 +594,11 @@
   And perhaps cull slightly wider than that the screen because I
   believe culling happens before geometry shaders (?) so I need to
   make sure the point is in the cull
+
+  [Not relevant until I have games with relative layers]
 * TODO NGL - Consider using an external GLSL optimizer
-  https://github.com/aras-p/glsl-optimizer
+  https://github.com/aras-p/glsl-optimizer (doesn't work with modern
+  GLSL though)
 * TODO NGL - Read about optimizing the streaming of data to the GPU
   http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
 
@@ -640,8 +653,6 @@
   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
 * TODO See if I can record a video directly
   http://revel.sourceforge.net/docs/html/revel_8h.html#a30
-* TODO Make XML shader reading more robust
-  In case there is just a fragment, vertex, etc (see bsnes examples)
 * TODO Allow multi-pass shaders (such as CRT halation)
   See libretro or retroarch
 
@@ -649,9 +660,6 @@
 * TODO Make fixed-size fonts better
 * TODO Use SNES sprites for Ms. Pac-Man in maze
 * TODO tennis - balls can bounce infinitely off wall and get stuck
-* TODO Make it so gl:Color doesn't have an alpha arg
-  Because by using Z buffer for layers, translucent pixels don't work
-  across layers... so maybe it is better to just disallow it?
 * TODO Change FPS counter to count frame time instead
 * TODO OS suppress updates
   Make a critical region system call that gives a process sole access
@@ -665,7 +673,6 @@
 * TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
 * TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
 * TODO tennis - score based on total number of balls in play
-* TODO Change gl model to be memoized
 * TODO Make games return score information to dashboard for it to manager
   (Version, Level, Numeric Score) from game
 
