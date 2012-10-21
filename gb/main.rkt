@@ -5,7 +5,7 @@
          racket/match
          gb/audio/3s
          gb/data/psn
-         gb/gui/world
+         gb/gui/os
          gb/meta
          gb/input/controller
          gb/graphics/ngl-main)
@@ -31,14 +31,10 @@
                    game))
            ...))))]))
 
-(define-runtime-path texture-atlas-path "../r.png")
-
 (define game-code->info
   (static-games))
 (define games
   (hash-values game-code->info))
-
-(struct game-st (bgm? input-delay pos))
 
 (define-runtime-path resource-path "../games/tennis/r")
 (define-syntax-rule (define-sound id f)
@@ -73,59 +69,48 @@
        #:d (* 2.0 char-width) (menu-entry-height i)
        (string->sprites (game-info-name g)))))
 
-  (define draw #f)
+  (big-bang/os
+   width height center-pos
+   #:sound-scale width
+   (λ ()
+     (let loop ([bgm? #f]
+                [delay 0]
+                [pos 0])
+       (define c (os/read* 'controller))
+       (define mod
+         (cond
+           [(controller-up c)   +1]
+           [(controller-down c) -1]
+           [else                 0]))
+       (define-values
+         (delay+ pos+)
+         (cond
+           [(positive? delay)
+            (values (sub1 delay) pos)]
+           [(zero? mod)
+            (values 0 pos)]
+           [else
+            (values 8 ;; How many frames to wait for more input
+                    (modulo (+ pos mod)
+                            (length games)))]))
+       (when (controller-start c)
+         ((game-info-start (list-ref games pos+))))
 
-  (big-bang
-   (game-st #f 0 0)
-   #:sound-scale
-   width
-   #:tick
-   (λ (w cs)
-     (match-define (game-st bgm? delay pos) w)
-     (match-define (list* c _) cs)
-     (define mod
-       (cond
-         [(controller-up c)   +1]
-         [(controller-down c) -1]
-         [else                 0]))
-     (define-values
-       (delay+ pos+)
-       (cond
-         [(positive? delay)
-          (values (sub1 delay) pos)]
-         [(zero? mod)
-          (values 0 pos)]
-         [else
-          (values 8 ;; How many frames to wait for more input
-                  (modulo (+ pos mod)
-                          (length games)))]))
-     (when (controller-start c)
-       ((game-info-start (list-ref games pos+))))
-     (values
-      (game-st #t delay+ pos+)
-      (λ ()
-        (unless draw
-          (set! draw
-                (make-draw texture-atlas-path
-                           texture-atlas-size
-                           (* 1.0 width)
-                           (* 1.0 height))))
-
-        (draw
-         (cons
-          menu
-          (transform
-           #:dy (menu-entry-height pos)
-           (string->sprites ">>")))))
-      (if bgm?
-        empty
-        (list (background (λ (w) se:bgm) #:gain 0.1)))))
-   #:listener
-   (λ (w)
-     center-pos)
-   #:done?
-   (λ (w)
-     #f)))
+       (os/write
+        (append
+         (if bgm?
+           empty
+           (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
+         (list
+          (cons 'graphics
+                (cons 0
+                      (cons
+                       menu
+                       (transform
+                        #:dy (menu-entry-height pos)
+                        (string->sprites ">>"))))))))
+       
+       (loop #t delay+ pos+)))))
 
 (module+ main
   (require racket/cmdline)

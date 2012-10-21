@@ -6,9 +6,7 @@
          racket/math
          racket/list
          gb/gui/world
-         (prefix-in gl:
-                    (combine-in gb/graphics/gl
-                                gb/graphics/gl-ext))
+         gb/graphics/ngl-main
          gb/data/mvector
          gb/gui/fullscreen
          gb/input/controller
@@ -121,9 +119,14 @@
     (boot (syscall pid
                    (os cur-h next-h cur-ps next-ps)))]))
 
+(define-runtime-path texture-atlas-path "../../r.png")
+
 (define (big-bang/os width height center-pos
                      #:sound-scale sound-scale
                      main-t)
+
+  (define draw #f)
+
   (big-bang
    (os (make-hasheq) (make-hasheq)
        (list (process (gensym 'pid) main-t))
@@ -142,13 +145,13 @@
              >= #:key car))
      (values new-w
              (λ ()
-               (gl:draw
-                (gl:focus
-                 width height width height
-                 (psn-x center-pos) (psn-y center-pos)
-                 (gl:background 0. 0. 0. 0.0
-                                (apply gl:seqn
-                                       (map cdr gl-list))))))
+               (unless draw
+                 (set! draw
+                       (make-draw texture-atlas-path
+                                  texture-atlas-size
+                                  (* 1.0 width)
+                                  (* 1.0 height))))
+               (draw (map cdr gl-list)))
              (hash-ref new-cur-h 'sound empty)))
    #:listener
    (λ (w)
