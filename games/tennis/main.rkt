@@ -77,13 +77,11 @@
    #:d (/ width 2.0) (/ height 2.0)
    (rectangle (/ width 2.0) (/ height 2.0) tennis/bg)))
 
-;; XXX how is this .5 related to width?
 (define lhs-x
-  (- .5 paddle-hw))
+  (- (/ width 32.0) paddle-hw))
 
 (define (between lo hi)
   (+ lo (* (random) (- hi lo))))
-;; XXX how is this 1..5 related to width?
 (define serve-dist
   (* 1.5 (+ ball-hw paddle-hw)))
 (define ball-start-pos
@@ -115,7 +113,6 @@
     (loop lhs-y-n)))
 
 (define (ball-bounce dir mx my [dy 0.])
-  ;; XXX how is this 1.0 related to width?
   (define p (make-polar 1.0 dir))
   (angle
    (make-rectangular (* mx (real-part p))
@@ -142,7 +139,6 @@
         [; The ball has bounced off the lhs
          (cd:shape-vs-shape ball-shape lhs-shape)
          (define ball-pos-pushed
-           ;; XXX how is this 4 related to width?
            (psn (max (+ lhs-x (* 4 paddle-hw))
                      (psn-x ball-pos))
                 (psn-y ball-pos)))
