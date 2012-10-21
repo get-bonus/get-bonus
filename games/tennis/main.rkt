@@ -38,12 +38,14 @@
 (define initial-ball-speed
   speed)
 
+(define blocks-in-a-paddle 5)
+
 (define paddle-w
-  (/ width 32.0))
+  (texture-width tennis/paddle))
 (define paddle-hw
   (/ paddle-w 2.0))
 (define paddle-h
-  (/ height 9.0))
+  (* blocks-in-a-paddle (texture-height tennis/paddle)))
 (define paddle-hh
   (/ paddle-h 2.0))
 
@@ -52,14 +54,13 @@
 (define max-paddle-y
   (- height paddle-hh))
 
-(define blocks-in-a-paddle 5)
 (define (lhs-paddle)
   (define block-h
     (/ paddle-h blocks-in-a-paddle))
   (for/list ([i (in-range blocks-in-a-paddle)])
     (transform 
      #:dy (* block-h i)
-     (rectangle paddle-hw (/ block-h 2.0) tennis/paddle))))
+     (sprite tennis/paddle))))
 
 (define ball-scale 
   (/ 1.0 2.0))
