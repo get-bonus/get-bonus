@@ -61,8 +61,7 @@
      #:dy (* block-h i)
      (rectangle paddle-hw (/ block-h 2.0) tennis/paddle))))
 
-;; XXX relate this to width and height
-(define ball-r .25)
+(define ball-r (/ height 36.0))
 (define ball-hw (* 1.5 ball-r))
 (define ball-hh ball-r)
 
