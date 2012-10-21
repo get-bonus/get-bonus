@@ -74,7 +74,7 @@
 (define (bgm)
   (transform
    #:d (/ width 2.0) (/ height 2.0)
-   (rectangle (/ width 2.0) (/ height 2.0) tennis/bg)))
+   (sprite tennis/bg)))
 
 (define lhs-x
   (- (/ width 32.0) paddle-hw))
