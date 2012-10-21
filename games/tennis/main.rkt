@@ -61,9 +61,13 @@
      #:dy (* block-h i)
      (rectangle paddle-hw (/ block-h 2.0) tennis/paddle))))
 
-(define ball-r (/ height 36.0))
-(define ball-hw (* 1.5 ball-r))
-(define ball-hh ball-r)
+(define ball-scale 
+  (/ 1.0 2.0))
+(define ball-hh 
+  (* ball-scale (/ (texture-height tennis/ball) 2.0)))
+(define ball-r ball-hh)
+(define ball-hw 
+  (* ball-scale (/ (texture-width tennis/ball) 2.0)))
 
 (define (ball-sprite)
   (transform

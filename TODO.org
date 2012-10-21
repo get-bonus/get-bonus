@@ -492,6 +492,10 @@
 * DONE NGL - tennis demonstrates that floor/ceil is not always correct and I need to round towards the boundary
   CLOSED: [2012-10-20 Sat 21:34]
 * TODO NGL - convert tennis's resolution
+* TODO NGL - tennis - problem with ngl's scaling?
+  If I change a call to rectangle to sprite but give a scaling
+  factor, it doesn't do what I expect. I should make a simple demo to
+  try it.
 * TODO NGL - tennis - it seems like the ball goes too low
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
