@@ -27,8 +27,8 @@
 (define-sound se:bump-rhs "bump-rhs.ogg")
 (define-sound se:bump-wall "bump-wall.wav")
 
-(define width 16.0 #;crt-width)
-(define height 9.0 #;crt-height)
+(define width crt-width)
+(define height crt-height)
 
 (define width-h (/ width 2.))
 (define center-pos
