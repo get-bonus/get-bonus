@@ -34,11 +34,13 @@
 (define center-pos
   (psn width-h (/ height 2.)))
 (define speed
-  (* (/ height 2.0) RATE))
+  (* (/ (sqrt (+ (sqr width) (sqr height)))
+        4.0)
+     RATE))
 (define initial-ball-speed
   speed)
 
-(define blocks-in-a-paddle 5)
+(define blocks-in-a-paddle 4)
 
 (define paddle-w
   (texture-width tennis/paddle))
