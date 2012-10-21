@@ -73,8 +73,10 @@
    width height center-pos
    #:sound-scale width
    (λ ()
-     (let loop ([bgm? #f]
-                [delay 0]
+     (os/write
+      (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
+
+     (let loop ([delay 0]
                 [pos 0])
        (define c (os/read* 'controller))
        (define mod
@@ -97,20 +99,16 @@
          ((game-info-start (list-ref games pos+))))
 
        (os/write
-        (append
-         (if bgm?
-           empty
-           (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
-         (list
-          (cons 'graphics
-                (cons 0
-                      (cons
-                       menu
-                       (transform
-                        #:dy (menu-entry-height pos)
-                        (string->sprites ">>"))))))))
-       
-       (loop #t delay+ pos+)))))
+        (list
+         (cons 'graphics
+               (cons 0
+                     (cons
+                      menu
+                      (transform
+                       #:dy (menu-entry-height pos)
+                       (string->sprites ">>")))))))
+
+       (loop delay+ pos+)))))
 
 (module+ main
   (require racket/cmdline)
