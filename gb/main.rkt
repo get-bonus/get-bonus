@@ -8,7 +8,6 @@
          gb/gui/world
          gb/meta
          gb/input/controller
-         gb/graphics/r
          gb/graphics/ngl-main)
 
 (begin-for-syntax
