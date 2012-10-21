@@ -27,8 +27,8 @@
 (define-sound se:bump-rhs "bump-rhs.ogg")
 (define-sound se:bump-wall "bump-wall.wav")
 
-(define width 16.)
-(define height 9.)
+(define width 16.0 #;crt-width)
+(define height 9.0 #;crt-height)
 
 (define width-h (/ width 2.))
 (define center-pos
@@ -41,11 +41,11 @@
 (define paddle-w
   (/ width 32.0))
 (define paddle-hw
-  (/ paddle-w 2))
+  (/ paddle-w 2.0))
 (define paddle-h
-  (/ height 9))
+  (/ height 9.0))
 (define paddle-hh
-  (/ paddle-h 2))
+  (/ paddle-h 2.0))
 
 (define min-paddle-y
   paddle-hh)
@@ -239,10 +239,14 @@
                  (let ()
                    (define score-s
                      (format "~a" score-n))
+                   (define char-hw
+                     (/ (/ width 16.0) 2.0))
+                   (define char-hh
+                     (/ (/ height 9.0) 2.0))
                    (define score-h
-                     1.0)
+                     (* char-hh 2.0))
                    (define score-w
-                     (* 1.0 (string-length score-s)))
+                     (* (* char-hw 2.0) (string-length score-s)))
                    (transform
                     #:d
                     (- (psn-x center-pos) 
@@ -250,14 +254,12 @@
                     (- height score-h)
                     (cons
                      (string->sprites
-                      #:hw .5
-                      #:hh .5
+                      #:hw char-hw #:hh char-hh
                       score-s)
                      (transform 
                       #:rgba 1. 1. 1. 1.
                       (string->sprites
-                       #:hw .5
-                       #:hh .5
+                       #:hw char-hw #:hh char-hh
                        (make-string (string-length score-s) #\space))))))
                  (bgm))))))
        (loop score-n)))))
