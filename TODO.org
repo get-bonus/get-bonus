@@ -489,6 +489,8 @@
   across layers... so maybe it is better to just disallow it?
 * DONE Change gl model to be memoized
   CLOSED: [2012-10-20 Sat 15:07]
+* DONE NGL - tennis demonstrates that floor/ceil is not always correct and I need to round towards the boundary
+  CLOSED: [2012-10-20 Sat 21:34]
 * TODO NGL - Use with actual games that I have
 * TODO NGL / Fullscreen / Big-bang - New architecture
 
