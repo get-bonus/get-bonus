@@ -29,12 +29,17 @@
 
 (define (make-string-factory char-factory)
   (λ (some-string
+      #:tint? [tint? #f]
       #:hw [hw #f]
       #:hh [hh #f])
     (define maker
-      (if (and hw hh)
-        (λ (tex) (rectangle hw hh tex))
-        sprite))
+      (cond
+        [(and hw hh)
+         (λ (tex) (rectangle hw hh tex))]
+        [tint?
+         sprite/tint]
+        [else 
+         sprite]))
     (define tex-offset
       (if (and hw hh)
         (λ (tex) (* 2.0 hw))
@@ -57,4 +62,6 @@
  (contract-out
   [make-string-factory
    (-> (-> char? texture?)
-       sprite-tree/c)]))
+       (->* (string?)
+            (#:hw flonum? #:hh flonum? #:tint? boolean?)
+            sprite-tree/c))]))

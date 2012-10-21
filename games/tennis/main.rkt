@@ -234,14 +234,10 @@
                  (let ()
                    (define score-s
                      (format "~a" score-n))
-                   (define char-hw
-                     (/ (/ width 16.0) 2.0))
-                   (define char-hh
-                     (/ (/ height 9.0) 2.0))
                    (define score-h
-                     (* char-hh 2.0))
+                     char-height)
                    (define score-w
-                     (* (* char-hw 2.0) (string-length score-s)))
+                     (* char-width (string-length score-s)))
                    (transform
                     #:d
                     (- (psn-x center-pos) 
@@ -249,12 +245,11 @@
                     (- height score-h)
                     (cons
                      (string->sprites
-                      #:hw char-hw #:hh char-hh
                       score-s)
                      (transform 
                       #:rgba 1. 1. 1. 1.
                       (string->sprites
-                       #:hw char-hw #:hh char-hh
+                       #:tint? #t
                        (make-string (string-length score-s) #\space))))))
                  (bgm))))))
        (loop score-n)))))
