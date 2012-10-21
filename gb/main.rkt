@@ -76,39 +76,38 @@
      (os/write
       (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
 
-     (let loop ([delay 0]
-                [pos 0])
+     (let loop ([pos 0])
        (define c (os/read* 'controller))
        (define mod
          (cond
            [(controller-up c)   +1]
            [(controller-down c) -1]
            [else                 0]))
-       (define-values
-         (delay+ pos+)
-         (cond
-           [(positive? delay)
-            (values (sub1 delay) pos)]
-           [(zero? mod)
-            (values 0 pos)]
-           [else
-            (values 8 ;; How many frames to wait for more input
-                    (modulo (+ pos mod)
-                            (length games)))]))
+       (define pos+
+         (modulo (+ pos mod)
+                 (length games)))
+
        (when (controller-start c)
          ((game-info-start (list-ref games pos+))))
 
-       (os/write
-        (list
-         (cons 'graphics
-               (cons 0
-                     (cons
-                      menu
-                      (transform
-                       #:dy (menu-entry-height pos)
-                       (string->sprites ">>")))))))
+       (for ([frame
+              (in-range
+               0
+               (if (= pos pos+)
+                 1
+                 ;; How many frames to wait for more input
+                 8))])
+         (os/write
+          (list
+           (cons 'graphics
+                 (cons 0
+                       (cons
+                        menu
+                        (transform
+                         #:dy (menu-entry-height pos)
+                         (string->sprites ">>"))))))))
 
-       (loop delay+ pos+)))))
+       (loop pos+)))))
 
 (module+ main
   (require racket/cmdline)
