@@ -6,9 +6,7 @@
          racket/list
          gb/gui/world
          gb/gui/os
-         (prefix-in gl:
-                    (combine-in gb/graphics/gl
-                                gb/graphics/gl-ext))
+         gb/graphics/ngl-main
          gb/data/mvector
          gb/gui/fullscreen
          gb/input/controller
@@ -30,17 +28,18 @@
 (define-sound se:bump-wall "bump-wall.wav")
 
 (define width 16.)
-(define width-h (/ width 2.))
 (define height 9.)
+
+(define width-h (/ width 2.))
 (define center-pos
   (psn width-h (/ height 2.)))
 (define speed
-  (* 4.5 RATE))
+  (* (/ height 2.0) RATE))
 (define initial-ball-speed
   speed)
 
 (define paddle-w
-  .5)
+  (/ width 32.0))
 (define paddle-hw
   (/ paddle-w 2))
 (define paddle-h
@@ -53,58 +52,38 @@
 (define max-paddle-y
   (- height paddle-hh))
 
-(define paddle-blocks
-  (gl:path->texture (build-path resource-path "tetrispiecess.png")))
 (define blocks-in-a-paddle 5)
-(define (stack n gap cmd)
-  (gl:for/gl ([i (in-range n)])
-             (gl:translate 0. (* gap i) cmd)))
-
-(define (paddle-at px)
+(define (lhs-paddle)
   (define block-h
     (/ paddle-h blocks-in-a-paddle))
-  (define block
-    (gl:texture/px paddle-blocks
-                   paddle-w block-h
-                   px 44
-                   10 10))
-  (stack blocks-in-a-paddle block-h
-         block))
+  (for/list ([i (in-range blocks-in-a-paddle)])
+    (transform 
+     #:dy (* block-h i)
+     (rectangle paddle-hw (/ block-h 2.0) tennis/paddle))))
 
-(define lhs-paddle
-  (paddle-at 4))
-
+;; XXX relate this to width and height
 (define ball-r .25)
 (define ball-hw (* 1.5 ball-r))
 (define ball-hh ball-r)
 
-(define ball-sprites
-  (gl:path->texture
-   (build-path resource-path "ryu.png")))
-(define gl:ball
-  (gl:translate
-   (- ball-r) (- ball-r)
-   (gl:texture/px
-    ball-sprites
-    (* 2 ball-hw) (* 2 ball-hh)
-    484 683
-    36 24)))
+(define (ball-sprite)
+  (transform
+   #:d (- ball-r) (- ball-r)
+   (rectangle ball-hw ball-hh
+              tennis/ball)))
 
-(define bgm-img
-  (gl:path->texture
-   (build-path resource-path "potosvillage.png")))
-(define bgm
-  (gl:texture/px
-   bgm-img
-   width height
-   215 265
-   432 243))
+(define (bgm)
+  (transform
+   #:d (/ width 2.0) (/ height 2.0)
+   (rectangle (/ width 2.0) (/ height 2.0) tennis/bg)))
 
+;; XXX how is this .5 related to width?
 (define lhs-x
   (- .5 paddle-hw))
 
 (define (between lo hi)
   (+ lo (* (random) (- hi lo))))
+;; XXX how is this 1..5 related to width?
 (define serve-dist
   (* 1.5 (+ ball-hw paddle-hw)))
 (define ball-start-pos
@@ -116,7 +95,7 @@
      (between 0 (/ pi 4.))))
 
 (define (player-paddle)
-  (let loop ([lhs-y 4.5])
+  (let loop ([lhs-y (/ height 2.0)])
     (define lhs-dy
       (controller-ldpad-y (os/read* 'controller)))
     (define lhs-y-n
@@ -129,11 +108,14 @@
       (cons 'lhs-y lhs-y-n)
       (cons 'graphics
             (cons 0
-                  (gl:translate lhs-x (- lhs-y-n paddle-hh)
-                                lhs-paddle)))))
+                  (transform #:d
+                             (+ lhs-x paddle-hw)
+                             (- lhs-y-n paddle-hh)
+                             (lhs-paddle))))))
     (loop lhs-y-n)))
 
 (define (ball-bounce dir mx my [dy 0.])
+  ;; XXX how is this 1.0 related to width?
   (define p (make-polar 1.0 dir))
   (angle
    (make-rectangular (* mx (real-part p))
@@ -148,7 +130,7 @@
       (* (+ 1 (* .1 taps)) initial-ball-speed))
     (define (ball-in-dir ball-pos dir)
       (+ ball-pos (make-polar (ball-speed taps) dir)))
-    (define lhs-y-n (os/read* 'lhs-y 4.5))
+    (define lhs-y-n (os/read* 'lhs-y (/ height 2.0)))
     (define lhs-shape
       (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n)
                paddle-hw paddle-hh))
@@ -160,6 +142,7 @@
         [; The ball has bounced off the lhs
          (cd:shape-vs-shape ball-shape lhs-shape)
          (define ball-pos-pushed
+           ;; XXX how is this 4 related to width?
            (psn (max (+ lhs-x (* 4 paddle-hw))
                      (psn-x ball-pos))
                 (psn-y ball-pos)))
@@ -209,9 +192,9 @@
       (cons 'score? score?)
       (cons 'graphics
             (cons 0
-                  (gl:translate (psn-x ball-pos-n) (psn-y ball-pos-n)
-                                (gl:rotate (* (/ 180 pi) ball-dir-n)
-                                           gl:ball))))
+                  (transform #:d (psn-x ball-pos-n) (psn-y ball-pos-n)
+                             #:rot ball-dir-n
+                             (ball-sprite))))
       (append
        sounds
        (if new-ball?
@@ -221,6 +204,15 @@
       (loop taps-n
             (ball-in-dir ball-pos-n ball-dir-n)
             ball-dir-n))))
+
+(define modern-12-char
+  (make-char-factory modern 12))
+(define char-height
+  (texture-height (modern-12-char #\a)))
+(define char-width
+  (texture-width (modern-12-char #\a)))
+(define string->sprites
+  (make-string-factory modern-12-char))
 
 (define (game-start)
   (big-bang/os
@@ -243,22 +235,31 @@
          (cons 'graphics
                (cons
                 10.0
-                (gl:seqn
-                 bgm
+                (cons
                  (let ()
-                   (define score-t
-                     (gl:string->texture
-                      #:size 30
-                      (format "~a" score-n)))
-                   (gl:translate
-                    (- (psn-x center-pos) (/ (gl:texture-dw score-t) 2))
-                    (- height (gl:texture-dh score-t))
-                    (gl:seqn
-                     (gl:color 1. 1. 1. 1.
-                               (gl:rectangle (gl:texture-dw score-t)
-                                             (gl:texture-dh score-t)))
-                     (gl:color 0. 0. 0. 1.
-                               (gl:texture score-t))))))))))
+                   (define score-s
+                     (format "~a" score-n))
+                   (define score-h
+                     1.0)
+                   (define score-w
+                     (* 1.0 (string-length score-s)))
+                   (transform
+                    #:d
+                    (- (psn-x center-pos) 
+                       (/ score-w 2.0))
+                    (- height score-h)
+                    (cons
+                     (string->sprites
+                      #:hw .5
+                      #:hh .5
+                      score-s)
+                     (transform 
+                      #:rgba 1. 1. 1. 1.
+                      (string->sprites
+                       #:hw .5
+                       #:hh .5
+                       (make-string (string-length score-s) #\space))))))
+                 (bgm))))))
        (loop score-n)))))
 
 (define game

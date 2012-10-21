@@ -142,7 +142,7 @@
      (match-define (os new-cur-h _ _ _) new-w)
      (define gl-list
        (sort (hash-ref new-cur-h 'graphics empty)
-             >= #:key car))
+             < #:key car))
      (values new-w
              (λ ()
                (unless draw
