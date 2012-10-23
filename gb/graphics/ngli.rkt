@@ -39,6 +39,9 @@
 (define-syntax (transform stx)
   (syntax-parse stx
     ;; Color
+    [(_ #:rgb r:expr g:expr b:expr . more:expr)
+     (syntax/loc stx
+       (transform #:r r #:g g #:b b . more))]
     [(_ #:rgba r:expr g:expr b:expr a:expr . more:expr)
      (syntax/loc stx
        (transform #:r r #:g g #:b b #:a a . more))]
@@ -79,13 +82,17 @@
     [(_ #:m mx:expr my:expr . more:expr)
      (syntax/loc stx
        (transform #:mx mx #:my my . more))]
+    [(_ #:mxy mxy:expr . more:expr)
+     (syntax/loc stx
+       (let ([mxy-v mxy])
+         (transform #:mx mxy-v #:my mxy-v . more)))]
     [(_ #:mx mx:expr . more:expr)
      (syntax/loc stx
-       (parameterize ([current-mx (+ (current-mx) mx)])
+       (parameterize ([current-mx (* (current-mx) mx)])
          (transform . more)))]
     [(_ #:my my:expr . more:expr)
      (syntax/loc stx
-       (parameterize ([current-my (+ (current-my) my)])
+       (parameterize ([current-my (* (current-my) my)])
          (transform . more)))]
     ;; Done
     [(_ . body:expr)

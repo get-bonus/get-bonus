@@ -18,6 +18,18 @@
 
   (define HowManySprites (* 4 512))
   (define objects
+
+    (list
+     (transform #:d 4.0 6.0 #:rgba 1.0 0.0 0.0 1.0
+                (rectangle 0.5 0.5))
+     (transform #:d 12.0 6.0 #:rgba 0.0 1.0 0.0 1.0 #:m 1.0 1.0
+                (rectangle 0.5 0.5))
+     (transform #:d 4.0 3.0 #:rgba 0.0 0.0 1.0 1.0 #:m 0.5 0.5
+                (rectangle 0.5 0.5))
+     (transform #:d 12.0 3.0 #:rgba 0.0 0.0 0.0 1.0 #:m 2.0 2.0
+                (rectangle 0.5 0.5)))
+
+    #;
     (transform
      #:d 8.0 4.5
      (modern/12/string "TEST" #:hw 0.5 #:hh 0.5))
@@ -88,6 +100,7 @@
 
                (set! Frame (modulo (add1 Frame) 60))
 
+               #;
                (when (zero? Frame)
                  (set! objects
                        (for/list ([o (in-list objects)])
