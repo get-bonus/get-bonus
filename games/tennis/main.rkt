@@ -75,8 +75,8 @@
 (define (ball-sprite)
   (transform
    #:d (- ball-r) (- ball-r)
-   (rectangle ball-hw ball-hh
-              tennis/ball)))
+   #:mxy ball-scale
+   (sprite tennis/ball)))
 
 (define (bgm)
   (transform
