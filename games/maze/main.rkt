@@ -2,9 +2,8 @@
 (require racket/runtime-path
          tests/eli-tester
          gb/gui/world
-         (prefix-in gl:
-                    (combine-in gb/graphics/gl
-                                gb/graphics/gl-ext))
+         gb/gui/os
+         gb/graphics/ngl-main
          gb/data/mvector
          gb/gui/fullscreen
          gb/gui/os
@@ -17,6 +16,7 @@
          gb/meta
          (only-in gb/ai/path-finding
                   manhattan-distance)
+         (for-syntax racket/syntax)
          (prefix-in cd:
                     (combine-in gb/physics/cd-narrow
                                 gb/physics/cd-broad)))
@@ -28,15 +28,18 @@
 (define (sequence-not-empty? s)
   (for/or ([e s]) #t))
 
-(define title
-  (gl:string->texture "ハングリーマン"
-                      #:size 50 #:family 'decorative))
+(define modern-12-char
+  (make-char-factory modern 12))
+(define char-height
+  (texture-height (modern-12-char #\a)))
+(define char-width
+  (texture-width (modern-12-char #\a)))
+(define string->sprites
+  (make-string-factory modern-12-char))
 
 (define-runtime-path resource-path "r")
 (define-syntax-rule (define-sound id f)
   (define id (path->audio (build-path resource-path f))))
-(define-syntax-rule (define-texture id f)
-  (define id (gl:path->texture (build-path resource-path f))))
 
 (define-sound se:crunch "crunch.wav")
 (define-sound se:bgm "bgm.ogg")
@@ -136,7 +139,7 @@
                 (filter inside-maze?
                         (non-wall-neighbors r*c)))))
   (visit player-entry-cell)
-  
+
   (let ()
     (local-require data/heap
                    unstable/function)
@@ -205,8 +208,6 @@
 ;; XXX ghost train
 ;; XXX bomb
 
-(define-texture sprites-t "pacman.png")
-
 (define (rate how-many how-often t)
   (modulo (floor (/ t how-often)) how-many))
 
@@ -219,15 +220,29 @@
       ['down 3]))
   (ghost-sprite n dir-n frame-n))
 
+(define-syntax (ghost-match stx)
+  (syntax-case stx ()
+    [(_ ghost-e set-e frame-e)
+     (with-syntax
+         ([((ghost-n set-n frame-n maze/ghost/ghost-n/set-n/frame-n) ...)
+           (for*/list ([ghost-n (in-range 5)]
+                       [set-n (in-range 4)]
+                       [frame-n (in-range 2)])
+             (list ghost-n set-n frame-n
+                   (format-id stx "maze/ghost/~a/~a/~a"
+                              ghost-n set-n frame-n)))])
+     (syntax/loc stx
+       (match* (ghost-e set-e frame-e)
+         [(ghost-n set-n frame-n)
+          maze/ghost/ghost-n/set-n/frame-n]
+         ...)))]))
+
 (define (ghost-sprite which-ghost which-set frame-n)
-  (gl:translate
-   -.5 -.5
-   (gl:texture/px
-    sprites-t
-    1 1
-    (+ 3 (* 17 (+ (rate 2 10 frame-n) (* 2 which-set))))
-    (+ 125 (* 18 which-ghost))
-    14 12)))
+  (transform
+   #:d -.5 -.5
+   (rectangle 
+    0.5 0.5
+    (ghost-match which-ghost which-set (rate 2 10 frame-n)))))
 
 (define (scared-ghost-animation frame-n warning?)
   (ghost-sprite
@@ -236,27 +251,27 @@
    frame-n))
 
 (define (player-animation n)
-  (gl:translate
-   -.5 -.5
-   (gl:texture/px sprites-t
-                  1 1
-                  (+ 3 (* 15 (rate 3 10 n))) 90
-                  14 14)))
+  (transform
+   #:d -.5 -.5
+   (rectangle
+    0.5 0.5
+    (match (rate 3 10 n)
+      [0 maze/player/0]
+      [1 maze/player/1]
+      [2 maze/player/2]))))
 (define player-r .499)
 
 (define pellet-r (/ player-r 6))
-(define pellet-img
-  (gl:scale pellet-r pellet-r
-            (gl:circle)))
-(define power-up-img
-  (gl:scale (* pellet-r 2) (* 2 pellet-r)
-            (gl:circle)))
-(define fruit-img
+(define (pellet-img)
+  (rectangle (/ pellet-r 2.) (/ pellet-r 2.)))
+(define (power-up-img)
+  (rectangle pellet-r pellet-r))
+(define (fruit-img)
   (let ()
     (define s (* 3 pellet-r))
-    (gl:translate
-     (- (* s .5)) (- (* s .5))
-     (gl:rectangle s s))))
+    (transform
+     #:d (- (* s .5)) (- (* s .5))
+     (rectangle (/ s 2.) (/ s 2.)))))
 
 (define (locate-cell quad value)
   (for*/or ([r (in-range h-height)]
@@ -491,17 +506,17 @@
       s)))
 
 (define (quads->display qs)
-  (gl:color
-   0. 0. 1. 1.
-   (gl:for*/gl
-    ([x (in-range width)]
-     [y (in-range height)])
-    (define-values (q r c) (xy->quad*r*c x y))
-    (gl:translate
-     (+ x .5) (+ y .5)
-     (if (equal? wall (quad-ref (hash-ref qs q) r c))
-       (gl:translate -.5 -.5 (gl:rectangle 1. 1.))
-       gl:blank)))))
+  (transform
+   #:rgba 0. 0. 1. 1.
+   (for*/list
+       ([x (in-range width)]
+        [y (in-range height)])
+     (define-values (q r c) (xy->quad*r*c x y))
+     (transform
+      #:d (+ x .5) (+ y .5)
+      (if (equal? wall (quad-ref (hash-ref qs q) r c))
+        (transform #:d -.5 -.5 (rectangle 0.5 0.5))
+        empty)))))
 
 (struct quad-objs (pellet-count r*c->obj))
 (define (populate-quad q [old-q #f] [old-qo #f])
@@ -548,21 +563,21 @@
           objs (quad-objs->display objs)))
 
 (define (quad-objs->display os)
-  (gl:color/%
-   (make-object color% 255 161 69)
-   (gl:for*/gl
-    ([x (in-range width)]
-     [y (in-range height)])
-    (define-values (q r c) (xy->quad*r*c x y))
-    (match-define (quad-objs _ fm) (hash-ref os q))
-    (gl:translate
-     (+ x .5) (+ y .5)
-     (match (fmatrix-ref fm r c #f)
-       ['pellet pellet-img]
-       ['power-up power-up-img]
-       ['fruit fruit-img]
-       [#f
-        gl:blank])))))
+  (transform
+   #:irgbv (vector 255 161 69)
+   (for*/list
+       ([x (in-range width)]
+        [y (in-range height)])
+     (define-values (q r c) (xy->quad*r*c x y))
+     (match-define (quad-objs _ fm) (hash-ref os q))
+     (transform
+      #:d (+ x .5) (+ y .5)
+      (match (fmatrix-ref fm r c #f)
+        ['pellet (pellet-img)]
+        ['power-up (power-up-img)]
+        ['fruit (fruit-img)]
+        [#f
+         empty])))))
 
 (define opposite-quad
   (match-lambda
@@ -660,25 +675,25 @@
     (pos->cell
      (+ outside-jail 1.)))
   (define (ghost-graphics pos l-target dir power-left-n)
-    (gl:translate
-     0. 0.
-     (gl:seqn
-      (gl:translate
-       (psn-x pos) (psn-y pos)
+    (transform
+     #:d 0. 0.
+     (cons
+      (transform
+       #:d (psn-x pos) (psn-y pos)
        (if (zero? power-left-n)
          (ghost-animation ai-n (current-frame) dir)
          (scared-ghost-animation
           (current-frame)
           (power-left-n . <= . TIME-TO-POWER-WARNING))))
-      (gl:translate
-       (- (psn-x l-target) .5) (- (psn-y l-target) .5)
-       (gl:color/%
-        (match ai-n
-          [0 (make-object color% 169 16 0)]
-          [1 (make-object color% 215 182 247)]
-          [2 (make-object color% 60 189 255)]
-          [3 (make-object color% 230 93 16)])
-        (gl:rectangle 1. 1. 'outline))))))
+      (transform
+       #:d (- (psn-x l-target) .5) (- (psn-y l-target) .5)
+       #:irgbv
+       (match ai-n
+         [0 (vector 169 16 0)]
+         [1 (vector 215 182 247)]
+         [2 (vector 60 189 255)]
+         [3 (vector 230 93 16)])
+       (rectangle 0.5 0.5)))))
   (let wait-loop ([dot-timer init-timer])
     (unless (dot-timer . <= . 0)
       (define event (os/read* 'event #f))
@@ -687,7 +702,7 @@
         (cons 'graphics
               (cons 0
                     (if (even? (current-frame))
-                      gl:blank
+                      empty
                       (ghost-graphics outside-jail outside-jail 'left
                                       (os/read* 'power-left)))))))
       (wait-loop (if (eq? event 'pellet)
@@ -835,11 +850,10 @@
       (cons 'graphics
             (cons
              0.0
-             (gl:translate
-              (psn-x nnp) (psn-y nnp)
-              (gl:rotate
-               (rad->deg actual-dir)
-               (player-animation (current-frame))))))))
+             (transform
+              #:d (psn-x nnp) (psn-y nnp)
+              #:rot (rad->deg actual-dir)
+              (player-animation (current-frame)))))))
     (loop nnp actual-dir next-dir-n)))
 
 (define (game-start)
@@ -913,20 +927,18 @@
          (cons 'graphics
                (cons
                 10.
-                (gl:seqn
-                 (gl:color
-                  1. 1. 1. 1.
-                  (gl:center-texture-at
-                   (psn (/ width 2.) (+ height 1.5))
-                   title)
-                  (gl:translate
-                   0. (+ height 0.5)
-                   (gl:texture
-                    (gl:string->texture
-                     #:size 50
-                     (format "~a" score-n)))))
-                 (static-map-display st)
-                 (static-objs-display st))))
+                (list
+                 #;(transform
+                  #:rgba 1. 1. 1. 1.
+                  (transform
+                   #:d 0. (+ height 0.5)
+                   (string->sprites
+                     (format "~a" score-n))))
+                 (static-objs-display st)
+                 (static-map-display st)                 
+                 (transform #:rgb 0. 0. 0. 
+                            #:d (/ width 2.) (/ height 2.)
+                            (rectangle (/ width 2.) (/ height 2.))))))
          (cons 'static
                st-n)
          (cons 'power-left

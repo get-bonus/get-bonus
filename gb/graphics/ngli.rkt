@@ -36,9 +36,21 @@
 (define (sprite/tint tex)
   (sprite* (current-r) (current-g) (current-b) (current-a) tex))
 
+(define (->float v)
+  (if (zero? v)
+    0.
+    (* 1. v)))
+
 (define-syntax (transform stx)
   (syntax-parse stx
     ;; Color
+    [(_ #:irgbv irgbv:expr . more:expr)
+     (syntax/loc stx
+       (let* ([irgbv-v irgbv]
+              [r (->float (/ (vector-ref irgbv-v 0) 255))]
+              [g (->float (/ (vector-ref irgbv-v 1) 255))]
+              [b (->float (/ (vector-ref irgbv-v 2) 255))])
+         (transform #:r r #:g g #:b b . more)))]
     [(_ #:rgb r:expr g:expr b:expr . more:expr)
      (syntax/loc stx
        (transform #:r r #:g g #:b b . more))]

@@ -499,6 +499,10 @@
 * DONE NGL - convert tennis's resolution
   CLOSED: [2012-10-23 Tue 15:35]
   There is still the rectangle in ball-sprite because I can't use sacle
+* TODO NGL - the 0/0/0 color seems to be brown? weird?
+* TODO NGL - maze - the items are not center and the pellets are too small
+* TODO NGL - maze - the score display isn't there
+* TODO NGL - maze - gets UNBEARABLY slow after a little while... why?
 * TODO NGL - Use with actual games that I have
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
