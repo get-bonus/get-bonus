@@ -503,10 +503,24 @@
   CLOSED: [2012-10-23 Tue 22:19]
 * TODO NGL - the 0/0/0 color seems to be brown? weird?
 * TODO NGL - the squares are not all square in maze
+  I don't think it's a problem with CRT, because when I turn off that
+  shaded, it still happens.
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - pacman is pointing the wrong way
 * TODO NGL - maze - gets UNBEARABLY slow after a little while... why?
-  maybe the evector is getting too big? [nope]
+  maybe the evector is getting too big? [nope, i added a printout and
+  nothing happened]
+
+  maybe I'm not really using the same graphics card memory and I'm
+  doing lots of allocations? I tried to use dynamic versus stream. I
+  tried to use buffersubdata. I feel like I don't have enough
+  information about what's going on.
+
+  maybe I should try the two FBO thing?
+
+  http://hacksoflife.blogspot.com/2012/04/beyond-glmapbuffer.html
+
+  http://www.gamedev.net/topic/517185-opengl-batch-rendering/
 * TODO NGL - Use with actual games that I have
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw

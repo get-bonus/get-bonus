@@ -82,7 +82,7 @@
     (the-frame the-canvas)
     (make-fullscreen-canvas/ratio
      ""
-     16 9
+     16 9   
      (λ (c)
        (define dc (send c get-dc))
        (define glctx (send dc get-gl-context))
