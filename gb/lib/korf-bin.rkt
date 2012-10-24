@@ -189,10 +189,10 @@
    (for/or ([try-pow2 (in-naturals optimal-pow2)])
      (define len (expt 2 try-pow2))
      (printf "trying pow2 = ~a\n" try-pow2)
-     (cons* try-pow2 (place len len e-w e-h l/sorted))))
+     (cons* try-pow2 (place (sub1 len) (sub1 len) e-w e-h l/sorted))))
 
   (values (expt 2 best-pow2)
-          (layout->placements 0 0 best-ly)))
+          (layout->placements 1 1 best-ly)))
 
 (provide
  (struct-out placement)

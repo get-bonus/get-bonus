@@ -34,7 +34,7 @@
   (define (png-w v)
     (vector-ref v 2))
   (define (png-h v)
-    (vector-ref v 3))  
+    (vector-ref v 3))
 
   (local-require gb/lib/korf-bin)
   (define-values

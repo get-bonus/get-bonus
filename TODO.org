@@ -501,10 +501,19 @@
   There is still the rectangle in ball-sprite because I can't use sacle
 * DONE NGL - maze - the items are not center and the pellets are too small
   CLOSED: [2012-10-23 Tue 22:19]
-* TODO NGL - the 0/0/0 color seems to be brown? weird?
+* DONE NGL - the 0/0/0 color seems to be brown? weird?
+  CLOSED: [2012-10-24 Wed 07:06]
+  I think the reason is that it gets combined with the 0,0 pixel in
+  the sprite sheet which isn't empty
+* TODO NGL - after fixing blackness, now some of the sprites aren't shown
 * TODO NGL - the squares are not all square in maze
   I don't think it's a problem with CRT, because when I turn off that
   shaded, it still happens.
+
+  Although, when I turned off CRT altogether, it went away. My current
+  assumption is that the scaling from CRT to full-screen is a
+  non-integer amount, so I should fix it to restrict to integer
+  amounts so that pixels are always doubled, tripled, etc.
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - pacman is pointing the wrong way
 * TODO NGL - maze - gets UNBEARABLY slow after a little while... why?
@@ -521,6 +530,17 @@
   http://hacksoflife.blogspot.com/2012/04/beyond-glmapbuffer.html
 
   http://www.gamedev.net/topic/517185-opengl-batch-rendering/
+
+  2012/10/24 - When I turned off the CRT emulation, the problem
+  happened much sooner. I think this is because of more stages in my
+  pipeline, so more chance to have asynchrony. Maybe the two FBO
+  thing will work, then?
+
+  I don't understand why this wouldn't happen with my demos, such as
+  the rotating sprites one, which change things just as much and I've
+  run for just as long.
+
+  Experiment with getting memory data from bugle
 * TODO NGL - Use with actual games that I have
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
