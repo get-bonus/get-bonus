@@ -231,16 +231,21 @@
              (list ghost-n set-n frame-n
                    (format-id stx "maze/ghost/~a/~a/~a"
                               ghost-n set-n frame-n)))])
-     (syntax/loc stx
-       (match* (ghost-e set-e frame-e)
-         [(ghost-n set-n frame-n)
-          maze/ghost/ghost-n/set-n/frame-n]
-         ...)))]))
+       (syntax/loc stx
+         (let ([ghost-v ghost-e]
+               [set-v set-e]
+               [frame-v frame-e])
+           (cond
+             [(and (= ghost-v ghost-n)
+                   (= set-v set-n)
+                   (= frame-v frame-n))
+              maze/ghost/ghost-n/set-n/frame-n]
+             ...))))]))
 
 (define (ghost-sprite which-ghost which-set frame-n)
   (transform
    #:d -.5 -.5
-   (rectangle 
+   (rectangle
     0.5 0.5
     (ghost-match which-ghost which-set (rate 2 10 frame-n)))))
 
@@ -263,15 +268,15 @@
 
 (define pellet-r (/ player-r 6))
 (define (pellet-img)
-  (rectangle (/ pellet-r 2.) (/ pellet-r 2.)))
-(define (power-up-img)
   (rectangle pellet-r pellet-r))
+(define (power-up-img)
+  (rectangle (* 2 pellet-r) (* 2 pellet-r)))
 (define (fruit-img)
   (let ()
     (define s (* 3 pellet-r))
     (transform
      #:d (- (* s .5)) (- (* s .5))
-     (rectangle (/ s 2.) (/ s 2.)))))
+     (rectangle s s))))
 
 (define (locate-cell quad value)
   (for*/or ([r (in-range h-height)]
@@ -512,11 +517,11 @@
        ([x (in-range width)]
         [y (in-range height)])
      (define-values (q r c) (xy->quad*r*c x y))
-     (transform
-      #:d (+ x .5) (+ y .5)
-      (if (equal? wall (quad-ref (hash-ref qs q) r c))
-        (transform #:d -.5 -.5 (rectangle 0.5 0.5))
-        empty)))))
+     (if (equal? wall (quad-ref (hash-ref qs q) r c))
+       (transform
+        #:d x y
+        (rectangle 0.5 0.5))
+       empty))))
 
 (struct quad-objs (pellet-count r*c->obj))
 (define (populate-quad q [old-q #f] [old-qo #f])
@@ -571,7 +576,7 @@
      (define-values (q r c) (xy->quad*r*c x y))
      (match-define (quad-objs _ fm) (hash-ref os q))
      (transform
-      #:d (+ x .5) (+ y .5)
+      #:d x y
       (match (fmatrix-ref fm r c #f)
         ['pellet (pellet-img)]
         ['power-up (power-up-img)]
@@ -675,25 +680,23 @@
     (pos->cell
      (+ outside-jail 1.)))
   (define (ghost-graphics pos l-target dir power-left-n)
-    (transform
-     #:d 0. 0.
-     (cons
-      (transform
-       #:d (psn-x pos) (psn-y pos)
-       (if (zero? power-left-n)
-         (ghost-animation ai-n (current-frame) dir)
-         (scared-ghost-animation
-          (current-frame)
-          (power-left-n . <= . TIME-TO-POWER-WARNING))))
-      (transform
-       #:d (- (psn-x l-target) .5) (- (psn-y l-target) .5)
-       #:irgbv
-       (match ai-n
-         [0 (vector 169 16 0)]
-         [1 (vector 215 182 247)]
-         [2 (vector 60 189 255)]
-         [3 (vector 230 93 16)])
-       (rectangle 0.5 0.5)))))
+    (cons
+     (transform
+      #:d (psn-x pos) (psn-y pos)
+      (if (zero? power-left-n)
+        (ghost-animation ai-n (current-frame) dir)
+        (scared-ghost-animation
+         (current-frame)
+         (power-left-n . <= . TIME-TO-POWER-WARNING))))
+     (transform
+      #:d (- (psn-x l-target) .5) (- (psn-y l-target) .5)
+      #:irgbv
+      (match ai-n
+        [0 (vector 169 16 0)]
+        [1 (vector 215 182 247)]
+        [2 (vector 60 189 255)]
+        [3 (vector 230 93 16)])
+      (rectangle 0.5 0.5))))
   (let wait-loop ([dot-timer init-timer])
     (unless (dot-timer . <= . 0)
       (define event (os/read* 'event #f))
@@ -929,14 +932,14 @@
                 10.
                 (list
                  #;(transform
-                  #:rgba 1. 1. 1. 1.
-                  (transform
-                   #:d 0. (+ height 0.5)
-                   (string->sprites
-                     (format "~a" score-n))))
+                 #:rgba 1. 1. 1. 1.
+                 (transform
+                 #:d 0. (+ height 0.5)
+                 (string->sprites
+                 (format "~a" score-n))))
                  (static-objs-display st)
-                 (static-map-display st)                 
-                 (transform #:rgb 0. 0. 0. 
+                 (static-map-display st)
+                 (transform #:a 1.0
                             #:d (/ width 2.) (/ height 2.)
                             (rectangle (/ width 2.) (/ height 2.))))))
          (cons 'static
