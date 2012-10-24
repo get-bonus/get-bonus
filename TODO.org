@@ -508,7 +508,8 @@
 * DONE NGL - after fixing blackness, now some of the sprites aren't shown
   CLOSED: [2012-10-24 Wed 08:53]
   alpha is probably 0
-* TODO NGL - the squares are not all square in maze
+* DONE NGL - the squares are not all square in maze
+  CLOSED: [2012-10-24 Wed 09:16]
   I don't think it's a problem with CRT, because when I turn off that
   shaded, it still happens.
 

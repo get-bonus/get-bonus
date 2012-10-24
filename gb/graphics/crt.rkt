@@ -10,27 +10,43 @@
 (define-shader-source vertex-source "crt.vertex.glsl")
 
 ;; This width and height is based on the SNES, which was 256x239. The
-;; smallest 16:9 rectangle that this fits in is 432x243, so we'll use
-;; that. This makes the GBIES basically a "widescreen" SNES.
-(define crt-width 432)
-(define crt-height 243)
+;; smallest 16:9 rectangle that this fits in is 432x243, which is
+;; crt-scale 27, but this makes it so that we have an odd number in
+;; various places. So, we'll use crt-scale 28, or 448x252. This makes
+;; the GBIES basically a "widescreen" SNES.
+(define crt-scale 28)
+(define crt-width (* crt-scale 16))
+(define crt-height (* crt-scale 9))
 
 ;; FBO stuff based on: http://www.songho.ca/opengl/gl_fbo.html
 
 ;; shader stuff based on
 ;; :bsnes_v085-source/bsnes/ruby/video/opengl.hpp
 
-(define (make-draw-on-crt screen-width screen-height)
+(define (make-draw-on-crt actual-screen-width actual-screen-height)
   (define texture-width crt-width)
   (define texture-height crt-height)
+
+  (define scale
+    (* 1.
+       (min (quotient actual-screen-width crt-width)
+            (quotient actual-screen-height crt-height))))
+
+  (define screen-width (* scale crt-width))
+  (define screen-height (* scale crt-height))
+
+  (define inset-left (/ (- actual-screen-width screen-width) 2.))
+  (define inset-right (+ inset-left screen-width))
+  (define inset-bottom (/ (- actual-screen-height screen-height) 2.))
+  (define inset-top (+ inset-bottom screen-height))
 
   (glEnable GL_TEXTURE_2D)
 
   (define myTexture (u32vector-ref (glGenTextures 1) 0))
 
   (glBindTexture GL_TEXTURE_2D myTexture)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST)
   (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
   (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
   (glTexImage2D
@@ -121,14 +137,14 @@
     (glEnable GL_TEXTURE_2D)
     (glMatrixMode GL_MODELVIEW)
     (glLoadIdentity)
-    (glOrtho 0 screen-width 0 screen-height 0. -10.)
-    (glViewport 0 0 screen-width screen-height)
+    (glOrtho 0 actual-screen-width 0 actual-screen-height 0. -10.)
+    (glViewport 0 0 actual-screen-width actual-screen-height)
     (glBindTexture GL_TEXTURE_2D myTexture)
     (glBegin GL_QUADS)
-    (glTexCoord2i 0 0) (glVertex2i 0 0)
-    (glTexCoord2i 1 0) (glVertex2i screen-width 0)
-    (glTexCoord2i 1 1) (glVertex2i screen-width screen-height)
-    (glTexCoord2i 0 1) (glVertex2i 0 screen-height)
+    (glTexCoord2i 0 0) (glVertex2f inset-left inset-bottom)
+    (glTexCoord2i 1 0) (glVertex2f inset-right inset-bottom)
+    (glTexCoord2i 1 1) (glVertex2f inset-right inset-top)
+    (glTexCoord2i 0 1) (glVertex2f inset-left inset-top)
     (glEnd)
     (glBindTexture GL_TEXTURE_2D 0)
     (glDisable GL_TEXTURE_2D)
