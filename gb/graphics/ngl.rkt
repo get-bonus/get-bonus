@@ -134,9 +134,19 @@
   (define (load-buffer-data gl-type VboId Vertices)
     (glBindBuffer GL_ARRAY_BUFFER VboId)
     (glBufferData GL_ARRAY_BUFFER
-                  (* (gl-type-sizeof gl-type) (f32:vector-length Vertices))
-                  (f32:vector-base Vertices)
-                  GL_STREAM_DRAW))
+                  (* (gl-type-sizeof gl-type)
+                     (f32vector-length
+                      (f32:vector-base Vertices)))
+                  #f
+                  GL_DYNAMIC_DRAW))
+  (define (reload-buffer-data gl-type VboId Vertices)
+    (glBindBuffer GL_ARRAY_BUFFER VboId)
+    (glBufferSubData GL_ARRAY_BUFFER
+                     0
+                     (* (gl-type-sizeof gl-type)
+                        (f32vector-length
+                         (f32:vector-base Vertices)))
+                     (f32:vector-base Vertices)))
 
   (define-syntax-rule
     (define-vertex-attrib-array
@@ -179,7 +189,8 @@
     (define offset (install-objects! objects))
 
     ;; Reload all data every frame
-    (load-buffer-data GL_FLOAT VboId SpriteData)
+    ;; XXX What if the size increased?
+    (reload-buffer-data GL_FLOAT VboId SpriteData)
     (glBindBuffer GL_ARRAY_BUFFER 0)
 
     (glUseProgram ProgramId)
