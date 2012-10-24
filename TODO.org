@@ -505,7 +505,9 @@
   CLOSED: [2012-10-24 Wed 07:06]
   I think the reason is that it gets combined with the 0,0 pixel in
   the sprite sheet which isn't empty
-* TODO NGL - after fixing blackness, now some of the sprites aren't shown
+* DONE NGL - after fixing blackness, now some of the sprites aren't shown
+  CLOSED: [2012-10-24 Wed 08:53]
+  alpha is probably 0
 * TODO NGL - the squares are not all square in maze
   I don't think it's a problem with CRT, because when I turn off that
   shaded, it still happens.
@@ -541,6 +543,10 @@
   run for just as long.
 
   Experiment with getting memory data from bugle
+
+  http://www.gremedy.com/screenshots.php
+  https://www.opengl.org/wiki/Debugging_Tools
+  http://www.opengl.org/sdk/tools/BuGLe/
 * TODO NGL - Use with actual games that I have
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw

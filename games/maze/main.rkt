@@ -569,7 +569,7 @@
 
 (define (quad-objs->display os)
   (transform
-   #:irgbv (vector 255 161 69)
+   #:irgbv (vector 255 161 69) #:a 1.0
    (for*/list
        ([x (in-range width)]
         [y (in-range height)])
@@ -690,6 +690,7 @@
          (power-left-n . <= . TIME-TO-POWER-WARNING))))
      (transform
       #:d (- (psn-x l-target) .5) (- (psn-y l-target) .5)
+      #:a 1.0
       #:irgbv
       (match ai-n
         [0 (vector 169 16 0)]
