@@ -8,7 +8,6 @@
          gb/gui/world
          gb/graphics/ngl-main
          gb/data/mvector
-         gb/gui/fullscreen
          gb/input/controller
          gb/audio/3s
          gb/lib/math

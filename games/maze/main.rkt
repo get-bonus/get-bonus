@@ -5,7 +5,6 @@
          gb/gui/os
          gb/graphics/ngl-main
          gb/data/mvector
-         gb/gui/fullscreen
          gb/gui/os
          gb/input/controller
          gb/audio/3s

@@ -5,7 +5,6 @@
                     (combine-in gb/graphics/gl
                                 gb/graphics/gl-ext))
          gb/data/mvector
-         gb/gui/fullscreen
          gb/input/keyboard
          gb/input/controller
          gb/audio/3s
