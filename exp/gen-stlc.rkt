@@ -1,5 +1,8 @@
-#lang racket
-(require redex/reduction-semantics)
+#lang racket/base
+(require racket/match
+         racket/list
+         racket/function
+         redex/reduction-semantics)
 
 ;; XXX Use De Bruijin indices and maybe use that to cache the results
 ;; of generating terms of some size

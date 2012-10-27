@@ -1,5 +1,10 @@
-#lang racket/gui
+#lang racket/base
 (require racket/runtime-path
+         racket/math
+         racket/match
+         racket/file
+         racket/list
+         racket/function
          tests/eli-tester
          gb/gui/world
          gb/gui/os
@@ -15,7 +20,8 @@
          gb/meta
          (only-in gb/ai/path-finding
                   manhattan-distance)
-         (for-syntax racket/syntax)
+         (for-syntax racket/base
+                     racket/syntax)
          (prefix-in cd:
                     (combine-in gb/physics/cd-narrow
                                 gb/physics/cd-broad)))

@@ -1,5 +1,7 @@
-#lang racket/gui
+#lang racket/base
 (require racket/runtime-path
+         racket/match
+         racket/list
          gb/gui/world
          (prefix-in gl:
                     (combine-in gb/graphics/gl

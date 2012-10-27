@@ -517,7 +517,8 @@
   assumption is that the scaling from CRT to full-screen is a
   non-integer amount, so I should fix it to restrict to integer
   amounts so that pixels are always doubled, tripled, etc.
-* TODO have a proper quit handler to close resources, like OpenAL ctxt
+* DONE have a proper quit handler to close resources, like OpenAL ctxt
+  CLOSED: [2012-10-26 Fri 22:04]
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - pacman is pointing the wrong way
 * TODO NGL - maze - gets UNBEARABLY slow after a little while... why?
