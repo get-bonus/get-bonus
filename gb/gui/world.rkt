@@ -43,7 +43,7 @@
                          world->listener done?)
   (let loop ([frame 0]
              [w initial-world]
-             [st (initial-system-state 
+             [st (initial-system-state
                   (current-sound-ctxt)
                   world->listener)])
     (define next-time
@@ -62,7 +62,7 @@
           ;; rendering the next sound... which is bad.
           (define stp
             (render-sound sound-scale st ss wp))
-          (sync (alarm-evt next-time))
+          (yield (alarm-evt next-time))
           (loop (add1 frame) wp stp))))))
 
 (define current-rate-finder
@@ -76,7 +76,7 @@
   (define km
     (keyboard-monitor))
   (define cm
-    (make-controller-monitor 
+    (make-controller-monitor
      #:keyboard km))
 
   (define last-cmd #f)
@@ -96,8 +96,8 @@
                (when last-cmd
                  (unless draw-on-crt
                    (set! draw-on-crt
-                         (make-draw-on-crt 
-                          (send c get-width) 
+                         (make-draw-on-crt
+                          (send c get-width)
                           (send c get-height))))
                  (draw-on-crt last-cmd))
                (send glctx swap-buffers))))
@@ -108,7 +108,7 @@
   (define (this-update-canvas cmd)
     (ltq-add! frame-ltq)
     (set! last-cmd cmd)
-    (send the-frame 
+    (send the-frame
           set-label
           (format "FPS: ~a"
                   (real->decimal-string
@@ -116,12 +116,9 @@
     (send the-canvas refresh-now))
 
   (define the-ctxt (make-sound-context))
-  (define done-ch (make-channel))
-  (define ticker
-    (thread
-     (λ ()
-       (channel-put
-        done-ch
+  (dynamic-wind
+      void
+      (λ ()
         (parameterize
             ([current-sound-ctxt the-ctxt]
              [nested? #t]
@@ -135,12 +132,10 @@
              [current-controllers cm]
              [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick sound-scale
-                           world->listener done?))))))
-
-  (begin0
-    (yield done-ch)
-    (sound-context-destroy! the-ctxt)
-    (send the-frame show #f)))
+                           world->listener done?)))
+      (λ ()
+        (sound-context-destroy! the-ctxt)
+        (send the-frame show #f))))
 
 (provide/contract
  [RATE number?]
