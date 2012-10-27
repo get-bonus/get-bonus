@@ -7,7 +7,6 @@
          gb/input/keyboard
          gb/data/psn
          gb/audio/3s
-         gb/data/ltq
          gb/graphics/crt
          gb/input/controller)
 
@@ -65,10 +64,6 @@
           (yield (alarm-evt next-time))
           (loop (add1 frame) wp stp))))))
 
-(define current-rate-finder
-  (make-parameter (λ () (error 'current-rate "Not in big-bang"))))
-(define (current-rate)
-  ((current-rate-finder)))
 (define current-frame
   (make-parameter 0))
 (define (outer-big-bang initial-world tick sound-scale
@@ -81,6 +76,7 @@
 
   (define last-cmd #f)
   (define draw-on-crt #f)
+  (define frame-time 1000.00)
   (define-values
     (the-frame the-canvas)
     (make-fullscreen-canvas
@@ -93,6 +89,7 @@
          (exit 1))
        (send glctx call-as-current
              (λ ()
+               (define start (current-inexact-milliseconds))
                (when last-cmd
                  (unless draw-on-crt
                    (set! draw-on-crt
@@ -100,19 +97,21 @@
                           (send c get-width)
                           (send c get-height))))
                  (draw-on-crt last-cmd))
-               (send glctx swap-buffers))))
+               (send glctx swap-buffers)
+               (define stop (current-inexact-milliseconds))
+               (set! frame-time (- stop start)))))
      (λ (k)
        (keyboard-monitor-submit! km k))))
-
-  (define frame-ltq (ltq (/ (* 2 60) RATE)))
-  (define (this-update-canvas cmd)
-    (ltq-add! frame-ltq)
+  
+  (define (this-update-canvas cmd)    
     (set! last-cmd cmd)
     (send the-frame
           set-label
-          (format "FPS: ~a"
+          (format "Frame time: ~a; FPS: ~a"
                   (real->decimal-string
-                   (current-rate) 1)))
+                   frame-time 0)
+                  (real->decimal-string
+                   (/ 1000 frame-time) 1)))
     (send the-canvas refresh-now))
 
   (define the-ctxt (make-sound-context))
@@ -121,14 +120,7 @@
       (λ ()
         (parameterize
             ([current-sound-ctxt the-ctxt]
-             [nested? #t]
-             [current-rate-finder
-              (λ ()
-                (with-handlers ([exn:fail? (λ (x) 0.)])
-                  (exact->inexact
-                   (/ (ltq-count frame-ltq)
-                      (- (current-seconds)
-                         (ltq-min frame-ltq))))))]
+             [nested? #t]             
              [current-controllers cm]
              [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick sound-scale
@@ -139,7 +131,6 @@
 
 (provide/contract
  [RATE number?]
- [current-rate (-> number?)]
  [current-frame (-> exact-nonnegative-integer?)]
  [big-bang
   (->* (any/c
