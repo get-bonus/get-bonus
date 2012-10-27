@@ -12,7 +12,10 @@
          [label ""]
          [x 0] [y (* -1 y)]
          [width w] [height h]
-         [style '(hide-menu-bar no-resize-border no-caption no-system-menu)]))
+         [style '(hide-menu-bar
+                  no-resize-border
+                  no-caption
+                  no-system-menu)]))
   (define this-canvas%
     (class canvas%
       (define/override (on-paint)

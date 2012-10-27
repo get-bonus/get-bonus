@@ -196,6 +196,7 @@
  [alSourcei (c:-> integer? integer? integer? void)]
  [alSource3f (c:-> integer? integer? inexact? inexact? inexact? void)]
  [alcOpenDevice (c:-> (or/c #f string?) ALCdevice?)]
+ [alcCloseDevice (c:-> ALCdevice? void? )]
  [alcCreateContext (c:-> ALCdevice? ALCcontext?)]
  [alcMakeContextCurrent (c:-> ALCcontext? void)]
  [alcDestroyContext (c:-> ALCcontext? integer?)]

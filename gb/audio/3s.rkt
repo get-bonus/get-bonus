@@ -52,18 +52,19 @@
       #f
       (s w))))
 
-(struct sound-context (ctxt live?-box))
+(struct sound-context (dev ctxt live?-box))
 (define (make-sound-context)
   (define d (alcOpenDevice #f))
   (define ctxt (alcCreateContext d))
   (alcMakeContextCurrent ctxt)
-  (sound-context ctxt (box #t)))
+  (sound-context d ctxt (box #t)))
 (define (sound-context-destroy! c)
-  (match-define (sound-context ctxt live?-box) c)
+  (match-define (sound-context d ctxt live?-box) c)
   (unless (unbox live?-box)
     (error 'sound-context-destory! "Context is not live"))
   (set-box! live?-box #f)
-  (alcDestroyContext ctxt)
+  (alcCloseDevice d)
+  (alcDestroyContext ctxt)  
   (void))
 
 (struct source (srci old-state update-f))

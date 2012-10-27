@@ -40,29 +40,39 @@
 
 (define (nested-big-bang initial-world tick sound-scale
                          world->listener done?)
-  (let loop ([frame 0]
-             [w initial-world]
-             [st (initial-system-state
-                  (current-sound-ctxt)
-                  world->listener)])
-    (define next-time
-      (+ (current-inexact-milliseconds) (* RATE 1000)))
-    (parameterize ([current-sound st])
-      (define-values (wp cmd ss)
-        (parameterize ([current-frame frame])
-          (tick w (controller-monitor-state (current-controllers)))))
-      ((current-update-canvas) cmd)
-      (if (done? wp)
-        (let ()
-          (sound-destroy! st)
-          wp)
-        (let ()
-          ;; XXX This is implies that we could switch sounds while
-          ;; rendering the next sound... which is bad.
-          (define stp
-            (render-sound sound-scale st ss wp))
-          (yield (alarm-evt next-time))
-          (loop (add1 frame) wp stp))))))
+  (define st
+    (initial-system-state
+     (current-sound-ctxt)
+     world->listener))
+  (dynamic-wind
+      void
+      (λ ()
+        (let loop ([frame 0]
+                   [w initial-world])
+          (define next-time
+            (+ (current-inexact-milliseconds) (* RATE 1000)))
+          (parameterize ([current-sound st])
+            (define-values (wp cmd ss)
+              (parameterize ([current-frame frame])
+                (call-with-continuation-barrier
+                 (λ ()
+                   (tick w
+                         (controller-monitor-state
+                          (current-controllers)))))))
+            ((current-update-canvas) cmd)
+            (cond
+              [(done? wp)
+               wp]
+              [else
+               ;; XXX This is implies that we could switch sounds while
+               ;; rendering the next sound... which is bad.
+               (define stp
+                 (render-sound sound-scale st ss wp))
+               (set! st stp)
+               (yield (alarm-evt next-time))
+               (loop (add1 frame) wp)]))))
+      (λ ()
+        (sound-destroy! st))))
 
 (define current-frame
   (make-parameter 0))
@@ -102,8 +112,8 @@
                (set! frame-time (- stop start)))))
      (λ (k)
        (keyboard-monitor-submit! km k))))
-  
-  (define (this-update-canvas cmd)    
+
+  (define (this-update-canvas cmd)
     (set! last-cmd cmd)
     (send the-frame
           set-label
@@ -120,14 +130,14 @@
       (λ ()
         (parameterize
             ([current-sound-ctxt the-ctxt]
-             [nested? #t]             
+             [nested? #t]
              [current-controllers cm]
              [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick sound-scale
                            world->listener done?)))
       (λ ()
         (sound-context-destroy! the-ctxt)
-        (send the-frame show #f))))
+        (send the-frame on-exit))))
 
 (provide/contract
  [RATE number?]
