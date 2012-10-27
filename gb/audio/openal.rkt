@@ -54,7 +54,8 @@
              (error 'alcMakeContextCurrent "error making context current ~a" c))))
 (define-openal alcDestroyContext
   (_fun [c : _ALCcontext]
-        -> _void))
+        ;; XXX ALCenum
+        -> _uint))
 
 (define _ALbuffer _uint)
 (define-openal alGenBuffers
@@ -197,6 +198,7 @@
  [alcOpenDevice (c:-> (or/c #f string?) ALCdevice?)]
  [alcCreateContext (c:-> ALCdevice? ALCcontext?)]
  [alcMakeContextCurrent (c:-> ALCcontext? void)]
+ [alcDestroyContext (c:-> ALCcontext? integer?)]
  [AL_POSITION integer?]
  [AL_SOURCE_STATE integer?]
  [AL_SOURCE_RELATIVE integer?]

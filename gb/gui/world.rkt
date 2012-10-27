@@ -32,6 +32,7 @@
     (outer-big-bang initial-world tick sound-scale
                     world->listener done?)))
 
+(define current-sound-ctxt (make-parameter #f))
 (define current-sound (make-parameter #f))
 (define (pause-last-sound)
   (sound-pause! (current-sound)))
@@ -42,7 +43,9 @@
                          world->listener done?)
   (let loop ([frame 0]
              [w initial-world]
-             [st (initial-system-state world->listener)])
+             [st (initial-system-state 
+                  (current-sound-ctxt)
+                  world->listener)])
     (define next-time
       (+ (current-inexact-milliseconds) (* RATE 1000)))
     (parameterize ([current-sound st])
@@ -119,7 +122,8 @@
        (channel-put
         done-ch
         (parameterize
-            ([nested? #t]
+            ([current-sound-ctxt (make-sound-context)]
+             [nested? #t]
              [current-rate-finder
               (λ ()
                 (with-handlers ([exn:fail? (λ (x) 0.)])

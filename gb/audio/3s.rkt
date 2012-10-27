@@ -6,12 +6,19 @@
          gb/audio/openal
          gb/audio/openal-path)
 
-; xxx gc buffers some how
-(struct audio (buffer))
+;; xxx gc buffers some how
+(struct audio (path loaded? buffer) #:mutable)
 (define (path->audio p)
-  (define b (vector-ref (alGenBuffers 1) 0))
-  (alBufferData/path b p)
-  (audio b))
+  (audio p #f #f))
+
+(define (audio-load! a)
+  (match-define (audio p loaded? _) a)
+  (unless loaded?
+    (define b (vector-ref (alGenBuffers 1) 0))
+    (alBufferData/path b p)
+    (set-audio-path! a #f)
+    (set-audio-loaded?! a #t)
+    (set-audio-buffer! a b)))
 
 (struct sound-state (audio posn gain relative? looping? paused?))
 
@@ -22,18 +29,18 @@
 (define sound-scape/c
   (listof sound/c))
 
-(define (background a-f 
+(define (background a-f
                     #:gain [gain 1.0]
                     #:pause-f [pause-f (λ (x) #f)])
   (λ (w)
     (sound-state (a-f w) (psn 0.0 0.0) gain #t #t (pause-f w))))
 (define (sound-at a p
                   #:gain [gain 1.0]
-                  #:looping? [looping? #f] 
+                  #:looping? [looping? #f]
                   #:pause-f [pause-f (λ (x) #f)])
   (λ (w)
     (sound-state a p gain #f looping? (pause-f w))))
-(define (sound-on a p-f 
+(define (sound-on a p-f
                   #:gain [gain 1.0]
                   #:looping? [looping? #f]
                   #:pause-f [pause-f (λ (x) #f)])
@@ -42,12 +49,28 @@
 (define (sound-until s until-f)
   (λ (w)
     (if (until-f w)
-        #f
-        (s w))))
+      #f
+      (s w))))
+
+(struct sound-context (ctxt live?-box))
+(define (make-sound-context)
+  (define d (alcOpenDevice #f))
+  (define ctxt (alcCreateContext d))
+  (alcMakeContextCurrent ctxt)
+  (sound-context ctxt (box #t)))
+(define (sound-context-destroy! c)
+  (match-define (sound-context ctxt live?-box) c)
+  (unless (unbox live?-box)
+    (error 'sound-context-destory! "Context is not live"))
+  (set-box! live?-box #f)
+  (alcDestroyContext ctxt)
+  (void))
 
 (struct source (srci old-state update-f))
 (struct system-state (dead?-box listener-posn-f srcs))
-(define (initial-system-state lpf)
+(define (initial-system-state ctxt-obj lpf)
+  (unless (unbox (sound-context-live?-box ctxt-obj))
+    (error 'initial-system-state "Context is not live"))
   (system-state (box #f) lpf empty))
 
 (define (sound->source-vector s)
@@ -67,35 +90,34 @@
 (define (sound-dead-error s sym)
   (when (unbox (system-state-dead?-box s))
     (error sym "Sound already dead")))
-  
+
 (define (render-sound scale sst cmds w)
   (match-define (system-state db lpf srcs) sst)
   (sound-dead-error sst 'render-sound)
   (define all-srcs
-    (append 
-     (map (λ (f) 
+    (append
+     (map (λ (f)
             (define srci (vector-ref (alGenSources 1) 0))
             (source srci #f f))
           cmds)
      srcs))
-  
+
   (define lp (lpf w))
-  (alListener3f AL_POSITION 
+  (alListener3f AL_POSITION
                 (/ (psn-x lp) scale)
                 (/ (psn-y lp) scale)
                 0.0)
-  
+
   (define srcs*
     (for/fold ([srcs* empty])
-      ([src (in-list all-srcs)])
+        ([src (in-list all-srcs)])
       (match-define (source srci old f) src)
       (define src-st
         (alGetSourcei srci AL_SOURCE_STATE))
       (match
-          (and 
-           ; This causes sources to be stopped and 
-           ; deleted once the stop naturally
-           ; or the function returns #f
+          (and
+           ;; This causes sources to be stopped and deleted once the
+           ;; stop naturally or the function returns #f
            (not (= src-st AL_STOPPED))
            (f w))
         [(and new (sound-state a p gain relative? looping? paused?))
@@ -106,33 +128,33 @@
          (alSourcef srci AL_GAIN gain)
          (alSourceb srci AL_LOOPING looping?)
          (alSourceb srci AL_SOURCE_RELATIVE relative?)
-         
+
          (unless (and old (eq? (sound-state-audio old) a))
-           (match-define (audio b) a)
-           (alSourcei srci AL_BUFFER b))
-         
-         ; If the pause signal occurs, we should pause it;
-         ; otherwise it is either AL_INITIAL, AL_PLAYING, or
-         ; AL_PAUSED, in all but the middle cause, we 
-         ; should start playing
+           (audio-load! a)
+           (alSourcei srci AL_BUFFER (audio-buffer a)))
+
+         ;; If the pause signal occurs, we should pause it; otherwise
+         ;; it is either AL_INITIAL, AL_PLAYING, or AL_PAUSED, in all
+         ;; but the middle cause, we should start playing
          (if paused?
-             (alSourcePause srci)
-             (unless (= AL_PLAYING src-st)
-               (alSourcePlay srci)))
-         
+           (alSourcePause srci)
+           (unless (= AL_PLAYING src-st)
+             (alSourcePlay srci)))
+
          (cons (source srci new f)
                srcs*)]
         [#f
-         ; XXX are sources scarce? should i try to reuse old ones, rather than delete them?
+         ;; XXX are sources scarce? should i try to reuse old ones,
+         ;; rather than delete them?
          (alSourceStop srci)
          (alDeleteSources (vector srci))
          srcs*])))
-  
+
   (system-state db lpf srcs*))
 
 (provide/contract
  [audio? contract?]
- [path->audio (-> path? audio?)] 
+ [path->audio (-> path? audio?)]
  [struct sound-state
          ([audio audio?]
           [posn psn?]
@@ -143,7 +165,7 @@
  [sound-state/c contract?]
  [sound/c contract?]
  [sound-scape/c contract?]
- [background 
+ [background
   (->* ((-> any/c audio?))
        (#:gain inexact? #:pause-f (-> any/c boolean?))
        sound/c)]
@@ -158,9 +180,15 @@
  [sound-until
   (-> sound/c (-> any/c boolean?)
       sound/c)]
+ [sound-context? contract?]
+ [make-sound-context
+  (-> sound-context?)]
+ [sound-context-destroy!
+  (-> sound-context?
+      void?)]
  [system-state? contract?]
- [initial-system-state 
-  (-> (-> any/c psn?)
+ [initial-system-state
+  (-> sound-context? (-> any/c psn?)
       system-state?)]
  [sound-pause! (-> system-state? void)]
  [sound-unpause! (-> system-state? void)]
@@ -168,9 +196,3 @@
  [render-sound
   (-> real? system-state? sound-scape/c any/c
       system-state?)])
-
-; -----------------------------------
-
-(define d (alcOpenDevice #f))
-(define ctxt (alcCreateContext d))
-(alcMakeContextCurrent ctxt)
