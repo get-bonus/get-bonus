@@ -115,6 +115,7 @@
                    (current-rate) 1)))
     (send the-canvas refresh-now))
 
+  (define the-ctxt (make-sound-context))
   (define done-ch (make-channel))
   (define ticker
     (thread
@@ -122,7 +123,7 @@
        (channel-put
         done-ch
         (parameterize
-            ([current-sound-ctxt (make-sound-context)]
+            ([current-sound-ctxt the-ctxt]
              [nested? #t]
              [current-rate-finder
               (λ ()
@@ -138,6 +139,7 @@
 
   (begin0
     (yield done-ch)
+    (sound-context-destroy! the-ctxt)
     (send the-frame show #f)))
 
 (provide/contract

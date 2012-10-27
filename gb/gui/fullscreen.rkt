@@ -35,8 +35,6 @@
          [style '(gl no-autoclear)]))
 
   (send frame show #t)
-  ;; XXX Figure out why this doesn't work, meaning why I have to click
-  ;;     on the canvas before keys will be picked up
   (send canvas focus)
 
   (values frame canvas))
