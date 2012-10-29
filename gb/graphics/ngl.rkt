@@ -1,8 +1,11 @@
 #lang racket/base
 (require racket/match
          ffi/vector
+         ffi/cvector
+         (only-in ffi/unsafe
+                  _float)
+         ffi/unsafe/cvector
          gb/graphics/gl-util
-         gb/lib/evector
          racket/function
          racket/contract
          gb/graphics/texture-atlas-lib
@@ -36,9 +39,6 @@
     [my flonum?]
     [theta flonum?]))))
 
-(define-evector f32:
-  make-f32vector f32vector-ref f32vector-set!)
-
 (struct sprite-info (x y hw hh r g b a tex mx my theta))
 
 (define-shader-source VertexShader "ngl.vertex.glsl")
@@ -57,37 +57,39 @@
          SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
          SpriteData-MX SpriteData-MY SpriteData-ROT)
    (build-list SpriteData-components identity))
-  (define SpriteData
-    (f32:make-vector
-     (* InitialSprites
-        SpriteData-components)))
+  (define SpriteData #f)
+  (define SpriteData-size
+    (* InitialSprites
+       SpriteData-components))
 
+  ;; XXX detect overrun and update size for next time
   (define (install-object! i o)
     (match-define (sprite-info x y w h r g b a tex mx my theta) o)
     ;; XXX Would it be faster to do a vector-copy! ?
     (define-syntax-rule
       (install! [SpriteData-X x] ...)
       (begin
-        (f32:vector-safe-set!
+        (cvector-set!
          SpriteData
          (+ (* i SpriteData-components) SpriteData-X)
          x)
         ...))
-    (install! [SpriteData-X x]
-              [SpriteData-Y y]
-              [SpriteData-HW w]
-              [SpriteData-HH h]
-              [SpriteData-R r]
-              [SpriteData-G g]
-              [SpriteData-B b]
-              [SpriteData-A a]
-              [SpriteData-TX (f32vector-ref tex 0)]
-              [SpriteData-TY (f32vector-ref tex 1)]
-              [SpriteData-TW (f32vector-ref tex 2)]
-              [SpriteData-TH (f32vector-ref tex 3)]
-              [SpriteData-MX mx]
-              [SpriteData-MY my]
-              [SpriteData-ROT theta]))
+    (when (i . <= . SpriteData-count)
+      (install! [SpriteData-X x]
+                [SpriteData-Y y]
+                [SpriteData-HW w]
+                [SpriteData-HH h]
+                [SpriteData-R r]
+                [SpriteData-G g]
+                [SpriteData-B b]
+                [SpriteData-A a]
+                [SpriteData-TX (f32vector-ref tex 0)]
+                [SpriteData-TY (f32vector-ref tex 1)]
+                [SpriteData-TW (f32vector-ref tex 2)]
+                [SpriteData-TH (f32vector-ref tex 3)]
+                [SpriteData-MX mx]
+                [SpriteData-MY my]
+                [SpriteData-ROT theta])))
 
   (define (install-objects! t)
     (let loop ([offset 0] [t t])
@@ -131,13 +133,6 @@
     (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
-  (define (load-buffer-data gl-type VboId Vertices)
-    (glBindBuffer GL_ARRAY_BUFFER VboId)
-    (glBufferData GL_ARRAY_BUFFER
-                  (* (gl-type-sizeof gl-type) (f32:vector-length Vertices))
-                  (f32:vector-base Vertices)
-                  GL_STREAM_DRAW))
-
   (define-syntax-rule
     (define-vertex-attrib-array
       Index SpriteData-start SpriteData-end type)
@@ -155,7 +150,12 @@
 
   (define VboId
     (u32vector-ref (glGenBuffers 1) 0))
-  (load-buffer-data GL_FLOAT VboId SpriteData)
+
+  (glBindBuffer GL_ARRAY_BUFFER VboId)
+  (glBufferData GL_ARRAY_BUFFER
+                (* (gl-type-sizeof GL_FLOAT) SpriteData-size)
+                #f
+                GL_STREAM_DRAW)
 
   (define-vertex-attrib-array 0 SpriteData-X SpriteData-HH GL_FLOAT)
   (define-vertex-attrib-array 1 SpriteData-R SpriteData-A GL_FLOAT)
@@ -176,10 +176,30 @@
     (glBindTexture GL_TEXTURE_2D
                    TextureAtlasId)
 
-    (define offset (install-objects! objects))
+    (glBindBuffer GL_ARRAY_BUFFER VboId)
+    (set! SpriteData
+          (make-cvector*
+           (glMapBufferRange
+            GL_ARRAY_BUFFER 0 SpriteData-size
+            (bitwise-ior
+             ;; We are overriding everything (this would be wrong if
+             ;; we did the cachinge "optimization" I imagine)
+             GL_MAP_INVALIDATE_RANGE_BIT
+             GL_MAP_INVALIDATE_BUFFER_BIT
+
+             ;; We are not doing complex queues, so don't block other
+             ;; operations (but it doesn't seem to improve performance
+             ;; by having this option)
+             ;; GL_MAP_UNSYNCHRONIZED_BIT
+
+             ;; We are writing
+             GL_MAP_WRITE_BIT))
+           _float
+           SpriteData-size))
 
     ;; Reload all data every frame
-    (load-buffer-data GL_FLOAT VboId SpriteData)
+    (define count (install-objects! objects))
+    (glUnmapBuffer GL_ARRAY_BUFFER)
     (glBindBuffer GL_ARRAY_BUFFER 0)
 
     (glUseProgram ProgramId)
@@ -196,9 +216,6 @@
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
-    (define count
-      (/ (f32:vector-length SpriteData)
-         SpriteData-components))
     (glDrawArrays GL_POINTS 0 count)
 
     (glPopAttrib)
