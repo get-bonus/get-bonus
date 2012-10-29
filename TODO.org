@@ -525,7 +525,8 @@
   CLOSED: [2012-10-26 Fri 22:12]
 * DONE Make fixed-size fonts better
   CLOSED: [2012-10-26 Fri 22:12]
-* TODO NGL - maze - gets UNBEARABLY slow after a little while... why?
+* DONE NGL - maze - gets UNBEARABLY slow after a little while... why?
+  CLOSED: [2012-10-29 Mon 15:17]
   maybe the evector is getting too big? [nope, i added a printout and
   nothing happened]
 
@@ -554,6 +555,14 @@
   http://www.gremedy.com/screenshots.php
   https://www.opengl.org/wiki/Debugging_Tools
   http://www.opengl.org/sdk/tools/BuGLe/
+
+  2012/10/29 - I couldn't get information from bugle because
+  NVPerfSDK only works on Windows. I went with the ranged buffer
+  mapping with invalidation, but this required me to kill evector and
+  do it more manually and ugly---to avoid going over the sprite data
+  multiple times per frame, I expand the buffer the /next/ frame. I
+  still am not doing unsynchronized access, which I think I could,
+  but I'm not totally sure.
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - pacman is pointing the wrong way
 * TODO NGL - Use with actual games that I have
