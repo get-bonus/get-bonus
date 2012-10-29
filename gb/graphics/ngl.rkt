@@ -48,7 +48,6 @@
 (define (make-draw texture-atlas-path
                    texture-atlas-size
                    width height)
-  (define InitialSprites (* 2 512))
   (define SpriteData-components
     (+ 4 4 4 3))
   (match-define
@@ -57,12 +56,12 @@
          SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
          SpriteData-MX SpriteData-MY SpriteData-ROT)
    (build-list SpriteData-components identity))
+  (define SpriteData-count
+    0)
+  (define SpriteData-count:new
+    (* 2 512))
   (define SpriteData #f)
-  (define SpriteData-size
-    (* InitialSprites
-       SpriteData-components))
 
-  ;; XXX detect overrun and update size for next time
   (define (install-object! i o)
     (match-define (sprite-info x y w h r g b a tex mx my theta) o)
     ;; XXX Would it be faster to do a vector-copy! ?
@@ -152,11 +151,6 @@
     (u32vector-ref (glGenBuffers 1) 0))
 
   (glBindBuffer GL_ARRAY_BUFFER VboId)
-  (glBufferData GL_ARRAY_BUFFER
-                (* (gl-type-sizeof GL_FLOAT) SpriteData-size)
-                #f
-                GL_STREAM_DRAW)
-
   (define-vertex-attrib-array 0 SpriteData-X SpriteData-HH GL_FLOAT)
   (define-vertex-attrib-array 1 SpriteData-R SpriteData-A GL_FLOAT)
   (define-vertex-attrib-array 2 SpriteData-TX SpriteData-TH GL_FLOAT)
@@ -177,10 +171,27 @@
                    TextureAtlasId)
 
     (glBindBuffer GL_ARRAY_BUFFER VboId)
+
+    (unless (>= SpriteData-count SpriteData-count:new)
+      (define SpriteData-count:old SpriteData-count)
+      (set! SpriteData-count
+            (max (* 2 SpriteData-count)
+                 SpriteData-count:new))      
+      (glBufferData GL_ARRAY_BUFFER
+                    (* SpriteData-count
+                       SpriteData-components
+                       (gl-type-sizeof GL_FLOAT))
+                    #f
+                    GL_STREAM_DRAW))
+
     (set! SpriteData
           (make-cvector*
            (glMapBufferRange
-            GL_ARRAY_BUFFER 0 SpriteData-size
+            GL_ARRAY_BUFFER
+            0
+            (* SpriteData-count
+               SpriteData-components
+               (gl-type-sizeof GL_FLOAT))
             (bitwise-ior
              ;; We are overriding everything (this would be wrong if
              ;; we did the cachinge "optimization" I imagine)
@@ -195,10 +206,12 @@
              ;; We are writing
              GL_MAP_WRITE_BIT))
            _float
-           SpriteData-size))
+           (* SpriteData-count
+              SpriteData-components)))
 
     ;; Reload all data every frame
-    (define count (install-objects! objects))
+    (define this-count (install-objects! objects))
+    (set! SpriteData-count:new this-count)
     (glUnmapBuffer GL_ARRAY_BUFFER)
     (glBindBuffer GL_ARRAY_BUFFER 0)
 
@@ -216,7 +229,9 @@
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
-    (glDrawArrays GL_POINTS 0 count)
+    (glDrawArrays 
+     GL_POINTS 0 
+     (min this-count SpriteData-count))
 
     (glPopAttrib)
 
