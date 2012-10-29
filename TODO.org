@@ -519,8 +519,12 @@
   amounts so that pixels are always doubled, tripled, etc.
 * DONE have a proper quit handler to close resources, like OpenAL ctxt
   CLOSED: [2012-10-26 Fri 22:04]
-* TODO NGL - maze - the score display isn't there
-* TODO NGL - pacman is pointing the wrong way
+* DONE Change FPS counter to count frame time instead
+  CLOSED: [2012-10-26 Fri 22:11]
+* DONE Make audio loading lazy (or other things that are slow on boot)
+  CLOSED: [2012-10-26 Fri 22:12]
+* DONE Make fixed-size fonts better
+  CLOSED: [2012-10-26 Fri 22:12]
 * TODO NGL - maze - gets UNBEARABLY slow after a little while... why?
   maybe the evector is getting too big? [nope, i added a printout and
   nothing happened]
@@ -550,6 +554,8 @@
   http://www.gremedy.com/screenshots.php
   https://www.opengl.org/wiki/Debugging_Tools
   http://www.opengl.org/sdk/tools/BuGLe/
+* TODO NGL - maze - the score display isn't there
+* TODO NGL - pacman is pointing the wrong way
 * TODO NGL - Use with actual games that I have
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
@@ -721,10 +727,8 @@
   See libretro or retroarch
 
   And maybe use Cg rather than GLSL
-* TODO Make fixed-size fonts better
 * TODO Use SNES sprites for Ms. Pac-Man in maze
 * TODO tennis - balls can bounce infinitely off wall and get stuck
-* TODO Change FPS counter to count frame time instead
 * TODO OS suppress updates
   Make a critical region system call that gives a process sole access
   to the system... leaving the other processes stalled with their last
@@ -767,7 +771,6 @@
   Should I display all points: this session / this game / all games?
 * TODO Return achievements (to dashboard)
 * TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
-* TODO Make audio loading lazy (or other things that are slow on boot)
 * TODO Read about and implement juiciness
   http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
   
