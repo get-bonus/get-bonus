@@ -86,7 +86,7 @@
   (define draw-on-crt #f)
   (define frame-time 1000.00)
   (define-values
-    (the-frame the-canvas)
+    (set-label! refresh! done-sema)
     (make-fullscreen-canvas
      (λ (w h done!)
        (define start (current-inexact-milliseconds))
@@ -101,17 +101,15 @@
      (λ (k)
        (keyboard-monitor-submit! km k))))
 
-  (local-require racket/class)
   (define (this-update-canvas cmd)
     (set! last-cmd cmd)
-    (send the-frame
-          set-label
-          (format "Frame time: ~a; FPS: ~a"
-                  (real->decimal-string
-                   frame-time 0)
-                  (real->decimal-string
-                   (/ 1000 frame-time) 1)))
-    (send the-canvas refresh-now))
+    (set-label!
+     (format "Frame time: ~a; FPS: ~a"
+             (real->decimal-string
+              frame-time 0)
+             (real->decimal-string
+              (/ 1000 frame-time) 1)))
+    (refresh!))
 
   (define the-ctxt (make-sound-context))
   (dynamic-wind
@@ -126,7 +124,7 @@
                            world->listener done?)))
       (λ ()
         (sound-context-destroy! the-ctxt)
-        (send the-frame on-exit))))
+        (semaphore-post done-sema))))
 
 (provide/contract
  [RATE number?]

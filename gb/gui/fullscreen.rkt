@@ -52,13 +52,16 @@
     (send frame show #t)
     (send canvas focus)
 
+    (define done-sema
+      (make-semaphore))
     (thread
      (λ ()
-       (let loop ()
-         (yield never-evt)
-         (loop))))
+       (yield done-sema)
+       (send frame on-exit)))
 
-    (values frame canvas)))
+    (values (λ (s) (send frame set-label s))
+            (λ () (send canvas refresh-now))
+            done-sema)))
 
 (provide/contract
  [make-fullscreen-canvas
@@ -68,5 +71,6 @@
           void)
       (-> (is-a?/c key-event%)
           void)
-      (values (is-a?/c frame%)
-              (is-a?/c canvas<%>)))])
+      (values (-> string? void)
+              (-> void)
+              semaphore?))])
