@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract
          racket/list
+         racket/format
          gb/gui/fullscreen
          gb/input/keyboard
          gb/data/psn
@@ -104,11 +105,15 @@
   (define (this-update-canvas cmd)
     (set! last-cmd cmd)
     (set-label!
-     (format "Frame time: ~a; FPS: ~a"
-             (real->decimal-string
-              frame-time 0)
-             (real->decimal-string
-              (/ 1000 frame-time) 1)))
+     (~a "Frame time: "
+         (~r frame-time
+             #:min-width 5
+             #:precision 1)
+         "; "
+         "FPS: "
+         (~r (/ 1000 frame-time)
+             #:min-width 7
+             #:precision 2)))
     (refresh!))
 
   (define the-ctxt (make-sound-context))

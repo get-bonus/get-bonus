@@ -643,6 +643,8 @@
    (frame-time! (- (current-inexact-milliseconds) frame-start))
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
+* DONE NGL - remove racket/gui from most code
+  CLOSED: [2012-10-29 Mon 22:40]
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - maze - hungry man is pointing the wrong way
 * TODO NGL - maze - convert to crt resolution
@@ -650,7 +652,6 @@
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
   the whole way
-* TODO NGL - remove racket/gui from most code
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)
