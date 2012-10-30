@@ -73,7 +73,7 @@
          (+ (* i SpriteData-components) SpriteData-X)
          x)
         ...))
-    (when (i . <= . SpriteData-count)
+    (when (i . < . SpriteData-count)
       (install! [SpriteData-X x]
                 [SpriteData-Y y]
                 [SpriteData-HW w]
@@ -176,7 +176,12 @@
       (define SpriteData-count:old SpriteData-count)
       (set! SpriteData-count
             (max (* 2 SpriteData-count)
-                 SpriteData-count:new))      
+                 SpriteData-count:new))
+      ;; (printf "~a -> max(~a,~a) = ~a\n"
+      ;;         SpriteData-count:old
+      ;;         (* 2 SpriteData-count)
+      ;;         SpriteData-count:new
+      ;;         SpriteData-count)
       (glBufferData GL_ARRAY_BUFFER
                     (* SpriteData-count
                        SpriteData-components
