@@ -645,72 +645,24 @@
    (big-bang-loop))
 * DONE NGL - remove racket/gui from most code
   CLOSED: [2012-10-29 Mon 22:40]
-* TODO NGL - maze - the score display isn't there
-* TODO NGL - maze - hungry man is pointing the wrong way
-* TODO NGL - maze - convert to crt resolution
-* TODO NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
-* TODO NGL - tennis - it seems like the ball goes too low
-  Also, if you try to bring the paddle to the top, it doesn't draw
-  the whole way
-* TODO NGL - Add absolute and relative layers
-  For example, the score display is absolute, but the game is
-  relative (my games don't use this concept yet)
-* TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
-  Will the GLSL compiler do it anyways?
-* TODO NGL - Investigate the interaction of depth testing with transparency
-  At the very least, I should be able to have fully opaque or fully
-  transparent texture colors and get it to work. It is possible that
-  I will have to call discard() in the fragment shader to ignore the
-  effect on the depth buffer of the fully transparent texture
-
-  Ideally, I'd be able to draw every sprite from back to front and
-  get perfect transparencies.
-
-  It might be more feasible to make layers something NGL knows about
-  and have it draw each layer into a separate screen-sized texture
-  that are all blended together afterward. (The SNES had only one
-  layer that could be transparent over the others.)
-
-  Also, here's another idea that uses front-to-back drawing order:
-  http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
-
-  Investigate this.
-* TODO NGL - See if I need to set up culling specially
-  And perhaps cull slightly wider than that the screen because I
-  believe culling happens before geometry shaders (?) so I need to
-  make sure the point is in the cull
-
-  [Not relevant until I have games with relative layers]
-* TODO NGL - Consider using an external GLSL optimizer
-  https://github.com/aras-p/glsl-optimizer (doesn't work with modern
-  GLSL though)
-* TODO NGL - Read about optimizing the streaming of data to the GPU
+* DONE NGL - Read about optimizing the streaming of data to the GPU
+  CLOSED: [2012-10-29 Mon 22:51]
   http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
 
   However, note that even with a huge number of sprites, the amount
   of memory is miniscule.
-* TODO NGL - Figure out the proper way to do texture/color blending
-  Right now I only support fully color or fully texture. It would be
-  nice to support a tinted texture
-* TODO NGL - cache shader vector modifications to skip some parts of object tree
-  premature optimization
-* TODO NGL - cache shader vector uploads to skip some segments
-  premature optimization
-
-  (Probably not useful, because I hit very high frame rates even when
-  updating vectors thousands of elements long)
-* TODO GLFW - Wait for getting the string identifiers of joysticks
-* TODO GLFW - Wait for consistent joystick state intra-frame
-  So glfwPollEvents calls pollJoystickEvents and Win32 caches
-* TODO Investigate and potentially using DDS for textures
+* DONE NGL - Consider using an external GLSL optimizer
+  CLOSED: [2012-10-29 Mon 22:51]
+  https://github.com/aras-p/glsl-optimizer (doesn't work with modern
+  GLSL though) [removing because it doesn't work and I'm fast enough?]
+* DONE Investigate and potentially using DDS for textures
+  CLOSED: [2012-10-29 Mon 22:54]
   https://en.wikipedia.org/wiki/DirectDraw_Surface
 
   Maybe not worth it because my texture atlas is small and I don't
   want any lossy compression?
-* TODO Make a tool for downloading the copyrighted images/music
-  List the URL, a checksum, and then have the tool download them if
-  they aren't there and verify if they are.
-* TODO Resource manager
+* DONE Resource manager
+  CLOSED: [2012-10-29 Mon 22:54]
   A DSL for defining resources...
 
   - All
@@ -729,15 +681,56 @@
   This would run beforehand, create some files/directory structure,
   and then drop and runtime information file so texture coords could
   be looked up.
-* TODO Master Grafx2 or aseprite or make my own keyboard based system
-  https://code.google.com/p/grafx2/
-* TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
-* TODO The Get Bonus rendering system should have built-in support for TATE games
-  Virtual, Rotate Left, and Rotate Right
-* TODO Try to get OpenGL to do collision detection for me
-  http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
-* TODO See if I can record a video directly
-  http://revel.sourceforge.net/docs/html/revel_8h.html#a30
+* TODO NGL - maze - the score display isn't there
+* TODO NGL - maze - hungry man is pointing the wrong way
+* TODO NGL - maze - convert to crt resolution
+* TODO NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
+* TODO NGL - convert rps
+* TODO NGL - tennis - it seems like the ball goes too low
+  Also, if you try to bring the paddle to the top, it doesn't draw
+  the whole way
+* TODO NGL - Investigate the interaction of depth testing with transparency
+  At the very least, I should be able to have fully opaque or fully
+  transparent texture colors and get it to work. It is possible that
+  I will have to call discard() in the fragment shader to ignore the
+  effect on the depth buffer of the fully transparent texture
+
+  Ideally, I'd be able to draw every sprite from back to front and
+  get perfect transparencies.
+
+  It might be more feasible to make layers something NGL knows about
+  and have it draw each layer into a separate screen-sized texture
+  that are all blended together afterward. (The SNES had only one
+  layer that could be transparent over the others.)
+
+  Also, here's another idea that uses front-to-back drawing order:
+  http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
+
+  Investigate this.
+* TODO NGL - Figure out the proper way to do texture/color blending
+  Right now I only support fully color or fully texture. It would be
+  nice to support a tinted texture
+* TODO NGL - See if I need to set up culling specially
+  And perhaps cull slightly wider than that the screen because I
+  believe culling happens before geometry shaders (?) so I need to
+  make sure the point is in the cull
+
+  [Not relevant until I have games with relative layers]
+* TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
+  Will the GLSL compiler do it anyways?
+* TODO NGL - cache shader vector modifications to skip some parts of object tree
+  premature optimization
+* TODO NGL - cache shader vector uploads to skip some segments
+  premature optimization
+
+  (Probably not useful, because I hit very high frame rates even when
+  updating vectors thousands of elements long)
+* TODO GLFW - Wait for getting the string identifiers of joysticks
+* TODO GLFW - Wait for consistent joystick state intra-frame
+  So glfwPollEvents calls pollJoystickEvents and Win32 caches
+* TODO Make a tool for downloading the copyrighted images/music
+  List the URL, a checksum, and then have the tool download them if
+  they aren't there and verify if they are.
 * TODO Allow multi-pass shaders (such as CRT halation)
   See libretro or retroarch
 
@@ -793,12 +786,24 @@
 * TODO Tennis - ugly score display
 * TODO Tennis - revisit use of paddle bounce
 * TODO Make RPS more JRPG-like
-* TODO Convert things to typed racket as I go
+* TODO Convert things to typed racket
 * TODO Write a generic Godel-encoding library
 * TODO Figure out a way to do localization well
 * TODO Make more games
+* TODO The Get Bonus rendering system should have built-in support for TATE games
+  Virtual, Rotate Left, and Rotate Right
+* TODO NGL - Add absolute and relative layers
+  For example, the score display is absolute, but the game is
+  relative (my games don't use this concept yet)
+* TODO See if I can record a video directly
+  http://revel.sourceforge.net/docs/html/revel_8h.html#a30
+* TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
+* TODO Master Grafx2 or aseprite or make my own keyboard based system
+  https://code.google.com/p/grafx2/
 * TODO Make something for Racket/emacs to find out what deps aren't needed
 * TODO Experiment with located events (in a 2D mesh) rather than flat events
+* TODO Try to get OpenGL to do collision detection for me
+  http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
 * TODO Make OS use futures for parallelism
   First experiment, 2012/07/01 failed... got a slower frame rate. I
   think the key is to make it just a future during the time that GL is
