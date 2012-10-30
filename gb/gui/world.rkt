@@ -1,7 +1,5 @@
 #lang racket/base
-(require racket/gui/base
-         racket/contract
-         racket/class
+(require racket/contract
          racket/list
          gb/gui/fullscreen
          gb/input/keyboard
@@ -69,7 +67,7 @@
                (define stp
                  (render-sound sound-scale st ss wp))
                (set! st stp)
-               (yield (alarm-evt next-time))
+               (sync (alarm-evt next-time))
                (loop (add1 frame) wp)]))))
       (λ ()
         (sound-destroy! st))))
@@ -90,29 +88,20 @@
   (define-values
     (the-frame the-canvas)
     (make-fullscreen-canvas
-     (λ (c)
-       (define dc (send c get-dc))
-       (define glctx (send dc get-gl-context))
-       (unless glctx
-         (error 'loop "Could not initialize OpenGL!")
-         ;; XXX should bring down the whole thing
-         (exit 1))
-       (send glctx call-as-current
-             (λ ()
-               (define start (current-inexact-milliseconds))
-               (when last-cmd
-                 (unless draw-on-crt
-                   (set! draw-on-crt
-                         (make-draw-on-crt
-                          (send c get-width)
-                          (send c get-height))))
-                 (draw-on-crt last-cmd))
-               (send glctx swap-buffers)
-               (define stop (current-inexact-milliseconds))
-               (set! frame-time (- stop start)))))
+     (λ (w h done!)
+       (define start (current-inexact-milliseconds))
+       (unless draw-on-crt
+         (set! draw-on-crt
+               (make-draw-on-crt w h)))
+       (when last-cmd
+         (draw-on-crt last-cmd))
+       (done!)
+       (define stop (current-inexact-milliseconds))
+       (set! frame-time (- stop start)))
      (λ (k)
        (keyboard-monitor-submit! km k))))
 
+  (local-require racket/class)
   (define (this-update-canvas cmd)
     (set! last-cmd cmd)
     (send the-frame

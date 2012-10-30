@@ -4,8 +4,7 @@
          racket/function
          racket/match
          racket/class
-         racket/list
-         racket/gui/base)
+         racket/list)
 
 (struct matrix* (w v))
 (define (matrix w h)

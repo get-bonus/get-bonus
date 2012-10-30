@@ -563,13 +563,10 @@
   multiple times per frame, I expand the buffer the /next/ frame. I
   still am not doing unsynchronized access, which I think I could,
   but I'm not totally sure.
-* TODO NGL - maze - the score display isn't there
-* TODO NGL - pacman is pointing the wrong way
-* TODO NGL - Use with actual games that I have
-* TODO NGL - tennis - it seems like the ball goes too low
-  Also, if you try to bring the paddle to the top, it doesn't draw
-  the whole way
-* TODO NGL / Fullscreen / Big-bang - New architecture
+* DONE NGL - Use with actual games that I have
+  CLOSED: [2012-10-29 Mon 22:19]
+* DONE NGL / Fullscreen / Big-bang - New architecture
+  CLOSED: [2012-10-29 Mon 22:20]
 
   fullscreen : (void -> void) 
                (key-event -> void)
@@ -646,6 +643,14 @@
    (frame-time! (- (current-inexact-milliseconds) frame-start))
    (sleep-until (+ frame-start (/ 1/60 1000)))   
    (big-bang-loop))
+* TODO NGL - maze - the score display isn't there
+* TODO NGL - maze - hungry man is pointing the wrong way
+* TODO NGL - maze - convert to crt resolution
+* TODO NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
+* TODO NGL - tennis - it seems like the ball goes too low
+  Also, if you try to bring the paddle to the top, it doesn't draw
+  the whole way
+* TODO NGL - remove racket/gui from most code
 * TODO NGL - Add absolute and relative layers
   For example, the score display is absolute, but the game is
   relative (my games don't use this concept yet)

@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/gui
+(require racket/match
+         racket/gui/base
          racket/class
          racket/system
          racket/file
@@ -31,14 +32,3 @@
           (delete-file input-pth)))
 
 (provide fst-graph)
-
-#|
-(define 
-  old
-  (for/fold ([m
-              (random-one-state-fst '(r p s) '(r p s))])
-    ([i (in-range 30)])
-    (mutate-fst m)))
-old
-(fst-graph old)
-|#
