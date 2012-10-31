@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/contract
+(require racket/runtime-path
+         racket/contract
          racket/list
          racket/format
          gb/gui/fullscreen
@@ -7,6 +8,7 @@
          gb/data/psn
          gb/audio/3s
          gb/graphics/crt
+         gb/graphics/ngl-main
          gb/input/controller)
 
 (define RATE 1/60)
@@ -73,6 +75,8 @@
       (λ ()
         (sound-destroy! st))))
 
+(define-runtime-path texture-atlas-path "../../r.png")
+
 (define current-frame
   (make-parameter 0))
 (define (outer-big-bang initial-world tick sound-scale
@@ -83,8 +87,9 @@
     (make-controller-monitor
      #:keyboard km))
 
-  (define last-cmd #f)
+  (define last-sprites #f)
   (define draw-on-crt #f)
+  (define draw-sprites #f)
   (define frame-time 1000.00)
   (define-values
     (set-label! refresh! done-sema)
@@ -94,8 +99,14 @@
        (unless draw-on-crt
          (set! draw-on-crt
                (make-draw-on-crt w h)))
-       (when last-cmd
-         (draw-on-crt last-cmd))
+       (unless draw-sprites
+         (set! draw-sprites
+               (make-draw texture-atlas-path
+                          texture-atlas-size
+                          (* 1.0 crt-width)
+                          (* 1.0 crt-height))))
+       (when last-sprites
+         (draw-on-crt (λ () (draw-sprites last-sprites))))
        (done!)
        (define stop (current-inexact-milliseconds))
        (set! frame-time (- stop start)))
@@ -103,7 +114,7 @@
        (keyboard-monitor-submit! km k))))
 
   (define (this-update-canvas cmd)
-    (set! last-cmd cmd)
+    (set! last-sprites cmd)
     (set-label!
      (~a "Frame time: "
          (~r frame-time
@@ -137,7 +148,7 @@
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)
-                   (values any/c procedure? sound-scape/c)))
+                   (values any/c sprite-tree/c sound-scape/c)))
        (#:sound-scale real?
                       #:listener (-> any/c psn?)
                       #:done? (-> any/c boolean?))
