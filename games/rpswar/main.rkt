@@ -2,10 +2,8 @@
 (require racket/runtime-path
          racket/match
          racket/list
-         gb/gui/world
-         (prefix-in gl:
-                    (combine-in gb/graphics/gl
-                                gb/graphics/gl-ext))
+         gb/gui/os
+         gb/graphics/ngl-main
          gb/data/mvector
          gb/input/keyboard
          gb/input/controller
@@ -78,9 +76,15 @@
        w)]
     [_ (tick w)]))
 
-(define (text s)
-  (gl:texture
-   (gl:string->texture #:size 45 s)))
+(define modern-12-char
+  (make-char-factory modern 12))
+(define char-height
+  (texture-height (modern-12-char #\a)))
+(define string->sprites
+  (make-string-factory modern-12-char))
+
+(define ((text s))
+  (string->sprites s))
 (define (string s . a)
   (text (apply format s a)))
 (define rps->string
@@ -89,50 +93,45 @@
    ['p "Paper"]
    ['s "Scissors"]))
 
-(define above gl:above)
+(define (above . l)
+  (for/list ([e (in-list l)]
+             [i (in-naturals)])
+    (transform #:dy (* char-height i) (e))))
 
 (define (render w)
-  (gl:background
-   1. 1. 1. 0.
-   (gl:focus
-    16 9 16 9 0 0
-    (gl:color
-     0. 0. 0. 1.
-     (above
-      (match w
-        [(start match# _)
-         (above (string "Match: ~a" match#)
-                (string "Fight!"))]
-        [(user-input match# _ round# wins _)
-         (above (string "Match: ~a" match#)
-                (string "Round: ~a" round#)
-                (string "Ratio: ~a/~a" wins round#)
-                (string "What will you throw down?"))]
-        [(computer-input match# _ round# wins _ ui)
-         (above (string "Match: ~a" match#)
-                (string "Round: ~a" round#)
-                (string "Ratio: ~a/~a" wins round#)
-                (string "You threw down ~a" (rps->string ui)))]
-        [(resolve match# _ round# wins _ ui ci)
-         (above (string "Match: ~a" match#)
-                (string "Round: ~a" round#)
-                (string "Ratio: ~a/~a" wins round#)
-                (string "You threw down ~a" (rps->string ui))
-                (string "The AI threw down ~a" (rps->string ci)))]
-        [(resolved match# _ round# wins _ _ _ outcome)
-         (above (string "Match: ~a" match#)
-                (string "Round: ~a" round#)
-                (string "Ratio: ~a/~a" wins round#)
-                (match outcome
-                  ['user (string "You won the round!")]
-                  ['computer (string "The AI won the round!")]
-                  ['draw (string "Draw")]))]
-        [(end match# _ round# wins _)
-         (above (string "Match: ~a" match#)
-                (string "Round: ~a" round#)
-                (string "Ratio: ~a/~a" wins round#)
-                (string "You won the match!"))])
-      #;(fst-graph* (a-match-ai-spec w)))))))
+  (match w
+    [(start match# _)
+     (above (string "Match: ~a" match#)
+            (string "Fight!"))]
+    [(user-input match# _ round# wins _)
+     (above (string "Match: ~a" match#)
+            (string "Round: ~a" round#)
+            (string "Ratio: ~a/~a" wins round#)
+            (string "What will you throw down?"))]
+    [(computer-input match# _ round# wins _ ui)
+     (above (string "Match: ~a" match#)
+            (string "Round: ~a" round#)
+            (string "Ratio: ~a/~a" wins round#)
+            (string "You threw down ~a" (rps->string ui)))]
+    [(resolve match# _ round# wins _ ui ci)
+     (above (string "Match: ~a" match#)
+            (string "Round: ~a" round#)
+            (string "Ratio: ~a/~a" wins round#)
+            (string "You threw down ~a" (rps->string ui))
+            (string "The AI threw down ~a" (rps->string ci)))]
+    [(resolved match# _ round# wins _ _ _ outcome)
+     (above (string "Match: ~a" match#)
+            (string "Round: ~a" round#)
+            (string "Ratio: ~a/~a" wins round#)
+            (match outcome
+              ['user (string "You won the round!")]
+              ['computer (string "The AI won the round!")]
+              ['draw (string "Draw")]))]
+    [(end match# _ round# wins _)
+     (above (string "Match: ~a" match#)
+            (string "Round: ~a" round#)
+            (string "Ratio: ~a/~a" wins round#)
+            (string "You won the match!"))]))
 
 (define graphs (make-weak-hash))
 (define (fst-graph* fst)
@@ -145,29 +144,32 @@
 (struct smoother (frame w))
 
 (define (game-start)
-  (big-bang
-   (smoother 0 (start 1 start-fst))
-   #:done?
-   (match-lambda
-    [(smoother _ w)
-     (>= (a-match-match-number w) 4)])
-   #:tick
-   (λ (s cs)
-     (match s
-       [(smoother 0 w)
-        (define ke
-          (cond [(any-controller cs (psn -1. 0.)) "r"]
-                [(any-controller cs (psn 0. 1.)) "p"]
-                [(any-controller cs (psn 0. -1.)) "s"]
-                [else #f]))
-        (define nw (input w ke))
-        (values (smoother 1 nw)
-                (λ () (gl:draw (render nw)))
-                empty)]
-       [(smoother i w)
-        (values (smoother (modulo (add1 i) 1) w)
-                (λ () (gl:draw (render w)))
-                empty)]))))
+  (big-bang/os
+   crt-width crt-height (psn (/ crt-width 2.) (/ crt-height 2.0))
+   #:sound-scale (/ crt-width 2.)
+   (λ ()
+     (let loop ([s (smoother 0 (start 1 start-fst))])
+       (define cs (os/read 'controller))
+       (match s
+         [(smoother 0 w)
+          (define ke
+            (cond [(any-controller cs (psn -1. 0.)) "r"]
+                  [(any-controller cs (psn 0. 1.)) "p"]
+                  [(any-controller cs (psn 0. -1.)) "s"]
+                  [else #f]))
+          (define nw (input w ke))
+          (os/write
+           (list
+            (cons 'graphics
+                  (cons 0 (render nw)))))
+          (loop (smoother 1 nw))]
+         [(smoother i w)
+          (os/write
+           (list
+            (cons 'done? (>= (a-match-match-number w) 4))
+            (cons 'graphics
+                  (cons 0 (render w)))))
+          (loop (smoother (modulo (add1 i) 1) w))])))))
 
 (define game
   (game-info "Rock-Paper-Scissors Warrior"

@@ -681,11 +681,12 @@
   This would run beforehand, create some files/directory structure,
   and then drop and runtime information file so texture coords could
   be looked up.
+* DONE NGL - convert rps
+  CLOSED: [2012-10-30 Tue 19:58]
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - maze - hungry man is pointing the wrong way
 * TODO NGL - maze - convert to crt resolution
 * TODO NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
-* TODO NGL - convert rps
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
   the whole way
