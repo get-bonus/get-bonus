@@ -63,6 +63,8 @@
 (define-values (width height quad:template)
   (path->quadrant template-map))
 
+(define scale 14)
+
 (define h-width
   (/ width 2))
 (define h-height
@@ -249,9 +251,9 @@
 
 (define (ghost-sprite which-ghost which-set frame-n)
   (transform
-   #:d -.5 -.5
+   #:d (* scale -.5) (* scale -.5)
    (rectangle
-    0.5 0.5
+    (* scale 0.5) (* scale 0.5)
     (ghost-match which-ghost which-set (rate 2 10 frame-n)))))
 
 (define (scared-ghost-animation frame-n warning?)
@@ -262,9 +264,9 @@
 
 (define (player-animation n)
   (transform
-   #:d -.5 -.5
+   #:d (* scale -.5) (* scale -.5)
    (rectangle
-    0.5 0.5
+    (* scale 0.5) (* scale 0.5)
     (match (rate 3 10 n)
       [0 maze/player/0]
       [1 maze/player/1]
@@ -273,15 +275,15 @@
 
 (define pellet-r (/ player-r 6))
 (define (pellet-img)
-  (rectangle pellet-r pellet-r))
+  (rectangle (* scale pellet-r) (* scale pellet-r)))
 (define (power-up-img)
-  (rectangle (* 2 pellet-r) (* 2 pellet-r)))
+  (rectangle (* scale 2 pellet-r) (* scale 2 pellet-r)))
 (define (fruit-img)
   (let ()
     (define s (* 3 pellet-r))
     (transform
-     #:d (- (* s .5)) (- (* s .5))
-     (rectangle s s))))
+     #:d (* scale (- (* s .5))) (* scale (- (* s .5)))
+     (rectangle (* scale s) (* scale s)))))
 
 (define (locate-cell quad value)
   (for*/or ([r (in-range h-height)]
@@ -524,8 +526,8 @@
      (define-values (q r c) (xy->quad*r*c x y))
      (if (equal? wall (quad-ref (hash-ref qs q) r c))
        (transform
-        #:d x y
-        (rectangle 0.5 0.5))
+        #:d (* scale x) (* scale y)
+        (rectangle (* scale 0.5) (* scale 0.5)))
        empty))))
 
 (struct quad-objs (pellet-count r*c->obj))
@@ -581,7 +583,7 @@
      (define-values (q r c) (xy->quad*r*c x y))
      (match-define (quad-objs _ fm) (hash-ref os q))
      (transform
-      #:d x y
+      #:d (* scale x) (* scale y)
       (match (fmatrix-ref fm r c #f)
         ['pellet (pellet-img)]
         ['power-up (power-up-img)]
@@ -687,14 +689,14 @@
   (define (ghost-graphics pos l-target dir power-left-n)
     (cons
      (transform
-      #:d (psn-x pos) (psn-y pos)
+      #:d (* scale (psn-x pos)) (* scale (psn-y pos))
       (if (zero? power-left-n)
         (ghost-animation ai-n (current-frame) dir)
         (scared-ghost-animation
          (current-frame)
          (power-left-n . <= . TIME-TO-POWER-WARNING))))
      (transform
-      #:d (- (psn-x l-target) .5) (- (psn-y l-target) .5)
+      #:d (* scale (- (psn-x l-target) .5)) (* scale (- (psn-y l-target) .5))
       #:a 1.0
       #:irgbv
       (match ai-n
@@ -702,7 +704,7 @@
         [1 (vector 215 182 247)]
         [2 (vector 60 189 255)]
         [3 (vector 230 93 16)])
-      (rectangle 0.5 0.5))))
+      (rectangle (* scale 0.5) (* scale 0.5)))))
   (let wait-loop ([dot-timer init-timer])
     (unless (dot-timer . <= . 0)
       (define event (os/read* 'event #f))
@@ -860,7 +862,7 @@
             (cons
              0.0
              (transform
-              #:d (psn-x nnp) (psn-y nnp)
+              #:d (* scale (psn-x nnp)) (* scale (psn-y nnp))
               #:rot (rad->deg actual-dir)
               (player-animation (current-frame)))))))
     (loop nnp actual-dir next-dir-n)))
@@ -946,8 +948,10 @@
                  (static-objs-display st)
                  (static-map-display st)
                  (transform #:a 1.0
-                            #:d (/ width 2.) (/ height 2.)
-                            (rectangle (/ width 2.) (/ height 2.))))))
+                            #:dx (* scale (/ width 2.))
+                            #:dy (* scale (/ height 2.))
+                            (rectangle (* scale (/ width 2.))
+                                       (* scale (/ height 2.)))))))
          (cons 'static
                st-n)
          (cons 'power-left
