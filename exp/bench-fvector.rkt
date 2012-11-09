@@ -1,8 +1,8 @@
 #lang s-exp gb/lib/tr-cheat
 (require tests/stress
-         (prefix-in ra: (planet dvanhorn/ralist:3:5))
-         (prefix-in fec:slow: (planet dvanhorn/fector:1:1/main))
-         (prefix-in fec:fast: (planet dvanhorn/fector:1:1/fast))
+         (prefix-in ra: dvanhorn/ralist3/main)
+         (prefix-in fec:slow: dvanhorn/fector1/main)
+         (prefix-in fec:fast: dvanhorn/fector1/fast)
          gb/lib/skal)
 
 (define (make-hash N e)

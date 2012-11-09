@@ -1,5 +1,5 @@
 #lang racket/base
-(require (planet dvanhorn/fector:1:1/fast)
+(require dvanhorn/fector1/fast
          tests/eli-tester)
 
 (define (fvector n)

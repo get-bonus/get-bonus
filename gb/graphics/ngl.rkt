@@ -9,7 +9,7 @@
          racket/function
          racket/contract
          gb/graphics/texture-atlas-lib
-         (planet stephanh/RacketGL/rgl))
+         stephanh/RacketGL1/rgl)
 
 (define sprite-tree/c
   ;; XXX really a tree of sprite-info?, but that's expensive to check

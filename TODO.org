@@ -685,9 +685,10 @@
   CLOSED: [2012-10-30 Tue 19:58]
 * DONE NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
   CLOSED: [2012-10-30 Tue 20:05]
+* DONE NGL - maze - convert to crt resolution
+  CLOSED: [2012-10-30 Tue 20:13]
 * TODO NGL - maze - the score display isn't there
 * TODO NGL - maze - hungry man is pointing the wrong way
-* TODO NGL - maze - convert to crt resolution
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
   the whole way
@@ -781,6 +782,10 @@
   http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
   
   https://github.com/grapefrukt/juicy-breakout
+
+  http://www.youtube.com/watch?v=tVLb-I5i5ys&feature=youtu.be&a
+
+  http://tnns.rabbx.com/
 * TODO Tennis - ugly score display
 * TODO Tennis - revisit use of paddle bounce
 * TODO Make RPS more JRPG-like

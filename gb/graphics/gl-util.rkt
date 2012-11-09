@@ -2,7 +2,7 @@
 (require racket/runtime-path
          racket/file
          ffi/vector
-         (planet stephanh/RacketGL/rgl))
+         stephanh/RacketGL1/rgl)
 
 (define-syntax-rule (define-shader-source id path)
   (begin (define-runtime-path id-path path)
