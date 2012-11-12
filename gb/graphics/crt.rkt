@@ -4,7 +4,7 @@
          ffi/unsafe
          gb/graphics/gl-util
          racket/match
-         stephanh/RacketGL1/rgl)
+         opengl)
 
 (define-shader-source fragment-source "crt.fragment.glsl")
 (define-shader-source vertex-source "crt.vertex.glsl")
