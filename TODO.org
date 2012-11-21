@@ -687,8 +687,13 @@
   CLOSED: [2012-10-30 Tue 20:05]
 * DONE NGL - maze - convert to crt resolution
   CLOSED: [2012-10-30 Tue 20:13]
-* TODO NGL - maze - the score display isn't there
-* TODO NGL - maze - hungry man is pointing the wrong way
+* DONE NGL - maze - the score display isn't there
+  CLOSED: [2012-11-21 Wed 09:31]
+* DONE NGL - maze - hungry man is pointing the wrong way
+  CLOSED: [2012-11-21 Wed 09:50]
+* TODO Collect more performance data
+  Use gcstats
+  Make a histogram of frame times (a la DrRacket's)
 * TODO NGL - tennis - it seems like the ball goes too low
   Also, if you try to bring the paddle to the top, it doesn't draw
   the whole way

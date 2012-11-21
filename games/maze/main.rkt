@@ -28,8 +28,6 @@
 
 ;; https://s3.amazonaws.com/data.tumblr.com/tumblr_m01c27aYQ91qbw2q1o1_1280.jpg?AWSAccessKeyId=AKIAJ6IHWSU3BX3X7X3Q&Expires=1331014634&Signature=MsCEbwNiXX7J5h%2B%2BeCdDjW11mmc%3D
 
-(define (rad->deg r)
-  (* r (/ 180 pi)))
 (define (sequence-not-empty? s)
   (for/or ([e s]) #t))
 
@@ -365,10 +363,12 @@
 
 (define (angle-direction a)
   (cond
-    [(= 0 a) 'right]
-    [(= (/ pi 2) a) 'up]
-    [(= pi a) 'left]
-    [else 'down]))
+    [(= right a) 'right]
+    [(=    up a) 'up]
+    [(=  left a) 'left]
+    [else        'down]
+    ;; [else (error 'angle-direction "bad direction: ~e" a)]
+    ))
 
 (define INIT-SPEED
   (* 5. RATE))
@@ -828,24 +828,21 @@
 
 (define (player)
   (let loop ([p (quad*cell->psn 'sw player-entry-cell)]
-             [dir (* .5 pi)]
-             [next-dir (* .5 pi)])
+             [dir up]
+             [next-dir up])
     (define speed INIT-SPEED)
     (define c (os/read* 'controller))
     (define st (os/read* 'static))
     (define stick (controller-ldpad c))
     (define next-dir-n
-      ;; If the stick is stable,
-      ;; then don't change the direction
+      ;; If the stick is stable, then don't change the direction
       (if (= stick 0.+0.i)
         next-dir
         (angle (cardinate stick))))
-    ;; The coorridors used to feel too "tight"
-    ;; and easy to get stuck on an edge, but I
-    ;; think this got fixed
+    ;; The coorridors used to feel too "tight" and easy to get stuck
+    ;; on an edge, but I think this got fixed
     (define np (try-direction st speed p next-dir-n))
-    ;; Don't change the direction if we couldn't
-    ;; move in it
+    ;; Don't change the direction if we couldn't move in it
     (define actual-dir
       (if (= np p)
         dir
@@ -863,7 +860,7 @@
              0.0
              (transform
               #:d (* scale (psn-x nnp)) (* scale (psn-y nnp))
-              #:rot (rad->deg actual-dir)
+              #:rot actual-dir
               (player-animation (current-frame)))))))
     (loop nnp actual-dir next-dir-n)))
 
@@ -939,12 +936,12 @@
                (cons
                 10.
                 (list
-                 #;(transform
-                 #:rgba 1. 1. 1. 1.
                  (transform
-                 #:d 0. (+ height 0.5)
-                 (string->sprites
-                 (format "~a" score-n))))
+                  #:rgba 1. 1. 1. 1.
+                  (transform
+                   #:d (* scale (/ width 2.)) (* scale (+ height 0.5))
+                   (string->sprites
+                    (format "~a" score-n))))
                  (static-objs-display st)
                  (static-map-display st)
                  (transform #:a 1.0
