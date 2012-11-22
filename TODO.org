@@ -691,7 +691,8 @@
   CLOSED: [2012-11-21 Wed 09:31]
 * DONE NGL - maze - hungry man is pointing the wrong way
   CLOSED: [2012-11-21 Wed 09:50]
-* TODO Collect more performance data
+* DONE Collect more performance data
+  CLOSED: [2012-11-22 Thu 11:43]
   Use gcstats
   Make a histogram of frame times (a la DrRacket's)
 * TODO NGL - tennis - it seems like the ball goes too low

@@ -9,6 +9,7 @@
          racket/function
          racket/contract
          gb/graphics/texture-atlas-lib
+         gb/lib/performance-log
          opengl)
 
 (define sprite-tree/c
@@ -189,6 +190,8 @@
                     #f
                     GL_STREAM_DRAW))
 
+    (performance-log! SpriteData-count)
+
     (set! SpriteData
           (make-cvector*
            (glMapBufferRange
@@ -216,6 +219,7 @@
 
     ;; Reload all data every frame
     (define this-count (install-objects! objects))
+    (performance-log! this-count)
     (set! SpriteData-count:new this-count)
     (glUnmapBuffer GL_ARRAY_BUFFER)
     (glBindBuffer GL_ARRAY_BUFFER 0)
@@ -234,9 +238,13 @@
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
+    (define drawn-count
+      (min this-count SpriteData-count))
     (glDrawArrays 
      GL_POINTS 0 
-     (min this-count SpriteData-count))
+     drawn-count)
+
+    (performance-log! drawn-count)
 
     (glPopAttrib)
 

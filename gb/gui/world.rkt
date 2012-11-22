@@ -9,6 +9,7 @@
          gb/audio/3s
          gb/graphics/crt
          gb/graphics/ngl-main
+         gb/lib/performance-log
          gb/input/controller)
 
 (define RATE 1/60)
@@ -76,11 +77,14 @@
         (sound-destroy! st))))
 
 (define-runtime-path texture-atlas-path "../../r.png")
+(define-runtime-path performance-log-path "../../log")
 
 (define current-frame
   (make-parameter 0))
 (define (outer-big-bang initial-world tick sound-scale
                         world->listener done?)
+  (performance-log-init! performance-log-path)
+  
   (define km
     (keyboard-monitor))
   (define cm
@@ -95,6 +99,7 @@
     (set-label! refresh! done-sema)
     (make-fullscreen-canvas
      (λ (w h done!)
+       (performance-log! 'before-memory (current-memory-use))
        (define start (current-inexact-milliseconds))
        (unless draw-on-crt
          (set! draw-on-crt
@@ -109,7 +114,10 @@
          (draw-on-crt (λ () (draw-sprites last-sprites))))
        (done!)
        (define stop (current-inexact-milliseconds))
-       (set! frame-time (- stop start)))
+       (set! frame-time (- stop start))
+       (performance-log! 'after-memory (current-memory-use))
+       (performance-log! frame-time)
+       (performance-log-done!))
      (λ (k)
        (keyboard-monitor-submit! km k))))
 
