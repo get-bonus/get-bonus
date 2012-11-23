@@ -1,856 +1,859 @@
-* DONE Move tests into test submodules
-  CLOSED: [2012-05-25 Fri 01:23]
-* DONE Write a makefile that runs all the tests with raco test
-  CLOSED: [2012-05-25 Fri 01:29]
-* DONE Really implement openal on linux
-  CLOSED: [2012-06-19 Tue 19:46]
-* DONE Really implement joysticks on linux
-  CLOSED: [2012-06-24 Sun 08:34]
-* DONE Remove controller debugging printfs
-  CLOSED: [2012-06-25 Mon 17:30]
-* DONE Reorganize exp directory into other directories
-  CLOSED: [2012-06-25 Mon 19:38]
-* DONE Change gl model to keep track of sizes for centering, etc
-  CLOSED: [2012-06-26 Tue 19:15]
-* DONE Make dashboard
-  CLOSED: [2012-06-29 Fri 22:25]
-* DONE Add scoring back into tennis/OS
-  CLOSED: [2012-06-30 Sat 22:25]
-* DONE Correct tennis angle of reflection
-  CLOSED: [2012-06-30 Sat 19:52]
-* DONE Separate OS out of tennis/OS
-  CLOSED: [2012-07-03 Tue 20:47]
-* DONE Improve tennis/OS structure
-  CLOSED: [2012-07-04 Wed 22:39]
-* DONE Make tennis harder over time: more balls, faster movement, larger opponent
-  CLOSED: [2012-07-04 Wed 22:39]
-* DONE I can still get stuck on the wall and the paddle sometimes in Tennis
-  CLOSED: [2012-07-04 Wed 22:39]
-* DONE Rewrite maze with OS model
-  CLOSED: [2012-07-08 Sun 00:32]
-* DONE Improve maze OS structure
-  CLOSED: [2012-07-18 Wed 18:40]
-* DONE OS - fix connection to 3s
-  CLOSED: [2012-07-21 Sat 13:06]
-  There is a use in tennis that would be fixed
-
-  And maze uses it for the background music
-* DONE Figure out how to use OpenGL depth bit for background/foreground
-  CLOSED: [2012-08-04 Sat 14:05]
-  A lot of people online seem to suggest it is bad to use the Z buffer
-  because of transparency issues. Strange.
-
-  Now use it
-* DONE Maybe change graphics to fixed pixels?
-  CLOSED: [2012-08-05 Sun 19:45]
-  Render to a buffer and then display the buffer?
-  ---
-  Take the SNES w x h and make it wider, see exp/wide.rkt
-  ---
-  Maybe use bsnes's snesshaders to do the scaling?
-
-  http://filthypants.blogspot.com/2011/05/more-emulator-pixel-shaders-crt-updated.html
-
-  http://duriansoftware.com/joe/An-intro-to-modern-OpenGL.-Chapter-2.2:-Shaders.html
-  ---
-  Hopefully this will make planning and text better
-  --
-  I'm using exp/buffer.rkt to experiment and it is MESSED up.
-* DONE maze - use CRT size directly?
-  CLOSED: [2012-08-06 Mon 15:01]
-  In this case, I'm not sure it is a good idea, because we already use
-  a 16:9 frame and it is convenient to imaging that the 1x1 boxes in
-  the maze are the real thing and the 16x9 pixels are just the display
-* DONE maze - sometimes the white ghost disappears... it's weird
-  CLOSED: [2012-08-06 Mon 19:10]
-  It was a problem with depth. Annoying. I'll have to revisit depth
-  later.
-* DONE tennis - use CRT size directly?
-  CLOSED: [2012-08-06 Mon 19:49]
-* DONE Change controller model
-  CLOSED: [2012-08-09 Thu 15:58]
-  SNES style
-  D-pad is booleans
-  Have another right interpretation of dpad
-
-  Get a USB snes controller for home
-* DONE Switch to RacketGL throughout
-  CLOSED: [2012-08-09 Thu 16:28]
-* DONE Make a faster FPS counter
-  CLOSED: [2012-09-07 Fri 15:50]
-  Making a texture is slow. Maybe with character-based string textures
-  it would be faster?
-  
-  Maybe just log data and look at it afterward?
-  
-  I don't know if I really am measuring this correctly... see OpenGL
-  wiki
-
-  Decided to show it in the window label
-* DONE Switch to a fully shader based rendering system
-  CLOSED: [2012-09-09 Sun 23:43]
-  I have begun experimenting with this a lot.
-  
-  --Why--
-  
-  [[http://www.opengl.org/wiki/FAQ#Are_glTranslate.2FglRotate.2FglScale_hardware_accelerated.3F][This FAQ]] says that OpenGL doesn't accelerate the fixed-function
-  pipeline any longer. [[http://gamedev.stackexchange.com/questions/25411/basics-of-drawing-in-2d-with-opengl-3-shaders][This StackOverflow question]] suggests a general
-  structure. ([[http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq%3D1][This one]] also talks about the same stuff.)
-  
-  --Plan--
-  
-  My original plan was to have a single vector input to the shader
-  that was something like:
-  
-  Translation: XY
-  Scale:       XY    (relative to the sprite, not the scene)
-  Rotation:    Theta (relative to the sprite, not the scene)
-  Color:       RGBA
-  Rectangle:   WH
-  Texture:     XYWH
-  
-  where the vertex shader would move the basis of the vertex, which is
-  0,0 to the translated point, where it would then be scaled and
-  rotated.
-  
-  the geometry shader would take this input and output the various
-  vertexes for a rectangle ([[http://openglbook.com/the-book/chapter-2-vertices-and-shapes/][this site]] talks about you need 6 for
-  GL_TRIANGLES but only 5 for GL_TRIANGLE_STRIP, but I don't know if
-  you can do that in a geometry shader)
-  
-  the fragment shader would take the texture coordinates and grab the
-  pixels, blending in the color. For most sprites, I would set the
-  color to blank-ness and for opaque boxes, I would set the texture
-  coordinates to a blank place.
-  
-  I hope this will allow me to have a single draw call.
-  
-  -- Populating it --
-  
-  My plan is to populate this vector by first, sorting the sprites
-  into their layers with the background towards the front of the
-  array. (My assumption is that background layers change less so it
-  will make the vector more stable.) The game would return, basically,
-  a list of rows of this vector and the engine would map through
-  them. However, it would keep track of what the previous lists were
-  and if they were eq? and in the same order, then they would not be
-  set! to decrease memory traffic.
-  
-  I would assume that most translations, scaling, or rotations are not
-  stacked, so it is safe to compose them on the CPU.
-  
-  -- Texture Atlas ---
-  
-  Additionally, I would have a single texture for all sprites in the
-  game that was always available. This is called a [[https://en.wikipedia.org/wiki/Texture_atlas][Texture atlas]]. My
-  idea is to write a library that scans the directory Get Bonus is in
-  for all PNGs and stitches them together in a lossless way, doing
-  something basic for limiting the area, with the opportunity for
-  optimization later. This library would run at the start of every
-  startup and find the list of files and their checksums and see if
-  the cached PNG is still up to date. Similarly, this same program
-  would create PNGs for fonts.
-  
-  I'm imaging an interface like
-  
-  texture-coords : path -> coordinates
-  
-  where the path would be relative to the Get Bonus directory and then
-  the coordinates would be in the atlas that was constructed.
-  
-  I'd write a tool that would rip sprite sheets apart into their
-  pieces.
-  
-  -- Notes --
-  
-  I've decided to go with Cg rather than GLSL directly, because of its
-  separate compiler, seems to have good optimization technology, etc.
-  
-  Most of Nvidia's materials seem to be very good (particularly the
-  manuals and examples that come with the toolkit.) [[http://filthypants.blogspot.com/2011/06/cg-shader-tutorial-for-emulators.html][Here's another]]
-  source for tutorials.
-  
-  My current development machine is limited to OpenGL 3.2, which is
-  relevant to developing with Cg. I've written a basic FFI for Cg with
-  just what I need. It would be nice if there were spec files like
-  RacketGL uses for OpenGL.
-  
-  -- Problems --
-  
-  First, my idea for the layout will be complicates because
-  glVertexAttribPointer function can only give vertexes with 1 through
-  4 elements, not this many. I might able to do it as one big thing
-  anyways, by using strides and multiple attributes. (I could even do
-  a different attribute for each piece.)
-  
-  Second, I don't totally understand the capabilities of geometry
-  shaders. Essentially what I'm doing is telling OpenGL that there is
-  only 1 "vertex" but then I'm expanding it into 6 by the geometry
-  shader. (In the call to glDrawArray, will I put in the number of
-  objects, or the number of objects times 6? Probably just the
-  number?) [[http://www.opengl.org/wiki/Tutorial4:_Using_Indices_and_Geometry_Shaders_(C_/SDL)][This tutorial]] might be a good place to start. (Also, there
-  are a few examples in the Nvidia CG toolkit.)
-  
-  Third, my initial attempts at following [[http://openglbook.com/the-book/chapter-2-vertices-and-shapes/][this tutorial]] to get things
-  up in running (exp/pipe.rkt) has failed with my three rectangle
-  example. First, rectangles don't show up at all. Instead, a triangle
-  does. There's also a problem that only one triangle does---the front
-  most one. Second, they aren't appearing in the place that I expect
-  them to. I think [[http://www.opengl.org/wiki/FAQ#How_to_render_in_pixel_space][this FAQ question]] is a piece of the answer. I think
-  I should start from scratch and adapt his example directly (to
-  compare the drawings, for example) and go from there. ([[http://www.songho.ca/opengl/gl_vertexarray.html][This is
-  another tutorial]] that may be useful.)
-  
-  I'm not totally certain about what the right thing to do with the
-  blending between alpha, the color, and the texture color. [[http://www.opengl.org/discussion_boards/showthread.php/166520-Alpha-blending-with-Cg-shaders][Here's a
-  thread]] that might have information. I also think I need to use
-  (glShadeModel GL_FLAT) so that the color isn't interpolated.
-  
-  This is a very frustrating thing to be doing. I feel like a 142
-  student.
-  
-  -- Useful paths --
-  
-  CG documentation --- /usr/share/doc/nvidia-cg-toolkit
-  CG examples --- /usr/lib/nvidia-cg-toolkit/examples/OpenGL
-  
-  I had to install nvidia-cg-toolkit from Nvidia directly
-  (Cg-3.1_April2012_x86_64.deb) because the Ubuntu one was broken.
-
-  -- Further investigation --
-
-  I transliterated the code from the tutorial into Racket precisely,
-  including using GLUT and everything. However, it is black. I
-  originally assumed this was because of GLEW, but when I disable GLEW
-  in the C code, it works, but not in my code. Mysterious.
-
-  I used 'apitrace' to determine that the OpenGL calls the two
-  programs were making were literally IDENTICAL. Still, they display
-  differently. My current guess is that the vertex arrays are being
-  populated differently.
-
-  After doing some tracing on the C side, I see that the bytes in my
-  vertex arrays are different than the ones on the C side. Yet, I'm
-  using f32vectors, which are supposed to be _float arrays. Weird.
-
-  ARRRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGHHHHHHHHHHH
-
-  I mixed up the sign on a vector coordinate. The byte difference was
-  just an error in printing on the C side.
-
-  Alright, now that I have a working program, I have to go back to
-  being in racket/gui or accept my new GLUT overlord. Or maybe GLFW?
-
-  --- Progress 09/01 ---
-
-  I've switched away from GLUT from the tutorial and switched to using
-  Cg (seems like a good idea in some ways, performance and
-  expressiveness, but a bad in others (less documentation it seems.))
-
-  I've started to work on my custom shader. I've got it generating a
-  quad from a single point (with six vertices).
-
-  My next task is to work with textures. Right now I have the
-  information being passed along, but I need to have three things:
-  flat color quads, flat textured quads, and textured quads with a
-  color blended on top. I think I will test with the Pac-Man sprite
-  sheet. I think I need those examples before I can really try to
-  write the code.
-
-  --- Progress 09/02 ---
-
-  Today I switched back to GLSL after reading about some problems
-  with Cg and failing to get triangle strips to work. I find it
-  really weird and annoying to write three files though, where the
-  names of identifiers have to be the same. It's strange. But after I
-  did the transition, then I was able to get the triangle strip
-  working, so now I'm just generating 4 vertices, which is nice. Next
-  up is texturing, which I've done a bit of.
-
-  --- Progress 09/03 ---
-
-  Basic textures are done. A few more things to do though. Changed the
-  texture coordinate representation. Got indexed textures to work, but
-  there's the annoying magic number length in the vertex shader. And
-  I don't like the way I did it, but eh. What can you do? Just did
-  rotation and scaling on the sprite level. Dramatically increased
-  number of sprites to benchmark. 500 @ 60 FPS with just a transfer
-  of the entire transform array. I tried to optimize by caching
-  values and moving things into the vertex shader, but it did
-  nothing. I wonder if geometry shaders are slow? I'm also interested
-  to find out if rendering at the lower resolution would be better. I
-  think I shouldn't worry about performance until after I apply it to
-  the games.
-
-  I tried to remove the Geometry Shader to improve performance. The
-  first idea was to use Instanced drawing and draw 4 instances for
-  each sprite (one for each corner); unfortunately, instancing is for
-  meshes, not for vertices, so I couldn't use the instance id to
-  identify the corner and assemble them together. So that failed.
-
-  Next, I tried to generate 4 vertices per sprite on the CPU, but
-  with all the exact same positions and then a uniform that contained
-  which corner the vertex corresponded to. The first problem with
-  this was that TRIANGLE_STRIP tries to connect every single sprite
-  together, which is wrong. So, I changed to use glMultiDrawArrays
-  with big s32vectors to identify the start of each strip. This was
-  miserably slow.
-
-  My next idea (not yet implemented) is to use glDrawElements where
-  the indexes are always 0...LastSprite and the indexes are just the
-  center positions and I still use a uniform to identify the
-  corner. And I would use glPrimitiveRestartIndex to restart the strip
-  up again.
-
-  --- Progress 09/07 ---
-
-  I implemented the glDrawElements with glPrimitiveRestartIndex and
-  got 3 FPS with 1024 sprites. After going to a triangle-based
-  rendering (so, six vertices per sprite), I was able to get 15 FPS
-  with 1024 sprites (on my full laptop screen). 512 sprites is only
-  20 or 30 FPS (slower than the geometry-shader based version.)
-
-  When I added rotation, the performance didn't change. But when I
-  added scaling in the shader it INCREASED! I can reliably do 1024
-  sprites @ 30 FPS and 512 sprites @ over 60 FPS.
-
-  Doing the corner calculation of hw/hh slowed it down to 30 FPS. So I
-  reverted it. Same with a corner calculation of the tex coordinates,
-  which means the index is pointless. I've now removed some of the
-  extra stuff that supported all these experiments (the corner vertex
-  array and the texture atlas index uniform. Didn't seem to have any
-  effect on performance, but memory usage is down.) Now the shader is
-  pretty dirt simple.
-
-  After all this, I went back and checked out what the situation was
-  with the geometry shader version that did everything on the
-  card... and it gets the exact same performance. Argh! And it uses
-  less memory to upload the scene!
-
-  I think it is time to just implement this for the games and see
-  what happens.
-
-  Later that day I turned on depth testing and got super fast
-  performance. Basically before I was drawing every single sprite over
-  previously drawn ones, which cost a lot of time. Now the GPU can
-  ignore "background" sprites that are covered. This will influence
-  what order I sent them to the card and how I do
-  blending/transparency/ etc. But I get insane performance, so it is
-  probably worth it.
-* DONE NGL - Pre-generate texture files for every letter in the alphabet for a font at a certain pixel height.
-  CLOSED: [2012-09-11 Tue 14:15]
-* DONE NGL - Assemble texture atlas from data files
-  CLOSED: [2012-09-11 Tue 15:23]
-  Use gb/graphics/texture-atlas-lib to produce a static database
-  after munging some image files and calling something functions
-* DONE NGL - Use texture atlas in demo
-  CLOSED: [2012-09-11 Tue 15:50]
-  This required dropping the index.
-* DONE NGL - Experiment with pixel coords rather than relative coords in texture atlas
-  CLOSED: [2012-09-12 Wed 09:36]
-* DONE Jake
-  CLOSED: [2012-10-04 Thu 14:01]
-  My own Make system. I'm crazy.
-* DONE NGL - Allow texture atlas to have sub-file textures
-  CLOSED: [2012-10-04 Thu 15:07]
-  (i.e. my existing sprite sheets)
-
-  Or just make the cutting up tool better (probably a better solution)
-* DONE NGL - Font generation
-  CLOSED: [2012-10-06 Sat 14:15]
-  There's no reason to have them all the same width, just the same height.
-* DONE NGL - Find a better mono font
-  CLOSED: [2012-10-06 Sat 14:17]
-* DONE NGL - Generate digests of copyrighted images
-  CLOSED: [2012-10-06 Sat 15:40]
-* DONE NGL - Growable vector management library
-  CLOSED: [2012-10-06 Sat 16:04]
-  Should work for an ffi/vector, including copying from old to
-  new. Doubling when you go over the limit.
-* DONE gb/lib/evector - make it static (like a unit)
-  CLOSED: [2012-10-07 Sun 11:00]
-* DONE NGL - Improve digest creation
-  CLOSED: [2012-10-07 Sun 11:14]
-  Make it its own program and part of Jake file
-* DONE NGL - Take the geometry shader version and turn it into an abstraction
-  CLOSED: [2012-10-07 Sun 11:53]
-* DONE NGL - use evector
-  CLOSED: [2012-10-07 Sun 12:32]
-* DONE NGL - don't use global variables
-  CLOSED: [2012-10-07 Sun 14:42]
-* DONE NGL - undo changes to OpenGL state
-  CLOSED: [2012-10-07 Sun 14:42]
-* DONE texture atlas - remove the giant vector and replace with small ones
-* DONE NGL - Make a system for specifying sprites granularly
-  CLOSED: [2012-10-07 Sun 15:32]
-  Perhaps use parameters for the current translate/rotate/scale,
-  since the shader has no stack. For now, this should have layering
-  built in.
-* DONE NGL - Maybe get the object width/height from sprite pixel width/height
-  CLOSED: [2012-10-07 Sun 15:45]
-  Then only scaling will be interesting, w/h will come from the
-  texture atlas. But at that point the atlas should contain pixels
-  rather than UVs and I'll have to the adjustment math on the
-  GPU. Investigate this.
-* DONE NGL - Hard code texture index more
-  CLOSED: [2012-10-07 Sun 15:46]
-  Rather than using define-texture
-
-  And optimize given that I won't be using the indexing system
-* DONE NGL - Deal with the model view projection in the shader
-  CLOSED: [2012-10-09 Tue 14:45]
-  My games rely on a different resolution than the actual screen
-
-  Or, have layers in "absolute" or "relative" coords
-* DONE NGL - Fix texel specifications 
-  CLOSED: [2012-10-10 Wed 19:17]
-  There are blurriness (the next sprite?) on the edges
-
-  (2 * i + 1) / (2 * n) ?
-
-  Maybe change the texture mode to not blur?
-
-  Can't use integers in fragment, because it's not a flat shade
-
-  I tried to switch to POW-of-2 texture atlases... the code is
-  simpler, which is nice and the blurring is not so bad, but it isn't
-  fixed. I think this is a good change though, because I know I'll
-  never have floating-point representation weirdness.
-
-  I was able to get around this quite a lot, but it is still a bit
-  messed up, because the bottom of the sprites is being chopped off
-* DONE NGL - Some random number of sprites aren't drawn at all
-  CLOSED: [2012-10-11 Thu 15:40]
-  That's why my demos have to make tons of sprites for them to show
-  up (try just drawing one, two, three, four, etc, to test)
-* DONE make-font - support non-alphanumeric
-  CLOSED: [2012-10-11 Thu 20:04]
-  By using char->integer
-* DONE NGL - move r.rkt to gb/r
-  CLOSED: [2012-10-11 Thu 20:04]
-* DONE NGL - String rendering using the pre-rendered fonts
-  CLOSED: [2012-10-11 Thu 20:04]
-* DONE NGL - Make texture atlas creation more efficient
-  CLOSED: [2012-10-12 Fri 00:04]
-  I changed from using the "shelf" algorithm to the power-of-2 tree
-  algorithm. The code in the texture-atlas is much nicer, although
-  the actual pow2-bin-pack is pretty whack. It turns out that this is
-  a worse implementation:
-
-  - Original "shelf": 180K
-  - Pow2 smallest-to-biggest: 192K
-  - Pow2 biggest-to-smallest: 188K
-
-  But I think I will keep it because I prefer it.
-
-  What I would like to do in the future is:
-  - define a better interface to different bin packers, so I can keep
-    the texture atlas code in its current beautiful state.
-  - use the above (and below) implementations (plus maybe the NP
-    complete one?
-  - find the best or try each of them and select the smallest.
-
-  I made the interface and ended up implementing this:
-
-  http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
-
-  And I got down to 160K! I think it is probably basically optimal!
-
-  I'll leave these ideas here for the millennium:
-
-  http://clb.demon.fi/projects/rectangle-bin-packing
-
-  or just use Nvidia's tools
-* DONE NGL - Fonts are still messed up
-  CLOSED: [2012-10-20 Sat 14:01]
-  (See gb/main's menu)
-
-  I think maybe the korf layout is off by one? (But my demo looks fine)
-* DONE Convert gb/main to use crt-w and crt-h vs 16:9
-  CLOSED: [2012-10-20 Sat 14:14]
-* DONE NGL - change in_TexCoord to float
-  CLOSED: [2012-10-20 Sat 14:43]
-* DONE NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
-  CLOSED: [2012-10-20 Sat 14:43]
-
-  Going with a big f32vector instead
-* DONE NGL - Consider using only integers so they are always pixel aligned
-  CLOSED: [2012-10-20 Sat 14:43]
-
-  It is much nicer to use floats everywhere for other reasons.
-* DONE NGL - add contracts to ngl and ngli and string
-  CLOSED: [2012-10-20 Sat 15:03]
-* DONE Make XML shader reading more robust
-  CLOSED: [2012-10-20 Sat 15:06]
-  In case there is just a fragment, vertex, etc (see bsnes examples)
-* DONE Make it so gl:Color doesn't have an alpha arg
-  CLOSED: [2012-10-20 Sat 15:06]
-  Because by using Z buffer for layers, translucent pixels don't work
-  across layers... so maybe it is better to just disallow it?
-* DONE Change gl model to be memoized
-  CLOSED: [2012-10-20 Sat 15:07]
-* DONE NGL - tennis demonstrates that floor/ceil is not always correct and I need to round towards the boundary
-  CLOSED: [2012-10-20 Sat 21:34]
-* DONE NGL - tennis - problem with ngl's scaling?
-  CLOSED: [2012-10-23 Tue 15:33]
-  If I change a call to rectangle to sprite but give a scaling
-  factor, it doesn't do what I expect. I should make a simple demo to
-  try it.
-* DONE NGL - convert tennis's resolution
-  CLOSED: [2012-10-23 Tue 15:35]
-  There is still the rectangle in ball-sprite because I can't use sacle
-* DONE NGL - maze - the items are not center and the pellets are too small
-  CLOSED: [2012-10-23 Tue 22:19]
-* DONE NGL - the 0/0/0 color seems to be brown? weird?
-  CLOSED: [2012-10-24 Wed 07:06]
-  I think the reason is that it gets combined with the 0,0 pixel in
-  the sprite sheet which isn't empty
-* DONE NGL - after fixing blackness, now some of the sprites aren't shown
-  CLOSED: [2012-10-24 Wed 08:53]
-  alpha is probably 0
-* DONE NGL - the squares are not all square in maze
-  CLOSED: [2012-10-24 Wed 09:16]
-  I don't think it's a problem with CRT, because when I turn off that
-  shaded, it still happens.
-
-  Although, when I turned off CRT altogether, it went away. My current
-  assumption is that the scaling from CRT to full-screen is a
-  non-integer amount, so I should fix it to restrict to integer
-  amounts so that pixels are always doubled, tripled, etc.
-* DONE have a proper quit handler to close resources, like OpenAL ctxt
-  CLOSED: [2012-10-26 Fri 22:04]
-* DONE Change FPS counter to count frame time instead
-  CLOSED: [2012-10-26 Fri 22:11]
-* DONE Make audio loading lazy (or other things that are slow on boot)
-  CLOSED: [2012-10-26 Fri 22:12]
-* DONE Make fixed-size fonts better
-  CLOSED: [2012-10-26 Fri 22:12]
-* DONE NGL - maze - gets UNBEARABLY slow after a little while... why?
-  CLOSED: [2012-10-29 Mon 15:17]
-  maybe the evector is getting too big? [nope, i added a printout and
-  nothing happened]
-
-  maybe I'm not really using the same graphics card memory and I'm
-  doing lots of allocations? I tried to use dynamic versus stream. I
-  tried to use buffersubdata. I feel like I don't have enough
-  information about what's going on.
-
-  maybe I should try the two FBO thing?
-
-  http://hacksoflife.blogspot.com/2012/04/beyond-glmapbuffer.html
-
-  http://www.gamedev.net/topic/517185-opengl-batch-rendering/
-
-  2012/10/24 - When I turned off the CRT emulation, the problem
-  happened much sooner. I think this is because of more stages in my
-  pipeline, so more chance to have asynchrony. Maybe the two FBO
-  thing will work, then?
-
-  I don't understand why this wouldn't happen with my demos, such as
-  the rotating sprites one, which change things just as much and I've
-  run for just as long.
-
-  Experiment with getting memory data from bugle
-
-  http://www.gremedy.com/screenshots.php
-  https://www.opengl.org/wiki/Debugging_Tools
-  http://www.opengl.org/sdk/tools/BuGLe/
-
-  2012/10/29 - I couldn't get information from bugle because
-  NVPerfSDK only works on Windows. I went with the ranged buffer
-  mapping with invalidation, but this required me to kill evector and
-  do it more manually and ugly---to avoid going over the sprite data
-  multiple times per frame, I expand the buffer the /next/ frame. I
-  still am not doing unsynchronized access, which I think I could,
-  but I'm not totally sure.
-* DONE NGL - Use with actual games that I have
-  CLOSED: [2012-10-29 Mon 22:19]
-* DONE NGL / Fullscreen / Big-bang - New architecture
-  CLOSED: [2012-10-29 Mon 22:20]
-
-  fullscreen : (void -> void) 
-               (key-event -> void)
-            -> width height (void -> void)
-               (string -> void)
-
-  You give a drawing function, you give it a function that gets key
-  events. It gives the max width, the max height, a function that
-  forces a re-draw, and a function that updates the window
-  lable. [Doesn't need OpenGL, but will call swap-buffers.] [Sets the
-  viewport]
-
-  aspect-draw : full-width full-height
-                aspect-width aspect-height max
-             -> actual-width actual-height 
-                ((-> void) -> void)
-
-  You give it the actual WxH of the screen and the desired aspect
-  ratio (16:9) plus a maximum constant (such as 80 for 720p, which
-  seems to be my laptop's maximum performance for the CRT shader) and
-  it will return the actual width/height allocated for it, plus a
-  function that receives a drawing function that is drawn on to the
-  actual width/height screen and then put in the center of the real
-  screen. In the future, this function could receive the rotation to
-  have TATE built in. [Uses OpenGL natively] [Sets the viewport]
-
-  draw-in-texture : texture-width texture-height
-                 -> texture-id
-                    ((-> void) -> void)
-
-  (Used by aspect-draw) Using OpenGL, it calls a drawing function you
-  give it later and draws into the texture. It returns the texture id
-  before hand so you can use it. [Sets the viewport]
-
-  draw-on-crt : crt-width crt-height
-                screen-width screen-height
-             -> ((-> void) -> void)
-
-  (Uses draw-in-texture) Using OpenGL and the CRT shader, calls the
-  drawing function with a small texture [Sets the viewport] and then
-  takes that texture and draws it to the default location (in our
-  case, another texture) but with the CRT effect run out it. [In the
-  future, modify this so that the final screen can be drawn in two
-  passes for halation.]
-
-  In the future, this will make it super easy to switch to GLFW,
-  because only fullscreen is changed. Plus I think aspect-draw in
-  OpenGL will be nicer than the margin hack I use now
-
-  (define-values (full-w full-h label! redraw!)
-   (fullscreen draw! receive-key!))
-  (define-values (actual-w actual-h aspect-draw!)
-   (aspect-draw full-w full-h 16 9 80))
-  (define crt-draw!
-   (draw-on-crt 432 243 actual-w actual-h))
-  (define (draw!)
-   (aspect-draw! 
-    (λ ()
-     (crt-draw! 
-      (λ () 
-       (ngl-draw! last-sprites))))))
-  (define (receive-key! ke)
-   (update-controller! ke))
-  (define (frame-time! time)
-   (if debug?
-    (label! "Get Bonus - ~a FPS" ...)
-    (label! "Get Bonus")))
-  (define last-sprites empty)
-
-  (let big-bang-loop ()
-   (define frame-start (current-inexact-milliseconds))
-   (set! last-sprites (run-the-game controller-state))
-   (redraw!)
-   (frame-time! (- (current-inexact-milliseconds) frame-start))
-   (sleep-until (+ frame-start (/ 1/60 1000)))   
-   (big-bang-loop))
-* DONE NGL - remove racket/gui from most code
-  CLOSED: [2012-10-29 Mon 22:40]
-* DONE NGL - Read about optimizing the streaming of data to the GPU
-  CLOSED: [2012-10-29 Mon 22:51]
-  http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
-
-  However, note that even with a huge number of sprites, the amount
-  of memory is miniscule.
-* DONE NGL - Consider using an external GLSL optimizer
-  CLOSED: [2012-10-29 Mon 22:51]
-  https://github.com/aras-p/glsl-optimizer (doesn't work with modern
-  GLSL though) [removing because it doesn't work and I'm fast enough?]
-* DONE Investigate and potentially using DDS for textures
-  CLOSED: [2012-10-29 Mon 22:54]
-  https://en.wikipedia.org/wiki/DirectDraw_Surface
-
-  Maybe not worth it because my texture atlas is small and I don't
-  want any lossy compression?
-* DONE Resource manager
-  CLOSED: [2012-10-29 Mon 22:54]
-  A DSL for defining resources...
-
-  - All
-    + Source URL
-    + Copyright holder
-    + Title
-  - Music
-    + Category
-    + Conversion to Ogg
-  - Image
-    + Sprite layout (w/ names)
-    + Conversion to texture atlas
-  - Fonts
-    + Conversion to texture atlas
-
-  This would run beforehand, create some files/directory structure,
-  and then drop and runtime information file so texture coords could
-  be looked up.
-* DONE NGL - convert rps
-  CLOSED: [2012-10-30 Tue 19:58]
-* DONE NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
-  CLOSED: [2012-10-30 Tue 20:05]
-* DONE NGL - maze - convert to crt resolution
-  CLOSED: [2012-10-30 Tue 20:13]
-* DONE NGL - maze - the score display isn't there
-  CLOSED: [2012-11-21 Wed 09:31]
-* DONE NGL - maze - hungry man is pointing the wrong way
-  CLOSED: [2012-11-21 Wed 09:50]
-* DONE Collect more performance data
-  CLOSED: [2012-11-22 Thu 11:43]
-  Use gcstats
-  Make a histogram of frame times (a la DrRacket's)
-* TODO NGL - tennis - it seems like the ball goes too low
-  Also, if you try to bring the paddle to the top, it doesn't draw
-  the whole way
-* TODO NGL - Investigate the interaction of depth testing with transparency
-  At the very least, I should be able to have fully opaque or fully
-  transparent texture colors and get it to work. It is possible that
-  I will have to call discard() in the fragment shader to ignore the
-  effect on the depth buffer of the fully transparent texture
-
-  Ideally, I'd be able to draw every sprite from back to front and
-  get perfect transparencies.
-
-  It might be more feasible to make layers something NGL knows about
-  and have it draw each layer into a separate screen-sized texture
-  that are all blended together afterward. (The SNES had only one
-  layer that could be transparent over the others.)
-
-  Also, here's another idea that uses front-to-back drawing order:
-  http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
-
-  Investigate this.
-* TODO NGL - Figure out the proper way to do texture/color blending
-  Right now I only support fully color or fully texture. It would be
-  nice to support a tinted texture
-* TODO NGL - See if I need to set up culling specially
-  And perhaps cull slightly wider than that the screen because I
-  believe culling happens before geometry shaders (?) so I need to
-  make sure the point is in the cull
-
-  [Not relevant until I have games with relative layers]
-* TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
-  Will the GLSL compiler do it anyways?
-* TODO NGL - cache shader vector modifications to skip some parts of object tree
-  premature optimization
-* TODO NGL - cache shader vector uploads to skip some segments
-  premature optimization
-
-  (Probably not useful, because I hit very high frame rates even when
-  updating vectors thousands of elements long)
-* TODO GLFW - Wait for getting the string identifiers of joysticks
-* TODO GLFW - Wait for consistent joystick state intra-frame
-  So glfwPollEvents calls pollJoystickEvents and Win32 caches
-* TODO Make a tool for downloading the copyrighted images/music
-  List the URL, a checksum, and then have the tool download them if
-  they aren't there and verify if they are.
-* TODO Use SNES sprites for Ms. Pac-Man in maze
-* TODO tennis - balls can bounce infinitely off wall and get stuck
-* TODO OS suppress updates
-  Make a critical region system call that gives a process sole access
-  to the system... leaving the other processes stalled with their last
-  writes persisting from frame to frame
-  
-  This might be a good way to implement "friction" or "bullet time" as
-  well as other effects, like menus.
-  
-  Just an idea. Might be a bad idea?
-* TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
-* TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
-* TODO tennis - score based on total number of balls in play
-* TODO Make games return score information to dashboard for it to manager
-  (Version, Level, Numeric Score) from game
-
-  (Game, Date, Version, Level, Numeric Score) from dashboard
-
-  Store (cached) locally and online
-
-  Store a cached global ranking
-* TODO Make games return replays (and allow them to accept replays)
-  Replay = (random seed, level, controller stream)
-* TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
-* TODO Add "compare with ..." to game info
-* TODO Make Anki-like SRS system in dashboard
-* TODO Make icons for dashboards vs text
-  Or mimic the Wii interface
-* TODO Make games in dashboard have capabilities
-  1P, 2P Round-robin, 2P VS, 2P Co-op, etc
-* TODO Make play modes in dashboard
-  Single, King-of-the-Hill (play levels that your score has been
-  beaten on), Training (improve your score, SRS style), Round-Robin
-  (play all games)
-
-  Have it so you can highlight games to be played that way
-* TODO Death scream like Ziggurat (in dashboard?)
-  Or other stingers, but worry about being too annoying and not
-  instant restarting
-* TODO Find a unified common score display
-  Should I display all points: this session / this game / all games?
-* TODO Return achievements (to dashboard)
-* TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
-* TODO Read about and implement juiciness
-  http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
-  
-  https://github.com/grapefrukt/juicy-breakout
-
-  http://www.youtube.com/watch?v=tVLb-I5i5ys&feature=youtu.be&a
-
-  http://tnns.rabbx.com/
-* TODO Tennis - ugly score display
-* TODO Tennis - revisit use of paddle bounce
-* TODO Make RPS more JRPG-like
-* TODO Convert things to typed racket
-* TODO Write a generic Godel-encoding library
-* TODO Figure out a way to do localization well
-* TODO Make more games
-* TODO The Get Bonus rendering system should have built-in support for TATE games
-  Virtual, Rotate Left, and Rotate Right
-* TODO NGL - Add absolute and relative layers
-  For example, the score display is absolute, but the game is
-  relative (my games don't use this concept yet)
-* TODO See if I can record a video directly
-  http://revel.sourceforge.net/docs/html/revel_8h.html#a30
-* TODO Allow multi-pass shaders (such as CRT halation)
-  See libretro or retroarch
-
-  And maybe use Cg rather than GLSL
-* TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
-* TODO Master Grafx2 or aseprite or make my own keyboard based system
-  https://code.google.com/p/grafx2/
-* TODO Make something for Racket/emacs to find out what deps aren't needed
-* TODO Experiment with located events (in a 2D mesh) rather than flat events
-* TODO Try to get OpenGL to do collision detection for me
-  http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
-* TODO Make OS use futures for parallelism
-  First experiment, 2012/07/01 failed... got a slower frame rate. I
-  think the key is to make it just a future during the time that GL is
-  rendering.
-* TODO 2D Lighting
-  https://www.youtube.com/watch?v=fsbECSpwtig
-* TODO Add challenges/achievements/training to NES/SNES games
-  Hook up with an emulator core to drop into a game with save states
-  and then monitor its execution for score, etc
-
-  Can you beat this Mega Man stage with one life?
-
-  How fast can you do X in this game?
-
-  Wrap this in a package that switches from game to game like I
-  want... it may be perfection
-
-* TODO Implement Boxing iPhone game
-  Like Punch-Out!!!
-  
-  Five "buttons": punch left/right, dodge left/right, block. The
-  upper quadrants for punching, the bottom for dodging, and the
-  middle for blocking.
-  
-  Randomly generate winning sequences of input, then from them
-  determine what the bad guy does... for example if to win you dodge
-  left, then he should punch right.
-  
-  After going through this sequence, it just repeats.
-  
-  Manually design 10 or so cues that indicate an upcoming action
-  (like twitching eye brows, shaking, hand/leg shuffle, etc)
-  
-  Aim for completing a match in 1 to 2 minutes
-  
-  Shake the phone to get up
-* TODO Winners Don't Do Drugs and other intro screens
+* General TODO items
+** DONE Move tests into test submodules
+   CLOSED: [2012-05-25 Fri 01:23]
+** DONE Write a makefile that runs all the tests with raco test
+   CLOSED: [2012-05-25 Fri 01:29]
+** DONE Really implement openal on linux
+   CLOSED: [2012-06-19 Tue 19:46]
+** DONE Really implement joysticks on linux
+   CLOSED: [2012-06-24 Sun 08:34]
+** DONE Remove controller debugging printfs
+   CLOSED: [2012-06-25 Mon 17:30]
+** DONE Reorganize exp directory into other directories
+   CLOSED: [2012-06-25 Mon 19:38]
+** DONE Change gl model to keep track of sizes for centering, etc
+   CLOSED: [2012-06-26 Tue 19:15]
+** DONE Make dashboard
+   CLOSED: [2012-06-29 Fri 22:25]
+** DONE Add scoring back into tennis/OS
+   CLOSED: [2012-06-30 Sat 22:25]
+** DONE Correct tennis angle of reflection
+   CLOSED: [2012-06-30 Sat 19:52]
+** DONE Separate OS out of tennis/OS
+   CLOSED: [2012-07-03 Tue 20:47]
+** DONE Improve tennis/OS structure
+   CLOSED: [2012-07-04 Wed 22:39]
+** DONE Make tennis harder over time: more balls, faster movement, larger opponent
+   CLOSED: [2012-07-04 Wed 22:39]
+** DONE I can still get stuck on the wall and the paddle sometimes in Tennis
+   CLOSED: [2012-07-04 Wed 22:39]
+** DONE Rewrite maze with OS model
+   CLOSED: [2012-07-08 Sun 00:32]
+** DONE Improve maze OS structure
+   CLOSED: [2012-07-18 Wed 18:40]
+** DONE OS - fix connection to 3s
+   CLOSED: [2012-07-21 Sat 13:06]
+   There is a use in tennis that would be fixed
+
+   And maze uses it for the background music
+** DONE Figure out how to use OpenGL depth bit for background/foreground
+   CLOSED: [2012-08-04 Sat 14:05]
+   A lot of people online seem to suggest it is bad to use the Z buffer
+   because of transparency issues. Strange.
+
+   Now use it
+** DONE Maybe change graphics to fixed pixels?
+   CLOSED: [2012-08-05 Sun 19:45]
+   Render to a buffer and then display the buffer?
+   ---
+   Take the SNES w x h and make it wider, see exp/wide.rkt
+   ---
+   Maybe use bsnes's snesshaders to do the scaling?
+
+   http://filthypants.blogspot.com/2011/05/more-emulator-pixel-shaders-crt-updated.html
+
+   http://duriansoftware.com/joe/An-intro-to-modern-OpenGL.-Chapter-2.2:-Shaders.html
+   ---
+   Hopefully this will make planning and text better
+   --
+   I'm using exp/buffer.rkt to experiment and it is MESSED up.
+** DONE maze - use CRT size directly?
+   CLOSED: [2012-08-06 Mon 15:01]
+   In this case, I'm not sure it is a good idea, because we already use
+   a 16:9 frame and it is convenient to imaging that the 1x1 boxes in
+   the maze are the real thing and the 16x9 pixels are just the display
+** DONE maze - sometimes the white ghost disappears... it's weird
+   CLOSED: [2012-08-06 Mon 19:10]
+   It was a problem with depth. Annoying. I'll have to revisit depth
+   later.
+** DONE tennis - use CRT size directly?
+   CLOSED: [2012-08-06 Mon 19:49]
+** DONE Change controller model
+   CLOSED: [2012-08-09 Thu 15:58]
+   SNES style
+   D-pad is booleans
+   Have another right interpretation of dpad
+
+   Get a USB snes controller for home
+** DONE Switch to RacketGL throughout
+   CLOSED: [2012-08-09 Thu 16:28]
+** DONE Make a faster FPS counter
+   CLOSED: [2012-09-07 Fri 15:50]
+   Making a texture is slow. Maybe with character-based string textures
+   it would be faster?
+   
+   Maybe just log data and look at it afterward?
+   
+   I don't know if I really am measuring this correctly... see OpenGL
+   wiki
+
+   Decided to show it in the window label
+** DONE Switch to a fully shader based rendering system
+   CLOSED: [2012-09-09 Sun 23:43]
+   I have begun experimenting with this a lot.
+   
+   --Why--
+   
+   [[http://www.opengl.org/wiki/FAQ#Are_glTranslate.2FglRotate.2FglScale_hardware_accelerated.3F][This FAQ]] says that OpenGL doesn't accelerate the fixed-function
+   pipeline any longer. [[http://gamedev.stackexchange.com/questions/25411/basics-of-drawing-in-2d-with-opengl-3-shaders][This StackOverflow question]] suggests a general
+   structure. ([[http://stackoverflow.com/questions/1556535/using-opengl-to-accelerate-2d-graphics?rq%3D1][This one]] also talks about the same stuff.)
+   
+   --Plan--
+   
+   My original plan was to have a single vector input to the shader
+   that was something like:
+   
+   Translation: XY
+   Scale:       XY    (relative to the sprite, not the scene)
+   Rotation:    Theta (relative to the sprite, not the scene)
+   Color:       RGBA
+   Rectangle:   WH
+   Texture:     XYWH
+   
+   where the vertex shader would move the basis of the vertex, which is
+   0,0 to the translated point, where it would then be scaled and
+   rotated.
+   
+   the geometry shader would take this input and output the various
+   vertexes for a rectangle ([[http://openglbook.com/the-book/chapter-2-vertices-and-shapes/][this site]] talks about you need 6 for
+   GL_TRIANGLES but only 5 for GL_TRIANGLE_STRIP, but I don't know if
+   you can do that in a geometry shader)
+   
+   the fragment shader would take the texture coordinates and grab the
+   pixels, blending in the color. For most sprites, I would set the
+   color to blank-ness and for opaque boxes, I would set the texture
+   coordinates to a blank place.
+   
+   I hope this will allow me to have a single draw call.
+   
+   -- Populating it --
+   
+   My plan is to populate this vector by first, sorting the sprites
+   into their layers with the background towards the front of the
+   array. (My assumption is that background layers change less so it
+   will make the vector more stable.) The game would return, basically,
+   a list of rows of this vector and the engine would map through
+   them. However, it would keep track of what the previous lists were
+   and if they were eq? and in the same order, then they would not be
+   set! to decrease memory traffic.
+   
+   I would assume that most translations, scaling, or rotations are not
+   stacked, so it is safe to compose them on the CPU.
+   
+   -- Texture Atlas ---
+   
+   Additionally, I would have a single texture for all sprites in the
+   game that was always available. This is called a [[https://en.wikipedia.org/wiki/Texture_atlas][Texture atlas]]. My
+   idea is to write a library that scans the directory Get Bonus is in
+   for all PNGs and stitches them together in a lossless way, doing
+   something basic for limiting the area, with the opportunity for
+   optimization later. This library would run at the start of every
+   startup and find the list of files and their checksums and see if
+   the cached PNG is still up to date. Similarly, this same program
+   would create PNGs for fonts.
+   
+   I'm imaging an interface like
+   
+   texture-coords : path -> coordinates
+   
+   where the path would be relative to the Get Bonus directory and then
+   the coordinates would be in the atlas that was constructed.
+   
+   I'd write a tool that would rip sprite sheets apart into their
+   pieces.
+   
+   -- Notes --
+   
+   I've decided to go with Cg rather than GLSL directly, because of its
+   separate compiler, seems to have good optimization technology, etc.
+   
+   Most of Nvidia's materials seem to be very good (particularly the
+   manuals and examples that come with the toolkit.) [[http://filthypants.blogspot.com/2011/06/cg-shader-tutorial-for-emulators.html][Here's another]]
+   source for tutorials.
+   
+   My current development machine is limited to OpenGL 3.2, which is
+   relevant to developing with Cg. I've written a basic FFI for Cg with
+   just what I need. It would be nice if there were spec files like
+   RacketGL uses for OpenGL.
+   
+   -- Problems --
+   
+   First, my idea for the layout will be complicates because
+   glVertexAttribPointer function can only give vertexes with 1 through
+   4 elements, not this many. I might able to do it as one big thing
+   anyways, by using strides and multiple attributes. (I could even do
+   a different attribute for each piece.)
+   
+   Second, I don't totally understand the capabilities of geometry
+   shaders. Essentially what I'm doing is telling OpenGL that there is
+   only 1 "vertex" but then I'm expanding it into 6 by the geometry
+   shader. (In the call to glDrawArray, will I put in the number of
+   objects, or the number of objects times 6? Probably just the
+   number?) [[http://www.opengl.org/wiki/Tutorial4:_Using_Indices_and_Geometry_Shaders_(C_/SDL)][This tutorial]] might be a good place to start. (Also, there
+   are a few examples in the Nvidia CG toolkit.)
+   
+   Third, my initial attempts at following [[http://openglbook.com/the-book/chapter-2-vertices-and-shapes/][this tutorial]] to get things
+   up in running (exp/pipe.rkt) has failed with my three rectangle
+   example. First, rectangles don't show up at all. Instead, a triangle
+   does. There's also a problem that only one triangle does---the front
+   most one. Second, they aren't appearing in the place that I expect
+   them to. I think [[http://www.opengl.org/wiki/FAQ#How_to_render_in_pixel_space][this FAQ question]] is a piece of the answer. I think
+   I should start from scratch and adapt his example directly (to
+   compare the drawings, for example) and go from there. ([[http://www.songho.ca/opengl/gl_vertexarray.html][This is
+   another tutorial]] that may be useful.)
+   
+   I'm not totally certain about what the right thing to do with the
+   blending between alpha, the color, and the texture color. [[http://www.opengl.org/discussion_boards/showthread.php/166520-Alpha-blending-with-Cg-shaders][Here's a
+   thread]] that might have information. I also think I need to use
+   (glShadeModel GL_FLAT) so that the color isn't interpolated.
+   
+   This is a very frustrating thing to be doing. I feel like a 142
+   student.
+   
+   -- Useful paths --
+   
+   CG documentation --- /usr/share/doc/nvidia-cg-toolkit
+   CG examples --- /usr/lib/nvidia-cg-toolkit/examples/OpenGL
+   
+   I had to install nvidia-cg-toolkit from Nvidia directly
+   (Cg-3.1_April2012_x86_64.deb) because the Ubuntu one was broken.
+
+   -- Further investigation --
+
+   I transliterated the code from the tutorial into Racket precisely,
+   including using GLUT and everything. However, it is black. I
+   originally assumed this was because of GLEW, but when I disable GLEW
+   in the C code, it works, but not in my code. Mysterious.
+
+   I used 'apitrace' to determine that the OpenGL calls the two
+   programs were making were literally IDENTICAL. Still, they display
+   differently. My current guess is that the vertex arrays are being
+   populated differently.
+
+   After doing some tracing on the C side, I see that the bytes in my
+   vertex arrays are different than the ones on the C side. Yet, I'm
+   using f32vectors, which are supposed to be _float arrays. Weird.
+
+   ARRRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGHHHHHHHHHHH
+
+   I mixed up the sign on a vector coordinate. The byte difference was
+   just an error in printing on the C side.
+
+   Alright, now that I have a working program, I have to go back to
+   being in racket/gui or accept my new GLUT overlord. Or maybe GLFW?
+
+   --- Progress 09/01 ---
+
+   I've switched away from GLUT from the tutorial and switched to using
+   Cg (seems like a good idea in some ways, performance and
+   expressiveness, but a bad in others (less documentation it seems.))
+
+   I've started to work on my custom shader. I've got it generating a
+   quad from a single point (with six vertices).
+
+   My next task is to work with textures. Right now I have the
+   information being passed along, but I need to have three things:
+   flat color quads, flat textured quads, and textured quads with a
+   color blended on top. I think I will test with the Pac-Man sprite
+   sheet. I think I need those examples before I can really try to
+   write the code.
+
+   --- Progress 09/02 ---
+
+   Today I switched back to GLSL after reading about some problems
+   with Cg and failing to get triangle strips to work. I find it
+   really weird and annoying to write three files though, where the
+   names of identifiers have to be the same. It's strange. But after I
+   did the transition, then I was able to get the triangle strip
+   working, so now I'm just generating 4 vertices, which is nice. Next
+   up is texturing, which I've done a bit of.
+
+   --- Progress 09/03 ---
+
+   Basic textures are done. A few more things to do though. Changed the
+   texture coordinate representation. Got indexed textures to work, but
+   there's the annoying magic number length in the vertex shader. And
+   I don't like the way I did it, but eh. What can you do? Just did
+   rotation and scaling on the sprite level. Dramatically increased
+   number of sprites to benchmark. 500 @ 60 FPS with just a transfer
+   of the entire transform array. I tried to optimize by caching
+   values and moving things into the vertex shader, but it did
+   nothing. I wonder if geometry shaders are slow? I'm also interested
+   to find out if rendering at the lower resolution would be better. I
+   think I shouldn't worry about performance until after I apply it to
+   the games.
+
+   I tried to remove the Geometry Shader to improve performance. The
+   first idea was to use Instanced drawing and draw 4 instances for
+   each sprite (one for each corner); unfortunately, instancing is for
+   meshes, not for vertices, so I couldn't use the instance id to
+   identify the corner and assemble them together. So that failed.
+
+   Next, I tried to generate 4 vertices per sprite on the CPU, but
+   with all the exact same positions and then a uniform that contained
+   which corner the vertex corresponded to. The first problem with
+   this was that TRIANGLE_STRIP tries to connect every single sprite
+   together, which is wrong. So, I changed to use glMultiDrawArrays
+   with big s32vectors to identify the start of each strip. This was
+   miserably slow.
+
+   My next idea (not yet implemented) is to use glDrawElements where
+   the indexes are always 0...LastSprite and the indexes are just the
+   center positions and I still use a uniform to identify the
+   corner. And I would use glPrimitiveRestartIndex to restart the strip
+   up again.
+
+   --- Progress 09/07 ---
+
+   I implemented the glDrawElements with glPrimitiveRestartIndex and
+   got 3 FPS with 1024 sprites. After going to a triangle-based
+   rendering (so, six vertices per sprite), I was able to get 15 FPS
+   with 1024 sprites (on my full laptop screen). 512 sprites is only
+   20 or 30 FPS (slower than the geometry-shader based version.)
+
+   When I added rotation, the performance didn't change. But when I
+   added scaling in the shader it INCREASED! I can reliably do 1024
+   sprites @ 30 FPS and 512 sprites @ over 60 FPS.
+
+   Doing the corner calculation of hw/hh slowed it down to 30 FPS. So I
+   reverted it. Same with a corner calculation of the tex coordinates,
+   which means the index is pointless. I've now removed some of the
+   extra stuff that supported all these experiments (the corner vertex
+   array and the texture atlas index uniform. Didn't seem to have any
+   effect on performance, but memory usage is down.) Now the shader is
+   pretty dirt simple.
+
+   After all this, I went back and checked out what the situation was
+   with the geometry shader version that did everything on the
+   card... and it gets the exact same performance. Argh! And it uses
+   less memory to upload the scene!
+
+   I think it is time to just implement this for the games and see
+   what happens.
+
+   Later that day I turned on depth testing and got super fast
+   performance. Basically before I was drawing every single sprite over
+   previously drawn ones, which cost a lot of time. Now the GPU can
+   ignore "background" sprites that are covered. This will influence
+   what order I sent them to the card and how I do
+   blending/transparency/ etc. But I get insane performance, so it is
+   probably worth it.
+** DONE NGL - Pre-generate texture files for every letter in the alphabet for a font at a certain pixel height.
+   CLOSED: [2012-09-11 Tue 14:15]
+** DONE NGL - Assemble texture atlas from data files
+   CLOSED: [2012-09-11 Tue 15:23]
+   Use gb/graphics/texture-atlas-lib to produce a static database
+   after munging some image files and calling something functions
+** DONE NGL - Use texture atlas in demo
+   CLOSED: [2012-09-11 Tue 15:50]
+   This required dropping the index.
+** DONE NGL - Experiment with pixel coords rather than relative coords in texture atlas
+   CLOSED: [2012-09-12 Wed 09:36]
+** DONE Jake
+   CLOSED: [2012-10-04 Thu 14:01]
+   My own Make system. I'm crazy.
+** DONE NGL - Allow texture atlas to have sub-file textures
+   CLOSED: [2012-10-04 Thu 15:07]
+   (i.e. my existing sprite sheets)
+
+   Or just make the cutting up tool better (probably a better solution)
+** DONE NGL - Font generation
+   CLOSED: [2012-10-06 Sat 14:15]
+   There's no reason to have them all the same width, just the same height.
+** DONE NGL - Find a better mono font
+   CLOSED: [2012-10-06 Sat 14:17]
+** DONE NGL - Generate digests of copyrighted images
+   CLOSED: [2012-10-06 Sat 15:40]
+** DONE NGL - Growable vector management library
+   CLOSED: [2012-10-06 Sat 16:04]
+   Should work for an ffi/vector, including copying from old to
+   new. Doubling when you go over the limit.
+** DONE gb/lib/evector - make it static (like a unit)
+   CLOSED: [2012-10-07 Sun 11:00]
+** DONE NGL - Improve digest creation
+   CLOSED: [2012-10-07 Sun 11:14]
+   Make it its own program and part of Jake file
+** DONE NGL - Take the geometry shader version and turn it into an abstraction
+   CLOSED: [2012-10-07 Sun 11:53]
+** DONE NGL - use evector
+   CLOSED: [2012-10-07 Sun 12:32]
+** DONE NGL - don't use global variables
+   CLOSED: [2012-10-07 Sun 14:42]
+** DONE NGL - undo changes to OpenGL state
+   CLOSED: [2012-10-07 Sun 14:42]
+** DONE texture atlas - remove the giant vector and replace with small ones
+** DONE NGL - Make a system for specifying sprites granularly
+   CLOSED: [2012-10-07 Sun 15:32]
+   Perhaps use parameters for the current translate/rotate/scale,
+   since the shader has no stack. For now, this should have layering
+   built in.
+** DONE NGL - Maybe get the object width/height from sprite pixel width/height
+   CLOSED: [2012-10-07 Sun 15:45]
+   Then only scaling will be interesting, w/h will come from the
+   texture atlas. But at that point the atlas should contain pixels
+   rather than UVs and I'll have to the adjustment math on the
+   GPU. Investigate this.
+** DONE NGL - Hard code texture index more
+   CLOSED: [2012-10-07 Sun 15:46]
+   Rather than using define-texture
+
+   And optimize given that I won't be using the indexing system
+** DONE NGL - Deal with the model view projection in the shader
+   CLOSED: [2012-10-09 Tue 14:45]
+   My games rely on a different resolution than the actual screen
+
+   Or, have layers in "absolute" or "relative" coords
+** DONE NGL - Fix texel specifications 
+   CLOSED: [2012-10-10 Wed 19:17]
+   There are blurriness (the next sprite?) on the edges
+
+   (2 * i + 1) / (2 * n) ?
+
+   Maybe change the texture mode to not blur?
+
+   Can't use integers in fragment, because it's not a flat shade
+
+   I tried to switch to POW-of-2 texture atlases... the code is
+   simpler, which is nice and the blurring is not so bad, but it isn't
+   fixed. I think this is a good change though, because I know I'll
+   never have floating-point representation weirdness.
+
+   I was able to get around this quite a lot, but it is still a bit
+   messed up, because the bottom of the sprites is being chopped off
+** DONE NGL - Some random number of sprites aren't drawn at all
+   CLOSED: [2012-10-11 Thu 15:40]
+   That's why my demos have to make tons of sprites for them to show
+   up (try just drawing one, two, three, four, etc, to test)
+** DONE make-font - support non-alphanumeric
+   CLOSED: [2012-10-11 Thu 20:04]
+   By using char->integer
+** DONE NGL - move r.rkt to gb/r
+   CLOSED: [2012-10-11 Thu 20:04]
+** DONE NGL - String rendering using the pre-rendered fonts
+   CLOSED: [2012-10-11 Thu 20:04]
+** DONE NGL - Make texture atlas creation more efficient
+   CLOSED: [2012-10-12 Fri 00:04]
+   I changed from using the "shelf" algorithm to the power-of-2 tree
+   algorithm. The code in the texture-atlas is much nicer, although
+   the actual pow2-bin-pack is pretty whack. It turns out that this is
+   a worse implementation:
+
+   - Original "shelf": 180K
+   - Pow2 smallest-to-biggest: 192K
+   - Pow2 biggest-to-smallest: 188K
+
+   But I think I will keep it because I prefer it.
+
+   What I would like to do in the future is:
+   - define a better interface to different bin packers, so I can keep
+     the texture atlas code in its current beautiful state.
+   - use the above (and below) implementations (plus maybe the NP
+     complete one?
+   - find the best or try each of them and select the smallest.
+
+   I made the interface and ended up implementing this:
+
+   http://www.codeproject.com/Articles/210979/Fast-optimizing-rectangle-packing-algorithm-for-bu
+
+   And I got down to 160K! I think it is probably basically optimal!
+
+   I'll leave these ideas here for the millennium:
+
+   http://clb.demon.fi/projects/rectangle-bin-packing
+
+   or just use Nvidia's tools
+** DONE NGL - Fonts are still messed up
+   CLOSED: [2012-10-20 Sat 14:01]
+   (See gb/main's menu)
+
+   I think maybe the korf layout is off by one? (But my demo looks fine)
+** DONE Convert gb/main to use crt-w and crt-h vs 16:9
+   CLOSED: [2012-10-20 Sat 14:14]
+** DONE NGL - change in_TexCoord to float
+   CLOSED: [2012-10-20 Sat 14:43]
+** DONE NGL - Use a cstruct so there is a single vector to manage (and send the vertex attrib arrays with strides)
+   CLOSED: [2012-10-20 Sat 14:43]
+
+   Going with a big f32vector instead
+** DONE NGL - Consider using only integers so they are always pixel aligned
+   CLOSED: [2012-10-20 Sat 14:43]
+
+   It is much nicer to use floats everywhere for other reasons.
+** DONE NGL - add contracts to ngl and ngli and string
+   CLOSED: [2012-10-20 Sat 15:03]
+** DONE Make XML shader reading more robust
+   CLOSED: [2012-10-20 Sat 15:06]
+   In case there is just a fragment, vertex, etc (see bsnes examples)
+** DONE Make it so gl:Color doesn't have an alpha arg
+   CLOSED: [2012-10-20 Sat 15:06]
+   Because by using Z buffer for layers, translucent pixels don't work
+   across layers... so maybe it is better to just disallow it?
+** DONE Change gl model to be memoized
+   CLOSED: [2012-10-20 Sat 15:07]
+** DONE NGL - tennis demonstrates that floor/ceil is not always correct and I need to round towards the boundary
+   CLOSED: [2012-10-20 Sat 21:34]
+** DONE NGL - tennis - problem with ngl's scaling?
+   CLOSED: [2012-10-23 Tue 15:33]
+   If I change a call to rectangle to sprite but give a scaling
+   factor, it doesn't do what I expect. I should make a simple demo to
+   try it.
+** DONE NGL - convert tennis's resolution
+   CLOSED: [2012-10-23 Tue 15:35]
+   There is still the rectangle in ball-sprite because I can't use sacle
+** DONE NGL - maze - the items are not center and the pellets are too small
+   CLOSED: [2012-10-23 Tue 22:19]
+** DONE NGL - the 0/0/0 color seems to be brown? weird?
+   CLOSED: [2012-10-24 Wed 07:06]
+   I think the reason is that it gets combined with the 0,0 pixel in
+   the sprite sheet which isn't empty
+** DONE NGL - after fixing blackness, now some of the sprites aren't shown
+   CLOSED: [2012-10-24 Wed 08:53]
+   alpha is probably 0
+** DONE NGL - the squares are not all square in maze
+   CLOSED: [2012-10-24 Wed 09:16]
+   I don't think it's a problem with CRT, because when I turn off that
+   shaded, it still happens.
+
+   Although, when I turned off CRT altogether, it went away. My current
+   assumption is that the scaling from CRT to full-screen is a
+   non-integer amount, so I should fix it to restrict to integer
+   amounts so that pixels are always doubled, tripled, etc.
+** DONE have a proper quit handler to close resources, like OpenAL ctxt
+   CLOSED: [2012-10-26 Fri 22:04]
+** DONE Change FPS counter to count frame time instead
+   CLOSED: [2012-10-26 Fri 22:11]
+** DONE Make audio loading lazy (or other things that are slow on boot)
+   CLOSED: [2012-10-26 Fri 22:12]
+** DONE Make fixed-size fonts better
+   CLOSED: [2012-10-26 Fri 22:12]
+** DONE NGL - maze - gets UNBEARABLY slow after a little while... why?
+   CLOSED: [2012-10-29 Mon 15:17]
+   maybe the evector is getting too big? [nope, i added a printout and
+   nothing happened]
+
+   maybe I'm not really using the same graphics card memory and I'm
+   doing lots of allocations? I tried to use dynamic versus stream. I
+   tried to use buffersubdata. I feel like I don't have enough
+   information about what's going on.
+
+   maybe I should try the two FBO thing?
+
+   http://hacksoflife.blogspot.com/2012/04/beyond-glmapbuffer.html
+
+   http://www.gamedev.net/topic/517185-opengl-batch-rendering/
+
+   2012/10/24 - When I turned off the CRT emulation, the problem
+   happened much sooner. I think this is because of more stages in my
+   pipeline, so more chance to have asynchrony. Maybe the two FBO
+   thing will work, then?
+
+   I don't understand why this wouldn't happen with my demos, such as
+   the rotating sprites one, which change things just as much and I've
+   run for just as long.
+
+   Experiment with getting memory data from bugle
+
+   http://www.gremedy.com/screenshots.php
+   https://www.opengl.org/wiki/Debugging_Tools
+   http://www.opengl.org/sdk/tools/BuGLe/
+
+   2012/10/29 - I couldn't get information from bugle because
+   NVPerfSDK only works on Windows. I went with the ranged buffer
+   mapping with invalidation, but this required me to kill evector and
+   do it more manually and ugly---to avoid going over the sprite data
+   multiple times per frame, I expand the buffer the /next/ frame. I
+   still am not doing unsynchronized access, which I think I could,
+   but I'm not totally sure.
+** DONE NGL - Use with actual games that I have
+   CLOSED: [2012-10-29 Mon 22:19]
+** DONE NGL / Fullscreen / Big-bang - New architecture
+   CLOSED: [2012-10-29 Mon 22:20]
+
+   fullscreen : (void -> void) 
+                (key-event -> void)
+             -> width height (void -> void)
+                (string -> void)
+
+   You give a drawing function, you give it a function that gets key
+   events. It gives the max width, the max height, a function that
+   forces a re-draw, and a function that updates the window
+   lable. [Doesn't need OpenGL, but will call swap-buffers.] [Sets the
+   viewport]
+
+   aspect-draw : full-width full-height
+                 aspect-width aspect-height max
+              -> actual-width actual-height 
+                 ((-> void) -> void)
+
+   You give it the actual WxH of the screen and the desired aspect
+   ratio (16:9) plus a maximum constant (such as 80 for 720p, which
+   seems to be my laptop's maximum performance for the CRT shader) and
+   it will return the actual width/height allocated for it, plus a
+   function that receives a drawing function that is drawn on to the
+   actual width/height screen and then put in the center of the real
+   screen. In the future, this function could receive the rotation to
+   have TATE built in. [Uses OpenGL natively] [Sets the viewport]
+
+   draw-in-texture : texture-width texture-height
+                  -> texture-id
+                     ((-> void) -> void)
+
+   (Used by aspect-draw) Using OpenGL, it calls a drawing function you
+   give it later and draws into the texture. It returns the texture id
+   before hand so you can use it. [Sets the viewport]
+
+   draw-on-crt : crt-width crt-height
+                 screen-width screen-height
+              -> ((-> void) -> void)
+
+   (Uses draw-in-texture) Using OpenGL and the CRT shader, calls the
+   drawing function with a small texture [Sets the viewport] and then
+   takes that texture and draws it to the default location (in our
+   case, another texture) but with the CRT effect run out it. [In the
+   future, modify this so that the final screen can be drawn in two
+   passes for halation.]
+
+   In the future, this will make it super easy to switch to GLFW,
+   because only fullscreen is changed. Plus I think aspect-draw in
+   OpenGL will be nicer than the margin hack I use now
+
+   (define-values (full-w full-h label! redraw!)
+    (fullscreen draw! receive-key!))
+   (define-values (actual-w actual-h aspect-draw!)
+    (aspect-draw full-w full-h 16 9 80))
+   (define crt-draw!
+    (draw-on-crt 432 243 actual-w actual-h))
+   (define (draw!)
+    (aspect-draw! 
+     (λ ()
+      (crt-draw! 
+       (λ () 
+        (ngl-draw! last-sprites))))))
+   (define (receive-key! ke)
+    (update-controller! ke))
+   (define (frame-time! time)
+    (if debug?
+     (label! "Get Bonus - ~a FPS" ...)
+     (label! "Get Bonus")))
+   (define last-sprites empty)
+
+   (let big-bang-loop ()
+    (define frame-start (current-inexact-milliseconds))
+    (set! last-sprites (run-the-game controller-state))
+    (redraw!)
+    (frame-time! (- (current-inexact-milliseconds) frame-start))
+    (sleep-until (+ frame-start (/ 1/60 1000)))   
+    (big-bang-loop))
+** DONE NGL - remove racket/gui from most code
+   CLOSED: [2012-10-29 Mon 22:40]
+** DONE NGL - Read about optimizing the streaming of data to the GPU
+   CLOSED: [2012-10-29 Mon 22:51]
+   http://www.opengl.org/wiki/Vertex_Specification_Best_Practices#Dynamic_VBO
+
+   However, note that even with a huge number of sprites, the amount
+   of memory is miniscule.
+** DONE NGL - Consider using an external GLSL optimizer
+   CLOSED: [2012-10-29 Mon 22:51]
+   https://github.com/aras-p/glsl-optimizer (doesn't work with modern
+   GLSL though) [removing because it doesn't work and I'm fast enough?]
+** DONE Investigate and potentially using DDS for textures
+   CLOSED: [2012-10-29 Mon 22:54]
+   https://en.wikipedia.org/wiki/DirectDraw_Surface
+
+   Maybe not worth it because my texture atlas is small and I don't
+   want any lossy compression?
+** DONE Resource manager
+   CLOSED: [2012-10-29 Mon 22:54]
+   A DSL for defining resources...
+
+   - All
+     + Source URL
+     + Copyright holder
+     + Title
+   - Music
+     + Category
+     + Conversion to Ogg
+   - Image
+     + Sprite layout (w/ names)
+     + Conversion to texture atlas
+   - Fonts
+     + Conversion to texture atlas
+
+   This would run beforehand, create some files/directory structure,
+   and then drop and runtime information file so texture coords could
+   be looked up.
+** DONE NGL - convert rps
+   CLOSED: [2012-10-30 Tue 19:58]
+** DONE NGL - move ngl interaction from os to world (and therefore standardize on crt w/h)
+   CLOSED: [2012-10-30 Tue 20:05]
+** DONE NGL - maze - convert to crt resolution
+   CLOSED: [2012-10-30 Tue 20:13]
+** DONE NGL - maze - the score display isn't there
+   CLOSED: [2012-11-21 Wed 09:31]
+** DONE NGL - maze - hungry man is pointing the wrong way
+   CLOSED: [2012-11-21 Wed 09:50]
+** DONE Collect more performance data
+   CLOSED: [2012-11-22 Thu 11:43]
+   Use gcstats
+   Make a histogram of frame times (a la DrRacket's)
+** TODO NGL - tennis - it seems like the ball goes too low
+   Also, if you try to bring the paddle to the top, it doesn't draw
+   the whole way
+** TODO NGL - Investigate the interaction of depth testing with transparency
+   At the very least, I should be able to have fully opaque or fully
+   transparent texture colors and get it to work. It is possible that
+   I will have to call discard() in the fragment shader to ignore the
+   effect on the depth buffer of the fully transparent texture
+
+   Ideally, I'd be able to draw every sprite from back to front and
+   get perfect transparencies.
+
+   It might be more feasible to make layers something NGL knows about
+   and have it draw each layer into a separate screen-sized texture
+   that are all blended together afterward. (The SNES had only one
+   layer that could be transparent over the others.)
+
+   Also, here's another idea that uses front-to-back drawing order:
+   http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
+
+   Investigate this.
+** TODO NGL - Figure out the proper way to do texture/color blending
+   Right now I only support fully color or fully texture. It would be
+   nice to support a tinted texture
+** TODO NGL - See if I need to set up culling specially
+   And perhaps cull slightly wider than that the screen because I
+   believe culling happens before geometry shaders (?) so I need to
+   make sure the point is in the cull
+
+   [Not relevant until I have games with relative layers]
+** TODO GLFW - Wait for getting the string identifiers of joysticks
+** TODO GLFW - Wait for consistent joystick state intra-frame
+   So glfwPollEvents calls pollJoystickEvents and Win32 caches
+** TODO Make a tool for downloading the copyrighted images/music
+   List the URL, a checksum, and then have the tool download them if
+   they aren't there and verify if they are.
+** TODO Use SNES sprites for Ms. Pac-Man in maze
+** TODO tennis - balls can bounce infinitely off wall and get stuck
+** TODO OS suppress updates
+   Make a critical region system call that gives a process sole access
+   to the system... leaving the other processes stalled with their last
+   writes persisting from frame to frame
+   
+   This might be a good way to implement "friction" or "bullet time" as
+   well as other effects, like menus.
+   
+   Just an idea. Might be a bad idea?
+** TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
+** TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
+** TODO tennis - score based on total number of balls in play
+** TODO Make games return score information to dashboard for it to manage
+   (Version, Level, Numeric Score) from game
+
+   (Game, Date, Version, Level, Numeric Score) from dashboard
+
+   Store (cached) locally and online
+
+   Store a cached global ranking
+** TODO Make games return replays (and allow them to accept replays)
+   Replay = (random seed, level, controller stream)
+** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
+** TODO Add "compare with ..." to game info
+** TODO Make Anki-like SRS system in dashboard
+** TODO Make icons for dashboards vs text
+   Or mimic the Wii interface
+** TODO Make games in dashboard have capabilities
+   1P, 2P Round-robin, 2P VS, 2P Co-op, etc
+** TODO Make play modes in dashboard
+   Single, King-of-the-Hill (play levels that your score has been
+   beaten on), Training (improve your score, SRS style), Round-Robin
+   (play all games)
+
+   Have it so you can highlight games to be played that way
+** TODO Death scream like Ziggurat (in dashboard?)
+   Or other stingers, but worry about being too annoying and not
+   instant restarting
+** TODO Find a unified common score display
+   Should I display all points: this session / this game / all games?
+** TODO Return achievements (to dashboard)
+** TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
+** TODO Read about and implement juiciness
+   http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
+   
+   https://github.com/grapefrukt/juicy-breakout
+
+   http://www.youtube.com/watch?v=tVLb-I5i5ys&feature=youtu.be&a
+
+   http://tnns.rabbx.com/
+** TODO Tennis - ugly score display
+** TODO Tennis - revisit use of paddle bounce
+** TODO Make RPS more JRPG-like
+** TODO Write a generic Godel-encoding library
+** TODO Figure out a way to do localization well
+** TODO Make more games
+** TODO The Get Bonus rendering system should have built-in support for TATE games
+   Virtual, Rotate Left, and Rotate Right
+** TODO NGL - Add absolute and relative layers
+   For example, the score display is absolute, but the game is
+   relative (my games don't use this concept yet)
+** TODO See if I can record a video directly
+   http://revel.sourceforge.net/docs/html/revel_8h.html#a30
+** TODO Allow multi-pass shaders (such as CRT halation)
+   See libretro or retroarch
+
+   And maybe use Cg rather than GLSL
+** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
+** TODO Make something for Racket/emacs to find out what deps aren't needed
+** TODO Experiment with located events (in a 2D mesh) rather than flat events
+** TODO Try to get OpenGL to do collision detection for me
+   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
+** TODO 2D Lighting
+   https://www.youtube.com/watch?v=fsbECSpwtig
+** TODO Winners Don't Do Drugs and other intro screens
+* Tool and related-app ideas
+** TODO Master Grafx2 or aseprite or make my own keyboard based system
+   https://code.google.com/p/grafx2/
+** TODO Add challenges/achievements/training to NES/SNES games
+   Hook up with an emulator core to drop into a game with save states
+   and then monitor its execution for score, etc
+
+   Can you beat this Mega Man stage with one life?
+
+   How fast can you do X in this game?
+
+   Wrap this in a package that switches from game to game like I
+   want... it may be perfection
+
+** TODO Implement Boxing iPhone game
+   Like Punch-Out!!!
+   
+   Five "buttons": punch left/right, dodge left/right, block. The
+   upper quadrants for punching, the bottom for dodging, and the
+   middle for blocking.
+   
+   Randomly generate winning sequences of input, then from them
+   determine what the bad guy does... for example if to win you dodge
+   left, then he should punch right.
+   
+   After going through this sequence, it just repeats.
+   
+   Manually design 10 or so cues that indicate an upcoming action
+   (like twitching eye brows, shaking, hand/leg shuffle, etc)
+   
+   Aim for completing a match in 1 to 2 minutes
+   
+   Shake the phone to get up
+* Optimization ideas
+** TODO Make OS use futures for parallelism
+   First experiment, 2012/07/01 failed... got a slower frame rate. I
+   think the key is to make it just a future during the time that GL is
+   rendering.
+** TODO Convert things to typed racket
+** TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
+   Will the GLSL compiler do it anyways?
+** TODO NGL - cache shader vector modifications to skip some parts of object tree
+   premature optimization
+** TODO NGL - cache shader vector uploads to skip some segments
+   premature optimization
+
+   (Probably not useful, because I hit very high frame rates even when
+   updating vectors thousands of elements long)
