@@ -70,12 +70,6 @@
                    fst-history)))
      (srs-set-cards! a-db (insert new-fst-card rst))]))
 
-(require gb/lib/lagrange)
-(define balance-l
-  (lagrange (0.0 0.5)
-            (0.5 1.0)
-            (1.0 2.0)))
-
 (define (balance x)
   (cond
     [(<= x 0.5)
@@ -90,25 +84,7 @@
 
   (check-equal? (balance 0.0) 0.5)
   (check-equal? (balance 0.5) 1.0)
-  (check-equal? (balance 1.0) 2.0)
-
-  (require plot)
-  (plot-new-window? #t)
-  (plot #:x-min -5.0
-        #:x-max +5.0
-        (list (function balance-l
-                        #:style 'long-dash)
-              (function balance
-                        #:style 'solid)
-              (points (list (vector 0.0 0.5)
-                            (vector 0.5 1.0)
-                            (vector 1.0 2.0))
-                      #:sym 2)
-              (points (list (vector 0.0 (balance 0.0))
-                            (vector 0.5 (balance 0.5))
-                            (vector 1.0 (balance 1.0)))
-                      #:sym 0)))
-  (read)
+  (check-equal? (balance 1.0) 2.0)  
 
   (define t (make-temporary-file))
   (delete-file t)
