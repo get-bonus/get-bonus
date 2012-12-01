@@ -120,6 +120,8 @@
                             (list (attempt 0 1 1.0 0)))))
 
   (define new-db (srs t))
+  (set-srs-generator! new-db 'tennis (λ () (vector 'tennis (next))))
+  (set-srs-generator! new-db 'maze (λ () (vector 'maze (next))))
   (check-equal? (db-cards new-db)
                 (list (card 'maze 1.0 #f empty)
                       (card 'tennis 2.0 #f

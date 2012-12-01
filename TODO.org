@@ -759,6 +759,8 @@
 ** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
 ** TODO Add "compare with ..." to game info
 ** TODO Make Anki-like SRS system in dashboard
+   2012/11/23 - basics are ready, needs contracts and integration
+** TODO Include workrave like system in dashboard
 ** TODO Make icons for dashboards vs text
    Or mimic the Wii interface
 ** TODO Make games in dashboard have capabilities
