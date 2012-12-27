@@ -4,7 +4,7 @@
 (struct game-info (name version generate start) #:transparent)
 
 (define level? exact-nonnegative-integer?)
-(define score? exact-nonnegative-integer?)
+(define score? real?)
 
 (provide
  (contract-out

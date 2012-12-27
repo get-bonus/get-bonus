@@ -60,8 +60,8 @@
                       round#
                       (add1 round#))
                     total-wins next-state)))]
-   [(end match# ai _ _ _)
-    (start (add1 match#) (mutate-fst ai))]))
+   [(? end? w)
+    w]))
 
 (define (input w ke)
   (match w
@@ -144,12 +144,20 @@
 
 (struct smoother (frame w))
 
+(define SMOOTH-N 5)
+
 (define (game-start)
   (big-bang/os
    crt-width crt-height (psn (/ crt-width 2.) (/ crt-height 2.0))
    #:sound-scale (/ crt-width 2.)
    (λ ()
-     (let loop ([s (smoother 0 (start 1 start-fst))])
+     (define final-ai
+       (let loop ([ai start-fst])
+         (if (zero? (random 2))
+           ai
+           (loop (mutate-fst ai)))))
+
+     (let loop ([s (smoother 0 (start 1 final-ai))])
        (define cs (os/read 'controller))
        (match s
          [(smoother 0 w)
@@ -167,10 +175,15 @@
          [(smoother i w)
           (os/write
            (list
-            (cons 'done? (>= (a-match-match-number w) 4))
+            (cons 'done?
+                  (and (= i (sub1 SMOOTH-N)) (end? w)))
+            (cons 'return
+                  (and (round? w)
+                       (/ (round-wins w)
+                          (round-round-number w))))
             (cons 'graphics
                   (cons 0 (render w)))))
-          (loop (smoother (modulo (add1 i) 1) w))])))))
+          (loop (smoother (modulo (add1 i) SMOOTH-N) w))])))))
 
 (define game
   (game-info "Rock-Paper-Scissors Warrior"

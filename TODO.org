@@ -699,6 +699,15 @@
 ** DONE Write better install instructions (including os setup)
    CLOSED: [2012-12-26 Wed 21:03]
    And mention missing files
+** DONE Make games return score information to dashboard for it to manage
+   CLOSED: [2012-12-26 Wed 21:59]
+   (Version, Level, Numeric Score) from game
+
+   (Game, Date, Version, Level, Numeric Score) from dashboard
+
+   Store (cached) locally and online
+
+   Store a cached global ranking
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -754,14 +763,6 @@
 ** TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
 ** TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
 ** TODO tennis - score based on total number of balls in play
-** TODO Make games return score information to dashboard for it to manage
-   (Version, Level, Numeric Score) from game
-
-   (Game, Date, Version, Level, Numeric Score) from dashboard
-
-   Store (cached) locally and online
-
-   Store a cached global ranking
 ** TODO Connect scores to online database
 ** TODO Make games return replays (and allow them to accept replays)
    Replay = (random seed, level, controller stream)
