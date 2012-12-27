@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/match
+         racket/contract
          racket/function
          racket/list)
 (module+ test
@@ -389,3 +390,37 @@
                           (list 0 0 0)
                           (list 1 1 1)))
                 712056))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (list2vec l)
+  (list->vector l))
+(define (vec2list v)
+  (vector->list v))
+
+(define spec? any/c)
+(define to-iso
+  (match-lambda
+   [(? vector? v)
+    (iso-compose 
+     (iso vec2list list2vec)
+     nats)]))
+
+(define (godel-encode spec value)
+  (define spec-iso (to-iso spec))
+  (as nat spec-iso value))
+(define (godel-decode spec string)
+  (define spec-iso (to-iso spec))
+  (as spec-iso nat string))
+
+(module+ test
+  (define v (vector 1 2 3 4 5 6))
+  (define s (godel-encode v v))
+  (define v-p (godel-decode v s))
+  (check-equal? v v-p))
+
+(provide
+ (contract-out
+  [spec? contract?]
+  [godel-encode (-> spec? any/c exact-nonnegative-integer?)]
+  [godel-decode (-> spec? exact-nonnegative-integer? any/c)]))

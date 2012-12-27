@@ -932,6 +932,8 @@
          (cons 'event event)
          (cons 'done?
                (zero? lives-p))
+         (cons 'return
+               score-n)
          (cons 'graphics
                (cons
                 10.
@@ -962,7 +964,8 @@
         next-ghost-n dots-to-ghost-n)))))
 
 (define game
-  (game-info "Maze"
-             game-start))
+  (game-info "Maze" 0
+             random-generate
+             (random-start game-start)))
 
 (provide game)

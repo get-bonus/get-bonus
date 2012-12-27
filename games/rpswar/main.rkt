@@ -9,6 +9,7 @@
          gb/input/controller
          gb/audio/3s
          gb/lib/math
+         gb/lib/random
          gb/data/psn
          gb/meta
          (prefix-in cd: gb/physics/cd-narrow)
@@ -173,6 +174,7 @@
 
 (define game
   (game-info "Rock-Paper-Scissors Warrior"
-             game-start))
+             0 random-generate
+             (random-start game-start)))
 
 (provide game)

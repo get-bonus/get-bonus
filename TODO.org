@@ -696,7 +696,8 @@
    CLOSED: [2012-11-22 Thu 11:43]
    Use gcstats
    Make a histogram of frame times (a la DrRacket's)
-** TODO Write better install instructions (including os setup)
+** DONE Write better install instructions (including os setup)
+   CLOSED: [2012-12-26 Wed 21:03]
    And mention missing files
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
@@ -761,6 +762,7 @@
    Store (cached) locally and online
 
    Store a cached global ranking
+** TODO Connect scores to online database
 ** TODO Make games return replays (and allow them to accept replays)
    Replay = (random seed, level, controller stream)
 ** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)

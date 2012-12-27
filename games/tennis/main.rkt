@@ -11,6 +11,7 @@
          gb/input/controller
          gb/audio/3s
          gb/lib/math
+         gb/lib/random
          gb/data/psn
          gb/meta
          (prefix-in cd: gb/physics/cd-narrow))
@@ -233,6 +234,7 @@
        (os/write
         (list
          (cons 'done? (zero? balls))
+         (cons 'return score-n)
          (cons 'graphics
                (cons
                 10.0
@@ -261,7 +263,8 @@
        (loop score-n)))))
 
 (define game
-  (game-info "Tennis!"
-             game-start))
+  (game-info "Tennis!" 0
+             random-generate
+             (random-start game-start)))
 
 (provide game)

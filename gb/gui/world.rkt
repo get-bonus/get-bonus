@@ -22,16 +22,17 @@
                   #:tick tick
                   #:sound-scale [sound-scale 1.0]
                   #:listener [world->listener (λ (w) (psn 0. 0.))]
-                  #:done? [done? (λ (w) #f)])
+                  #:done? [done? (λ (w) #f)]
+                  #:return [return (λ (w) w)])
   (if (nested?)
     (dynamic-wind
         pause-last-sound
         (λ ()
           (nested-big-bang initial-world tick sound-scale
-                           world->listener done?))
+                           world->listener done? return))
         unpause-last-sound)
     (outer-big-bang initial-world tick sound-scale
-                    world->listener done?)))
+                    world->listener done? return)))
 
 (define current-sound-ctxt (make-parameter #f))
 (define current-sound (make-parameter #f))
@@ -41,7 +42,7 @@
   (sound-unpause! (current-sound)))
 
 (define (nested-big-bang initial-world tick sound-scale
-                         world->listener done?)
+                         world->listener done? return)
   (define st
     (initial-system-state
      (current-sound-ctxt)
@@ -64,7 +65,7 @@
             ((current-update-canvas) cmd)
             (cond
               [(done? wp)
-               wp]
+               (return wp)]
               [else
                ;; XXX This is implies that we could switch sounds while
                ;; rendering the next sound... which is bad.
@@ -83,7 +84,7 @@
 (define current-frame
   (make-parameter 0))
 (define (outer-big-bang initial-world tick sound-scale
-                        world->listener done?)
+                        world->listener done? return)
   (performance-log-init! performance-log-path)
 
   (define km
@@ -156,7 +157,7 @@
              [current-controllers cm]
              [current-update-canvas this-update-canvas])
           (nested-big-bang initial-world tick sound-scale
-                           world->listener done?)))
+                           world->listener done? return)))
       (λ ()
         (sound-context-destroy! the-ctxt)
         (semaphore-post done-sema))))
@@ -169,6 +170,7 @@
         #:tick (-> any/c (listof controller?)
                    (values any/c sprite-tree/c sound-scape/c)))
        (#:sound-scale real?
-                      #:listener (-> any/c psn?)
-                      #:done? (-> any/c boolean?))
+        #:listener (-> any/c psn?)
+        #:done? (-> any/c boolean?)
+        #:return (-> any/c any/c))
        any/c)])

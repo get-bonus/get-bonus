@@ -87,8 +87,18 @@
          (modulo (+ pos mod)
                  (length games)))
 
-       (when (controller-start c)
-         ((game-info-start (list-ref games pos+))))
+       (when (or (controller-start c)
+                 (controller-a c)
+                 (controller-b c)
+                 (controller-x c)
+                 (controller-y c))
+         (match-define (game-info _ version generate start)
+                       (list-ref games pos+))
+         (define level (generate))
+         (define score (start level))
+         (printf "~a,~a -> ~a\n"
+                 version level score)
+         (void))
 
        (for ([frame
               (in-range

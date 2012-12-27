@@ -147,7 +147,11 @@
    #:done?
    (λ (w)
      (match-define (os cur-h _ _ _) w)
-     (first (hash-ref cur-h 'done? (list #f))))))
+     (first (hash-ref cur-h 'done? (list #f))))
+   #:return
+   (λ (w)
+     (match-define (os cur-h _ _ _) w)
+     (first (hash-ref cur-h 'return (list #f))))))
 
 (provide
  (contract-out
