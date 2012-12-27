@@ -696,6 +696,8 @@
    CLOSED: [2012-11-22 Thu 11:43]
    Use gcstats
    Make a histogram of frame times (a la DrRacket's)
+** TODO Write better install instructions (including os setup)
+   And mention missing files
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -726,6 +728,11 @@
    make sure the point is in the cull
 
    [Not relevant until I have games with relative layers]
+** TODO libretro - what if I used libretro rather than GLFW?
+   It already has a nice shader system, input api
+   
+   The main problem seems to be that it would make it so I can't use
+   OpenAL directly, because you need to return audio data per frame
 ** TODO GLFW - Wait for getting the string identifiers of joysticks
 ** TODO GLFW - Wait for consistent joystick state intra-frame
    So glfwPollEvents calls pollJoystickEvents and Win32 caches
@@ -793,6 +800,11 @@
 ** TODO Tennis - revisit use of paddle bounce
 ** TODO Make RPS more JRPG-like
 ** TODO Write a generic Godel-encoding library
+   http://logic.cse.unt.edu/tarau/index.html
+
+   http://code.google.com/p/bijective-goedel-numberings/
+
+   http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
 ** TODO Figure out a way to do localization well
 ** TODO Make more games
 ** TODO The Get Bonus rendering system should have built-in support for TATE games

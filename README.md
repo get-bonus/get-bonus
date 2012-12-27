@@ -8,9 +8,22 @@ Currently, we only support Linux, because of the way I deal with
 controllers and sound. If you'd like to patch in support on other
 platforms, email me.
 
-If you have Linux, then you run it by...
+You can install it via a Racket package:
+````raco pkg install get-bonus````
 
-raco link -r .
-racket -t gb/main.rkt
+When you run it, you'll run
+````racket -l gb/main````
 
-from the Get Bonus repository clone.
+However, you'll need to get a few things before you can run it:
+
+1. The OS dependencies of `racket/draw` listed on
+[this page](http://docs.racket-lang.org/draw/libs.html).
+
+1. The OS dependencies of `racket/gui` listed on
+[this page](http://docs.racket-lang.org/gui/libs.html).
+
+1. OpenAL runtime libraries.
+
+1. Copyrighted images files used to construct `r.png` from
+`r.src`. If you don't have these, then `r.free.png` will
+be used automatically.

@@ -77,6 +77,7 @@
         (sound-destroy! st))))
 
 (define-runtime-path texture-atlas-path "../../r.png")
+(define-runtime-path backup-texture-atlas-path "../../r.free.png")
 (define-runtime-path performance-log-path "../../log")
 
 (define current-frame
@@ -84,7 +85,7 @@
 (define (outer-big-bang initial-world tick sound-scale
                         world->listener done?)
   (performance-log-init! performance-log-path)
-  
+
   (define km
     (keyboard-monitor))
   (define cm
@@ -106,10 +107,20 @@
                (make-draw-on-crt w h)))
        (unless draw-sprites
          (set! draw-sprites
-               (make-draw texture-atlas-path
-                          texture-atlas-size
-                          (* 1.0 crt-width)
-                          (* 1.0 crt-height))))
+               (make-draw
+                (cond
+                  [(file-exists? texture-atlas-path)
+                   texture-atlas-path]
+                  [(file-exists? backup-texture-atlas-path)
+                   backup-texture-atlas-path]
+                  [else
+                   (error 'world
+                          "No available texture atlas, either ~v or ~v is expected"
+                          texture-atlas-path
+                          backup-texture-atlas-path)])
+                texture-atlas-size
+                (* 1.0 crt-width)
+                (* 1.0 crt-height))))
        (when last-sprites
          (draw-on-crt (λ () (draw-sprites last-sprites))))
        (done!)
