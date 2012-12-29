@@ -1,21 +1,23 @@
 #lang racket/base
 (require racket/file
          racket/list
-         racket/match)
+         racket/match
+         racket/math
+         racket/contract)
 
 (struct db (pth id->generator [cards #:mutable]) #:prefab)
-
-(struct card (id sort data history) #:prefab)
 
 (define (insert c cs)
   (match cs
     [(list)
      (list c)]
     [(list-rest d cs)
-     (if (< (card-sort c)
-            (card-sort d))
+     (if (<= (card-sort c)
+             (card-sort d))
        (list* c d cs)
        (list* d (insert c cs)))]))
+
+(struct card (id sort data history) #:prefab)
 
 (struct attempt (start end score data) #:prefab)
 
@@ -24,51 +26,64 @@
     (write-to-file empty pth))
   (db pth (make-hasheq) (file->value pth)))
 
+(define (srs-cards a-db)
+  (match-define (db _ _ cards) a-db)
+  cards)
+
+(define (srs-generator-card a-db id)
+  (match-define (db _ _ cards) a-db)
+  (findf (λ (c) (eq? id (card-id c))) cards))
+
+(define (set-srs-generator! a-db id fun)
+  (match-define (db _ id->generator cards) a-db)
+  (hash-set! id->generator id fun)
+  (unless (srs-generator-card a-db id)
+    (srs-add-card! a-db (card id 1.0 #f empty))))
+
 (define (srs-set-cards! a-db new-cards)
-  (match-define (struct db (pth _ _)) a-db)
+  (match-define (db pth _ _) a-db)
   (set-db-cards! a-db new-cards)
   (write-to-file new-cards pth #:exists 'replace))
 
-(define (srs-add-card! a-db card)
-  (srs-set-cards! a-db (insert card (db-cards a-db))))
+(define (srs-add-card! a-db a-card)
+  (srs-set-cards! a-db (insert a-card (db-cards a-db))))
 
-(define (set-srs-generator! a-db id fun)
-  (match-define (struct db (_ id->generator cards)) a-db)
-  (hash-set! id->generator id fun)
-  (unless (findf (λ (c) (eq? id (card-id c))) cards)
-    (srs-add-card! a-db (card id 1.0 #f empty))))
+(define (srs-generate! a-db id get-time)
+  (match-define (db _ id->generator cards) a-db)
+  (define id-card (srs-generator-card a-db id))
+  (define generator (hash-ref id->generator id))
+  (define start (get-time))
+  (define new-data (generator))
+  (define end (get-time))
+  (define new-id (length cards))
+  (define new-card (card new-id 1.0 new-data empty))
+  (srs-card-attempt! a-db id-card (attempt start end 1.0 #f))
+  (srs-add-card! a-db new-card)
+  new-card)
 
-(define (srs-next a-db start k)
-  (match-define
-   (struct db (_ id->generator (and cards (list-rest fst rst))))
-   a-db)
-  (match-define (struct card (fst-id fst-sort fst-data fst-history)) fst)
-  (cond
-    ;; If the next card is a generator, then make the new card and
-    ;; repeat
-    [(symbol? fst-id)
-     (define new-data ((hash-ref id->generator fst-id)))
-     (define new-id (length cards))
+(define (mapmax f l)
+  (match l
+    [(list)
+     -inf.0]
+    [(list-rest fst l)
+     (max (f fst) (mapmax f l))]))
 
-     (define new-fst-card
-       (card fst-id (* 2.0 fst-sort) fst-data
-             (cons (attempt start start 1.0 #f)
-                   fst-history)))
-
-     (srs-set-cards! a-db
-                     (cons (card new-id 1.0 new-data empty)
-                           (insert new-fst-card rst)))
-     (srs-next a-db start k)]
-    [else
-     (define an-attempt (k fst))
-     (define new-fst-card
-       (card fst-id
-             (* (balance (attempt-score an-attempt))
-                fst-sort)
-             fst-data
-             (cons an-attempt
-                   fst-history)))
-     (srs-set-cards! a-db (insert new-fst-card rst))]))
+(define (srs-card-attempt! a-db a-card an-attempt)
+  (match-define (db _ _ cards) a-db)
+  (match-define (card id sort cdata history) a-card)
+  (match-define (attempt _ _ this-score _) an-attempt)
+  (define best-score-or-inf (mapmax attempt-score history))
+  (define best-score
+    (if (infinite? best-score-or-inf)
+      this-score
+      best-score-or-inf))
+  (define cards/no-id (remove id cards (λ (v c) (eq? v (card-id c)))))
+  (define new-sort
+    (* (balance (/ this-score best-score))
+       sort))
+  (define new-card (card id new-sort cdata (cons an-attempt history)))
+  (define new-cards (insert new-card cards/no-id))
+  (srs-set-cards! a-db new-cards))
 
 (define (balance x)
   (cond
@@ -84,10 +99,7 @@
 
   (check-equal? (balance 0.0) 0.5)
   (check-equal? (balance 0.5) 1.0)
-  (check-equal? (balance 1.0) 2.0)  
-
-  (define t (make-temporary-file))
-  (delete-file t)
+  (check-equal? (balance 1.0) 2.0)
 
   (define next
     (let ()
@@ -95,36 +107,70 @@
       (λ ()
         (begin0 x (set! x (add1 x))))))
 
-  (define db (srs t))
-  (set-srs-generator! db 'tennis (λ () (vector 'tennis (next))))
-  (set-srs-generator! db 'maze (λ () (vector 'maze (next))))
-  (check-equal? (db-cards db)
-                (list (card 'tennis 1.0 #f empty)
-                      (card 'maze 1.0 #f empty)))
+  (define (srs-next a-db start k)
+    (match-define (db _ _ (list-rest fst _)) a-db)
+    (define it
+      (match (card-id fst)
+        [(? symbol? id)
+         (srs-generate! a-db id (λ () start))]
+        [_
+         fst]))
+    (srs-card-attempt! a-db it (k it)))
+
+  (define t (make-temporary-file))
+  (delete-file t)
+
+  (define a-db (srs t))
+  (set-srs-generator! a-db 'maze (λ () (vector 'maze (next))))
+  (set-srs-generator! a-db 'tennis (λ () (vector 'tennis (next))))
+  (test-equal? "Initial database"
+               (srs-cards a-db)
+               (list (card 'tennis 1.0 #f empty)
+                     (card 'maze 1.0 #f empty)))
 
   (srs-next
-   db 0
+   a-db 0
    (λ (c0)
-     (check-equal? c0 (card 2 1.0 (vector 'tennis 0) empty))
-     (check-equal? (db-cards db)
-                   (list (card 2 1.0 (vector 'tennis 0) empty)
-                         (card 'maze 1.0 #f empty)
-                         (card 'tennis 2.0 #f
-                               (list (attempt 0 0 1.0 #f)))))
+     (test-equal? "First card" c0 (card 2 1.0 (vector 'tennis 0) empty))
+     (test-equal? "Database after generate"
+                  (srs-cards a-db)
+                  (list (card 2 1.0 (vector 'tennis 0) empty)
+                        (card 'maze 1.0 #f empty)
+                        (card 'tennis 2.0 #f
+                              (list (attempt 0 0 1.0 #f)))))
      (attempt 0 1 1.0 0)))
-  (check-equal? (db-cards db)
-                (list (card 'maze 1.0 #f empty)
-                      (card 'tennis 2.0 #f
-                            (list (attempt 0 0 1.0 #f)))
-                      (card 2 2.0 (vector 'tennis 0)
-                            (list (attempt 0 1 1.0 0)))))
+  (test-equal? "Database after first attempt"
+               (srs-cards a-db)
+               (list (card 'maze 1.0 #f empty)
+                     (card 2 2.0 (vector 'tennis 0)
+                           (list (attempt 0 1 1.0 0)))
+                     (card 'tennis 2.0 #f
+                           (list (attempt 0 0 1.0 #f)))))
 
-  (define new-db (srs t))
-  (set-srs-generator! new-db 'tennis (λ () (vector 'tennis (next))))
-  (set-srs-generator! new-db 'maze (λ () (vector 'maze (next))))
-  (check-equal? (db-cards new-db)
-                (list (card 'maze 1.0 #f empty)
-                      (card 'tennis 2.0 #f
-                            (list (attempt 0 0 1.0 #f)))
-                      (card 2 2.0 (vector 'tennis 0)
-                            (list (attempt 0 1 1.0 0))))))
+  (define new-a-db (srs t))
+  (set-srs-generator! new-a-db 'maze (λ () (vector 'maze (next))))
+  (set-srs-generator! new-a-db 'tennis (λ () (vector 'tennis (next))))
+  (test-equal? "Database after re-read"
+               (srs-cards new-a-db)
+               (list (card 'maze 1.0 #f empty)
+                     (card 2 2.0 (vector 'tennis 0)
+                           (list (attempt 0 1 1.0 0)))
+                     (card 'tennis 2.0 #f
+                           (list (attempt 0 0 1.0 #f))))))
+
+(provide
+ (contract-out
+  [rename db? srs? flat-contract]
+  [srs (-> path-string? db?)]
+  [set-srs-generator! (-> db? symbol? (-> any/c) void?)]
+  [struct card ([id (or/c symbol? exact-nonnegative-integer?)]
+                [sort real?]
+                [data any/c]
+                [history (listof attempt?)])]
+  [struct attempt ([start real?]
+                   [end real?]
+                   [score real?]
+                   [data any/c])]
+  [srs-cards (-> db? (listof card?))]
+  [srs-generate! (-> db? symbol? (-> real?) card?)]
+  [srs-card-attempt! (-> db? card? attempt? void?)]))

@@ -708,6 +708,12 @@
    Store (cached) locally and online
 
    Store a cached global ranking
+** DONE Make Anki-like SRS system in dashboard
+   CLOSED: [2012-12-28 Fri 19:02]
+   2012/11/23 - basics are ready, needs contracts and
+   integration.
+** DONE SRS - Choose a game to play a card from
+   CLOSED: [2012-12-29 Sat 13:28]
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -768,11 +774,14 @@
    Replay = (random seed, level, controller stream)
 ** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
 ** TODO Add "compare with ..." to game info
-** TODO Make Anki-like SRS system in dashboard
-   2012/11/23 - basics are ready, needs contracts and
-   integration. Also needs to integrate the ideas of "Don't play a
-   level more than X times in a row", "Don't play a level for longer
-   than X minutes in a row", etc
+** TODO SRS - Automatically go to the next card
+** TODO SRS - Deal with games that have a win condition
+   (so that you don't get too much credit if you don't actually win,
+   even if you did better than before?)
+** TODO SRS - Play a particular card (display them)
+** TODO SRS - Play a card by name (on the command line)
+** TODO SRS - Don't play a level/game more than X times in a row
+** TODO SRS - Don't play a level/game for longer than X minutes in a row
 ** TODO Include workrave like system in dashboard
 ** TODO Make icons for dashboards vs text
    Or mimic the Wii interface

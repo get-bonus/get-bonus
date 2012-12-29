@@ -263,7 +263,7 @@
        (loop score-n)))))
 
 (define game
-  (game-info "Tennis!" 0
+  (game-info 'tennis "Tennis!" 0
              random-generate
              (random-start game-start)))
 

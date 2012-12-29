@@ -964,7 +964,7 @@
         next-ghost-n dots-to-ghost-n)))))
 
 (define game
-  (game-info "Maze" 0
+  (game-info 'maze "Maze" 0
              random-generate
              (random-start game-start)))
 

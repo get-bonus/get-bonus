@@ -8,7 +8,8 @@
          gb/gui/os
          gb/meta
          gb/input/controller
-         gb/graphics/ngl-main)
+         gb/graphics/ngl-main
+         gb/lib/srs)
 
 (begin-for-syntax
   (require racket/runtime-path)
@@ -23,7 +24,7 @@
              (list (path->string g)
                    (path->string (build-path "../games" g "main.rkt"))))])
        (syntax/loc stx
-         (make-hash
+         (make-immutable-hash
           (list
            (cons game-code
                  (let ()
@@ -50,13 +51,28 @@
 (define (snoc l x)
   (append l (list x)))
 
+(define current-srs (make-parameter #f))
+
 (define (start-game gi)
-  (match-define (game-info _ version generate start)
+  (match-define (game-info id name version generate start)
                 gi)
-  (define level (generate))
+  (define the-card
+    (or (for/or ([c (in-list (srs-cards (current-srs)))])
+          (match (card-data c)
+            [(vector (== id) (== version) c-level)
+             c]
+            [_
+             #f]))
+        (srs-generate! (current-srs) id current-inexact-milliseconds)))
+  (match-define (vector _ _ level) (card-data the-card))
+  (define start-time (current-inexact-milliseconds))
   (define score (start level))
+  (define end-time (current-inexact-milliseconds))
   (printf "~a,~a -> ~a\n"
           version level score)
+  (srs-card-attempt! (current-srs) the-card
+                     ;; XXX The replay would go in this #f's spot
+                     (attempt start-time end-time score #f))
   (void))
 
 (define (go)
@@ -125,16 +141,25 @@
 (module+ main
   (require racket/cmdline)
 
+  (define-runtime-path srs-path "../srs.db")
+  (define the-srs (srs srs-path))
+
+  (for ([gi (in-list games)])
+    (match-define (game-info id _ version generate _) gi)
+    (set-srs-generator! the-srs id
+                        (λ () (vector id version (generate)))))
+
   (command-line
    #:program "get-bonus"
    #:args maybe-game
-   (match maybe-game
-     [(list)
-      (go)]
-     [(list some-game)
-      (define gi
-        (hash-ref game-code->info some-game
-                  (λ ()
-                    (error 'get-bonus "We know nothing about the game ~e"
-                           some-game))))
-      (start-game gi)])))
+   (parameterize ([current-srs the-srs])
+     (match maybe-game
+       [(list)
+        (go)]
+       [(list some-game)
+        (define gi
+          (hash-ref game-code->info some-game
+                    (λ ()
+                      (error 'get-bonus "We know nothing about the game ~e"
+                             some-game))))
+        (start-game gi)]))))

@@ -186,7 +186,7 @@
           (loop (smoother (modulo (add1 i) SMOOTH-N) w))])))))
 
 (define game
-  (game-info "Rock-Paper-Scissors Warrior"
+  (game-info 'rpswar "Rock-Paper-Scissors Warrior"
              0 random-generate
              (random-start game-start)))
 
