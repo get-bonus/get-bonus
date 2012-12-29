@@ -50,6 +50,15 @@
 (define (snoc l x)
   (append l (list x)))
 
+(define (start-game gi)
+  (match-define (game-info _ version generate start)
+                gi)
+  (define level (generate))
+  (define score (start level))
+  (printf "~a,~a -> ~a\n"
+          version level score)
+  (void))
+
 (define (go)
   (define modern-12-char
     (make-char-factory modern 12))
@@ -92,13 +101,7 @@
                  (controller-b c)
                  (controller-x c)
                  (controller-y c))
-         (match-define (game-info _ version generate start)
-                       (list-ref games pos+))
-         (define level (generate))
-         (define score (start level))
-         (printf "~a,~a -> ~a\n"
-                 version level score)
-         (void))
+         (start-game (list-ref games pos+)))
 
        (for ([frame
               (in-range
@@ -134,4 +137,4 @@
                   (λ ()
                     (error 'get-bonus "We know nothing about the game ~e"
                            some-game))))
-      ((game-info-start gi))])))
+      (start-game gi)])))
