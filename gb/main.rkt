@@ -21,12 +21,12 @@
      (with-syntax
          ([((game-code game/main) ...)
            (for/list ([g (in-list (directory-list games-path))])
-             (list (path->string g)
+             (list (string->symbol (path->string g))
                    (path->string (build-path "../games" g "main.rkt"))))])
        (syntax/loc stx
          (make-immutable-hash
           (list
-           (cons game-code
+           (cons 'game-code
                  (let ()
                    (local-require (only-in game/main game))
                    game))
@@ -53,7 +53,7 @@
 
 (define current-srs (make-parameter #f))
 
-(define (start-game gi)
+(define (play-game gi)
   (match-define (game-info id name version generate start)
                 gi)
   (define the-card
@@ -63,17 +63,44 @@
              c]
             [_
              #f]))
-        (srs-generate! (current-srs) id current-inexact-milliseconds)))
-  (match-define (vector _ _ level) (card-data the-card))
-  (define start-time (current-inexact-milliseconds))
-  (define score (start level))
-  (define end-time (current-inexact-milliseconds))
-  (printf "~a,~a -> ~a\n"
-          version level score)
-  (srs-card-attempt! (current-srs) the-card
-                     ;; XXX The replay would go in this #f's spot
-                     (attempt start-time end-time score #f))
-  (void))
+        (srs-generate! (current-srs) id
+                       current-inexact-milliseconds)))
+  (play-card the-card))
+
+(define (play-card the-card)
+  (match (card-id the-card)
+    [(? symbol? id)
+     (play-card
+      (srs-generate! (current-srs) id
+                     current-inexact-milliseconds))]
+    [_
+     (match-define (vector id _ level) (card-data the-card))
+     (match-define (game-info _ name version generate start)
+                   (hash-ref game-code->info id))
+     (define start-time (current-inexact-milliseconds))
+     (define score (start level))
+     (define end-time (current-inexact-milliseconds))
+     (printf "~a,~a -> ~a\n"
+             version level score)
+     (srs-card-attempt! (current-srs) the-card
+                        ;; XXX The replay would go in this #f's spot
+                        (attempt start-time end-time score #f))
+     (void)]))
+
+(define-syntax-rule (menu . more) (void))
+
+(menu
+ (modal
+  (apply
+   list
+   (for/list ([g (in-list games)])
+     ;; XXX Display more info (game like, last play, etc)
+     (option (game-info-name g) (λ () (play-game g)))))
+  (apply
+   list
+   (for/list ([c (in-list (srs-cards (current-srs)))])
+     ;; XXX Display more info (data, history, etc)
+     (option (format (card-id c)) (λ () (play-card c)))))))
 
 (define (go)
   (define modern-12-char
@@ -117,7 +144,7 @@
                  (controller-b c)
                  (controller-x c)
                  (controller-y c))
-         (start-game (list-ref games pos+)))
+         (play-game (list-ref games pos+)))
 
        (for ([frame
               (in-range
@@ -156,10 +183,10 @@
      (match maybe-game
        [(list)
         (go)]
-       [(list some-game)
+       [(list (app string->symbol some-game))
         (define gi
           (hash-ref game-code->info some-game
                     (λ ()
                       (error 'get-bonus "We know nothing about the game ~e"
                              some-game))))
-        (start-game gi)]))))
+        (play-game gi)]))))
