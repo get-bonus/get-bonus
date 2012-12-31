@@ -818,6 +818,7 @@
 
    http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
 ** TODO Figure out a way to do localization well
+   gettext
 ** TODO Make more games
 ** TODO The Get Bonus rendering system should have built-in support for TATE games
    Virtual, Rotate Left, and Rotate Right
@@ -830,8 +831,6 @@
    See libretro or retroarch
 
    And maybe use Cg rather than GLSL
-** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
-** TODO Make something for Racket/emacs to find out what deps aren't needed
 ** TODO Experiment with located events (in a 2D mesh) rather than flat events
 ** TODO Try to get OpenGL to do collision detection for me
    http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
@@ -871,6 +870,9 @@
    Aim for completing a match in 1 to 2 minutes
    
    Shake the phone to get up
+** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
+** TODO Make something for Racket/emacs to find out what deps aren't needed
+** TODO Make Optimization Coach + Macro Stepper available via Emacs
 * Optimization ideas
 ** TODO Make OS use futures for parallelism
    First experiment, 2012/07/01 failed... got a slower frame rate. I

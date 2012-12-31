@@ -3,7 +3,8 @@
          racket/list
          racket/match
          racket/math
-         racket/contract)
+         racket/contract
+         racket/pretty)
 
 (struct db (pth id->generator [cards #:mutable]) #:prefab)
 
@@ -43,7 +44,10 @@
 (define (srs-set-cards! a-db new-cards)
   (match-define (db pth _ _) a-db)
   (set-db-cards! a-db new-cards)
-  (write-to-file new-cards pth #:exists 'replace))
+  (with-output-to-file pth
+    #:exists 'replace
+    (λ ()
+      (pretty-write new-cards))))
 
 (define (srs-add-card! a-db a-card)
   (srs-set-cards! a-db (insert a-card (db-cards a-db))))
