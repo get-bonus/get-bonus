@@ -18,9 +18,12 @@
     (os/write
      (list (cons 'sound sound)))
     (render-menu sub)]
-   [(menu:modal (list (cons mode-name mode-menu) ...))
-    ;; XXX
-    (render-menu (first mode-menu))]
+   [(menu:modal modes)
+    ;; XXX this isn't what I want it to be
+    (render-menu
+     (menu:list
+      (for/list ([m (in-list modes)])
+        (menu:option (car m) (λ () (render-menu (cdr m)))))))]
    [(menu:list options)
     (define modern-12-char
       (make-char-factory modern 12))
@@ -41,7 +44,7 @@
          (string->sprites (menu:option-text o)))))
 
     (let/cc return
-      (let loop ([pos 0])
+      (let loop ([input? #f] [pos 0])
         (define c (os/read* 'controller))
         (define mod
           (cond
@@ -52,11 +55,18 @@
           (modulo (+ pos mod)
                   (length options)))
 
-        (when (or (controller-a c)
-                  (controller-select c))
+        ;; XXX ugly input? hack
+        (when (not (controller-any-button? c))
+          (set! input? #t))
+
+        (when (and input?
+                   (or (controller-a c)
+                       (controller-select c)))
           (return 'done))
 
-        (when (controller-any-button? c)
+        (when (and input?
+                   (controller-any-button? c))
+          (set! input? #f)
           ((menu:option-fun (list-ref options pos+))))
 
         (for ([frame
@@ -76,7 +86,7 @@
                           #:dy (option-entry-height pos)
                           (string->sprites ">>"))))))))
 
-        (loop pos+)))]))
+        (loop input? pos+)))]))
 
 (provide menu:music
          menu:modal

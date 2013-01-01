@@ -109,7 +109,7 @@
             ;; XXX make this refresh when you come back from a game
             (for/list ([c (in-list (srs-cards (current-srs)))])
               ;; XXX Display more info (data, history, etc)
-              (menu:option (format "~v" (card-id c))
+              (menu:option (format "~v: ~v" (card-id c) (card-data c))
                            (λ () (play-card c))))))))))
 
      (render-menu main))))

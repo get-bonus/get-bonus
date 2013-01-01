@@ -714,6 +714,10 @@
    integration.
 ** DONE SRS - Choose a game to play a card from
    CLOSED: [2012-12-29 Sat 13:28]
+** TODO menu system - modal bar
+** TODO menu system - display the list better
+** TODO menu system - main - display more info about games
+** TODO menu system - main - display more info about cards
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
