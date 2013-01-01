@@ -12,6 +12,7 @@
          gb/lib/random
          gb/data/psn
          gb/meta
+         gb/sys/menu
          (prefix-in cd: gb/physics/cd-narrow)
          "fst.rkt"
          "graph.rkt")
@@ -25,8 +26,6 @@
 (struct resolved round (user-input computer-input outcome) #:transparent)
 (struct end round () #:transparent)
 
-(define start-fst (random-one-state-fst '(r p s) '(r p s)))
-
 (define rps-outcome
   (match-lambda*
    ['(r s) 'user]
@@ -37,157 +36,112 @@
    ['(s p) 'user]
    [_ 'draw]))
 
-(define tick
-  (match-lambda
-   [(start match# ai)
-    (user-input match# ai 1 0 (fst-start ai))]
-   [(computer-input match# ai round# wins state ui)
-    (resolve match# ai round# wins state ui (fst-output ai state))]
-   [(resolve match# ai round# wins state ui ci)
-    (resolved match# ai round# wins state ui ci (rps-outcome ui ci))]
-   [(resolved match# ai round# wins state ui ci outcome)
-    (define total-wins
-      (if (eq? 'user outcome)
-        (add1 wins)
-        wins))
-    (if ((ceiling (/ round# 2)) . < . total-wins)
-      (end match# ai round# total-wins state)
-      (let ()
-        (define next-state
-          (fst-next ai state ui))
-        (user-input match# ai
-                    (if (eq? outcome 'draw)
-                      round#
-                      (add1 round#))
-                    total-wins next-state)))]
-   [(? end? w)
-    w]))
-
-(define (input w ke)
-  (match w
-    [(user-input match# ai round# wins state)
-     (define ui
-       (match ke
-         ["r" 'r]
-         ["s" 's]
-         ["p" 'p]
-         [_ #f]))
-     (if ui
-       (computer-input match# ai round# wins state ui)
-       w)]
-    [_ (tick w)]))
-
-(define modern-12-char
-  (make-char-factory modern 12))
-(define char-height
-  (texture-height (modern-12-char #\a)))
-(define string->sprites
-  (make-string-factory modern-12-char))
-
-(define ((text s))
-  (string->sprites s))
-(define (string s . a)
-  (text (apply format s a)))
 (define rps->string
   (match-lambda
    ['r "Rock"]
    ['p "Paper"]
    ['s "Scissors"]))
 
-(define (above . l)
-  (for/list ([e (in-list l)]
-             [i (in-naturals)])
-    (transform #:dy (* char-height i) (e))))
-
-(define (render w)
-  (match w
-    [(start match# _)
-     (above (string "Match: ~a" match#)
-            (string "Fight!"))]
-    [(user-input match# _ round# wins _)
-     (above (string "Match: ~a" match#)
-            (string "Round: ~a" round#)
-            (string "Ratio: ~a/~a" wins round#)
-            (string "What will you throw down?"))]
-    [(computer-input match# _ round# wins _ ui)
-     (above (string "Match: ~a" match#)
-            (string "Round: ~a" round#)
-            (string "Ratio: ~a/~a" wins round#)
-            (string "You threw down ~a" (rps->string ui)))]
-    [(resolve match# _ round# wins _ ui ci)
-     (above (string "Match: ~a" match#)
-            (string "Round: ~a" round#)
-            (string "Ratio: ~a/~a" wins round#)
-            (string "You threw down ~a" (rps->string ui))
-            (string "The AI threw down ~a" (rps->string ci)))]
-    [(resolved match# _ round# wins _ _ _ outcome)
-     (above (string "Match: ~a" match#)
-            (string "Round: ~a" round#)
-            (string "Ratio: ~a/~a" wins round#)
-            (match outcome
-              ['user (string "You won the round!")]
-              ['computer (string "The AI won the round!")]
-              ['draw (string "Draw")]))]
-    [(end match# _ round# wins _)
-     (above (string "Match: ~a" match#)
-            (string "Round: ~a" round#)
-            (string "Ratio: ~a/~a" wins round#)
-            (string "You won the match!"))]))
-
 (define graphs (make-weak-hash))
 (define (fst-graph* fst)
   (hash-ref! graphs fst (λ () (fst-graph fst))))
 
-(define (any-controller cs p)
-  (for/or ([c (in-list cs)])
-    (equal? p (controller-ldpad c))))
-
-(struct smoother (frame w))
-
-(define SMOOTH-N 5)
+(define (state->menu return w)
+  (define same w)
+  (define (string next fmt . args)
+    (menu:option (apply format fmt args)
+                 (λ () (return next))))
+  (match w
+    [(start match# ai)
+     (define next (user-input match# ai 1 0 (fst-start ai)))
+     (menu:list (list (string next "Match: ~a" match#)
+                      (string next "Fight!")))]
+    [(user-input match# ai round# wins state)
+     (define (next ui)
+       (computer-input match# ai round# wins state ui))
+     (menu:list (list* (string same "Match: ~a" match#)
+                       (string same "Round: ~a" round#)
+                       (string same "Ratio: ~a/~a" wins round#)
+                       (string same "What will you throw down?")
+                       (for/list ([ui (in-list '(r p s))])
+                         (string (next ui) (rps->string ui)))))]
+    [(computer-input match# ai round# wins state ui)
+     (define next
+       (resolve match# ai round# wins state ui (fst-output ai state)))
+     (menu:list (list  (string next "Match: ~a" match#)
+                       (string next "Round: ~a" round#)
+                       (string next "Ratio: ~a/~a" wins round#)
+                       (string next "You threw down ~a" (rps->string ui))))]
+    [(resolve match# ai round# wins state ui ci)
+     (define next
+       (resolved match# ai round# wins state ui ci (rps-outcome ui ci)))
+     (menu:list (list (string next "Match: ~a" match#)
+                      (string next "Round: ~a" round#)
+                      (string next "Ratio: ~a/~a" wins round#)
+                      (string next "You threw down ~a" (rps->string ui))
+                      (string next "The AI threw down ~a" (rps->string ci))))]
+    [(resolved match# ai round# wins state ui ci outcome)
+     (define total-wins
+       (if (eq? 'user outcome)
+         (add1 wins)
+         wins))
+     (define next
+       (if ((ceiling (/ round# 2)) . < . total-wins)
+         (end match# ai round# total-wins state)
+         (let ()
+           (define next-state
+             (fst-next ai state ui))
+           (user-input match# ai
+                       (if (eq? outcome 'draw)
+                         round#
+                         (add1 round#))
+                       total-wins next-state))))
+     (menu:list (list (string next "Match: ~a" match#)
+                      (string next "Round: ~a" round#)
+                      (string next "Ratio: ~a/~a" wins round#)
+                      (match outcome
+                        ['user (string next "You won the round!")]
+                        ['computer (string next "The AI won the round!")]
+                        ['draw (string next "Draw")])))]
+    [(end match# _ round# wins _)
+     (define next same)
+     (menu:list (list (string next "Match: ~a" match#)
+                      (string next "Round: ~a" round#)
+                      (string next "Ratio: ~a/~a" wins round#)
+                      (string next "You won the match!")))]))
 
 (define (game-start)
   (big-bang/os
    crt-width crt-height (psn (/ crt-width 2.) (/ crt-height 2.0))
    #:sound-scale (/ crt-width 2.)
    (λ ()
+     (define start-fst (random-one-state-fst '(r p s) '(r p s)))
+
      (define final-ai
        (let loop ([ai start-fst])
          (if (zero? (random 2))
            ai
            (loop (mutate-fst ai)))))
 
-     (let loop ([s (smoother 0 (start 1 final-ai))])
-       (define cs (os/read 'controller))
-       (match s
-         [(smoother 0 w)
-          (define ke
-            (cond [(any-controller cs (psn -1. 0.)) "r"]
-                  [(any-controller cs (psn 0. 1.)) "p"]
-                  [(any-controller cs (psn 0. -1.)) "s"]
-                  [else #f]))
-          (define nw (input w ke))
-          (os/write
-           (list
-            (cons 'graphics
-                  (cons 0 (render nw)))))
-          (loop (smoother 1 nw))]
-         [(smoother i w)
-          (os/write
-           (list
-            (cons 'done?
-                  (and (= i (sub1 SMOOTH-N)) (end? w)))
-            (cons 'return
-                  (and (round? w)
-                       (/ (round-wins w)
-                          (round-round-number w))))
-            (cons 'graphics
-                  (cons 0 (render w)))))
-          (loop (smoother (modulo (add1 i) SMOOTH-N) w))])))))
+     (let loop ([s (start 1 final-ai)])
+       (define ns
+         (let/ec return
+           (render-menu (state->menu return s))))
+
+       (when (end? ns)
+         (os/write
+          (list
+           (cons 'done?
+                 #t)
+           (cons 'return
+                 (/ (round-wins ns)
+                    (round-round-number ns))))))
+
+       (loop ns)))))
 
 (define game
   (game-info 'rpswar "Rock-Paper-Scissors Warrior"
-             0 random-generate
+             1 random-generate
              (random-start game-start)))
 
 (provide game)
