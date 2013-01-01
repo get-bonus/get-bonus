@@ -9,7 +9,8 @@
          gb/meta
          gb/input/controller
          gb/graphics/ngl-main
-         gb/lib/srs)
+         gb/lib/srs
+         gb/sys/menu)
 
 (begin-for-syntax
   (require racket/runtime-path)
@@ -87,83 +88,31 @@
                         (attempt start-time end-time score #f))
      (void)]))
 
-(define-syntax-rule (menu . more) (void))
-
-(menu
- (modal
-  (apply
-   list
-   (for/list ([g (in-list games)])
-     ;; XXX Display more info (game like, last play, etc)
-     (option (game-info-name g) (λ () (play-game g)))))
-  (apply
-   list
-   (for/list ([c (in-list (srs-cards (current-srs)))])
-     ;; XXX Display more info (data, history, etc)
-     (option (format (card-id c)) (λ () (play-card c)))))))
-
 (define (go)
-  (define modern-12-char
-    (make-char-factory modern 12))
-  (define char-height
-    (texture-height (modern-12-char #\a)))
-  (define char-width
-    (texture-width (modern-12-char #\a)))
-  (define string->sprites
-    (make-string-factory modern-12-char))
-
-  (define (menu-entry-height pos)
-    (+ (/ char-height 2.0) (* char-height pos)))
-  (define menu
-    (for/list ([g (in-list games)]
-               [i (in-naturals)])
-      (transform
-       #:d (* 2.0 char-width) (menu-entry-height i)
-       (string->sprites (game-info-name g)))))
-
   (big-bang/os
    width height center-pos
-   #:sound-scale width
    (λ ()
-     (os/write
-      (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
+     (define main
+       (menu:music
+        (background (λ (w) se:bgm) #:gain 0.1)
+        (menu:modal
+         (list
+          (cons
+           "Games"
+           (menu:list
+            (for/list ([g (in-list games)])
+              ;; XXX Display more info (game like, last play, etc)
+              (menu:option (game-info-name g) (λ () (play-game g))))))
+          (cons
+           "Cards"
+           (menu:list
+            ;; XXX make this refresh when you come back from a game
+            (for/list ([c (in-list (srs-cards (current-srs)))])
+              ;; XXX Display more info (data, history, etc)
+              (menu:option (format "~v" (card-id c))
+                           (λ () (play-card c))))))))))
 
-     (let loop ([pos 0])
-       (define c (os/read* 'controller))
-       (define mod
-         (cond
-           [(controller-up c)   +1]
-           [(controller-down c) -1]
-           [else                 0]))
-       (define pos+
-         (modulo (+ pos mod)
-                 (length games)))
-
-       (when (or (controller-start c)
-                 (controller-a c)
-                 (controller-b c)
-                 (controller-x c)
-                 (controller-y c))
-         (play-game (list-ref games pos+)))
-
-       (for ([frame
-              (in-range
-               0
-               (if (= pos pos+)
-                 1
-                 ;; How many frames to wait for more input
-                 8))])
-         (os/write
-          (list
-           (cons 'graphics
-                 (cons 0
-                       (cons
-                        menu
-                        (transform
-                         #:dy (menu-entry-height pos)
-                         (string->sprites ">>"))))))))
-
-       (loop pos+)))))
+     (render-menu main))))
 
 (module+ main
   (require racket/cmdline)

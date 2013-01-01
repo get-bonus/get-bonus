@@ -119,7 +119,7 @@
 ;; XXX remove width/height and maybe sound-scale since it is
 ;; standardized as crt-*
 (define (big-bang/os width height center-pos
-                     #:sound-scale sound-scale
+                     #:sound-scale [sound-scale width]
                      main-t)
   (big-bang
    (os (make-hasheq) (make-hasheq)
@@ -170,10 +170,9 @@
         (any/c)
         any/c)]
   [big-bang/os
-   (-> number? number? psn?
-       #:sound-scale number?
-       (-> any)
-       any)]
+   (->* (number? number? psn? (-> any))
+        (#:sound-scale number?)
+        any)]
   [os-sound-reader
    (->* (symbol?) (any/c)
         (-> os? any/c))]))

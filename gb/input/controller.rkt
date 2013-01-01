@@ -246,6 +246,13 @@
        (controller-merge (first st) c)]))
   st)
 
+(define (controller-any-button? c)
+  (or (controller-start c)
+      (controller-a c)
+      (controller-b c)
+      (controller-x c)
+      (controller-y c)))
+
 (provide/contract
  ;; XXX don't provide mutators
  [struct controller
@@ -255,6 +262,8 @@
           [y boolean?] [x boolean?]
           [select boolean?] [start boolean?]
           [l boolean?] [r boolean?])]
+ [controller-any-button?
+  (-> controller? boolean?)]
  [controller-monitor?
   (-> any/c boolean?)]
  ;; XXX remove make
