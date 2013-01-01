@@ -146,8 +146,9 @@
      center-pos)
    #:done?
    (λ (w)
-     (match-define (os cur-h _ _ _) w)
-     (first (hash-ref cur-h 'done? (list #f))))
+     (match-define (os cur-h _ cur-ps _) w)
+     (or (empty? cur-ps)
+         (first (hash-ref cur-h 'done? (list #f)))))
    #:return
    (λ (w)
      (match-define (os cur-h _ _ _) w)

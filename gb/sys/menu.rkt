@@ -40,38 +40,43 @@
          #:d (* 2.0 char-width) (option-entry-height i)
          (string->sprites (menu:option-text o)))))
 
-    (let loop ([pos 0])
-      (define c (os/read* 'controller))
-      (define mod
-        (cond
-          [(controller-up c)   +1]
-          [(controller-down c) -1]
-          [else                 0]))
-      (define pos+
-        (modulo (+ pos mod)
-                (length options)))
+    (let/cc return
+      (let loop ([pos 0])
+        (define c (os/read* 'controller))
+        (define mod
+          (cond
+            [(controller-up c)   +1]
+            [(controller-down c) -1]
+            [else                 0]))
+        (define pos+
+          (modulo (+ pos mod)
+                  (length options)))
 
-      (when (controller-any-button? c)
-        ((menu:option-fun (list-ref options pos+))))
+        (when (or (controller-a c)
+                  (controller-select c))
+          (return 'done))
 
-      (for ([frame
-             (in-range
-              0
-              (if (= pos pos+)
-                1
-                ;; How many frames to wait for more input
-                8))])
-        (os/write
-         (list
-          (cons 'graphics
-                (cons 0
-                      (cons
-                       options-display
-                       (transform
-                        #:dy (option-entry-height pos)
-                        (string->sprites ">>"))))))))
+        (when (controller-any-button? c)
+          ((menu:option-fun (list-ref options pos+))))
 
-      (loop pos+))]))
+        (for ([frame
+               (in-range
+                0
+                (if (= pos pos+)
+                  1
+                  ;; How many frames to wait for more input
+                  8))])
+          (os/write
+           (list
+            (cons 'graphics
+                  (cons 0
+                        (cons
+                         options-display
+                         (transform
+                          #:dy (option-entry-height pos)
+                          (string->sprites ">>"))))))))
+
+        (loop pos+)))]))
 
 (provide menu:music
          menu:modal
