@@ -126,8 +126,8 @@
      (let loop ([s (start 1 final-ai)])
        (define ns
          (let/ec return
-           (render-menu (state->menu return s))))
-
+           (render-menu (state->menu return s))))       
+       
        (when (end? ns)
          (os/write
           (list
@@ -137,7 +137,9 @@
                  (/ (round-wins ns)
                     (round-round-number ns))))))
 
-       (loop ns)))))
+       (if (a-match? ns)
+         (loop ns)
+         (loop s))))))
 
 (define game
   (game-info 'rpswar "Rock-Paper-Scissors Warrior"

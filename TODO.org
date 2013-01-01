@@ -715,12 +715,26 @@
 ** DONE SRS - Choose a game to play a card from
    CLOSED: [2012-12-29 Sat 13:28]
 ** TODO menu system - modal bar
+   Use the left/right buttons to move between displays and show
+   something at the top about the options
 ** TODO menu system - display the list better
+   The font is ugly. It would be nice if it was on the right or in
+   the middle, etc.
 ** TODO menu system - main - display more info about games
+   What game it is like, when the last time you played was, high
+   score, etc.
 ** TODO menu system - main - display more info about cards
+   Present the cards as cards with information about the last time
+   they were played, other history information (scores), the sort, and
+   a representation of the data [display "generate" cards differently]
+** TODO menu system - main - make it so the menu refreshes after you play a card
+   Because the cards are then in a new order
 ** TODO menu system - rpswar - optional quitting
+   Because I don't want them to be able to (I currently have a hack)
 ** TODO menu system - rpswar - auto select option
+   So that the messages go away after a while... like DQ
 ** TODO menu system - rpswar - info screen
+   Including some info about state (just name it) and current fake actions
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way

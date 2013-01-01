@@ -19,7 +19,6 @@
      (list (cons 'sound sound)))
     (render-menu sub)]
    [(menu:modal modes)
-    ;; XXX this isn't what I want it to be
     (render-menu
      (menu:list
       (for/list ([m (in-list modes)])
@@ -35,7 +34,7 @@
       (make-string-factory modern-12-char))
 
     (define (option-entry-height pos)
-      (+ (/ char-height 2.0) (* char-height pos)))
+      (+ (/ char-height 2.0) (* char-height (- (length options) pos))))
     (define options-display
       (for/list ([o (in-list options)]
                  [i (in-naturals)])
@@ -48,26 +47,12 @@
         (define c (os/read* 'controller))
         (define mod
           (cond
-            [(controller-up c)   +1]
-            [(controller-down c) -1]
+            [(controller-up c)   -1]
+            [(controller-down c) +1]
             [else                 0]))
         (define pos+
           (modulo (+ pos mod)
                   (length options)))
-
-        ;; XXX ugly input? hack
-        (when (not (controller-any-button? c))
-          (set! input? #t))
-
-        (when (and input?
-                   (or (controller-a c)
-                       (controller-select c)))
-          (return 'done))
-
-        (when (and input?
-                   (controller-any-button? c))
-          (set! input? #f)
-          ((menu:option-fun (list-ref options pos+))))
 
         (for ([frame
                (in-range
@@ -85,6 +70,20 @@
                          (transform
                           #:dy (option-entry-height pos)
                           (string->sprites ">>"))))))))
+
+        ;; XXX ugly input? hack
+        (when (not (controller-any-button? c))
+          (set! input? #t))
+
+        (when (and input?
+                   (or (controller-a c)
+                       (controller-select c)))
+          (return 'done))
+
+        (when (and input?
+                   (controller-any-button? c))
+          (set! input? #f)
+          ((menu:option-fun (list-ref options pos+))))
 
         (loop input? pos+)))]))
 

@@ -101,14 +101,11 @@
            "Games"
            (menu:list
             (for/list ([g (in-list games)])
-              ;; XXX Display more info (game like, last play, etc)
               (menu:option (game-info-name g) (λ () (play-game g))))))
           (cons
            "Cards"
            (menu:list
-            ;; XXX make this refresh when you come back from a game
             (for/list ([c (in-list (srs-cards (current-srs)))])
-              ;; XXX Display more info (data, history, etc)
               (menu:option (format "~v: ~v" (card-id c) (card-data c))
                            (λ () (play-card c))))))))))
 
