@@ -735,6 +735,7 @@
    So that the messages go away after a while... like DQ
 ** TODO menu system - rpswar - info screen
    Including some info about state (just name it) and current fake actions
+** TODO rpswar - render fst in some way
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way

@@ -54,32 +54,47 @@
   (match w
     [(start match# ai)
      (define next (user-input match# ai 1 0 (fst-start ai)))
-     (menu:list (list (string next "Match: ~a" match#)
-                      (string next "Fight!")))]
+     (menu:split
+      (menu:info (list (format "Match: ~a" match#)
+                       (format "Fight!")))
+      (menu:list #:back? #f
+                 #:auto 0
+                 (list (string next "Next"))))]
     [(user-input match# ai round# wins state)
      (define (next ui)
        (computer-input match# ai round# wins state ui))
-     (menu:list (list* (string same "Match: ~a" match#)
-                       (string same "Round: ~a" round#)
-                       (string same "Ratio: ~a/~a" wins round#)
-                       (string same "What will you throw down?")
-                       (for/list ([ui (in-list '(r p s))])
-                         (string (next ui) (rps->string ui)))))]
+     (menu:split
+      (menu:info (list (format "Match: ~a" match#)
+                       (format "Round: ~a" round#)
+                       (format "Ratio: ~a/~a" wins round#)
+                       (format "What will you throw down?")))
+      (menu:list #:back? #f
+                 (for/list ([ui (in-list '(r p s))])
+                   (string (next ui) (rps->string ui)))))]
     [(computer-input match# ai round# wins state ui)
      (define next
        (resolve match# ai round# wins state ui (fst-output ai state)))
-     (menu:list (list  (string next "Match: ~a" match#)
-                       (string next "Round: ~a" round#)
-                       (string next "Ratio: ~a/~a" wins round#)
-                       (string next "You threw down ~a" (rps->string ui))))]
+     (menu:split
+      (menu:info (list (format "Match: ~a" match#)
+                       (format "Round: ~a" round#)
+                       (format "Ratio: ~a/~a" wins round#)
+                       (format "You threw down ~a" (rps->string ui))))
+      (menu:list #:back? #f
+                 #:auto 0
+                 (list (string next "Next"))))]
     [(resolve match# ai round# wins state ui ci)
      (define next
-       (resolved match# ai round# wins state ui ci (rps-outcome ui ci)))
-     (menu:list (list (string next "Match: ~a" match#)
-                      (string next "Round: ~a" round#)
-                      (string next "Ratio: ~a/~a" wins round#)
-                      (string next "You threw down ~a" (rps->string ui))
-                      (string next "The AI threw down ~a" (rps->string ci))))]
+       (resolved match# ai round# wins state ui ci
+                 (rps-outcome ui ci)))
+     (menu:split
+      (menu:info (list (format "Match: ~a" match#)
+                       (format "Round: ~a" round#)
+                       (format "Ratio: ~a/~a" wins round#)
+                       (format "You threw down ~a" (rps->string ui))
+                       (format "The AI threw down ~a" (rps->string ci))))
+      (menu:list #:back? #f
+                 #:auto 0
+                 (list (string next "Next"))))]
     [(resolved match# ai round# wins state ui ci outcome)
      (define total-wins
        (if (eq? 'user outcome)
@@ -96,19 +111,26 @@
                          round#
                          (add1 round#))
                        total-wins next-state))))
-     (menu:list (list (string next "Match: ~a" match#)
-                      (string next "Round: ~a" round#)
-                      (string next "Ratio: ~a/~a" wins round#)
-                      (match outcome
-                        ['user (string next "You won the round!")]
-                        ['computer (string next "The AI won the round!")]
-                        ['draw (string next "Draw")])))]
+     (menu:split
+      (menu:info (list (format "Match: ~a" match#)
+                       (format "Round: ~a" round#)
+                       (format "Ratio: ~a/~a" wins round#)
+                       (match outcome
+                         ['user (format "You won the round!")]
+                         ['computer (format "The AI won the round!")]
+                         ['draw (format "Draw")])))
+      (menu:list #:back? #f
+                 #:auto 0
+                 (list (string next "Next"))))]
     [(end match# _ round# wins _)
-     (define next same)
-     (menu:list (list (string next "Match: ~a" match#)
-                      (string next "Round: ~a" round#)
-                      (string next "Ratio: ~a/~a" wins round#)
-                      (string next "You won the match!")))]))
+     (menu:split
+      (menu:info (list (format "Match: ~a" match#)
+                       (format "Round: ~a" round#)
+                       (format "Ratio: ~a/~a" wins round#)
+                       (format "You won the match!")))
+      (menu:list #:back? #f
+                 #:auto 0
+                 (list (string same "Next"))))]))
 
 (define (game-start)
   (big-bang/os
@@ -126,8 +148,8 @@
      (let loop ([s (start 1 final-ai)])
        (define ns
          (let/ec return
-           (render-menu (state->menu return s))))       
-       
+           (render-menu (state->menu return s))))
+
        (when (end? ns)
          (os/write
           (list
@@ -137,9 +159,7 @@
                  (/ (round-wins ns)
                     (round-round-number ns))))))
 
-       (if (a-match? ns)
-         (loop ns)
-         (loop s))))))
+       (loop ns)))))
 
 (define game
   (game-info 'rpswar "Rock-Paper-Scissors Warrior"
