@@ -803,6 +803,7 @@
 ** TODO SRS - Play a card by name (on the command line)
 ** TODO SRS - Don't play a level/game more than X times in a row
 ** TODO SRS - Don't play a level/game for longer than X minutes in a row
+** TODO SRS - Keep track of "play session" and connect the concept of "in a row" to play session
 ** TODO Include workrave like system in dashboard
 ** TODO Make icons for dashboards vs text
    Or mimic the Wii interface
@@ -858,6 +859,7 @@
 ** TODO 2D Lighting
    https://www.youtube.com/watch?v=fsbECSpwtig
 ** TODO Winners Don't Do Drugs and other intro screens
+** TODO Figure out a way to allow and use palettes effectively
 * Tool and related-app ideas
 ** TODO Master Grafx2 or aseprite or make my own keyboard based system
    https://code.google.com/p/grafx2/
