@@ -52,59 +52,46 @@
          (string->sprites (menu:option-text o)))))
 
     (let/cc return
-      (let loop ([input? #f] [pos 0] [auto-count 20])
+      (let loop ([pos 0] [auto-count 60])
         (define c (os/read* 'controller))
         (define mod
           (cond
-            [(controller-up c)   -1]
-            [(controller-down c) +1]
+            [(controller-up-down c)   -1]
+            [(controller-down-down c) +1]
             [else                 0]))
         (define pos+
           (modulo (+ pos mod)
                   (length options)))
 
-        (for ([frame
-               (in-range
-                0
-                (if (= pos pos+)
-                  1
-                  ;; How many frames to wait for more input
-                  8))])
-          (os/write
-           (list
-            (cons 'graphics
-                  (cons 0
-                        (cons
-                         options-display
-                         (transform
-                          #:dy (option-entry-height pos)
-                          (string->sprites ">>"))))))))
+        (os/write
+         (list
+          (cons 'graphics
+                (cons 0
+                      (cons
+                       options-display
+                       (transform
+                        #:dy (option-entry-height pos)
+                        (string->sprites ">>")))))))
 
-        ;; XXX ugly input? hack
-        (when (not (controller-any-button? c))
-          (set! input? #t))
-
-        (when (and input? back?
-                   (or (controller-a c)
-                       (controller-select c)))
+        (when (and back?
+                   (or (controller-a-down c)
+                       (controller-select-down c)))
           (return 'done))
 
         (define selected
           (cond
-            [(and input?
-                  (controller-start c)
-                  (controller-b c))
+            [(or (controller-start-down c)
+                 (controller-b-down c))
              pos+]
             [(and auto (zero? auto-count))
              auto]
             [else
-             #f]))        
+             #f]))
 
         (when selected
-          (set! input? #f)
           ((menu:option-fun (list-ref options selected))))
 
-        (loop input? pos+ (sub1 auto-count))))]))
+        (loop pos+ (sub1 auto-count))))]))
 
 (provide menu:music
          menu:modal

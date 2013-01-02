@@ -714,6 +714,14 @@
    integration.
 ** DONE SRS - Choose a game to play a card from
    CLOSED: [2012-12-29 Sat 13:28]
+** DONE menu system - rpswar - optional quitting
+   CLOSED: [2013-01-02 Wed 10:40]
+   Because I don't want them to be able to (I currently have a hack)
+** DONE menu system - rpswar - auto select option
+   CLOSED: [2013-01-02 Wed 10:40]
+   So that the messages go away after a while... like DQ
+** DONE controller - build edge/level into controller object
+   CLOSED: [2013-01-02 Wed 11:17]
 ** TODO menu system - modal bar
    Use the left/right buttons to move between displays and show
    something at the top about the options
@@ -729,10 +737,6 @@
    a representation of the data [display "generate" cards differently]
 ** TODO menu system - main - make it so the menu refreshes after you play a card
    Because the cards are then in a new order
-** TODO menu system - rpswar - optional quitting
-   Because I don't want them to be able to (I currently have a hack)
-** TODO menu system - rpswar - auto select option
-   So that the messages go away after a while... like DQ
 ** TODO menu system - rpswar - info screen
    Including some info about state (just name it) and current fake actions
 ** TODO rpswar - render fst in some way

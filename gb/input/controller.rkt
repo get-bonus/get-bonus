@@ -13,15 +13,55 @@
 
 ;; XXX add something to communicate capabilties (like no third button,
 ;; home, etc)
-(struct controller
-        (left right
-              up down
-              b a
-              y x
-              select start
-              l r)
-        #:mutable
-        #:transparent)
+
+(define-syntax (structy stx)
+  (syntax-parse stx
+    [(_ id (field ...) . more)
+     (with-syntax*
+      ([id? (format-id #'id "~a?" #'id)]
+       [(field-down ...)
+        (for/list ([f (in-list (syntax->list #'(field ...)))])
+          (format-id f "~a-down" f))]
+       [(field-up ...)
+        (for/list ([f (in-list (syntax->list #'(field ...)))])
+          (format-id f "~a-up" f))]
+       [(id-field-all ...)
+        (for/list ([f (in-list (syntax->list #'(field ... field-down ... field-up ...)))])
+          (format-id f "~a-~a" #'id f))]
+       [(set-id-field*! ...)
+        (for/list ([f (in-list (syntax->list #'(field ...)))])
+          (format-id f "set-~a-~a*!" #'id f))]
+       [((id-field set-id-field! set-id-field-down! set-id-field-up!) ...)
+        (for/list ([f (in-list (syntax->list #'(field ...)))])
+          (list (format-id f "~a-~a" #'id f)
+                (format-id f "set-~a-~a!" #'id f)
+                (format-id f "set-~a-~a-down!" #'id f)
+                (format-id f "set-~a-~a-up!" #'id f)))])
+      (syntax/loc stx
+        (begin (struct id (field ... field-down ... field-up ...) . more)
+               (define (set-id-field*! c nv)
+                 (define old (id-field c))
+                 (set-id-field! c nv)
+                 (cond
+                   [(and old             nv)
+                    (set-id-field-down! c #f)
+                    (set-id-field-up! c #f)]
+                   [(and (not old)       nv)
+                    (set-id-field-down! c #t)
+                    (set-id-field-up! c #f)]
+                   [(and (not old) (not nv))
+                    (set-id-field-down! c #f)
+                    (set-id-field-up! c #f)]
+                   [(and       old (not nv))
+                    (set-id-field-down! c #f)
+                    (set-id-field-up! c #t)]))
+               ...
+               (provide id? id id-field-all ...))))]))
+
+(structy controller
+         (left right up down b a y x select start l r)
+         #:mutable
+         #:transparent)
 
 (struct controller-monitor (js-mon key-mon how-many-joysticks buf))
 
@@ -32,7 +72,7 @@
          ([((set-controller-field! ...) ...)
            (for/list ([fs (in-list (syntax->list #'((c-field ...) ...)))])
              (for/list ([f (in-list (syntax->list fs))])
-               (format-id f "set-controller-~a!" f)))]
+               (format-id f "set-controller-~a*!" f)))]
           [((joystick-state-field ...) ...)
            (map generate-temporaries (syntax->list #'((j-field ...) ...)))])
        (syntax/loc stx
@@ -149,7 +189,7 @@
              (format-id f "controller-~a" f))]
           [(set-controller-field! ...)
            (for/list ([f (in-list (syntax->list #'(c-field ...)))])
-             (format-id f "set-controller-~a!" f))]
+             (format-id f "set-controller-~a*!" f))]
           [(joystick-state-field ...)
            (generate-temporaries #'(j-field ...))])
        (syntax/loc stx
@@ -181,6 +221,18 @@
 
 (define (null-controller)
   (controller #f #f #f #f
+              #f #f
+              #f #f
+              #f #f
+              #f #f
+
+              #f #f #f #f
+              #f #f
+              #f #f
+              #f #f
+              #f #f
+
+              #f #f #f #f
               #f #f
               #f #f
               #f #f
@@ -254,14 +306,6 @@
       (controller-y c)))
 
 (provide/contract
- ;; XXX don't provide mutators
- [struct controller
-         ([left boolean?] [right boolean?]
-          [up boolean?] [down boolean?]
-          [b boolean?] [a boolean?]
-          [y boolean?] [x boolean?]
-          [select boolean?] [start boolean?]
-          [l boolean?] [r boolean?])]
  [controller-any-button?
   (-> controller? boolean?)]
  [controller-monitor?
