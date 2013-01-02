@@ -39,8 +39,17 @@
      (menu:list
       (for/list ([m (in-list modes)])
         (menu:option (car m) (λ () (render-menu (cdr m)))))))]
-   [(menu:split top bottom)
-    (render-menu bottom)]
+   [(menu:split (menu:info (list string ...)) (menu:list* back? auto (list option ...)))
+    (let/ec return
+      (let loop ()
+        (let/ec clean-restart
+          (return (render-menu
+                   (menu:list* back? (and auto (+ auto (length string)))
+                               (append
+                                (for/list ([s (in-list string)])
+                                  (menu:option s (λ () (clean-restart))))
+                                option)))))
+        (loop)))]
    [(menu:list* back? auto options)
     (define (option-entry-height pos)
       (+ (/ char-height 2.0) (* char-height (- (length options) pos))))
