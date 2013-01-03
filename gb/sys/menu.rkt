@@ -16,7 +16,7 @@
 (struct menu:auto (code fun) #:transparent)
 
 (define char
-  (make-char-factory modern 10))
+  (make-char-factory modern 7))
 (define char-height
   (texture-height (char #\a)))
 (define char-width

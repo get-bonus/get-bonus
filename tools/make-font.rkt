@@ -11,7 +11,7 @@
 (module+ main
   (command-line #:program "make-font"
                 #:args (r family-str size-str)
-                (main r 
+                (main r
                       (string->symbol family-str)
                       (string->number size-str))))
 
@@ -59,20 +59,23 @@
          [x (in-range MAX-W)]
          [y (in-range MAX-H)])
       (send char-dc get-pixel x y char-color%)
-      (match (send char-color% red)
-        [255
+      (match* ((send char-color% red)
+               (send char-color% green)
+               (send char-color% blue))
+        [(255 255 255)
          (values char-min-x char-max-x char-min-y char-max-y)]
-        [0
+        [(  0   0   0)
          (values (min x char-min-x)
                  (max x char-max-x)
                  (min y char-min-y)
                  (max y char-max-y))])))
 
-  (define char-w (- char-max-x char-min-x))
-  (define char-h (- char-max-y char-min-y))
+  (define char-w (- (add1 char-max-x) char-min-x))
+  (define char-h (- (add1 char-max-y) char-min-y))
 
   (for ([char-i (in-range CHAR-START (add1 CHAR-END))]
         [char-src-dc (in-list char-dcs)])
+
     (define char-file
       (build-path font-dir
                   (format "~a.png" char-i)))
