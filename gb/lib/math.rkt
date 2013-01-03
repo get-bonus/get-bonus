@@ -16,11 +16,7 @@
    (+ (sqr (- (psn-x p1) (psn-x p2)))
       (sqr (- (psn-y p1) (psn-y p2))))))
 
-(define (sum l)
-  (apply + l))
-
 (provide/contract
- [sum (-> list? number?)]
  [distance (-> psn? psn?
                real?)]
  [cardinate (-> psn?

@@ -13,6 +13,7 @@
          gb/data/psn
          gb/meta
          gb/sys/menu
+         math/base
          (prefix-in cd: gb/physics/cd-narrow)
          "fst.rkt"
          "graph.rkt")
@@ -73,6 +74,9 @@
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
+                       ""
+                       (format-fst ai state)
+                       ""
                        (format "What will you throw down?")))
       (menu:list (for/list ([ui (in-list '(r p s))])
                    (string (next ui)
@@ -132,6 +136,11 @@
                        (format "You won the match!")))
       (next-menu same))]))
 
+(define (repeat-n n f a)
+  (if (zero? n)
+    a
+    (repeat-n (sub1 n) f (f a))))
+
 (define (game-start)
   (big-bang/os
    crt-width crt-height (psn (/ crt-width 2.) (/ crt-height 2.0))
@@ -141,16 +150,15 @@
 
      (define final-ai
        (let loop ([ai start-fst])
+         (define next-ai (repeat-n (random-integer 1 10) mutate-fst ai))
          (if (zero? (random 2))
-           ai
-           (loop (mutate-fst ai)))))
+           next-ai
+           (loop next-ai))))
 
      (let loop ([s (start 1 final-ai)])
        (define ns
          (let/ec return
            (render-menu (state->menu return s))))
-
-       (eprintf "Return: ~e\n" ns)
 
        (when (end? ns)
          (os/write
@@ -165,7 +173,7 @@
 
 (define game
   (game-info 'rpswar "Rock-Paper-Scissors Warrior"
-             1 random-generate
+             2 random-generate
              (random-start game-start)))
 
 (provide game)

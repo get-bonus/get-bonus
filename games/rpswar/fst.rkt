@@ -4,6 +4,11 @@
 
 (struct fst (states input-alpha output-alpha start delta state->output) #:transparent)
 
+(define (format-fst f current)
+  (format "~a of ~a"
+          current
+          (fst-states f)))
+
 (define (random-state how-many-states)
   (random (add1 how-many-states)))
 
@@ -27,31 +32,31 @@
                    (hash-set input->next (random-list-ref input-alpha) to-state))))
   (random-case
    [1/2
-    ; Add a new state
+    ;; Add a new state
     (define new-state (add1 states))
     (fst new-state input-alpha output-alpha start
-         ; Linked to by a random existing state
+         ;; Linked to by a random existing state
          (change-transition
-          ; with random transitions to other stats
+          ;; with random transitions to other stats
           (hash-set delta new-state
                     (for/hash ([i (in-list input-alpha)])
                       (values i (random-state new-state))))
           (random-state states)
           new-state)
-         ; and a random output
+         ;; and a random output
          (change-output state->output new-state))]
-   ; Add a transition
+   ;; Add a transition
    [1/6
     (fst states input-alpha output-alpha start
          (change-transition delta (random-state states)
                             (random-state states))
          state->output)]
-   ; Change an output
+   ;; Change an output
    [1/6
     (fst states input-alpha output-alpha start
          delta
          (change-output state->output (random-state states)))]
-   ; Change the start state
+   ;; Change the start state
    [1/6
     (fst states input-alpha output-alpha
          (random-state states)
@@ -63,4 +68,4 @@
 (define (fst-next f s i)
   (hash-ref (hash-ref (fst-delta f) s) i))
 
-(provide (all-defined-out))  
+(provide (all-defined-out))

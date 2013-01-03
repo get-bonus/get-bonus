@@ -15,6 +15,7 @@
          gb/audio/3s
          gb/data/psn
          gb/lib/math
+         math/base
          gb/lib/random
          gb/data/fmatrix
          gb/meta

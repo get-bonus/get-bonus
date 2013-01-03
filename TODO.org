@@ -729,6 +729,9 @@
 ** DONE menu system - main - make it so the menu refreshes after you play a card
    CLOSED: [2013-01-02 Wed 17:58]
    Because the cards are then in a new order
+** DONE menu system - rpswar - info screen
+   CLOSED: [2013-01-03 Thu 08:37]
+   Including some info about state (just name it) and current fake actions
 ** TODO menu system - display the list better
    The font is ugly. It would be nice if it was on the right or in
    the middle, etc. Like Dragon Quest?
@@ -739,9 +742,6 @@
    Present the cards as cards with information about the last time
    they were played, other history information (scores), the sort, and
    a representation of the data [display "generate" cards differently]
-** TODO menu system - rpswar - info screen
-   Including some info about state (just name it) and current fake actions
-** TODO rpswar - render fst in some way
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -866,6 +866,7 @@
 ** TODO 2D Lighting
    https://www.youtube.com/watch?v=fsbECSpwtig
 ** TODO Winners Don't Do Drugs and other intro screens
+** TODO rpswar - render fst graphically
 ** TODO Figure out a way to allow and use palettes effectively
 * Tool and related-app ideas
 ** TODO Master Grafx2 or aseprite or make my own keyboard based system
