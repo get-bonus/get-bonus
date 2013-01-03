@@ -54,16 +54,27 @@
 
 (define current-srs (make-parameter #f))
 
+(define (game-cards id)
+  (for/list ([c (in-list (srs-cards (current-srs)))]
+             #:when (recent-card? c)
+             #:when (and (vector? (card-data c))
+                         (equal? id (vector-ref (card-data c) 0))))
+    c))
+
+(define (recent-card? c)
+  (match* ((card-id c) (card-data c))
+    [(_ #f)
+     #t]
+    [(_ (vector id version _))
+     (equal? version (game-info-version (hash-ref game-code->info id)))]
+    [(_ _)
+     #f]))
+
 (define (play-game gi)
   (match-define (game-info id name version generate start)
                 gi)
   (define the-card
-    (or (for/or ([c (in-list (srs-cards (current-srs)))])
-          (match (card-data c)
-            [(vector (== id) (== version) c-level)
-             c]
-            [_
-             #f]))
+    (or (first (game-cards id))
         (srs-generate! (current-srs) id
                        current-inexact-milliseconds)))
   (play-card the-card))
@@ -88,6 +99,41 @@
                         (attempt start-time end-time score #f))
      (void)]))
 
+(require racket/date)
+(define (attempt-length a)
+  (/ (- (attempt-end a) (attempt-start a)) 1000))
+(define (stats-string l)
+  (let/ec return
+    (when (empty? l)
+      (return "N/A"))
+    (define min.v (apply min l))
+    (define max.v (apply max l))
+    (define mean.v (/ (apply + l) (length l)))
+    (define median.v (list-ref (sort l <) (floor (/ (length l) 2))))
+    (apply format "[~a --| (~a|~a) |-- ~a]"
+           (map real->decimal-string
+                (list min.v
+                      median.v
+                      mean.v
+                      max.v)))))
+
+(define (history->info-screen-list history)
+  (list
+   (format "Score: ~a"
+           (stats-string (map attempt-score
+                              history)))
+   (format " Time: ~a"
+           (stats-string (map attempt-length
+                              history)))
+   (format " Last: ~a"
+           (parameterize ([date-display-format
+                           'iso-8601])
+             (define last
+               (first (sort (map attempt-start
+                                 history)
+                            <)))
+             (date->string (seconds->date (/ last 1000)) #t)))))
+
 (define (go)
   (big-bang/os
    width height center-pos
@@ -106,21 +152,36 @@
                (menu:option
                 (game-info-name g)
                 (λ ()
+                  (define history
+                    (append-map card-history
+                                (game-cards
+                                 (game-info-id g))))
+
                   (list (menu:status "Play the game?")
-                        (menu:info (list "Play the game!"))
+                        (menu:info (history->info-screen-list history))
                         (menu:action (λ () (play-game g))))))))))
          (menu:option
           "Cards"
           (λ ()
             (menu:list
-             (for/list ([c (in-list (srs-cards
-                                     (current-srs)))])
+             (for/list ([c (in-list (srs-cards (current-srs)))]
+                        #:when (recent-card? c))
+               (match-define (card id sort-score data history) c)
                (menu:option
-                (format "~v: ~v" (card-id c) (card-data c))
+                (format "~a" id)
                 (λ ()
-                  (list (menu:status "Play the card?")
-                        (menu:info (list "Play the card!"))
-                        (menu:action (λ () (play-card c)))))))))))))
+                  (list
+                   (menu:status "Play the card?")
+                   (menu:info
+                    (list*
+                     (format " Game: ~a"
+                             (match data
+                               [#f id]
+                               [(vector game _ _) game]))
+                     (format " Sort: ~a"
+                             (real->decimal-string sort-score))
+                     (history->info-screen-list history)))
+                   (menu:action (λ () (play-card c)))))))))))))
 
      (render-menu #:back (λ () (os/exit 0))
                   main))))

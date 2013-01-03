@@ -732,16 +732,21 @@
 ** DONE menu system - rpswar - info screen
    CLOSED: [2013-01-03 Thu 08:37]
    Including some info about state (just name it) and current fake actions
+** DONE SRS - Play a particular card (display them)
+   CLOSED: [2013-01-03 Thu 10:18]
+** DONE SRS - Play a card by name (on the command line)
+   CLOSED: [2013-01-03 Thu 10:18]
+** DONE menu system - main - display more info about cards
+   CLOSED: [2013-01-03 Thu 11:04]
+   Present the cards as cards with information about the last time
+   they were played, other history information (scores), the sort, and
+   a representation of the data [display "generate" cards differently]
 ** TODO menu system - display the list better
    The font is ugly. It would be nice if it was on the right or in
    the middle, etc. Like Dragon Quest?
 ** TODO menu system - main - display more info about games
    What game it is like, when the last time you played was, high
    score, etc.
-** TODO menu system - main - display more info about cards
-   Present the cards as cards with information about the last time
-   they were played, other history information (scores), the sort, and
-   a representation of the data [display "generate" cards differently]
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -806,8 +811,6 @@
 ** TODO SRS - Deal with games that have a win condition
    (so that you don't get too much credit if you don't actually win,
    even if you did better than before?)
-** TODO SRS - Play a particular card (display them)
-** TODO SRS - Play a card by name (on the command line)
 ** TODO SRS - Don't play a level/game more than X times in a row
 ** TODO SRS - Don't play a level/game for longer than X minutes in a row
 ** TODO SRS - Keep track of "play session" and connect the concept of "in a row" to play session
