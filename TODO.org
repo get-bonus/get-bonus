@@ -722,12 +722,16 @@
    So that the messages go away after a while... like DQ
 ** DONE controller - build edge/level into controller object
    CLOSED: [2013-01-02 Wed 11:17]
-** TODO menu system - modal bar
+** DONE menu system - modal bar
+   CLOSED: [2013-01-02 Wed 15:26]
    Use the left/right buttons to move between displays and show
    something at the top about the options
+** DONE menu system - main - make it so the menu refreshes after you play a card
+   CLOSED: [2013-01-02 Wed 17:58]
+   Because the cards are then in a new order
 ** TODO menu system - display the list better
    The font is ugly. It would be nice if it was on the right or in
-   the middle, etc.
+   the middle, etc. Like Dragon Quest?
 ** TODO menu system - main - display more info about games
    What game it is like, when the last time you played was, high
    score, etc.
@@ -735,8 +739,6 @@
    Present the cards as cards with information about the last time
    they were played, other history information (scores), the sort, and
    a representation of the data [display "generate" cards differently]
-** TODO menu system - main - make it so the menu refreshes after you play a card
-   Because the cards are then in a new order
 ** TODO menu system - rpswar - info screen
    Including some info about state (just name it) and current fake actions
 ** TODO rpswar - render fst in some way

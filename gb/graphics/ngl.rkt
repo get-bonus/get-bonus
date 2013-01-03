@@ -40,7 +40,7 @@
     [my flonum?]
     [theta flonum?]))))
 
-(struct sprite-info (x y hw hh r g b a tex mx my theta))
+(struct sprite-info (x y hw hh r g b a tex mx my theta) #:transparent)
 
 (define-shader-source VertexShader "ngl.vertex.glsl")
 (define-shader-source FragmentShader "ngl.fragment.glsl")

@@ -48,53 +48,57 @@
 
 (define (state->menu return w)
   (define same w)
-  (define (string next fmt . args)
-    (menu:option (apply format fmt args)
-                 (λ () (return next))))
+  (define (string next text status [auto #f])
+    (menu:option
+     text
+     (λ ()
+       (list* (menu:status status)
+              (menu:action (λ () (return next)))
+              (if auto
+                (list (menu:auto 'next (λ () (return next))))
+                empty)))))
+  (define (next-menu next)
+    (menu:list (list (string next "Next" "Advance to next message." 'next))))
   (match w
     [(start match# ai)
      (define next (user-input match# ai 1 0 (fst-start ai)))
-     (menu:split
+     (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Fight!")))
-      (menu:list #:back? #f
-                 #:auto 0
-                 (list (string next "Next"))))]
+      (next-menu next))]
     [(user-input match# ai round# wins state)
      (define (next ui)
        (computer-input match# ai round# wins state ui))
-     (menu:split
+     (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
                        (format "What will you throw down?")))
-      (menu:list #:back? #f
-                 (for/list ([ui (in-list '(r p s))])
-                   (string (next ui) (rps->string ui)))))]
+      (menu:list (for/list ([ui (in-list '(r p s))])
+                   (string (next ui)
+                           (rps->string ui)
+                           (format "Throw down a ~a"
+                                   (rps->string ui))))))]
     [(computer-input match# ai round# wins state ui)
      (define next
        (resolve match# ai round# wins state ui (fst-output ai state)))
-     (menu:split
+     (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
                        (format "You threw down ~a" (rps->string ui))))
-      (menu:list #:back? #f
-                 #:auto 0
-                 (list (string next "Next"))))]
+      (next-menu next))]
     [(resolve match# ai round# wins state ui ci)
      (define next
        (resolved match# ai round# wins state ui ci
                  (rps-outcome ui ci)))
-     (menu:split
+     (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
                        (format "You threw down ~a" (rps->string ui))
                        (format "The AI threw down ~a" (rps->string ci))))
-      (menu:list #:back? #f
-                 #:auto 0
-                 (list (string next "Next"))))]
+      (next-menu next))]
     [(resolved match# ai round# wins state ui ci outcome)
      (define total-wins
        (if (eq? 'user outcome)
@@ -111,7 +115,7 @@
                          round#
                          (add1 round#))
                        total-wins next-state))))
-     (menu:split
+     (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
@@ -119,18 +123,14 @@
                          ['user (format "You won the round!")]
                          ['computer (format "The AI won the round!")]
                          ['draw (format "Draw")])))
-      (menu:list #:back? #f
-                 #:auto 0
-                 (list (string next "Next"))))]
+      (next-menu next))]
     [(end match# _ round# wins _)
-     (menu:split
+     (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
                        (format "You won the match!")))
-      (menu:list #:back? #f
-                 #:auto 0
-                 (list (string same "Next"))))]))
+      (next-menu same))]))
 
 (define (game-start)
   (big-bang/os
@@ -149,6 +149,8 @@
        (define ns
          (let/ec return
            (render-menu (state->menu return s))))
+
+       (eprintf "Return: ~e\n" ns)
 
        (when (end? ns)
          (os/write

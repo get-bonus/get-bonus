@@ -92,24 +92,38 @@
   (big-bang/os
    width height center-pos
    (λ ()
-     (define main
-       (menu:music
-        (background (λ (w) se:bgm) #:gain 0.1)
-        (menu:modal
-         (list
-          (cons
-           "Games"
-           (menu:list
-            (for/list ([g (in-list games)])
-              (menu:option (game-info-name g) (λ () (play-game g))))))
-          (cons
-           "Cards"
-           (menu:list
-            (for/list ([c (in-list (srs-cards (current-srs)))])
-              (menu:option (format "~v: ~v" (card-id c) (card-data c))
-                           (λ () (play-card c))))))))))
+     (os/write
+      (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
 
-     (render-menu main))))
+     (define main
+       (menu:top
+        (list
+         (menu:option
+          "Games"
+          (λ ()
+            (menu:list
+             (for/list ([g (in-list games)])
+               (menu:option
+                (game-info-name g)
+                (λ ()
+                  (list (menu:status "Play the game?")
+                        (menu:info (list "Play the game!"))
+                        (menu:action (λ () (play-game g))))))))))
+         (menu:option
+          "Cards"
+          (λ ()
+            (menu:list
+             (for/list ([c (in-list (srs-cards
+                                     (current-srs)))])
+               (menu:option
+                (format "~v: ~v" (card-id c) (card-data c))
+                (λ ()
+                  (list (menu:status "Play the card?")
+                        (menu:info (list "Play the card!"))
+                        (menu:action (λ () (play-card c)))))))))))))
+
+     (render-menu #:back (λ () (os/exit 0))
+                  main))))
 
 (module+ main
   (require racket/cmdline)
