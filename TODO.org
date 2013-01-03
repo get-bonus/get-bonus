@@ -741,12 +741,19 @@
    Present the cards as cards with information about the last time
    they were played, other history information (scores), the sort, and
    a representation of the data [display "generate" cards differently]
+** DONE menu system - main - display more info about games
+   CLOSED: [2013-01-03 Thu 11:05]
+   What game it is like, when the last time you played was, high
+   score, etc.
+** DONE menu system - main - compare with....
+   CLOSED: [2013-01-03 Thu 11:08]
+** DONE Make RPS more JRPG-like
+   CLOSED: [2013-01-03 Thu 11:09]
+** DONE SRS - Keep track of "play session" and connect the concept of "in a row" to play session
+   CLOSED: [2013-01-03 Thu 11:20]
 ** TODO menu system - display the list better
    The font is ugly. It would be nice if it was on the right or in
    the middle, etc. Like Dragon Quest?
-** TODO menu system - main - display more info about games
-   What game it is like, when the last time you played was, high
-   score, etc.
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -806,14 +813,13 @@
 ** TODO Make games return replays (and allow them to accept replays)
    Replay = (random seed, level, controller stream)
 ** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
-** TODO Add "compare with ..." to game info
+** TODO Add "compare with ..." to game info and display
 ** TODO SRS - Automatically go to the next card
 ** TODO SRS - Deal with games that have a win condition
    (so that you don't get too much credit if you don't actually win,
    even if you did better than before?)
 ** TODO SRS - Don't play a level/game more than X times in a row
 ** TODO SRS - Don't play a level/game for longer than X minutes in a row
-** TODO SRS - Keep track of "play session" and connect the concept of "in a row" to play session
 ** TODO Include workrave like system in dashboard
 ** TODO Make icons for dashboards vs text
    Or mimic the Wii interface
@@ -842,13 +848,13 @@
    http://tnns.rabbx.com/
 ** TODO Tennis - ugly score display
 ** TODO Tennis - revisit use of paddle bounce
-** TODO Make RPS more JRPG-like
 ** TODO Write a generic Godel-encoding library
    http://logic.cse.unt.edu/tarau/index.html
 
    http://code.google.com/p/bijective-goedel-numberings/
 
    http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
+** TODO RPS - generate FSTs differently (with godel encoding)
 ** TODO Figure out a way to do localization well
    gettext
 ** TODO Make more games

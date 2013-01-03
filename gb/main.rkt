@@ -3,6 +3,7 @@
          racket/runtime-path
          racket/list
          racket/match
+         racket/date
          gb/audio/3s
          gb/data/psn
          gb/gui/os
@@ -96,10 +97,9 @@
              version level score)
      (srs-card-attempt! (current-srs) the-card
                         ;; XXX The replay would go in this #f's spot
-                        (attempt start-time end-time score #f))
+                        (attempt start-time end-time score (current-play-session)))
      (void)]))
 
-(require racket/date)
 (define (attempt-length a)
   (/ (- (attempt-end a) (attempt-start a)) 1000))
 (define (stats-string l)
@@ -186,11 +186,22 @@
      (render-menu #:back (λ () (os/exit 0))
                   main))))
 
-(module+ main
-  (require racket/cmdline)
+(define current-play-session (make-parameter #f))
 
-  (define-runtime-path srs-path "../srs.db")
-  (define the-srs (srs srs-path))
+(module+ main
+  (require racket/cmdline
+           racket/file)
+
+  (define-runtime-path user "../user")
+
+  (define the-srs (srs (build-path user "srs.db")))
+
+  (define play-session-pth (build-path user "play.session"))
+  (define play-session 
+    (if (file-exists? play-session-pth)
+      (add1 (file->value play-session-pth))
+      0))
+  (write-to-file play-session play-session-pth #:exists 'replace)
 
   (for ([gi (in-list games)])
     (match-define (game-info id _ version generate _) gi)
@@ -200,7 +211,8 @@
   (command-line
    #:program "get-bonus"
    #:args maybe-game
-   (parameterize ([current-srs the-srs])
+   (parameterize ([current-srs the-srs]
+                  [current-play-session play-session])
      (match maybe-game
        [(list)
         (go)]
