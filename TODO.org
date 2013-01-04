@@ -2,6 +2,7 @@
 ** TODO menu system - display the list better
    The font is ugly. It would be nice if it was on the right or in
    the middle, etc. Like Dragon Quest?
+** TODO menu - don't use fixed symbols for state
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way

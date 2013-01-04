@@ -52,79 +52,6 @@
     [(menu:info texts)
      (list m)]))
 
-(define (draw-menu st m)
-  (match m
-    [(cons fst rst)
-     (cons (draw-menu st fst) (draw-menu st rst))]
-    [(? empty?)
-     empty]
-    [(menu:action _)
-     empty]
-    [(menu:auto _ _)
-     empty]
-    [(menu:top options)
-     (define top-dy (- crt-height char-height))
-     (define-values (_offset l)
-       (for/fold ([offset 0]
-                  [l empty])
-           ([o (in-list options)]
-            [i (in-naturals)])
-         (match-define (menu:option text fun) o)
-         (define pre-offset
-           (+ offset padding (string-length cursor)))
-         (define obj
-           (transform
-            #:dy top-dy
-            #:dx (* char-width pre-offset)
-            (string->sprites text)))
-         (define post-offset
-           (+ pre-offset (string-length text)))
-
-         (define selected
-           (cond
-             [(equal? (hash-ref st 'top #f) i)
-              (transform
-               #:dy top-dy
-               #:dx (* char-width (+ offset padding))
-               (string->sprites cursor))]
-             [else
-              empty]))
-
-         (values post-offset (list* selected obj l))))
-     l]
-    [(menu:list options)
-     (define (option-entry-height pos)
-       (+ (* char-height padding)
-          (* char-height (- (length options) pos))))
-     (for/list ([o (in-list options)]
-                [i (in-naturals)])
-       (match-define (menu:option text fun) o)
-       (cons (transform
-              #:dy (option-entry-height i)
-              #:dx (* padding char-width)
-              #:dx (* (string-length cursor) char-width)
-              (string->sprites text))
-             (cond
-               [(equal? (hash-ref st 'list #f) i)
-                (transform
-                 #:dx (* padding char-width)
-                 #:dy (option-entry-height i)
-                 (string->sprites cursor))]
-               [else
-                empty])))]
-    [(menu:status text)
-     (transform
-      #:dy char-height
-      #:dx (- crt-width (* char-width (+ padding (string-length text))))
-      (string->sprites text))]
-    [(menu:info texts)
-     (for/list ([text (in-list texts)]
-                [i (in-naturals)])
-       (transform
-        #:dy (- crt-height (* char-height (+ 3 i)))
-        #:dx (* char-width padding)
-        (string->sprites text)))]))
-
 (define (react-menu c st m)
   (match m
     [(cons fst rst)
@@ -171,6 +98,106 @@
     [(menu:info text)
      st]))
 
+(define (draw-menu:top st cm)
+  (match (filter menu:top? cm)
+    [(list)
+     (values 0 empty)]
+    ;; XXX check that doesn't go off the right
+    [(list (menu:top options))
+     (define top-dy (- crt-height char-height))
+     (define-values (_offset l)
+       (for/fold ([offset 0]
+                  [l empty])
+           ([o (in-list options)]
+            [i (in-naturals)])
+         (match-define (menu:option text fun) o)
+         (define pre-offset
+           (+ offset padding (string-length cursor)))
+         (define obj
+           (transform
+            #:dy top-dy
+            #:dx (* char-width pre-offset)
+            (string->sprites text)))
+         (define post-offset
+           (+ pre-offset (string-length text)))
+
+         (define selected
+           (cond
+             [(equal? (hash-ref st 'top #f) i)
+              (transform
+               #:dy top-dy
+               #:dx (* char-width (+ offset padding))
+               (string->sprites cursor))]
+             [else
+              empty]))
+
+         (values post-offset (list* selected obj l))))
+     (values char-height l)]))
+
+(define (draw-menu:bot st cm)
+  (for/fold ([bot-offset 0]
+             [bot-os empty])
+      ([m (in-list cm)])
+    (match m
+      [(menu:status text)
+       (define this-dy
+         (+ bot-offset char-height))
+       (values this-dy
+               (cons (transform
+                      #:dy this-dy
+                      #:dx (- crt-width (* char-width (+ padding (string-length text))))
+                      (string->sprites text))
+                     bot-os))]
+      [_
+       (values bot-offset bot-os)])))
+
+(define (draw-menu:list top-offset bot-offset st cm)
+  (match (filter menu:list? cm)
+    [(list)
+     (values 0 empty)]
+    ;; XXX check that doesn't go off the right
+    ;; XXX check that doesn't go down too far (and just restrict number displayed)
+    [(list (menu:list options))
+     (define (option-entry-height pos)
+       (* -1 (+ (* char-height (+ padding pos)))))
+     (transform
+      #:dy (- crt-height top-offset)
+      (values
+      (* char-width (+ padding (apply max (map (compose string-length menu:option-text) options))))
+      (for/list ([o (in-list options)]
+                 [i (in-naturals)])
+        (match-define (menu:option text fun) o)
+        (cons (transform
+               #:dy (option-entry-height i)
+               #:dx (* padding char-width)
+               #:dx (* (string-length cursor) char-width)
+               (string->sprites text))
+              (cond
+                [(equal? (hash-ref st 'list #f) i)
+                 (transform
+                  #:dx (* padding char-width)
+                  #:dy (option-entry-height i)
+                  (string->sprites cursor))]
+                [else
+                 empty])))))]))
+
+(define (draw-menu:info top-offset bot-offset left-offset st cm)
+  (match (filter menu:info? cm)
+    [(list)
+     empty]
+    ;; XXX make sure don't go too far down via bot-offset
+    ;; XXX make sure don't go off the screen to right
+    [(list (menu:info texts))
+     (transform
+      #:dy (- crt-height top-offset)
+      #:dx (+ left-offset (* char-width padding))
+      (for/list ([text (in-list texts)]
+                 [i (in-naturals)])
+        (transform
+         #:dy (* -1 char-height (+ padding i))
+         #:dx (* char-width padding)
+         (string->sprites text))))]))
+
 (define (render-menu #:back [back-f #f] m)
   (let loop ([st (hasheq)])
     (define c (os/read* 'controller))
@@ -178,10 +205,17 @@
     (define cm
       (flatten-menu st m))
 
+    (define-values (top-offset top-os) (draw-menu:top st cm))
+    (define-values (bot-offset bot-os) (draw-menu:bot st cm))
+    (when (< (- crt-height top-offset) bot-offset)
+      (error 'menu "Top and bot overlap"))
+    (define-values (left-offset left-os) (draw-menu:list top-offset bot-offset st cm))
+    (define right-os (draw-menu:info top-offset bot-offset left-offset st cm))
+
     (os/write
      (list
       (cons 'graphics
-            (cons 0 (draw-menu st cm)))))
+            (cons 0 (list* top-os bot-os left-os right-os)))))
 
     (define new-st
       (react-menu c st cm))
