@@ -1,7 +1,4 @@
 * General TODO items
-** TODO menu system - display the list better
-   The font is ugly. It would be nice if it was on the right or in
-   the middle, etc. Like Dragon Quest?
 ** TODO add checks for menu overlaps
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
@@ -938,3 +935,7 @@
 
 ** DONE menu - don't use fixed symbols for state
    CLOSED: [2013-01-04 Fri 09:07]
+** DONE menu system - display the list better
+   CLOSED: [2013-01-04 Fri 13:51]
+   The font is ugly. It would be nice if it was on the right or in
+   the middle, etc. Like Dragon Quest?

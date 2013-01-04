@@ -105,34 +105,40 @@
     ;; XXX check that doesn't go off the right
     [(list (menu:top code options))
      (define top-dy (- crt-height char-height))
-     (define-values (_offset l)
-       (for/fold ([offset 0]
-                  [l empty])
-           ([o (in-list options)]
-            [i (in-naturals)])
-         (match-define (menu:option text fun) o)
-         (define pre-offset
-           (+ offset padding (string-length cursor)))
-         (define obj
-           (transform
-            #:dy top-dy
-            #:dx (* char-width pre-offset)
-            (string->sprites text)))
-         (define post-offset
-           (+ pre-offset (string-length text)))
+     (transform
+      #:dy top-dy
+      (define-values (final-offset l)
+        (for/fold ([offset 0]
+                   [l empty])
+            ([o (in-list options)]
+             [i (in-naturals)])
+          (match-define (menu:option text fun) o)
+          (define pre-offset
+            (+ offset padding (string-length cursor)))
+          (define obj
+            (transform
+             #:dx (* char-width pre-offset)
+             (string->sprites text)))
+          (define post-offset
+            (+ pre-offset (string-length text)))
 
-         (define selected
-           (cond
-             [(equal? (hash-ref st code #f) i)
-              (transform
-               #:dy top-dy
-               #:dx (* char-width (+ offset padding))
-               (string->sprites cursor))]
-             [else
-              empty]))
+          (define selected
+            (cond
+              [(equal? (hash-ref st code #f) i)
+               (transform
+                #:dx (* char-width (+ offset padding))
+                (string->sprites cursor))]
+              [else
+               empty]))
 
-         (values post-offset (list* selected obj l))))
-     (values char-height l)]))
+          (values post-offset (list* selected obj l))))
+      (values char-height
+              (cons l
+                    (draw-menu-box
+                     (/ (* char-width (+ final-offset 1)) 2)
+                     (/ (* char-height .25) 2)
+                     (* char-width (- final-offset padding))
+                     char-height))))]))
 
 (define (draw-menu:bot st cm)
   (for/fold ([bot-offset 0]
@@ -145,7 +151,10 @@
        (values this-dy
                (cons (transform
                       #:dy this-dy
-                      #:dx (- crt-width (* char-width (+ padding (string-length text))))
+                      #:dx (- crt-width
+                              (* char-width
+                                 (+ padding
+                                    (string-length text))))
                       (string->sprites text))
                      bot-os))]
       [_
@@ -160,26 +169,43 @@
     [(list (menu:list code options))
      (define (option-entry-height pos)
        (* -1 (+ (* char-height (+ padding pos)))))
-     (transform
-      #:dy (- crt-height top-offset)
-      (values
-      (* char-width (+ padding (apply max (map (compose string-length menu:option-text) options))))
-      (for/list ([o (in-list options)]
-                 [i (in-naturals)])
-        (match-define (menu:option text fun) o)
-        (cons (transform
-               #:dy (option-entry-height i)
-               #:dx (* padding char-width)
-               #:dx (* (string-length cursor) char-width)
-               (string->sprites text))
-              (cond
-                [(equal? (hash-ref st code #f) i)
-                 (transform
-                  #:dx (* padding char-width)
-                  #:dy (option-entry-height i)
-                  (string->sprites cursor))]
-                [else
-                 empty])))))]))
+     (define longest-option-len
+       (+ (string-length cursor)
+          (apply max
+                 (map (compose string-length
+                               menu:option-text)
+                      options))))
+     (values
+      (* char-width
+         (+ padding
+            longest-option-len))
+      (transform
+       #:dy (- crt-height top-offset)
+       #:dx (* padding char-width)
+       (cons (for/list ([o (in-list options)]
+                        [i (in-naturals)])
+               (match-define (menu:option text fun) o)
+               (transform
+                #:dy (option-entry-height i)
+                (cons (transform
+                       #:dx (* (string-length cursor) char-width)
+                       (string->sprites text))
+                      (cond
+                        [(equal? (hash-ref st code #f) i)
+                         (string->sprites cursor)]
+                        [else
+                         empty]))))
+             (draw-menu-box (/ (* char-width (- longest-option-len .5)) 2)
+                            (/ (* -1 char-height (+ (length options) 3)) 2)
+                            (* char-width longest-option-len)
+                            (* -1 char-height (length options))))))]))
+
+(define (draw-menu-box cx cy w h)
+  (define hw (/ w 2.0))
+  (define hh (/ h 2.0))
+  (transform #:d cx cy
+             #:rgba (/ 207.0 255.0) (/ 227.0 255.0) (/ 255.0 255.0) 1.0
+             (rectangle hw hh)))
 
 (define (draw-menu:info top-offset bot-offset left-offset st cm)
   (match (filter menu:info? cm)
