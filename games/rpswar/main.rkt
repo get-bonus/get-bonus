@@ -172,7 +172,7 @@
        (loop ns)))))
 
 (define game
-  (game-info 'rpswar "Rock-Paper-Scissors Warrior"
+  (game-info 'rpswar "RPS War"
              2 random-generate
              (random-start game-start)))
 
