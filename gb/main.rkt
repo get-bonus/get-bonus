@@ -4,6 +4,7 @@
          racket/list
          racket/match
          racket/date
+         math/base
          gb/audio/3s
          gb/data/psn
          gb/gui/os
@@ -74,6 +75,13 @@
      (equal? version (game-info-version (hash-ref game-code->info id)))]
     [(_ _)
      #f]))
+
+(define (card-game c)
+  (match* ((card-id c) (card-data c))
+    [((? symbol? id) #f)
+     id]
+    [(_ (ldata id version _))
+     id]))
 
 (define (play-game gi)
   (match-define (game-info id name version generate start)
@@ -182,46 +190,73 @@
       (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
 
      (define main
-       (menu:top
-        (list
-         (menu:option
-          "Games"
-          (λ ()
-            (menu:list
-             (for/list ([g (in-list games)])
-               (menu:option
-                (game-info-name g)
-                (λ ()
-                  (define history
-                    (append-map card-history
-                                (game-cards
-                                 (game-info-id g))))
+       (list
+        (λ ()
+          (define (attempt-this-session? a)
+            (define d (attempt-data a))
+            (and (adata? d)
+                 (equal? (current-play-session)
+                         (adata-play-session d))))
+          (define these-cards
+            (filter (λ (c)
+                      (not (empty? (filter attempt-this-session? (card-history c)))))
+                    (srs-cards (current-srs))))
+          (define these-attempts
+            (filter attempt-this-session?
+                    (append-map card-history these-cards)))
+          (menu:status
+           (format "Session: ~a Games: ~a Attempts: ~a Time: ~a"
+                   (current-play-session)
+                   (length
+                    (remove-duplicates
+                     (map card-game
+                          these-cards)))
+                   (length
+                    these-attempts)
+                   (time-format
+                    (sum
+                     (map attempt-length
+                          these-attempts))))))
+        (menu:top
+         (list
+          (menu:option
+           "Games"
+           (λ ()
+             (menu:list
+              (for/list ([g (in-list games)])
+                (menu:option
+                 (game-info-name g)
+                 (λ ()
+                   (define history
+                     (append-map card-history
+                                 (game-cards
+                                  (game-info-id g))))
 
-                  (list (menu:status "Play the game?")
-                        (menu:info (history->info-screen-list history))
-                        (menu:action (λ () (play-game g))))))))))
-         (menu:option
-          "Cards"
-          (λ ()
-            (menu:list
-             (for/list ([c (in-list (srs-cards (current-srs)))]
-                        #:when (recent-card? c))
-               (match-define (card id sort-score data history) c)
-               (menu:option
-                (format "~a" id)
-                (λ ()
-                  (list
-                   (menu:status "Play the card?")
-                   (menu:info
-                    (list*
-                     (format "    Game: ~a"
-                             (match data
-                               [#f id]
-                               [(ldata game _ _) game]))
-                     (format "    Sort: ~a"
-                             (real->decimal-string sort-score))
-                     (history->info-screen-list history)))
-                   (menu:action (λ () (play-card c)))))))))))))
+                   (list (menu:status "Play the game?")
+                         (menu:info (history->info-screen-list history))
+                         (menu:action (λ () (play-game g))))))))))
+          (menu:option
+           "Cards"
+           (λ ()
+             (menu:list
+              (for/list ([c (in-list (srs-cards (current-srs)))]
+                         #:when (recent-card? c))
+                (match-define (card id sort-score data history) c)
+                (menu:option
+                 (format "~a" id)
+                 (λ ()
+                   (list
+                    (menu:status "Play the card?")
+                    (menu:info
+                     (list*
+                      (format "    Game: ~a"
+                              (match data
+                                [#f id]
+                                [(ldata game _ _) game]))
+                      (format "    Sort: ~a"
+                              (real->decimal-string sort-score))
+                      (history->info-screen-list history)))
+                    (menu:action (λ () (play-card c))))))))))))))
 
      (render-menu #:back (λ () (os/exit 0))
                   main))))

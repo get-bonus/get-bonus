@@ -32,6 +32,8 @@
      (cons (draw-menu st fst) (draw-menu st rst))]
     [(? empty?)
      empty]
+    [(? procedure? p)
+     (draw-menu st (p))]
     [(menu:action _)
      empty]
     [(menu:auto _ _)
@@ -107,6 +109,8 @@
      (react-menu c (react-menu c st fst) rst)]
     [(? empty?)
      st]
+    [(? procedure? p)
+     (react-menu c st (p))]
     [(menu:action fun)
      (when (or (controller-start-down c)
                (controller-b-down c))
