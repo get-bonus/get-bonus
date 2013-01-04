@@ -59,7 +59,7 @@
                 (list (menu:auto 'next (λ () (return next))))
                 empty)))))
   (define (next-menu next)
-    (menu:list (list (string next "Next" "Advance to next message." 'next))))
+    (menu:list 'nextm (list (string next "Next    " "Advance to next message." 'next))))
   (match w
     [(start match# ai)
      (define next (user-input match# ai 1 0 (fst-start ai)))
@@ -78,11 +78,11 @@
                        (format-fst ai state)
                        ""
                        (format "What will you throw down?")))
-      (menu:list (for/list ([ui (in-list '(r p s))])
-                   (string (next ui)
-                           (rps->string ui)
-                           (format "Throw down a ~a"
-                                   (rps->string ui))))))]
+      (menu:list 'rps (for/list ([ui (in-list '(r p s))])
+                        (string (next ui)
+                                (rps->string ui)
+                                (format "Throw down a ~a"
+                                        (rps->string ui))))))]
     [(computer-input match# ai round# wins state ui)
      (define next
        (resolve match# ai round# wins state ui (fst-output ai state)))

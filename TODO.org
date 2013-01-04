@@ -2,7 +2,7 @@
 ** TODO menu system - display the list better
    The font is ugly. It would be nice if it was on the right or in
    the middle, etc. Like Dragon Quest?
-** TODO menu - don't use fixed symbols for state
+** TODO add checks for menu overlaps
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -935,3 +935,6 @@
    CLOSED: [2013-01-04 Fri 07:18]
 ** DONE SRS - double check that a level doesn't already exist in db
    CLOSED: [2013-01-04 Fri 07:18]
+
+** DONE menu - don't use fixed symbols for state
+   CLOSED: [2013-01-04 Fri 09:07]

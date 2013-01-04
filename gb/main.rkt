@@ -221,11 +221,13 @@
                           (append-map card-history
                                       (srs-cards (current-srs)))))))))
         (menu:top
+         'top
          (list
           (menu:option
            "Games"
            (λ ()
              (menu:list
+              'games
               (for/list ([g (in-list games)])
                 (menu:option
                  (game-info-name g)
@@ -242,6 +244,7 @@
            "Cards"
            (λ ()
              (menu:list
+              'cards
               (for/list ([c (in-list (srs-cards (current-srs)))]
                          #:when (recent-card? c))
                 (match-define (card id sort-score data history) c)

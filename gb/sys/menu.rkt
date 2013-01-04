@@ -7,8 +7,8 @@
          gb/input/controller
          gb/graphics/ngl-main)
 
-(struct menu:top (options) #:transparent)
-(struct menu:list (options) #:transparent)
+(struct menu:top (code options) #:transparent)
+(struct menu:list (code options) #:transparent)
 (struct menu:option (text fun) #:transparent)
 (struct menu:info (str) #:transparent)
 (struct menu:status (str) #:transparent)
@@ -39,12 +39,12 @@
      (list m)]
     [(menu:auto _ _)
      (list m)]
-    [(menu:top options)
-     (define i (hash-ref st 'top 0))
+    [(menu:top code options)
+     (define i (hash-ref st code 0))
      (match-define (menu:option text fun) (list-ref options i))
      (list* m (flatten-menu st (fun)))]
-    [(menu:list options)
-     (define i (hash-ref st 'list 0))
+    [(menu:list code options)
+     (define i (hash-ref st code 0))
      (match-define (menu:option text fun) (list-ref options i))
      (list* m (flatten-menu st (fun)))]
     [(menu:status text)
@@ -69,8 +69,8 @@
      (when (zero? frames)
        (fun))
      (hash-set st id (sub1 frames))]
-    [(menu:top options)
-     (define pos (hash-ref st 'top 0))
+    [(menu:top code options)
+     (define pos (hash-ref st code 0))
      (define mod
        (cond
          [(controller-l-down c) -1]
@@ -80,9 +80,9 @@
        (modulo (+ pos mod)
                (length options)))
 
-     (hash-set st 'top pos+)]
-    [(menu:list options)
-     (define pos (hash-ref st 'list 0))
+     (hash-set st code pos+)]
+    [(menu:list code options)
+     (define pos (hash-ref st code 0))
      (define mod
        (cond
          [(controller-up-down c)   -1]
@@ -92,7 +92,7 @@
        (modulo (+ pos mod)
                (length options)))
 
-     (hash-set st 'list pos+)]
+     (hash-set st code pos+)]
     [(menu:status text)
      st]
     [(menu:info text)
@@ -103,7 +103,7 @@
     [(list)
      (values 0 empty)]
     ;; XXX check that doesn't go off the right
-    [(list (menu:top options))
+    [(list (menu:top code options))
      (define top-dy (- crt-height char-height))
      (define-values (_offset l)
        (for/fold ([offset 0]
@@ -123,7 +123,7 @@
 
          (define selected
            (cond
-             [(equal? (hash-ref st 'top #f) i)
+             [(equal? (hash-ref st code #f) i)
               (transform
                #:dy top-dy
                #:dx (* char-width (+ offset padding))
@@ -157,7 +157,7 @@
      (values 0 empty)]
     ;; XXX check that doesn't go off the right
     ;; XXX check that doesn't go down too far (and just restrict number displayed)
-    [(list (menu:list options))
+    [(list (menu:list code options))
      (define (option-entry-height pos)
        (* -1 (+ (* char-height (+ padding pos)))))
      (transform
@@ -173,7 +173,7 @@
                #:dx (* (string-length cursor) char-width)
                (string->sprites text))
               (cond
-                [(equal? (hash-ref st 'list #f) i)
+                [(equal? (hash-ref st code #f) i)
                  (transform
                   #:dx (* padding char-width)
                   #:dy (option-entry-height i)
