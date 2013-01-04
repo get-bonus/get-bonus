@@ -193,10 +193,8 @@
        (list
         (λ ()
           (define (attempt-this-session? a)
-            (define d (attempt-data a))
-            (and (adata? d)
-                 (equal? (current-play-session)
-                         (adata-play-session d))))
+            (equal? (current-play-session)
+                    (adata-play-session (attempt-data a))))
           (define these-cards
             (filter (λ (c)
                       (not (empty? (filter attempt-this-session? (card-history c)))))
@@ -286,7 +284,8 @@
   (for ([gi (in-list games)])
     (match-define (game-info id _ version generate _) gi)
     (set-srs-generator! the-srs id
-                        (λ () (ldata id version (generate)))))
+                        (λ () (values (ldata id version (generate))
+                                      (adata play-session #f)))))
 
   (command-line
    #:program "get-bonus"

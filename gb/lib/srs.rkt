@@ -66,7 +66,7 @@
   (define id-card (srs-generator-card a-db id))
   (define generator (hash-ref id->generator id))
   (define start (get-time))
-  (define new-data (generator))
+  (define-values (new-data gen-adata) (generator))
   (cond
     [(memf (λ (c) (equal? new-data (card-data c))) cards)
      (srs-generate! a-db id get-time)]
@@ -75,7 +75,7 @@
      (define new-id next-id)
      (define new-card (card new-id 1.0 new-data empty))
      (set-db-next-id! a-db (add1 next-id))
-     (srs-card-attempt! a-db id-card (attempt start end 1.0 #f))
+     (srs-card-attempt! a-db id-card (attempt start end 1.0 gen-adata))
      (srs-add-card! a-db new-card)
      new-card]))
 
@@ -141,8 +141,13 @@
   (delete-file t)
 
   (define a-db (srs t))
-  (set-srs-generator! a-db 'maze (λ () (vector 'maze (next))))
-  (set-srs-generator! a-db 'tennis (λ () (vector 'tennis (next))))
+  (set-srs-generator! a-db 'maze
+                      (λ () (values (vector 'maze
+                                            (next))
+                                    #f)))
+  (set-srs-generator! a-db 'tennis
+                      (λ () (values (vector 'tennis (next))
+                                    #f)))
   (test-equal? "Initial database"
                (srs-cards a-db)
                (list (card 'tennis 1.0 #f empty)
@@ -151,10 +156,10 @@
   (srs-next
    a-db 0
    (λ (c0)
-     (test-equal? "First card" c0 (card 2 1.0 (vector 'tennis 0) empty))
+     (test-equal? "First card" c0 (card 0 1.0 (vector 'tennis 0) empty))
      (test-equal? "Database after generate"
                   (srs-cards a-db)
-                  (list (card 2 1.0 (vector 'tennis 0) empty)
+                  (list (card 0 1.0 (vector 'tennis 0) empty)
                         (card 'maze 1.0 #f empty)
                         (card 'tennis 2.0 #f
                               (list (attempt 0 0 1.0 #f)))))
@@ -162,18 +167,23 @@
   (test-equal? "Database after first attempt"
                (srs-cards a-db)
                (list (card 'maze 1.0 #f empty)
-                     (card 2 2.0 (vector 'tennis 0)
+                     (card 0 2.0 (vector 'tennis 0)
                            (list (attempt 0 1 1.0 0)))
                      (card 'tennis 2.0 #f
                            (list (attempt 0 0 1.0 #f)))))
 
   (define new-a-db (srs t))
-  (set-srs-generator! new-a-db 'maze (λ () (vector 'maze (next))))
-  (set-srs-generator! new-a-db 'tennis (λ () (vector 'tennis (next))))
+  (set-srs-generator! new-a-db 'maze
+                      (λ () (values (vector 'maze
+                                            (next))
+                                    #f)))
+  (set-srs-generator! new-a-db 'tennis
+                      (λ () (values (vector 'tennis (next))
+                                    #f)))
   (test-equal? "Database after re-read"
                (srs-cards new-a-db)
                (list (card 'maze 1.0 #f empty)
-                     (card 2 2.0 (vector 'tennis 0)
+                     (card 0 2.0 (vector 'tennis 0)
                            (list (attempt 0 1 1.0 0)))
                      (card 'tennis 2.0 #f
                            (list (attempt 0 0 1.0 #f))))))
@@ -182,7 +192,7 @@
  (contract-out
   [rename db? srs? flat-contract]
   [srs (-> path-string? db?)]
-  [set-srs-generator! (-> db? symbol? (-> any/c) void?)]
+  [set-srs-generator! (-> db? symbol? (-> (values any/c any/c)) void?)]
   [struct card ([id (or/c symbol? exact-nonnegative-integer?)]
                 [sort real?]
                 [data any/c]
