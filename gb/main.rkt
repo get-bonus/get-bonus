@@ -53,20 +53,24 @@
 (define (snoc l x)
   (append l (list x)))
 
+(struct ldata (game-id game-version level) #:prefab)
+(struct replay (prng-state input) #:prefab)
+(struct adata (play-session replay) #:prefab)
+
 (define current-srs (make-parameter #f))
 
 (define (game-cards id)
   (for/list ([c (in-list (srs-cards (current-srs)))]
              #:when (recent-card? c)
-             #:when (and (vector? (card-data c))
-                         (equal? id (vector-ref (card-data c) 0))))
+             #:when (and (ldata? (card-data c))
+                         (equal? id (ldata-game-id (card-data c)))))
     c))
 
 (define (recent-card? c)
   (match* ((card-id c) (card-data c))
     [(_ #f)
      #t]
-    [(_ (vector id version _))
+    [(_ (ldata id version _))
      (equal? version (game-info-version (hash-ref game-code->info id)))]
     [(_ _)
      #f]))
@@ -74,10 +78,10 @@
 (define (play-game gi)
   (match-define (game-info id name version generate start)
                 gi)
-  (define game-cards (game-cards id))
+  (define gcs (game-cards id))
   (define the-card
-    (or (and (not (empty? game-cards))
-             (first game-cards))
+    (or (and (not (empty? gcs))
+             (first gcs))
         (srs-generate! (current-srs) id
                        current-inexact-milliseconds)))
   (play-card the-card))
@@ -89,7 +93,7 @@
       (srs-generate! (current-srs) id
                      current-inexact-milliseconds))]
     [_
-     (match-define (vector id _ level) (card-data the-card))
+     (match-define (ldata id _ level) (card-data the-card))
      (match-define (game-info _ name version generate start)
                    (hash-ref game-code->info id))
      (define start-time (current-inexact-milliseconds))
@@ -97,9 +101,13 @@
      (define end-time (current-inexact-milliseconds))
      (printf "~a,~a -> ~a\n"
              version level score)
-     (srs-card-attempt! (current-srs) the-card
-                        ;; XXX The replay would go in this #f's spot
-                        (attempt start-time end-time score (current-play-session)))
+     (srs-card-attempt!
+      (current-srs) the-card
+      ;; XXX The replay would go in this #f's spot
+      (attempt start-time end-time score
+               (adata
+                (current-play-session)
+                #f)))
      (void)]))
 
 (define (attempt-length a)
@@ -184,7 +192,7 @@
                      (format " Game: ~a"
                              (match data
                                [#f id]
-                               [(vector game _ _) game]))
+                               [(ldata game _ _) game]))
                      (format " Sort: ~a"
                              (real->decimal-string sort-score))
                      (history->info-screen-list history)))
@@ -213,7 +221,7 @@
   (for ([gi (in-list games)])
     (match-define (game-info id _ version generate _) gi)
     (set-srs-generator! the-srs id
-                        (λ () (vector id version (generate)))))
+                        (λ () (ldata id version (generate)))))
 
   (command-line
    #:program "get-bonus"
