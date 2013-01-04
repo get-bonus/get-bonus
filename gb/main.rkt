@@ -111,8 +111,8 @@
      (void)]))
 
 (define (attempt-length a)
-  (/ (- (attempt-end a) (attempt-start a)) 1000))
-(define (stats-string l)
+  (- (attempt-end a) (attempt-start a)))
+(define (stats-string l #:fmt [fmt real->decimal-string])
   (let/ec return
     (when (empty? l)
       (return "N/A"))
@@ -121,33 +121,58 @@
     (define mean.v (/ (apply + l) (length l)))
     (define median.v (list-ref (sort l <) (floor (/ (length l) 2))))
     (apply format "[~a --| (~a|~a) |-- ~a]"
-           (map real->decimal-string
+           (map fmt
                 (list min.v
                       median.v
                       mean.v
                       max.v)))))
 
+(define (time-format ot)
+  (define-values
+    (t tu)
+    (let/ec return
+      (for/fold ([t ot]
+                 [tu "ms"])
+          ([n*u (in-list '((1000 "s") (60 "m") (60 "h")
+                           (24 "d") (7 "w")
+                           (52 "y")))])
+        (match-define (list n u) n*u)
+        (if (>= t n)
+          (values (/ t n) u)
+          (return t tu)))))
+  (format "~a~a"
+          (real->decimal-string t)
+          tu))
+
 (define (history->info-screen-list history)
   (list
-   (format "Score: ~a"
+   (format "Attempts: ~a"
+           (length history))
+   (format "   Score: ~a"
            (stats-string (map attempt-score
                               history)))
-   (format " Time: ~a"
+   (format "    Time: ~a"
            (stats-string (map attempt-length
-                              history)))
-   (format " Last: ~a"
+                              history)
+                         #:fmt time-format))
+   (format "    Last: ~a"
            (parameterize ([date-display-format
                            'iso-8601])
              (define attempts
-               (sort (map attempt-start
-                          history)
-                     <))
-             (if (empty? attempts)
-               "N/A"
-               (date->string
-                (seconds->date
-                 (/ (first attempts) 1000))
-                #t))))))
+               (sort history
+                     <
+                     #:key attempt-start))
+             (cond
+               [(empty? attempts)
+                "N/A"]
+               [else
+                (define last (first attempts))
+                (format "~a - ~a"
+                        (adata-play-session (attempt-data last))
+                        (date->string
+                         (seconds->date
+                          (/ (attempt-start last) 1000))
+                         #t))])))))
 
 (define (go)
   (big-bang/os
@@ -189,11 +214,11 @@
                    (menu:status "Play the card?")
                    (menu:info
                     (list*
-                     (format " Game: ~a"
+                     (format "    Game: ~a"
                              (match data
                                [#f id]
                                [(ldata game _ _) game]))
-                     (format " Sort: ~a"
+                     (format "    Sort: ~a"
                              (real->decimal-string sort-score))
                      (history->info-screen-list history)))
                    (menu:action (λ () (play-card c)))))))))))))
