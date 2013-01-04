@@ -67,13 +67,17 @@
   (define generator (hash-ref id->generator id))
   (define start (get-time))
   (define new-data (generator))
-  (define end (get-time))
-  (define new-id next-id)
-  (define new-card (card new-id 1.0 new-data empty))
-  (set-db-next-id! a-db (add1 next-id))
-  (srs-card-attempt! a-db id-card (attempt start end 1.0 #f))
-  (srs-add-card! a-db new-card)
-  new-card)
+  (cond
+    [(memf (λ (c) (equal? new-data (card-data c))) cards)
+     (srs-generate! a-db id get-time)]
+    [else
+     (define end (get-time))
+     (define new-id next-id)
+     (define new-card (card new-id 1.0 new-data empty))
+     (set-db-next-id! a-db (add1 next-id))
+     (srs-card-attempt! a-db id-card (attempt start end 1.0 #f))
+     (srs-add-card! a-db new-card)
+     new-card]))
 
 (define (mapmax f l)
   (match l
