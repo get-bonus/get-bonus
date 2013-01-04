@@ -74,8 +74,10 @@
 (define (play-game gi)
   (match-define (game-info id name version generate start)
                 gi)
+  (define game-cards (game-cards id))
   (define the-card
-    (or (first (game-cards id))
+    (or (and (not (empty? game-cards))
+             (first game-cards))
         (srs-generate! (current-srs) id
                        current-inexact-milliseconds)))
   (play-card the-card))
@@ -128,11 +130,16 @@
    (format " Last: ~a"
            (parameterize ([date-display-format
                            'iso-8601])
-             (define last
-               (first (sort (map attempt-start
-                                 history)
-                            <)))
-             (date->string (seconds->date (/ last 1000)) #t)))))
+             (define attempts
+               (sort (map attempt-start
+                          history)
+                     <))
+             (if (empty? attempts)
+               "N/A"
+               (date->string
+                (seconds->date
+                 (/ (first attempts) 1000))
+                #t))))))
 
 (define (go)
   (big-bang/os
@@ -197,7 +204,7 @@
   (define the-srs (srs (build-path user "srs.db")))
 
   (define play-session-pth (build-path user "play.session"))
-  (define play-session 
+  (define play-session
     (if (file-exists? play-session-pth)
       (add1 (file->value play-session-pth))
       0))

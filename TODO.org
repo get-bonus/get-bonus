@@ -1,4 +1,184 @@
 * General TODO items
+** TODO SRS - add a way to convert from one version of a level to new ones
+** TODO SRS - double check that a level doesn't already exist in db
+** TODO menu system - display the list better
+   The font is ugly. It would be nice if it was on the right or in
+   the middle, etc. Like Dragon Quest?
+** TODO NGL - tennis - it seems like the ball goes too low
+   Also, if you try to bring the paddle to the top, it doesn't draw
+   the whole way
+** TODO NGL - Investigate the interaction of depth testing with transparency
+   At the very least, I should be able to have fully opaque or fully
+   transparent texture colors and get it to work. It is possible that
+   I will have to call discard() in the fragment shader to ignore the
+   effect on the depth buffer of the fully transparent texture
+
+   Ideally, I'd be able to draw every sprite from back to front and
+   get perfect transparencies.
+
+   It might be more feasible to make layers something NGL knows about
+   and have it draw each layer into a separate screen-sized texture
+   that are all blended together afterward. (The SNES had only one
+   layer that could be transparent over the others.)
+
+   Also, here's another idea that uses front-to-back drawing order:
+   http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
+
+   Investigate this.
+** TODO NGL - Figure out the proper way to do texture/color blending
+   Right now I only support fully color or fully texture. It would be
+   nice to support a tinted texture
+** TODO NGL - See if I need to set up culling specially
+   And perhaps cull slightly wider than that the screen because I
+   believe culling happens before geometry shaders (?) so I need to
+   make sure the point is in the cull
+
+   [Not relevant until I have games with relative layers]
+** TODO libretro - what if I used libretro rather than GLFW?
+   It already has a nice shader system, input api
+   
+   The main problem seems to be that it would make it so I can't use
+   OpenAL directly, because you need to return audio data per frame
+** TODO GLFW - Wait for getting the string identifiers of joysticks
+** TODO GLFW - Wait for consistent joystick state intra-frame
+   So glfwPollEvents calls pollJoystickEvents and Win32 caches
+** TODO Make a tool for downloading the copyrighted images/music
+   List the URL, a checksum, and then have the tool download them if
+   they aren't there and verify if they are.
+** TODO Use SNES sprites for Ms. Pac-Man in maze
+** TODO tennis - balls can bounce infinitely off wall and get stuck
+** TODO OS suppress updates
+   Make a critical region system call that gives a process sole access
+   to the system... leaving the other processes stalled with their last
+   writes persisting from frame to frame
+   
+   This might be a good way to implement "friction" or "bullet time" as
+   well as other effects, like menus.
+   
+   Just an idea. Might be a bad idea?
+** TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
+** TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
+** TODO tennis - score based on total number of balls in play
+** TODO Connect scores to online database
+** TODO Make games return replays (and allow them to accept replays)
+   Replay = (random seed, level, controller stream)
+** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
+** TODO Add "compare with ..." to game info and display
+** TODO SRS - Automatically go to the next card
+** TODO SRS - Deal with games that have a win condition
+   (so that you don't get too much credit if you don't actually win,
+   even if you did better than before?)
+** TODO SRS - Don't play a level/game more than X times in a row
+** TODO SRS - Don't play a level/game for longer than X minutes in a row
+** TODO Include workrave like system in dashboard
+** TODO Make icons for dashboards vs text
+   Or mimic the Wii interface
+** TODO Make games in dashboard have capabilities
+   1P, 2P Round-robin, 2P VS, 2P Co-op, etc
+** TODO Make play modes in dashboard
+   Single, King-of-the-Hill (play levels that your score has been
+   beaten on), Training (improve your score, SRS style), Round-Robin
+   (play all games)
+
+   Have it so you can highlight games to be played that way
+** TODO Death scream like Ziggurat (in dashboard?)
+   Or other stingers, but worry about being too annoying and not
+   instant restarting
+** TODO Find a unified common score display
+   Should I display all points: this session / this game / all games?
+** TODO Return achievements (to dashboard)
+** TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
+** TODO Read about and implement juiciness
+   http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
+   
+   https://github.com/grapefrukt/juicy-breakout
+
+   http://www.youtube.com/watch?v=tVLb-I5i5ys&feature=youtu.be&a
+
+   http://tnns.rabbx.com/
+** TODO Tennis - ugly score display
+** TODO Tennis - revisit use of paddle bounce
+** TODO Write a generic Godel-encoding library
+   http://logic.cse.unt.edu/tarau/index.html
+
+   http://code.google.com/p/bijective-goedel-numberings/
+
+   http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
+** TODO RPS - generate FSTs differently (with godel encoding)
+** TODO Figure out a way to do localization well
+   gettext
+** TODO Make more games
+** TODO The Get Bonus rendering system should have built-in support for TATE games
+   Virtual, Rotate Left, and Rotate Right
+** TODO NGL - Add absolute and relative layers
+   For example, the score display is absolute, but the game is
+   relative (my games don't use this concept yet)
+** TODO See if I can record a video directly
+   http://revel.sourceforge.net/docs/html/revel_8h.html#a30
+** TODO Allow multi-pass shaders (such as CRT halation)
+   See libretro or retroarch
+
+   And maybe use Cg rather than GLSL
+** TODO Experiment with located events (in a 2D mesh) rather than flat events
+** TODO Try to get OpenGL to do collision detection for me
+   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
+** TODO 2D Lighting
+   https://www.youtube.com/watch?v=fsbECSpwtig
+** TODO Winners Don't Do Drugs and other intro screens
+** TODO rpswar - render fst graphically
+** TODO Figure out a way to allow and use palettes effectively
+* Tool and related-app ideas
+** TODO Master Grafx2 or aseprite or make my own keyboard based system
+   https://code.google.com/p/grafx2/
+** TODO Add challenges/achievements/training to NES/SNES games
+   Hook up with an emulator core to drop into a game with save states
+   and then monitor its execution for score, etc
+
+   Can you beat this Mega Man stage with one life?
+
+   How fast can you do X in this game?
+
+   Wrap this in a package that switches from game to game like I
+   want... it may be perfection
+
+** TODO Implement Boxing iPhone game
+   Like Punch-Out!!!
+   
+   Five "buttons": punch left/right, dodge left/right, block. The
+   upper quadrants for punching, the bottom for dodging, and the
+   middle for blocking.
+   
+   Randomly generate winning sequences of input, then from them
+   determine what the bad guy does... for example if to win you dodge
+   left, then he should punch right.
+   
+   After going through this sequence, it just repeats.
+   
+   Manually design 10 or so cues that indicate an upcoming action
+   (like twitching eye brows, shaking, hand/leg shuffle, etc)
+   
+   Aim for completing a match in 1 to 2 minutes
+   
+   Shake the phone to get up
+** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
+** TODO Make something for Racket/emacs to find out what deps aren't needed
+** TODO Make Optimization Coach + Macro Stepper available via Emacs
+* Optimization ideas
+** TODO Make OS use futures for parallelism
+   First experiment, 2012/07/01 failed... got a slower frame rate. I
+   think the key is to make it just a future during the time that GL is
+   rendering.
+** TODO Convert things to typed racket
+** TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
+   Will the GLSL compiler do it anyways?
+** TODO NGL - cache shader vector modifications to skip some parts of object tree
+   premature optimization
+** TODO NGL - cache shader vector uploads to skip some segments
+   premature optimization
+
+   (Probably not useful, because I hit very high frame rates even when
+   updating vectors thousands of elements long)
+* Done
 ** DONE Move tests into test submodules
    CLOSED: [2012-05-25 Fri 01:23]
 ** DONE Write a makefile that runs all the tests with raco test
@@ -751,180 +931,3 @@
    CLOSED: [2013-01-03 Thu 11:09]
 ** DONE SRS - Keep track of "play session" and connect the concept of "in a row" to play session
    CLOSED: [2013-01-03 Thu 11:20]
-** TODO menu system - display the list better
-   The font is ugly. It would be nice if it was on the right or in
-   the middle, etc. Like Dragon Quest?
-** TODO NGL - tennis - it seems like the ball goes too low
-   Also, if you try to bring the paddle to the top, it doesn't draw
-   the whole way
-** TODO NGL - Investigate the interaction of depth testing with transparency
-   At the very least, I should be able to have fully opaque or fully
-   transparent texture colors and get it to work. It is possible that
-   I will have to call discard() in the fragment shader to ignore the
-   effect on the depth buffer of the fully transparent texture
-
-   Ideally, I'd be able to draw every sprite from back to front and
-   get perfect transparencies.
-
-   It might be more feasible to make layers something NGL knows about
-   and have it draw each layer into a separate screen-sized texture
-   that are all blended together afterward. (The SNES had only one
-   layer that could be transparent over the others.)
-
-   Also, here's another idea that uses front-to-back drawing order:
-   http://my.opera.com/Vorlath/blog/2008/01/15/opengl-drawing-2d-transparent-objects-front-to-back
-
-   Investigate this.
-** TODO NGL - Figure out the proper way to do texture/color blending
-   Right now I only support fully color or fully texture. It would be
-   nice to support a tinted texture
-** TODO NGL - See if I need to set up culling specially
-   And perhaps cull slightly wider than that the screen because I
-   believe culling happens before geometry shaders (?) so I need to
-   make sure the point is in the cull
-
-   [Not relevant until I have games with relative layers]
-** TODO libretro - what if I used libretro rather than GLFW?
-   It already has a nice shader system, input api
-   
-   The main problem seems to be that it would make it so I can't use
-   OpenAL directly, because you need to return audio data per frame
-** TODO GLFW - Wait for getting the string identifiers of joysticks
-** TODO GLFW - Wait for consistent joystick state intra-frame
-   So glfwPollEvents calls pollJoystickEvents and Win32 caches
-** TODO Make a tool for downloading the copyrighted images/music
-   List the URL, a checksum, and then have the tool download them if
-   they aren't there and verify if they are.
-** TODO Use SNES sprites for Ms. Pac-Man in maze
-** TODO tennis - balls can bounce infinitely off wall and get stuck
-** TODO OS suppress updates
-   Make a critical region system call that gives a process sole access
-   to the system... leaving the other processes stalled with their last
-   writes persisting from frame to frame
-   
-   This might be a good way to implement "friction" or "bullet time" as
-   well as other effects, like menus.
-   
-   Just an idea. Might be a bad idea?
-** TODO Make maze harder over time: faster, more ghosts, squares = score multiplier
-** TODO tennis - shake the screen on bounce, gas pedal on paddle for speed, decreasing increasing rate of ball speed growth, add blocks like arkanoid?
-** TODO tennis - score based on total number of balls in play
-** TODO Connect scores to online database
-** TODO Make games return replays (and allow them to accept replays)
-   Replay = (random seed, level, controller stream)
-** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
-** TODO Add "compare with ..." to game info and display
-** TODO SRS - Automatically go to the next card
-** TODO SRS - Deal with games that have a win condition
-   (so that you don't get too much credit if you don't actually win,
-   even if you did better than before?)
-** TODO SRS - Don't play a level/game more than X times in a row
-** TODO SRS - Don't play a level/game for longer than X minutes in a row
-** TODO Include workrave like system in dashboard
-** TODO Make icons for dashboards vs text
-   Or mimic the Wii interface
-** TODO Make games in dashboard have capabilities
-   1P, 2P Round-robin, 2P VS, 2P Co-op, etc
-** TODO Make play modes in dashboard
-   Single, King-of-the-Hill (play levels that your score has been
-   beaten on), Training (improve your score, SRS style), Round-Robin
-   (play all games)
-
-   Have it so you can highlight games to be played that way
-** TODO Death scream like Ziggurat (in dashboard?)
-   Or other stingers, but worry about being too annoying and not
-   instant restarting
-** TODO Find a unified common score display
-   Should I display all points: this session / this game / all games?
-** TODO Return achievements (to dashboard)
-** TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
-** TODO Read about and implement juiciness
-   http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
-   
-   https://github.com/grapefrukt/juicy-breakout
-
-   http://www.youtube.com/watch?v=tVLb-I5i5ys&feature=youtu.be&a
-
-   http://tnns.rabbx.com/
-** TODO Tennis - ugly score display
-** TODO Tennis - revisit use of paddle bounce
-** TODO Write a generic Godel-encoding library
-   http://logic.cse.unt.edu/tarau/index.html
-
-   http://code.google.com/p/bijective-goedel-numberings/
-
-   http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
-** TODO RPS - generate FSTs differently (with godel encoding)
-** TODO Figure out a way to do localization well
-   gettext
-** TODO Make more games
-** TODO The Get Bonus rendering system should have built-in support for TATE games
-   Virtual, Rotate Left, and Rotate Right
-** TODO NGL - Add absolute and relative layers
-   For example, the score display is absolute, but the game is
-   relative (my games don't use this concept yet)
-** TODO See if I can record a video directly
-   http://revel.sourceforge.net/docs/html/revel_8h.html#a30
-** TODO Allow multi-pass shaders (such as CRT halation)
-   See libretro or retroarch
-
-   And maybe use Cg rather than GLSL
-** TODO Experiment with located events (in a 2D mesh) rather than flat events
-** TODO Try to get OpenGL to do collision detection for me
-   http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
-** TODO 2D Lighting
-   https://www.youtube.com/watch?v=fsbECSpwtig
-** TODO Winners Don't Do Drugs and other intro screens
-** TODO rpswar - render fst graphically
-** TODO Figure out a way to allow and use palettes effectively
-* Tool and related-app ideas
-** TODO Master Grafx2 or aseprite or make my own keyboard based system
-   https://code.google.com/p/grafx2/
-** TODO Add challenges/achievements/training to NES/SNES games
-   Hook up with an emulator core to drop into a game with save states
-   and then monitor its execution for score, etc
-
-   Can you beat this Mega Man stage with one life?
-
-   How fast can you do X in this game?
-
-   Wrap this in a package that switches from game to game like I
-   want... it may be perfection
-
-** TODO Implement Boxing iPhone game
-   Like Punch-Out!!!
-   
-   Five "buttons": punch left/right, dodge left/right, block. The
-   upper quadrants for punching, the bottom for dodging, and the
-   middle for blocking.
-   
-   Randomly generate winning sequences of input, then from them
-   determine what the bad guy does... for example if to win you dodge
-   left, then he should punch right.
-   
-   After going through this sequence, it just repeats.
-   
-   Manually design 10 or so cues that indicate an upcoming action
-   (like twitching eye brows, shaking, hand/leg shuffle, etc)
-   
-   Aim for completing a match in 1 to 2 minutes
-   
-   Shake the phone to get up
-** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
-** TODO Make something for Racket/emacs to find out what deps aren't needed
-** TODO Make Optimization Coach + Macro Stepper available via Emacs
-* Optimization ideas
-** TODO Make OS use futures for parallelism
-   First experiment, 2012/07/01 failed... got a slower frame rate. I
-   think the key is to make it just a future during the time that GL is
-   rendering.
-** TODO Convert things to typed racket
-** TODO NGL - geometry shader - can I optimize the matrix calculations because I'm 2D?
-   Will the GLSL compiler do it anyways?
-** TODO NGL - cache shader vector modifications to skip some parts of object tree
-   premature optimization
-** TODO NGL - cache shader vector uploads to skip some segments
-   premature optimization
-
-   (Probably not useful, because I hit very high frame rates even when
-   updating vectors thousands of elements long)

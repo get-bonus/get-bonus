@@ -6,7 +6,7 @@
          racket/contract
          racket/pretty)
 
-(struct db (pth id->generator [cards #:mutable]) #:prefab)
+(struct db (pth id->generator [next-id #:mutable] [cards #:mutable]) #:prefab)
 
 (define (insert c cs)
   (match cs
@@ -25,24 +25,33 @@
 (define (srs pth)
   (unless (file-exists? pth)
     (write-to-file empty pth))
-  (db pth (make-hasheq) (file->value pth)))
+  (define cards (file->value pth))
+  (define next-id
+    (add1
+     (for/fold ([m -1])
+         ([c (in-list cards)])
+       (define i (card-id c))
+       (if (number? i)
+         (max m i)
+         m))))
+  (db pth (make-hasheq) next-id cards))
 
 (define (srs-cards a-db)
-  (match-define (db _ _ cards) a-db)
+  (match-define (db _ _ _ cards) a-db)
   cards)
 
 (define (srs-generator-card a-db id)
-  (match-define (db _ _ cards) a-db)
+  (match-define (db _ _ _ cards) a-db)
   (findf (λ (c) (eq? id (card-id c))) cards))
 
 (define (set-srs-generator! a-db id fun)
-  (match-define (db _ id->generator cards) a-db)
+  (match-define (db _ id->generator _ cards) a-db)
   (hash-set! id->generator id fun)
   (unless (srs-generator-card a-db id)
     (srs-add-card! a-db (card id 1.0 #f empty))))
 
 (define (srs-set-cards! a-db new-cards)
-  (match-define (db pth _ _) a-db)
+  (match-define (db pth _ _ _) a-db)
   (set-db-cards! a-db new-cards)
   (with-output-to-file pth
     #:exists 'replace
@@ -53,14 +62,15 @@
   (srs-set-cards! a-db (insert a-card (db-cards a-db))))
 
 (define (srs-generate! a-db id get-time)
-  (match-define (db _ id->generator cards) a-db)
+  (match-define (db _ id->generator next-id cards) a-db)
   (define id-card (srs-generator-card a-db id))
   (define generator (hash-ref id->generator id))
   (define start (get-time))
   (define new-data (generator))
   (define end (get-time))
-  (define new-id (length cards))
+  (define new-id next-id)
   (define new-card (card new-id 1.0 new-data empty))
+  (set-db-next-id! a-db (add1 next-id))
   (srs-card-attempt! a-db id-card (attempt start end 1.0 #f))
   (srs-add-card! a-db new-card)
   new-card)
@@ -73,7 +83,7 @@
      (max (f fst) (mapmax f l))]))
 
 (define (srs-card-attempt! a-db a-card an-attempt)
-  (match-define (db _ _ cards) a-db)
+  (match-define (db _ _ _ cards) a-db)
   (match-define (card id sort cdata history) a-card)
   (match-define (attempt _ _ this-score _) an-attempt)
   (define best-score-or-inf (mapmax attempt-score history))
@@ -83,8 +93,10 @@
       best-score-or-inf))
   (define cards/no-id (remove id cards (λ (v c) (eq? v (card-id c)))))
   (define new-sort
-    (* (balance (/ this-score best-score))
-       sort))
+    (if (zero? best-score)
+      (* 2.0 sort)
+      (* (balance (/ this-score best-score))
+         sort)))
   (define new-card (card id new-sort cdata (cons an-attempt history)))
   (define new-cards (insert new-card cards/no-id))
   (srs-set-cards! a-db new-cards))
@@ -112,7 +124,7 @@
         (begin0 x (set! x (add1 x))))))
 
   (define (srs-next a-db start k)
-    (match-define (db _ _ (list-rest fst _)) a-db)
+    (match-define (db _ _ _ (list-rest fst _)) a-db)
     (define it
       (match (card-id fst)
         [(? symbol? id)
