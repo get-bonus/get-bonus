@@ -24,7 +24,33 @@
 (define string->sprites
   (make-string-factory char))
 (define cursor ">>")
-(define top-padding 2)
+(define padding 2)
+
+(define (flatten-menu st m)
+  (match m
+    [(cons fst rst)
+     (append (flatten-menu st fst)
+             (flatten-menu st rst))]
+    [(? empty?)
+     empty]
+    [(? procedure? p)
+     (flatten-menu st (p))]
+    [(menu:action _)
+     (list m)]
+    [(menu:auto _ _)
+     (list m)]
+    [(menu:top options)
+     (define i (hash-ref st 'top 0))
+     (match-define (menu:option text fun) (list-ref options i))
+     (list* m (flatten-menu st (fun)))]
+    [(menu:list options)
+     (define i (hash-ref st 'list 0))
+     (match-define (menu:option text fun) (list-ref options i))
+     (list* m (flatten-menu st (fun)))]
+    [(menu:status text)
+     (list m)]
+    [(menu:info texts)
+     (list m)]))
 
 (define (draw-menu st m)
   (match m
@@ -32,8 +58,6 @@
      (cons (draw-menu st fst) (draw-menu st rst))]
     [(? empty?)
      empty]
-    [(? procedure? p)
-     (draw-menu st (p))]
     [(menu:action _)
      empty]
     [(menu:auto _ _)
@@ -47,7 +71,7 @@
             [i (in-naturals)])
          (match-define (menu:option text fun) o)
          (define pre-offset
-           (+ offset top-padding (string-length cursor)))
+           (+ offset padding (string-length cursor)))
          (define obj
            (transform
             #:dy top-dy
@@ -59,11 +83,10 @@
          (define selected
            (cond
              [(equal? (hash-ref st 'top #f) i)
-              (list* (transform
-                      #:dy top-dy
-                      #:dx (* char-width (+ offset top-padding))
-                      (string->sprites cursor))
-                     (draw-menu st (fun)))]
+              (transform
+               #:dy top-dy
+               #:dx (* char-width (+ offset padding))
+               (string->sprites cursor))]
              [else
               empty]))
 
@@ -71,36 +94,35 @@
      l]
     [(menu:list options)
      (define (option-entry-height pos)
-       (+ (* char-height top-padding)
+       (+ (* char-height padding)
           (* char-height (- (length options) pos))))
      (for/list ([o (in-list options)]
                 [i (in-naturals)])
        (match-define (menu:option text fun) o)
        (cons (transform
               #:dy (option-entry-height i)
-              #:dx (* top-padding char-width)
+              #:dx (* padding char-width)
               #:dx (* (string-length cursor) char-width)
               (string->sprites text))
              (cond
                [(equal? (hash-ref st 'list #f) i)
-                (cons (transform
-                       #:dx (* top-padding char-width)
-                       #:dy (option-entry-height i)
-                       (string->sprites cursor))
-                      (draw-menu st (fun)))]
+                (transform
+                 #:dx (* padding char-width)
+                 #:dy (option-entry-height i)
+                 (string->sprites cursor))]
                [else
                 empty])))]
     [(menu:status text)
      (transform
       #:dy char-height
-      #:dx (- crt-width (* char-width (+ top-padding (string-length text))))
+      #:dx (- crt-width (* char-width (+ padding (string-length text))))
       (string->sprites text))]
     [(menu:info texts)
      (for/list ([text (in-list texts)]
                 [i (in-naturals)])
        (transform
         #:dy (- crt-height (* char-height (+ 3 i)))
-        #:dx (* char-width top-padding)
+        #:dx (* char-width padding)
         (string->sprites text)))]))
 
 (define (react-menu c st m)
@@ -109,8 +131,6 @@
      (react-menu c (react-menu c st fst) rst)]
     [(? empty?)
      st]
-    [(? procedure? p)
-     (react-menu c st (p))]
     [(menu:action fun)
      (when (or (controller-start-down c)
                (controller-b-down c))
@@ -133,9 +153,7 @@
        (modulo (+ pos mod)
                (length options)))
 
-     (react-menu c (hash-set st 'top pos+)
-                 ((menu:option-fun (list-ref options pos+))))]
-
+     (hash-set st 'top pos+)]
     [(menu:list options)
      (define pos (hash-ref st 'list 0))
      (define mod
@@ -147,8 +165,7 @@
        (modulo (+ pos mod)
                (length options)))
 
-     (react-menu c (hash-set st 'list pos+)
-                 ((menu:option-fun (list-ref options pos+))))]
+     (hash-set st 'list pos+)]
     [(menu:status text)
      st]
     [(menu:info text)
@@ -158,13 +175,16 @@
   (let loop ([st (hasheq)])
     (define c (os/read* 'controller))
 
+    (define cm
+      (flatten-menu st m))
+
     (os/write
      (list
       (cons 'graphics
-            (cons 0 (draw-menu st m)))))
+            (cons 0 (draw-menu st cm)))))
 
     (define new-st
-      (react-menu c st m))
+      (react-menu c st cm))
 
     (when (and back-f
                (or (controller-a-down c)
