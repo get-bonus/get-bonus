@@ -205,7 +205,7 @@
             (filter attempt-this-session?
                     (append-map card-history these-cards)))
           (menu:status
-           (format "Session: ~a Games: ~a Attempts: ~a Time: ~a"
+           (format "Session: ~a Games: ~a Attempts: ~a Time: ~a (Total: ~a)"
                    (current-play-session)
                    (length
                     (remove-duplicates
@@ -216,7 +216,12 @@
                    (time-format
                     (sum
                      (map attempt-length
-                          these-attempts))))))
+                          these-attempts)))
+                   (time-format
+                    (sum
+                     (map attempt-length
+                          (append-map card-history
+                                      (srs-cards (current-srs)))))))))
         (menu:top
          (list
           (menu:option
