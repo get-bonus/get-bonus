@@ -128,7 +128,7 @@
     (define max.v (apply max l))
     (define mean.v (/ (apply + l) (length l)))
     (define median.v (list-ref (sort l <) (floor (/ (length l) 2))))
-    (apply format "[~a --| (~a|~a) |-- ~a]"
+    (apply format "[~a -| (med: ~a|mean: ~a) |- ~a]"
            (map fmt
                 (list min.v
                       median.v
