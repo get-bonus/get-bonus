@@ -6,6 +6,8 @@
          gb/gui/os
          gb/input/controller
          gb/graphics/ngl-main)
+(module+ test
+  (require rackunit))
 
 (struct menu:top (code options) #:transparent)
 (struct menu:list (code options) #:transparent)
@@ -160,13 +162,60 @@
       [_
        (values bot-offset bot-os)])))
 
+(define (list-slice center sides len)
+  (let/ec return
+    (define total (+ 1 (* 2 sides)))
+    (define il (build-list len (λ (x) x)))
+    (when (< len total)
+      (return il))
+    (when (< center sides)
+      (return (take il total)))
+    (when (<= (- len center) sides)
+      (return (take-right il total)))
+    (for/list ([i (in-range (- center sides) (add1 (+ center sides)))])
+      i)))
+(module+ test
+  (define ex 5)
+  (check-equal? (list-slice 0 1 ex)
+                (list 0 1 2))
+  (check-equal? (list-slice 1 1 ex)
+                (list 0 1 2))
+  (check-equal? (list-slice 2 1 ex)
+                (list 1 2 3))
+  (check-equal? (list-slice 3 1 ex)
+                (list 2 3 4))
+  (check-equal? (list-slice 4 1 ex)
+                (list 2 3 4))
+  (check-equal? (list-slice 2 2 ex)
+                (list 0 1 2 3 4))
+  (check-equal? (list-slice 2 8 ex)
+                (list 0 1 2 3 4)))
+
 (define (draw-menu:list top-offset bot-offset st cm)
   (match (filter menu:list? cm)
     [(list)
      (values 0 empty)]
     ;; XXX check that doesn't go off the right
-    ;; XXX check that doesn't go down too far (and just restrict number displayed)
     [(list (menu:list code options))
+     (define max-visible-options
+       (floor
+        (- (/ (- crt-height (+ top-offset bot-offset))
+              char-height)
+           (add1 padding))))
+     (define how-many-options (length options))
+     (define how-many-displayed-options
+       (min max-visible-options how-many-options))
+     (define current-option (hash-ref st code 0))
+     (define visible-option-indexes
+       (list-slice (hash-ref st code 0)
+                   (inexact->exact
+                    (quotient how-many-displayed-options 2))
+                   how-many-options))
+     (define more-before?
+       (> (first visible-option-indexes) 0))
+     (define more-after?
+       (< (last visible-option-indexes) (sub1 how-many-options)))
+
      (define (option-entry-height pos)
        (* -1 (+ (* char-height (+ padding pos)))))
      (define longest-option-len
@@ -175,6 +224,21 @@
                  (map (compose string-length
                                menu:option-text)
                       options))))
+
+     (define display-indexes
+       (append (if more-before? '(before) empty)
+               (cond 
+                 [(and more-before? more-after?)
+                  (drop-right (drop visible-option-indexes 1) 1)]
+                 [more-before?
+                  (drop visible-option-indexes 1)]
+                 [more-after?
+                  (drop-right visible-option-indexes 1)]
+                 [else 
+                  visible-option-indexes])
+               (if more-after? '(after) empty)))
+     (define how-many-display-indexes (length display-indexes))
+
      (values
       (* char-width
          (+ padding
@@ -182,23 +246,32 @@
       (transform
        #:dy (- crt-height top-offset)
        #:dx (* padding char-width)
-       (cons (for/list ([o (in-list options)]
+       (cons (for/list ([di (in-list display-indexes)]
                         [i (in-naturals)])
-               (match-define (menu:option text fun) o)
                (transform
                 #:dy (option-entry-height i)
-                (cons (transform
-                       #:dx (* (string-length cursor) char-width)
-                       (string->sprites text))
-                      (cond
-                        [(equal? (hash-ref st code #f) i)
-                         (string->sprites cursor)]
-                        [else
-                         empty]))))
-             (draw-menu-box (/ (* char-width (- longest-option-len .5)) 2)
-                            (/ (* -1 char-height (+ (length options) 3)) 2)
-                            (* char-width longest-option-len)
-                            (* -1 char-height (length options))))))]))
+                (match di
+                  ['before
+                   (string->sprites "<<<<")]
+                  ['after
+                   (string->sprites ">>>>")]
+                  [(? number? oi)
+                   (define o (list-ref options oi))
+                   (match-define (menu:option text fun) o)
+                   (cons (transform
+                          #:dx (* (string-length cursor) char-width)
+                          (string->sprites text))
+                         (cond
+                           [(equal? current-option oi)
+                            (string->sprites cursor)]
+                           [else
+                            empty]))])))
+             (draw-menu-box
+              (/ (* char-width (- longest-option-len .5)) 2)
+              (/ (* -1 char-height
+                    (+ how-many-display-indexes 3)) 2)
+              (* char-width longest-option-len)
+              (* -1 char-height how-many-display-indexes)))))]))
 
 (define (draw-menu-box cx cy w h)
   (define hw (/ w 2.0))

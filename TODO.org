@@ -1,11 +1,16 @@
 * General TODO items
-** TODO add checks for menu overlaps
 ** TODO SRS - have games return how much time was paused (if pausing is allowed)
 ** TODO SRS - have games return custom attempt information
    Like what the equipment/etc configuration was in JRPGs, so it can
    be re-presented if it needs to be modified
 ** TODO main - have a way of browsing attempts (press select?)
    For viewing a replay or other data
+** TODO generalize score to a hash of different metrics
+   frames
+   score
+   how many balls in the air
+   how many pellets
+   did you beat the level?
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -945,3 +950,5 @@
    CLOSED: [2013-01-04 Fri 13:51]
    The font is ugly. It would be nice if it was on the right or in
    the middle, etc. Like Dragon Quest?
+** DONE add checks for menu overlaps
+   CLOSED: [2013-01-06 Sun 12:03]
