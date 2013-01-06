@@ -154,16 +154,20 @@
 
 (define (history->info-screen-list history)
   (list
-   (format "Attempts: ~a"
+   (format "  Attempts: ~a"
            (length history))
-   (format "   Score: ~a"
+   (format "Total time: ~a"
+           (time-format
+            (sum (map attempt-length
+                      history))))
+   (format "     Score: ~a"
            (stats-string (map attempt-score
                               history)))
-   (format "    Time: ~a"
+   (format "      Time: ~a"
            (stats-string (map attempt-length
                               history)
                          #:fmt time-format))
-   (format "    Last: ~a"
+   (format "      Last: ~a"
            (parameterize ([date-display-format
                            'iso-8601])
              (define attempts
@@ -224,6 +228,29 @@
          'top
          (list
           (menu:option
+           "Cards"
+           (λ ()
+             (menu:list
+              'cards
+              (for/list ([c (in-list (srs-cards (current-srs)))]
+                         #:when (recent-card? c))
+                (match-define (card id sort-score data history) c)
+                (menu:option
+                 (format "~a" id)
+                 (λ ()
+                   (list
+                    (menu:status "Play the card?")
+                    (menu:info
+                     (list*
+                      (format "      Game: ~a"
+                              (match data
+                                [#f id]
+                                [(ldata game _ _) game]))
+                      (format "      Sort: ~a"
+                              (real->decimal-string sort-score))
+                      (history->info-screen-list history)))
+                    (menu:action (λ () (play-card c))))))))))
+          (menu:option
            "Games"
            (λ ()
              (menu:list
@@ -239,30 +266,7 @@
 
                    (list (menu:status "Play the game?")
                          (menu:info (history->info-screen-list history))
-                         (menu:action (λ () (play-game g))))))))))
-          (menu:option
-           "Cards"
-           (λ ()
-             (menu:list
-              'cards
-              (for/list ([c (in-list (srs-cards (current-srs)))]
-                         #:when (recent-card? c))
-                (match-define (card id sort-score data history) c)
-                (menu:option
-                 (format "~a" id)
-                 (λ ()
-                   (list
-                    (menu:status "Play the card?")
-                    (menu:info
-                     (list*
-                      (format "    Game: ~a"
-                              (match data
-                                [#f id]
-                                [(ldata game _ _) game]))
-                      (format "    Sort: ~a"
-                              (real->decimal-string sort-score))
-                      (history->info-screen-list history)))
-                    (menu:action (λ () (play-card c))))))))))))))
+                         (menu:action (λ () (play-game g))))))))))))))
 
      (render-menu #:back (λ () (os/exit 0))
                   main))))
