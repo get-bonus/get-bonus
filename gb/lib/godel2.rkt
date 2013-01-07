@@ -324,21 +324,24 @@
                         (random 3)
                         (random 4)))))
 
-(define (k*k-bind/s fst/s fst->rst/s)
+(define (k*k-bind/s fst/s fst->rst/s
+                    #:rst-k [given-rst-k #f])
   ;; XXX check
   (match-define (spec fst-k fst-in fst-out) fst/s)
 
-  (spec (for/sum ([i (in-range fst-k)])
-                 (define fst (fst-in i))
-                 ;; XXX check
-                 (spec-k (fst->rst/s fst)))
+  (spec (if (= +inf.0 fst-k)
+          +inf.0
+          (for/sum ([i (in-range fst-k)])
+                   (define fst (fst-in i))
+                   ;; XXX check
+                   (spec-k (fst->rst/s fst))))
         (λ (n)
-          (define fst (fst-in (pair-hd fst-k rst-k n)))
+          (define fst (fst-in (pair-hd fst-k (or given-rst-k rst-k) n)))
           ;; XXX check
           (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
 
           (cons fst
-                (rst-in (pair-tl fst-k rst-k n))))
+                (rst-in (pair-tl fst-k (or given-rst-k rst-k) n))))
         (λ (v)
           (match-define (cons fst rst) v)
           ;; XXX check
@@ -366,8 +369,7 @@
    [(cons 3 3) 15]))
 
 (define (k*inf-bind/s fst/s fst->rst/s)
-  (struct-copy spec (k*k-bind/s fst/s fst->rst/s)
-               [k +inf.0]))
+  (k*k-bind/s fst/s fst->rst/s))
 (module+ test
   (define 3+more-than-three/s
     (k*inf-bind/s (enum/s '(0 1 2 3))
@@ -434,22 +436,7 @@
    [(cons 3 3) 9]))
 
 (define (inf*inf-bind/s fst/s fst->rst/s)
-  ;; XXX check
-  (match-define (spec fst-k fst-in fst-out) fst/s)
-  (spec +inf.0
-        (λ (n)
-          (define fst (fst-in (pair-hd +inf.0 +inf.0 n)))
-          ;; XXX check
-          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-          (cons fst
-                (rst-in (pair-tl +inf.0 +inf.0 n))))
-        (λ (v)
-          (define fst (car v))
-          ;; XXX check
-          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-          (pair +inf.0 +inf.0
-                (fst-out fst)
-                (rst-out (cdr v))))))
+  (k*k-bind/s fst/s #:rst-k +inf.0 fst->rst/s))
 (module+ test
   (define nat+greater-than-n/s
     (inf*inf-bind/s
