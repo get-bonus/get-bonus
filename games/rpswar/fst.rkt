@@ -4,6 +4,44 @@
 
 (struct fst (states input-alpha output-alpha start delta state->output) #:transparent)
 
+(module+ test
+  (define alpha '(r p s))
+  (define ai
+    (for/fold ([ai (random-one-state-fst alpha alpha)])
+        ([i (in-range 20)])
+      (mutate-fst ai)))
+
+  (define (bits n)
+    (ceiling (/ (log n) (log 2))))
+  (define (encoding-bits f)
+    (match-define (fst states input output start delta st->out) f)
+    (+
+     ;; Unary encoding of states
+     states
+     ;; Unary encoding of input + output counts
+     (length input)
+     (length output)
+     ;; Binary encoding of start
+     (bits states)
+     ;; Delta
+     (*
+      ;; Each state in sequence
+      states
+      ;; Each input in sequence
+      (length input)
+      ;; Binary encoding of next state
+      (bits states))
+     ;; st->output
+     (*
+      ;; Each state in sequence
+      states
+      ;; Binary encoding of output
+      (bits (length output)))))
+
+  (require racket/pretty)
+  (pretty-print ai)
+  (encoding-bits ai))
+
 (define (format-fst f current)
   (format "~a of ~a"
           current

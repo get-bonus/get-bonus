@@ -134,6 +134,7 @@
 ** TODO Winners Don't Do Drugs and other intro screens
 ** TODO rpswar - render fst graphically
 ** TODO Figure out a way to allow and use palettes effectively
+** TODO menu - check for more overlaps
 * Tool and related-app ideas
 ** TODO Master Grafx2 or aseprite or make my own keyboard based system
    https://code.google.com/p/grafx2/
