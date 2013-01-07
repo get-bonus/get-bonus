@@ -92,7 +92,19 @@
       (define s s-e)
       (for ([i (in-range (min N (spec-k s)))])
         (test-equal? (format "~a ~a,~a" n s i)
-                     (encode s (decode s i)) i)))))
+                     (encode s (decode s i)) i))))
+  (define-syntax-rule (test-spec-ex s-e v-e n-e)
+    (let ()
+      (define v v-e)
+      (define n n-e)
+      (define s s-e)
+      (test-equal? (format "encode ~a ~a = ~a" 's-e v n) (encode s v) n)
+      (test-equal? (format "decode ~a ~a = ~a" 's-e n v) (decode s n) v)))
+  (define-syntax-rule (test-spec-exs s-e [v n] ...)
+    (let ()
+      (define s s-e)
+      (test-spec-ex s v n)
+      ...)))
 
 ;; Specs
 (define (unit/s v)
@@ -183,6 +195,23 @@
     [n
      (cons/s elem/s (flist/s (sub1 k) elem/s))]))
 (module+ test
+  (test-spec-exs (flist/s 0 (enum/s '(0 1 2)))
+                 [empty 0])
+  (test-spec-exs (flist/s 1 (enum/s '(0 1 2)))
+                 [(cons 0 empty) 0]
+                 [(cons 1 empty) 1]
+                 [(cons 2 empty) 2])
+  (test-spec-exs (flist/s 2 (enum/s '(0 1 2)))
+                 [(cons 0 (cons 0 empty)) 0]
+                 [(cons 0 (cons 1 empty)) 1]
+                 [(cons 0 (cons 2 empty)) 2]
+                 [(cons 1 (cons 0 empty)) 3]
+                 [(cons 1 (cons 1 empty)) 4]
+                 [(cons 1 (cons 2 empty)) 5]
+                 [(cons 2 (cons 0 empty)) 6]
+                 [(cons 2 (cons 1 empty)) 7]
+                 [(cons 2 (cons 2 empty)) 8])
+
   (define 3nats/s (flist/s 3 nat/s))
   (test-spec 3nats/s)
   (for ([i (in-range N)])
@@ -225,9 +254,11 @@
     (define fst (fst-in i))
     ;; XXX check
     (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-    (if (>= n rst-k)
-      (bind-in (add1 i) (- n rst-k))
-      (cons fst (rst-in n))))
+    (cond
+      [(>= n rst-k)
+       (bind-in (add1 i) (- n rst-k))]
+      [else
+       (cons fst (rst-in n))]))
   (define (bind-out-sum i)
     (cond
       [(< i 0)
@@ -245,7 +276,23 @@
           (define fst-n (fst-out fst))
           ;; XXX check
           (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-          (+ (sub1 (bind-out-sum fst-n)) (rst-out (cdr v))))))
+          (+ (bind-out-sum (sub1 fst-n)) (rst-out (cdr v))))))
+
+(module+ test
+  (define nat+less-than-n/s
+    (inf*k-bind/s nat/s (λ (i) (nat-range/s (add1 i)))))
+  (test-spec-exs
+   nat+less-than-n/s
+   [(cons 0 0) 0]
+   [(cons 1 0) 1]
+   [(cons 1 1) 2]
+   [(cons 2 0) 3]
+   [(cons 2 1) 4]
+   [(cons 2 2) 5]
+   [(cons 3 0) 6]
+   [(cons 3 1) 7]
+   [(cons 3 2) 8]
+   [(cons 3 3) 9]))
 
 (define (inf*inf-bind/s fst/s fst->rst/s)
   ;; XXX check
