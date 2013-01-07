@@ -7,8 +7,6 @@
   (require rackunit)
   (define N 10))
 
-;; XXX New idea: Assign values to numbers, keep track of count per spec
-
 ;; The core: Pairing functions
 (define (core-nat-cons x y)
   (arithmetic-shift (bitwise-ior 1 (arithmetic-shift y 1))
@@ -504,3 +502,6 @@
     (test-en/de nat-list/s
                 (build-list (random (* N N))
                             (λ (_) (random (* N N)))))))
+
+;; XXX
+(provide (all-defined-out))

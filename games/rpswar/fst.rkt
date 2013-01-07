@@ -11,36 +11,63 @@
         ([i (in-range 20)])
       (mutate-fst ai)))
 
-  (define (bits n)
-    (ceiling (/ (log n) (log 2))))
-  (define (encoding-bits f)
-    (match-define (fst states input output start delta st->out) f)
-    (+
-     ;; Unary encoding of states
-     states
-     ;; Unary encoding of input + output counts
-     (length input)
-     (length output)
-     ;; Binary encoding of start
-     (bits states)
-     ;; Delta
-     (*
-      ;; Each state in sequence
-      states
-      ;; Each input in sequence
-      (length input)
-      ;; Binary encoding of next state
-      (bits states))
-     ;; st->output
-     (*
-      ;; Each state in sequence
-      states
-      ;; Binary encoding of output
-      (bits (length output)))))
+  (define (index-of e l)
+    (match l
+      [(cons (== e) l)
+       0]
+      [(cons _ l)
+       (add1 (index-of e l))]))
+  (define (ai/s input output)
+    (wrap/s (inf*k-bind/s
+             nat/s
+             (λ (how-many-states)
+               (hetero-vector/s
+                (vector (nat-range/s how-many-states)
+                        (flist/s how-many-states
+                                 (flist/s (length input)
+                                          (nat-range/s
+                                           how-many-states)))
+                        (flist/s how-many-states
+                                 (nat-range/s (length output)))))))
+            (match-lambda
+             [(cons how-many-states
+                    (vector start
+                            (list (list next ...) ...)
+                            (list output-i ...)))
+              (fst how-many-states input output start
+                   (for/hash ([s (in-range how-many-states)]
+                              [ns (in-list next)])
+                     (values s
+                             (for/hash ([i (in-list input)]
+                                        [n (in-list ns)])
+                               (values i n))))
+                   (for/hash ([s (in-range how-many-states)]
+                              [oi (in-list output-i)])
+                     (values s (list-ref output oi))))])
+            (match-lambda
+             [(fst how-many-states (== input) (== output)
+                   start delta state->output)
+              (cons how-many-states
+                    (vector start
+                            (for/list ([s (in-range how-many-states)])
+                              (define input->next (hash-ref delta s))
+                              (for/list ([i (in-list input)])
+                                (hash-ref input->next i)))
+                            (for/list ([s (in-range how-many-states)])
+                              (index-of (hash-ref state->output s)
+                                        output))))])))
+
+  (require gb/lib/godel2)
+  (define n (encode (ai/s alpha alpha) ai))
+  (printf "[ ~v ] = ~v\n" ai n)
+  (define v (decode (ai/s alpha alpha) n))
+  (printf "[ ~v ]^-1 = ~v\n" n v)
+  (printf "~v\n" (equal? v ai))
 
   (require racket/pretty)
-  (pretty-print ai)
-  (encoding-bits ai))
+  (pretty-print
+   (decode (ai/s alpha alpha)
+           123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789)))
 
 (define (format-fst f current)
   (format "~a of ~a"
@@ -48,11 +75,11 @@
           (fst-states f)))
 
 (define (random-state how-many-states)
-  (random (add1 how-many-states)))
+  (random how-many-states))
 
 (define (random-one-state-fst input output)
   (define state_0 0)
-  (fst state_0 input output state_0
+  (fst 1 input output state_0
        (hash state_0
              (for/hash ([i (in-list input)])
                (values i state_0)))
@@ -67,12 +94,15 @@
   (define (change-transition delta from-state to-state)
     (hash-update delta from-state
                  (λ (input->next)
-                   (hash-set input->next (random-list-ref input-alpha) to-state))))
+                   (hash-set input->next
+                             (random-list-ref input-alpha)
+                             to-state))
+                 (hash)))
   (random-case
    [1/2
     ;; Add a new state
-    (define new-state (add1 states))
-    (fst new-state input-alpha output-alpha start
+    (define new-state states)
+    (fst (add1 new-state) input-alpha output-alpha start
          ;; Linked to by a random existing state
          (change-transition
           ;; with random transitions to other stats
