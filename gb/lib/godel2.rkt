@@ -165,7 +165,31 @@
                [(? left?)
                 (pair 2 +inf.0 0 (left-out v))]
                [(? right?)
-                (pair 2 +inf.0 1 (right-out v))])))]))
+                (pair 2 +inf.0 1 (right-out v))])))]
+    [(left-k +inf.0)
+     (spec +inf.0
+           (λ (n)
+             (if (< n left-k)
+               (left-in n)
+               (right-in (- n left-k))))
+           (λ (v)
+             (match v
+               [(? left?)
+                (left-out v)]
+               [(? right?)
+                (+ (right-out v) left-k)])))]
+    [(+inf.0 right-k)
+     (spec +inf.0
+           (λ (n)
+             (if (< n right-k)
+               (right-in n)
+               (left-in (- n right-k))))
+           (λ (v)
+             (match v
+               [(? left?)
+                (+ (left-out v) right-k)]
+               [(? right?)
+                (right-out v)])))]))
 
 (module+ test
   (define int/s
@@ -180,7 +204,29 @@
     (test-en/de int/s
                 (if (zero? (random 2))
                   (add1 (random (* N N)))
-                  (* -1 (add1 (random (* N N))))))))
+                  (* -1 (add1 (random (* N N)))))))
+
+  (define weird-nat/s
+    (or/s (λ (i) (<= 0 i 3)) (enum/s '(0 1 2 3))
+          (λ (i) (< 3 i)) (wrap/s nat/s
+                                  (λ (n) (+ n 4))
+                                  (λ (n) (- n 4)))))
+  (test-spec weird-nat/s)
+  (for ([i (in-range N)])
+    (test-en/de weird-nat/s
+                (random (* N N))))
+
+  (define weird-nat/s-2
+    (or/s (λ (i) (< 3 i)) (wrap/s nat/s
+                                  (λ (n) (+ n 4))
+                                  (λ (n) (- n 4)))
+          (λ (i) (<= 0 i 3)) (enum/s '(0 1 2 3))))
+  (test-spec weird-nat/s-2)
+  (for ([i (in-range N)])
+    (test-en/de weird-nat/s-2
+                (random (* N N))))
+
+)
 
 (define (enum/s elems)
   (define elem->i
