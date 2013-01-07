@@ -166,8 +166,10 @@
                 (pair 2 +inf.0 0 (left-out v))]
                [(? right?)
                 (pair 2 +inf.0 1 (right-out v))])))]
-    [(left-k +inf.0)
-     (spec +inf.0
+    [(+inf.0 right-k)
+     (or/s right? right/s left? left/s)]
+    [(left-k right-k)
+     (spec (+ left-k right-k)
            (λ (n)
              (if (< n left-k)
                (left-in n)
@@ -177,19 +179,7 @@
                [(? left?)
                 (left-out v)]
                [(? right?)
-                (+ (right-out v) left-k)])))]
-    [(+inf.0 right-k)
-     (spec +inf.0
-           (λ (n)
-             (if (< n right-k)
-               (right-in n)
-               (left-in (- n right-k))))
-           (λ (v)
-             (match v
-               [(? left?)
-                (+ (left-out v) right-k)]
-               [(? right?)
-                (right-out v)])))]))
+                (+ (right-out v) left-k)])))]))
 
 (module+ test
   (define int/s
@@ -226,7 +216,13 @@
     (test-en/de weird-nat/s-2
                 (random (* N N))))
 
-)
+  (define weird-nat/s-3
+    (or/s (λ (i) (<= 0 i 3)) (enum/s '(0 1 2 3))
+          (λ (i) (<= 4 i 6)) (enum/s '(4 5 6))))
+  (test-spec weird-nat/s-3)
+  (for ([i (in-range N)])
+    (test-en/de weird-nat/s-3
+                (random 7))))
 
 (define (enum/s elems)
   (define elem->i
