@@ -83,7 +83,7 @@
       (define n 's-e)
       (define s s-e)
       (define v v-e)
-      (test-equal? (format "~a ~a,~a" n 's-e v)
+      (test-equal? (format "s=~a v=~a" n v)
                    (decode s (encode s v))
                    v)))
   (define-syntax-rule (test-spec s-e)
@@ -92,7 +92,7 @@
       (define s s-e)
       (for ([i (in-range (min N (spec-k s)))])
         (define v (decode s i))
-        (test-equal? (format "~a ~a,~a ~a" n 's-e i v)
+        (test-equal? (format "n=~a i=~a v=~a" n i v)
                      (encode s v) i))))
   (define-syntax-rule (test-spec-ex s-e v-e n-e)
     (let ()
@@ -147,6 +147,40 @@
     (test-en/de 2nats/s
                 (cons (random (* N N))
                       (random (* N N))))))
+
+(define (or/s left? left/s right? right/s)
+  (match-define (spec left-k left-in left-out) left/s)
+  (match-define (spec right-k right-in right-out) right/s)
+  (match* (left-k right-k)
+    [(+inf.0 +inf.0)
+     (spec +inf.0
+           (λ (n)
+             (match (pair-hd 2 +inf.0 n)
+               [0
+                (left-in (pair-tl 2 +inf.0 n))]
+               [1
+                (right-in (pair-tl 2 +inf.0 n))]))
+           (λ (v)
+             (match v
+               [(? left?)
+                (pair 2 +inf.0 0 (left-out v))]
+               [(? right?)
+                (pair 2 +inf.0 1 (right-out v))])))]))
+
+(module+ test
+  (define int/s
+    (or/s exact-nonnegative-integer? nat/s
+          negative? (wrap/s (wrap/s nat/s
+                                    (λ (n) (* -1 n))
+                                    (λ (n) (* -1 n)))
+                            (λ (n) (- n 1))
+                            (λ (n) (+ n 1)))))
+  (test-spec int/s)
+  (for ([i (in-range N)])
+    (test-en/de int/s
+                (if (zero? (random 2))
+                  (add1 (random (* N N)))
+                  (* -1 (add1 (random (* N N))))))))
 
 (define (enum/s elems)
   (define elem->i
