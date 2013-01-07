@@ -446,7 +446,7 @@
                      (λ (in) (- in i))))))
   (test-spec nat+greater-than-n/s))
 
-
+;; XXX
 ;; (define (union/s pred->spec)
 ;;   (define pred/s (enum/s (hash-keys pred->spec)))
 ;;   (wrap/s
@@ -463,16 +463,30 @@
 ;;                    cons? (λ () (cons/s elem/s this/s)))))
 ;;   this/s)
 
-(require unstable/debug)
-(define (bind-list/s elem/s)
+(define (flist-prep/s inner/s)
   (wrap/s
-   ((if (= +inf.0 (spec-k elem/s))
-      ;; XXX This wrong, because for len = 0, there's a finite number of lists
-      inf*inf-bind/s
-      inf*k-bind/s)
-    nat/s (λ (len) (flist/s len elem/s)))
+   inner/s
    (λ (v) (cdr v))
    (λ (l) (cons (length l) l))))
+
+(define (bind-list/s elem/s)
+  (define f-elem-list/s
+    (λ (len) (flist/s len elem/s)))
+  (cond
+    [(= +inf.0 (spec-k elem/s))
+     (or/s empty?
+           (unit/s empty)
+           cons?
+           (flist-prep/s
+            (inf*inf-bind/s
+             (wrap/s nat/s
+                     (λ (out) (+ out 1))
+                     (λ (in) (- in 1)))
+             f-elem-list/s)))]
+    [else
+     (flist-prep/s
+      (inf*k-bind/s
+       nat/s f-elem-list/s))]))
 
 (define list/s bind-list/s)
 
@@ -485,11 +499,6 @@
                             (λ (_) (random 3)))))
 
   (define nat-list/s (list/s nat/s))
-
-  ;; (test-equal? "nat list empty" (encode nat-list/s empty) 0)
-  (test-equal? "nat list empty" (decode nat-list/s 2) 'xxx)
-  (exit 1)
-
   (test-spec nat-list/s)
   (for ([i (in-range N)])
     (test-en/de nat-list/s
