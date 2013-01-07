@@ -40,7 +40,7 @@
     [(hd-k +inf.0)
      (+ hd (* tl hd-k))]
     [(hd-k tl-k)
-     (+ (* hd tl-k) tl)]))
+     (+ hd (* tl hd-k))]))
 (define (pair-hd hd-k tl-k n)
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
@@ -50,7 +50,7 @@
     [(hd-k +inf.0)
      (remainder n hd-k)]
     [(hd-k tl-k)
-     (quotient n tl-k)]))
+     (remainder n hd-k)]))
 (define (pair-tl hd-k tl-k n)
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
@@ -60,7 +60,7 @@
     [(hd-k +inf.0)
      (quotient n hd-k)]
     [(hd-k tl-k)
-     (remainder n tl-k)]))
+     (quotient n hd-k)]))
 
 (module+ test
   (for ([i (in-range N)])
@@ -83,7 +83,7 @@
       (define n 's-e)
       (define s s-e)
       (define v v-e)
-      (test-equal? (format "~a ~a,~a" n s v)
+      (test-equal? (format "~a ~a,~a" n 's-e v)
                    (decode s (encode s v))
                    v)))
   (define-syntax-rule (test-spec s-e)
@@ -91,8 +91,9 @@
       (define n 's-e)
       (define s s-e)
       (for ([i (in-range (min N (spec-k s)))])
-        (test-equal? (format "~a ~a,~a" n s i)
-                     (encode s (decode s i)) i))))
+        (define v (decode s i))
+        (test-equal? (format "~a ~a,~a ~a" n 's-e i v)
+                     (encode s v) i))))
   (define-syntax-rule (test-spec-ex s-e v-e n-e)
     (let ()
       (define v v-e)
@@ -102,8 +103,7 @@
       (test-equal? (format "decode ~a ~a = ~a" 's-e n v) (decode s n) v)))
   (define-syntax-rule (test-spec-exs s-e [v n] ...)
     (let ()
-      (define s s-e)
-      (test-spec-ex s v n)
+      (test-spec-ex s-e v n)
       ...)))
 
 ;; Specs
@@ -203,13 +203,15 @@
                  [(cons 2 empty) 2])
   (test-spec-exs (flist/s 2 (enum/s '(0 1 2)))
                  [(cons 0 (cons 0 empty)) 0]
-                 [(cons 0 (cons 1 empty)) 1]
-                 [(cons 0 (cons 2 empty)) 2]
-                 [(cons 1 (cons 0 empty)) 3]
+                 [(cons 1 (cons 0 empty)) 1]
+                 [(cons 2 (cons 0 empty)) 2]
+
+                 [(cons 0 (cons 1 empty)) 3]
                  [(cons 1 (cons 1 empty)) 4]
-                 [(cons 1 (cons 2 empty)) 5]
-                 [(cons 2 (cons 0 empty)) 6]
-                 [(cons 2 (cons 1 empty)) 7]
+                 [(cons 2 (cons 1 empty)) 5]
+
+                 [(cons 0 (cons 2 empty)) 6]
+                 [(cons 1 (cons 2 empty)) 7]
                  [(cons 2 (cons 2 empty)) 8])
 
   (define 3nats/s (flist/s 3 nat/s))
@@ -245,6 +247,67 @@
                 (vector (random 2)
                         (random 3)
                         (random 4)))))
+
+(define (k*k-bind/s fst/s fst->rst/s)
+  ;; XXX check
+  (match-define (spec fst-k fst-in fst-out) fst/s)
+
+  (spec (for/sum ([i (in-range fst-k)])
+                 (define fst (fst-in i))
+                 ;; XXX check
+                 (spec-k (fst->rst/s fst)))
+        (λ (n)
+          (define fst (fst-in (pair-hd fst-k rst-k n)))
+          ;; XXX check
+          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+
+          (cons fst
+                (rst-in (pair-tl fst-k rst-k n))))
+        (λ (v)
+          (match-define (cons fst rst) v)
+          ;; XXX check
+          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+
+          (pair fst-k rst-k
+                (fst-out fst)
+                (rst-out rst)))))
+(module+ test
+  (define 3+less-than-three/s
+    (k*k-bind/s (enum/s '(0 1 2 3)) (λ (i) (nat-range/s (add1 i)))))
+  (test-spec
+   3+less-than-three/s)
+  (test-spec-exs
+   3+less-than-three/s
+   [(cons 0 0) 0]
+   [(cons 1 0) 1]
+   [(cons 1 1) 5]
+   [(cons 2 0) 2]
+   [(cons 2 1) 6]
+   [(cons 2 2) 10]
+   [(cons 3 0) 3]
+   [(cons 3 1) 7]
+   [(cons 3 2) 11]
+   [(cons 3 3) 15]))
+
+(define (k*inf-bind/s fst/s fst->rst/s)
+  (struct-copy spec (k*k-bind/s fst/s fst->rst/s)
+               [k +inf.0]))
+(module+ test
+  (define 3+more-than-three/s
+    (k*inf-bind/s (enum/s '(0 1 2 3))
+                  (λ (i)
+                    (wrap/s nat/s
+                            (λ (out) (+ out i))
+                            (λ (in) (- in i))))))
+  (test-spec
+   3+more-than-three/s)
+  (test-spec-exs
+   3+more-than-three/s
+   [(cons 0 0) 0]
+   [(cons 1 1) 1]
+   [(cons 2 2) 2]
+   [(cons 2 3) 6]
+   [(cons 3 3) 3]))
 
 (define (inf*k-bind/s fst/s fst->rst/s)
   ;; XXX check
@@ -311,8 +374,15 @@
           (pair +inf.0 +inf.0
                 (fst-out fst)
                 (rst-out (cdr v))))))
+(module+ test
+  (define nat+greater-than-n/s
+    (inf*inf-bind/s
+     nat/s (λ (i)
+             (wrap/s nat/s
+                     (λ (out) (+ out i))
+                     (λ (in) (- in i))))))
+  (test-spec nat+greater-than-n/s))
 
-;; XXX test bind
 
 ;; (define (union/s pred->spec)
 ;;   (define pred/s (enum/s (hash-keys pred->spec)))
@@ -330,24 +400,35 @@
 ;;                    cons? (λ () (cons/s elem/s this/s)))))
 ;;   this/s)
 
+(require unstable/debug)
 (define (bind-list/s elem/s)
-  (if (= +inf.0 (spec-k elem/s))
-    (inf*inf-bind/s nat/s (λ (len) (flist/s len elem/s)))
-    (inf*k-bind/s nat/s (λ (len) (flist/s len elem/s)))))
+  (wrap/s
+   ((if (= +inf.0 (spec-k elem/s))
+      ;; XXX This wrong, because for len = 0, there's a finite number of lists
+      inf*inf-bind/s
+      inf*k-bind/s)
+    nat/s (λ (len) (flist/s len elem/s)))
+   (λ (v) (cdr v))
+   (λ (l) (cons (length l) l))))
 
 (define list/s bind-list/s)
 
 (module+ test
-  (define nat-list/s (list/s nat/s))
-  (test-spec nat-list/s)
-  (for ([i (in-range N)])
-    (test-en/de nat-list/s
-                (build-list (random (* N N))
-                            (λ (_) (random (* N N))))))
-
   (define 012-list/s (list/s (enum/s '(0 1 2))))
   (test-spec 012-list/s)
   (for ([i (in-range N)])
     (test-en/de 012-list/s
                 (build-list (random (* N N))
-                            (λ (_) (random 3))))))
+                            (λ (_) (random 3)))))
+
+  (define nat-list/s (list/s nat/s))
+
+  ;; (test-equal? "nat list empty" (encode nat-list/s empty) 0)
+  (test-equal? "nat list empty" (decode nat-list/s 2) 'xxx)
+  (exit 1)
+
+  (test-spec nat-list/s)
+  (for ([i (in-range N)])
+    (test-en/de nat-list/s
+                (build-list (random (* N N))
+                            (λ (_) (random (* N N)))))))
