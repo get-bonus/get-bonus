@@ -11,12 +11,6 @@
         ([i (in-range 20)])
       (mutate-fst ai)))
 
-  (define (index-of e l)
-    (match l
-      [(cons (== e) l)
-       0]
-      [(cons _ l)
-       (add1 (index-of e l))]))
   (define (ai/s input output)
     (wrap/s (inf*k-bind/s
              nat/s
@@ -28,12 +22,12 @@
                                           (nat-range/s
                                            how-many-states)))
                         (flist/s how-many-states
-                                 (nat-range/s (length output)))))))
+                                 (enum/s output))))))
             (match-lambda
              [(cons how-many-states
                     (vector start
                             (list (list next ...) ...)
-                            (list output-i ...)))
+                            (list output-v ...)))
               (fst how-many-states input output start
                    (for/hash ([s (in-range how-many-states)]
                               [ns (in-list next)])
@@ -42,8 +36,8 @@
                                         [n (in-list ns)])
                                (values i n))))
                    (for/hash ([s (in-range how-many-states)]
-                              [oi (in-list output-i)])
-                     (values s (list-ref output oi))))])
+                              [ov (in-list output-v)])
+                     (values s ov)))])
             (match-lambda
              [(fst how-many-states (== input) (== output)
                    start delta state->output)
@@ -54,8 +48,7 @@
                               (for/list ([i (in-list input)])
                                 (hash-ref input->next i)))
                             (for/list ([s (in-range how-many-states)])
-                              (index-of (hash-ref state->output s)
-                                        output))))])))
+                              (hash-ref state->output s))))])))
 
   (require gb/lib/godel2)
   (define n (encode (ai/s alpha alpha) ai))
@@ -65,9 +58,18 @@
   (printf "~v\n" (equal? v ai))
 
   (require racket/pretty)
+  (define (bytes->integer bs)
+    (for/fold ([n 0])
+        ([i (in-naturals)]
+         [b (in-bytes bs)])
+      (* b (expt 256 i))))
+  (require racket/runtime-path
+           racket/file)
+  (define-runtime-path here ".")
+
   (pretty-print
    (decode (ai/s alpha alpha)
-           123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789)))
+           (bytes->integer (file->bytes (build-path here "fst.rkt"))))))
 
 (define (format-fst f current)
   (format "~a of ~a"
