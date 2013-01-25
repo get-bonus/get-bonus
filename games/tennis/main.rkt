@@ -14,6 +14,7 @@
          gb/lib/random
          gb/data/psn
          gb/meta
+         gb/meta-help
          (prefix-in cd: gb/physics/cd-narrow))
 
 (define-runtime-path resource-path "r")

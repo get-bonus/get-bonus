@@ -19,6 +19,7 @@
          gb/lib/random
          gb/data/fmatrix
          gb/meta
+         gb/meta-help
          (only-in gb/ai/path-finding
                   manhattan-distance)
          (for-syntax racket/base

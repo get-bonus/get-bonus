@@ -8,7 +8,7 @@ in VertexData {
   vec4 Color;
   vec4 TexCoord;
   float Rotation;
-} vertexData[1];
+} vertexData[];
 
 uniform float ViewportWidth;
 uniform float ViewportHeight;

@@ -12,6 +12,7 @@
          gb/lib/random
          gb/data/psn
          gb/meta
+         gb/meta-help
          gb/sys/menu
          math/base
          (prefix-in cd: gb/physics/cd-narrow)
@@ -26,6 +27,9 @@
 (struct resolve round (user-input computer-input) #:transparent)
 (struct resolved round (user-input computer-input outcome) #:transparent)
 (struct end round () #:transparent)
+
+(define input '(r p s))
+(define output input)
 
 (define rps-outcome
   (match-lambda*
@@ -78,7 +82,7 @@
                        (format-fst ai state)
                        ""
                        (format "What will you throw down?")))
-      (menu:list 'rps (for/list ([ui (in-list '(r p s))])
+      (menu:list 'rps (for/list ([ui (in-list input)])
                         (string (next ui)
                                 (rps->string ui)
                                 (format "Throw down a ~a"
@@ -141,20 +145,11 @@
     a
     (repeat-n (sub1 n) f (f a))))
 
-(define (game-start)
+(define (game-start final-ai)
   (big-bang/os
    crt-width crt-height (psn (/ crt-width 2.) (/ crt-height 2.0))
    #:sound-scale (/ crt-width 2.)
    (λ ()
-     (define start-fst (random-one-state-fst '(r p s) '(r p s)))
-
-     (define final-ai
-       (let loop ([ai start-fst])
-         (define next-ai (repeat-n (random-integer 1 10) mutate-fst ai))
-         (if (zero? (random 2))
-           next-ai
-           (loop next-ai))))
-
      (let loop ([s (start 1 final-ai)])
        (define ns
          (let/ec return
@@ -171,9 +166,25 @@
 
        (loop ns)))))
 
+(define (generate-ai)
+  (define start-fst (random-one-state-fst input output))
+
+  (define final-ai
+    (let loop ([ai start-fst])
+      (define next-ai (repeat-n (random-integer 1 10) mutate-fst ai))
+      (if (zero? (random 2))
+        next-ai
+        (loop next-ai))))
+
+  final-ai)
+
+(define fst-spec
+  (fst/s input output))
+
 (define game
   (game-info 'rpswar "RPS War"
-             2 random-generate
-             (random-start game-start)))
+             2
+             (godel-generate fst-spec generate-ai)
+             (godel-start fst-spec game-start)))
 
 (provide game)

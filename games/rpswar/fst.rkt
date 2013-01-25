@@ -1,8 +1,48 @@
 #lang racket/base
 (require racket/match
+         gb/lib/godel
          "random.rkt")
 
 (struct fst (states input-alpha output-alpha start delta state->output) #:transparent)
+
+(define (fst/s input output)
+  (wrap/s (inf*k-bind/s
+           nat/s
+           (λ (how-many-states)
+             (hetero-vector/s
+              (vector (nat-range/s how-many-states)
+                      (flist/s how-many-states
+                               (flist/s (length input)
+                                        (nat-range/s
+                                         how-many-states)))
+                      (flist/s how-many-states
+                               (enum/s output))))))
+          (match-lambda
+           [(cons how-many-states
+                  (vector start
+                          (list (list next ...) ...)
+                          (list output-v ...)))
+            (fst how-many-states input output start
+                 (for/hash ([s (in-range how-many-states)]
+                            [ns (in-list next)])
+                   (values s
+                           (for/hash ([i (in-list input)]
+                                      [n (in-list ns)])
+                             (values i n))))
+                 (for/hash ([s (in-range how-many-states)]
+                            [ov (in-list output-v)])
+                   (values s ov)))])
+          (match-lambda
+           [(fst how-many-states (== input) (== output)
+                 start delta state->output)
+            (cons how-many-states
+                  (vector start
+                          (for/list ([s (in-range how-many-states)])
+                            (define input->next (hash-ref delta s))
+                            (for/list ([i (in-list input)])
+                              (hash-ref input->next i)))
+                          (for/list ([s (in-range how-many-states)])
+                            (hash-ref state->output s))))])))
 
 (module+ test
   (define alpha '(r p s))
@@ -11,46 +51,8 @@
         ([i (in-range 20)])
       (mutate-fst ai)))
 
-  (define (ai/s input output)
-    (wrap/s (inf*k-bind/s
-             nat/s
-             (λ (how-many-states)
-               (hetero-vector/s
-                (vector (nat-range/s how-many-states)
-                        (flist/s how-many-states
-                                 (flist/s (length input)
-                                          (nat-range/s
-                                           how-many-states)))
-                        (flist/s how-many-states
-                                 (enum/s output))))))
-            (match-lambda
-             [(cons how-many-states
-                    (vector start
-                            (list (list next ...) ...)
-                            (list output-v ...)))
-              (fst how-many-states input output start
-                   (for/hash ([s (in-range how-many-states)]
-                              [ns (in-list next)])
-                     (values s
-                             (for/hash ([i (in-list input)]
-                                        [n (in-list ns)])
-                               (values i n))))
-                   (for/hash ([s (in-range how-many-states)]
-                              [ov (in-list output-v)])
-                     (values s ov)))])
-            (match-lambda
-             [(fst how-many-states (== input) (== output)
-                   start delta state->output)
-              (cons how-many-states
-                    (vector start
-                            (for/list ([s (in-range how-many-states)])
-                              (define input->next (hash-ref delta s))
-                              (for/list ([i (in-list input)])
-                                (hash-ref input->next i)))
-                            (for/list ([s (in-range how-many-states)])
-                              (hash-ref state->output s))))])))
+  (define ai/s fst/s)
 
-  (require gb/lib/godel2)
   (define n (encode (ai/s alpha alpha) ai))
   (printf "[ ~v ] = ~v\n" ai n)
   (define v (decode (ai/s alpha alpha) n))

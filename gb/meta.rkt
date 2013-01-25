@@ -6,13 +6,21 @@
 (define level? exact-nonnegative-integer?)
 (define score? real?)
 
+(define result/c
+  score?)
+
+(define start/c
+  (-> level? result/c))
+
 (provide
  (contract-out
   [level? flat-contract?]
   [score? flat-contract?]
+  [result/c contract?]
+  [start/c contract?]
   [struct game-info
           ([id symbol?]
            [name string?]
            [version exact-nonnegative-integer?]
            [generate (-> level?)]
-           [start (-> level? score?)])]))
+           [start start/c])]))
