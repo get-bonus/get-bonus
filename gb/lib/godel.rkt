@@ -467,6 +467,25 @@
    (λ (v) (cdr v))
    (λ (l) (cons (length l) l))))
 
+(define nat-greater-than-1/s
+  (wrap/s nat/s
+          (λ (out) (+ out 1))
+          (λ (in) (- in 1))))
+
+(define (nelist/s elem/s)
+  (define f-elem-list/s
+    (λ (len) (flist/s len elem/s)))
+  (cond
+    [(= +inf.0 (spec-k elem/s))
+     (flist-prep/s
+      (inf*inf-bind/s
+       nat-greater-than-1/s
+       f-elem-list/s))]
+    [else
+     (flist-prep/s
+      (inf*k-bind/s
+       nat-greater-than-1/s f-elem-list/s))]))
+
 (define (bind-list/s elem/s)
   (define f-elem-list/s
     (λ (len) (flist/s len elem/s)))
@@ -477,9 +496,7 @@
            cons?
            (flist-prep/s
             (inf*inf-bind/s
-             (wrap/s nat/s
-                     (λ (out) (+ out 1))
-                     (λ (in) (- in 1)))
+             nat-greater-than-1/s
              f-elem-list/s)))]
     [else
      (flist-prep/s

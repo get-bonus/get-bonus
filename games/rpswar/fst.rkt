@@ -59,14 +59,10 @@
   (printf "[ ~v ]^-1 = ~v\n" n v)
   (printf "~v\n" (equal? v ai))
 
-  (require racket/pretty)
-  (define (bytes->integer bs)
-    (for/fold ([n 0])
-        ([i (in-naturals)]
-         [b (in-bytes bs)])
-      (* b (expt 256 i))))
-  (require racket/runtime-path
-           racket/file)
+  (require racket/pretty
+           racket/runtime-path
+           racket/file
+           gb/lib/math)
   (define-runtime-path here ".")
 
   (pretty-print

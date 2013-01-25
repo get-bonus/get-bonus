@@ -61,16 +61,16 @@
   (define block-h
     (/ paddle-h blocks-in-a-paddle))
   (for/list ([i (in-range blocks-in-a-paddle)])
-    (transform 
+    (transform
      #:dy (* block-h i)
      (sprite tennis/paddle))))
 
-(define ball-scale 
+(define ball-scale
   (/ 1.0 2.0))
-(define ball-hh 
+(define ball-hh
   (* ball-scale (/ (texture-height tennis/ball) 2.0)))
 (define ball-r ball-hh)
-(define ball-hw 
+(define ball-hw
   (* ball-scale (/ (texture-width tennis/ball) 2.0)))
 
 (define (ball-sprite)
@@ -87,17 +87,10 @@
 (define lhs-x
   (- (/ width 32.0) paddle-hw))
 
-(define (between lo hi)
-  (+ lo (* (random) (- hi lo))))
 (define serve-dist
   (* 1.5 (+ ball-hw paddle-hw)))
 (define ball-start-pos
   (psn (+ lhs-x serve-dist) (/ height 2.)))
-(define (ball-start-dir)
-  (* (if (zero? (random 2))
-       -1.
-       1.)
-     (between 0 (/ pi 4.))))
 
 (define (player-paddle)
   (let loop ([lhs-y (/ height 2.0)])
@@ -126,7 +119,7 @@
                      (+ ;;(* -1 dy) ;;; XXX see comment below
                       (* my (imag-part p))))))
 
-(define ((ball initial-ball-speed))
+(define ((ball ball-start-dir initial-ball-speed))
   (let loop ([taps 0]
              [ball-pos ball-start-pos]
              [ball-dir (ball-start-dir)])
@@ -187,7 +180,7 @@
       (if (= taps taps-n)
         #f
         (if (zero? (modulo taps-n 5))
-          (begin (os/thread (ball (ball-speed (/ taps 2))))
+          (begin (os/thread (ball ball-start-dir (ball-speed (/ taps 2))))
                  #t)
           #f)))
     (os/write
@@ -217,13 +210,19 @@
 (define string->sprites
   (make-string-factory modern-12-char))
 
-(define (game-start)
+(require racket/generator)
+(define (game-start start-dirs)
+  (define ball-start-dir
+    (generator ()
+               (for ([d (in-cycle (in-list start-dirs))])
+                 (yield d))))
+
   (big-bang/os
    width height center-pos
    #:sound-scale width-h
    (λ ()
      (os/thread player-paddle)
-     (os/thread (ball initial-ball-speed))
+     (os/thread (ball ball-start-dir initial-ball-speed))
      (os/write
       (list
        (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))
@@ -249,13 +248,13 @@
                      (* char-width (string-length score-s)))
                    (transform
                     #:d
-                    (- (psn-x center-pos) 
+                    (- (psn-x center-pos)
                        (/ score-w 2.0))
                     (- height score-h)
                     (cons
                      (string->sprites
                       score-s)
-                     (transform 
+                     (transform
                       #:rgba 1. 1. 1. 1.
                       (string->sprites
                        #:tint? #t
@@ -263,9 +262,34 @@
                  (bgm))))))
        (loop score-n)))))
 
+(require gb/lib/godel)
+
+(define tennis/s
+  (nelist/s
+   (wrap/s
+    (nat-range/s 91)
+    (compose1 degrees->radians (λ (n) (- n 45)))
+    (compose1 (λ (n) (+ n 45)) radians->degrees))))
+
+(module+ test
+  (for ([i (in-naturals)]
+        [x (in-range 10)])
+    (printf "~a. ~v\n" i (decode tennis/s i)))
+
+  (define (show n)
+    (for ([r (in-list (decode tennis/s n))]
+          [i (in-naturals)]
+          [_ (in-range 10)])
+      (printf "~a.~a. ~v\n" n i r)))
+
+  (require racket/pretty)
+  (pretty-print
+   (show 12390102397103)))
+
 (define game
   (game-info 'tennis "Tennis!" 0
+             ;; XXX Make a better generate
              random-generate
-             (random-start game-start)))
+             (godel-start tennis/s game-start)))
 
 (provide game)

@@ -1,4 +1,7 @@
 * General TODO items
+** TODO maze - use godel
+** TODO SRS - base next generation on past levels
+   (make the FST bigger, make the tennis list longer, etc)
 ** TODO SRS - have games return how much time was paused (if pausing is allowed)
 ** TODO SRS - have games return custom attempt information
    Like what the equipment/etc configuration was in JRPGs, so it can
@@ -105,13 +108,6 @@
    http://tnns.rabbx.com/
 ** TODO Tennis - ugly score display
 ** TODO Tennis - revisit use of paddle bounce
-** TODO Write a generic Godel-encoding library
-   http://logic.cse.unt.edu/tarau/index.html
-
-   http://code.google.com/p/bijective-goedel-numberings/
-
-   http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
-** TODO RPS - generate FSTs differently (with godel encoding)
 ** TODO Figure out a way to do localization well
    gettext
 ** TODO Make more games
@@ -953,3 +949,14 @@
    the middle, etc. Like Dragon Quest?
 ** DONE add checks for menu overlaps
    CLOSED: [2013-01-06 Sun 12:03]
+** DONE Write a generic Godel-encoding library
+   CLOSED: [2013-01-25 Fri 10:34]
+   http://logic.cse.unt.edu/tarau/index.html
+
+   http://code.google.com/p/bijective-goedel-numberings/
+
+   http://scholar.google.com/citations?view_op=view_citation&hl=en&user=JUMRc-oAAAAJ&sortby=pubdate&citation_for_view=JUMRc-oAAAAJ:tKAzc9rXhukC
+** DONE RPS - generate FSTs differently (with godel encoding)
+   CLOSED: [2013-01-25 Fri 10:34]
+** DONE tennis - use godel
+   CLOSED: [2013-01-25 Fri 11:03]
