@@ -1,9 +1,5 @@
 * General TODO items
 ** TODO maze - use godel
-** DONE tennis - change randomness to be based on past actions
-   CLOSED: [2013-01-29 Tue 07:14]
-   Only 90 levels (the initial starting angle)
-** TODO rpswar - allow the player to lose
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels
@@ -966,3 +962,8 @@
    CLOSED: [2013-01-25 Fri 10:34]
 ** DONE tennis - use godel
    CLOSED: [2013-01-25 Fri 11:03]
+** DONE tennis - change randomness to be based on past actions
+   CLOSED: [2013-01-29 Tue 07:14]
+   Only 90 levels (the initial starting angle)
+** DONE rpswar - allow the player to lose
+   CLOSED: [2013-01-29 Tue 07:20]
