@@ -28,6 +28,8 @@
   (+ (* vr h-width) vc))
 (define (quad-ref quad vr vc)
   (bytes-ref quad (r*c->i vr vc)))
+(define (quad-set! quad vr vc v)
+  (bytes-set! quad (r*c->i vr vc) v))
 
 (define quad:templates
   (for*/list ([top? (in-list '(#t #f))]
@@ -38,11 +40,11 @@
         (unless (= i 15)
           (cond
             [(= which doubled)
-             (bytes-set! t (r*c->i row (+ 0 i)) wall)
-             (bytes-set! t (r*c->i row (+ 1 i)) wall)
+             (quad-set! t row (+ 0 i) wall)
+             (quad-set! t row (+ 1 i) wall)
              (loop (+ i 3) (+ 1 which))]
             [else
-             (bytes-set! t (r*c->i row (+ 0 i)) wall)
+             (quad-set! t row (+ 0 i) wall)
              (loop (+ i 2) (+ 1 which))]))))
     t))
 
@@ -76,6 +78,9 @@
     (if (inside-maze? r*c)
       (quad-ref new-quad r c)
       hall))
+  (define (quad-cell-set! r*c v)
+    (match-define (cons r c) r*c)
+    (quad-set! new-quad r c v))
   (define (original-wall? c)
     (= wall (quad-ref the-template (car c) (cdr c))))
   (define (not-wall? c)
@@ -95,8 +100,7 @@
             (define how-many-halls
               (length (non-wall-neighbors cn)))
             (how-many-halls . > . 2))
-        (match-define (cons r c) r*c)
-        (bytes-set! new-quad (r*c->i r c) wall))))
+        (quad-cell-set! r*c wall))))
 
   (define seen? (make-hash))
   (define (visit r*c)
@@ -143,8 +147,7 @@
       (let loop ([c last-c])
         (define next-c (hash-ref came-from c #f))
         (when (= wall (quad-cell-ref c))
-          (match-define (cons nr nc) c)
-          (bytes-set! new-quad (r*c->i nr nc) hall))
+          (quad-cell-set! c hall))
         (when next-c
           (loop next-c))))
 
@@ -159,12 +162,34 @@
   ;; being walled.
   (for ([r*c (in-list cells)])
     (when (= conn (quad-cell-ref r*c))
-      (bytes-set! new-quad (r*c->i (car r*c) (cdr r*c)) hall)))
+      (quad-cell-set! r*c hall)))
 
   (for ([new-val (in-list (list power-up fruit))])
     (for/or ([r*c (shuffle cells)])
       (and (= hall (quad-cell-ref r*c))
-           (bytes-set! new-quad (r*c->i (car r*c) (cdr r*c)) new-val))))
+           (quad-cell-set! r*c new-val))))
   new-quad)
+
+(module+ main
+  (define (display-maze q)
+    (for ([r (in-range h-height)])
+      (for ([c (in-range h-width)])
+        (display
+         (match (quad-ref q r c)
+           [(== hall)         "."]
+           [(== wall)         "#"]
+           [(== power-up)     "!"]
+           [(== fruit)        "%"]
+           [(== ghost-entry)  "g"]
+           [(== player-entry) "@"]
+           [(== conn)         "+"])))
+      (newline))
+    (newline))
+
+  (display-maze quad:template)
+
+  (for-each display-maze quad:templates)
+
+  (display-maze (generate-quad)))
 
 (provide (all-defined-out))
