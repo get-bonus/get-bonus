@@ -10,6 +10,9 @@
  [godel-start
   (-> (spec/c any/c) (-> any/c result/c)
       start/c)]
+ [random-godel-generate
+  (-> (spec/c any/c)
+      (-> level?))]
  [random-generate
   (-> level?)]
  [random-start
@@ -18,6 +21,9 @@
 
 (define (godel-generate s f)
   (λ () (encode s (f))))
+
+(define (random-godel-generate s)
+  (λ () (random (spec-k s))))
 
 (define (godel-start s f)
   (λ (n) (f (decode s n))))

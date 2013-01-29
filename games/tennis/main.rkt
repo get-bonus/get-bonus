@@ -119,10 +119,10 @@
                      (+ ;;(* -1 dy) ;;; XXX see comment below
                       (* my (imag-part p))))))
 
-(define ((ball ball-start-dir initial-ball-speed))
+(define ((ball initial-dir initial-ball-speed))
   (let loop ([taps 0]
              [ball-pos ball-start-pos]
-             [ball-dir (ball-start-dir)])
+             [ball-dir initial-dir])
     (define (ball-speed taps)
       (* (+ 1 (* .1 taps)) initial-ball-speed))
     (define (ball-in-dir ball-pos dir)
@@ -151,7 +151,7 @@
                  (add1 taps))]
         ;; The ball has moved to the left of the lhs paddle
         [((psn-x ball-pos) . <= . lhs-x)
-         (values ball-start-pos (ball-start-dir)
+         (values ball-start-pos initial-dir
                  empty 'right)]
         ;; The ball hit a horizontal wall
         [(or
@@ -180,7 +180,9 @@
       (if (= taps taps-n)
         #f
         (if (zero? (modulo taps-n 5))
-          (begin (os/thread (ball ball-start-dir (ball-speed (/ taps 2))))
+          (begin (os/thread
+                  (ball (ball-start-dir initial-dir)
+                        (ball-speed (/ taps 2))))
                  #t)
           #f)))
     (os/write
@@ -210,21 +212,26 @@
 (define string->sprites
   (make-string-factory modern-12-char))
 
-(require racket/generator)
-(define (game-start start-dirs)
-  (define ball-start-dir
-    (generator ()
-               (for ([d (in-cycle (in-list start-dirs))])
-                 (yield d))))
+(define (ball-start-dir base-dir)
+  (define base-degree (radians->0..90 base-dir))
+  (0..90->radians
+   (modulo
+    (+ base-degree
+       (current-frame)
+       (os/read* 'seed 0))
+    91)))
 
+(require racket/generator)
+(define (game-start initial-dir)
   (big-bang/os
    width height center-pos
    #:sound-scale width-h
    (λ ()
      (os/thread player-paddle)
-     (os/thread (ball ball-start-dir initial-ball-speed))
+     (os/thread (ball initial-dir initial-ball-speed))
      (os/write
       (list
+       (cons 'seed 0)
        (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))
        (cons 'listener center-pos)))
      (let loop ([score 0])
@@ -233,6 +240,13 @@
        (define score-n (+ score (apply + (filter number? score?s))))
        (os/write
         (list
+         (cons 'seed
+               (let ()
+                 (define c (os/read* 'controller))
+                 (modulo (+ (os/read* 'seed)
+                            (if (controller-down c) 2 0)
+                            (if (controller-up c) 3 0))
+                         91)))
          (cons 'done? (zero? balls))
          (cons 'return score-n)
          (cons 'graphics
@@ -264,12 +278,17 @@
 
 (require gb/lib/godel)
 
+(define 0..90->radians
+  (compose1 degrees->radians (λ (n) (- n 45))))
+
+(define radians->0..90
+  (compose1 (λ (n) (+ n 45)) radians->degrees))
+
 (define tennis/s
-  (nelist/s
-   (wrap/s
-    (nat-range/s 91)
-    (compose1 degrees->radians (λ (n) (- n 45)))
-    (compose1 (λ (n) (+ n 45)) radians->degrees))))
+  (wrap/s
+   (nat-range/s 91)
+   0..90->radians
+   radians->0..90))
 
 (module+ test
   (for ([i (in-naturals)]
@@ -288,8 +307,7 @@
 
 (define game
   (game-info 'tennis "Tennis!" 0
-             ;; XXX Make a better generate
-             random-generate
+             (random-godel-generate tennis/s)
              (godel-start tennis/s game-start)))
 
 (provide game)
