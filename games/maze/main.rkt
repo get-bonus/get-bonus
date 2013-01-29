@@ -140,8 +140,9 @@
   (locate-cell q power-up))
 (define (quad-fruit-cell q)
   (locate-cell q fruit))
-(define ghost-entry-cell (locate-cell quad:template ghost-entry))
-(define player-entry-cell (locate-cell quad:template player-entry))
+
+(define (locate-cell/static st q-id v)
+  (locate-cell (hash-ref (static-quads st) q-id) ghost-entry))
 
 (define (xy->quad*r*c x y)
   (define r (y->r y))
@@ -523,13 +524,19 @@
       [1 'ambusher]
       [2 'fickle]
       [3 'stupid]))
-  (define outside-jail
-    (quad*cell->psn
-     (match ai-n
+  (define ghost-qid
+    (match ai-n
        [0 'nw]
        [1 'ne]
        [2 'sw]
-       [3 'se])
+       [3 'se]))
+  (define ghost-entry-cell
+    (locate-cell/static 
+     (os/read* 'static)
+     ghost-qid ghost-entry))
+  (define outside-jail
+    (quad*cell->psn
+     ghost-qid
      ghost-entry-cell))
   (define outside-jail-right-of
     (pos->cell
@@ -675,6 +682,7 @@
             n-switch-n))))
 
 (define (player)
+  (define player-entry-cell (locate-cell/static (os/read* 'static) 'sw player-entry))
   (let loop ([p (quad*cell->psn 'sw player-entry-cell)]
              [dir up]
              [next-dir up])

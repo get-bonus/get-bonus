@@ -54,15 +54,27 @@
             #:when (= (quad-ref quad r c) value))
     (cons r c)))
 
+(define wall-visit-order
+  (build-list 63 (λ (x) x)))
+
 ;; XXX incorporate ghost position (so that I don't put a ghost in a
 ;; wall if I'm switching the state of a quad)
 (define (generate-quad)
-  (define the-template (list-ref/random quad:templates))
+  (generate-quad/template
+   (list-ref/random quad:templates)
+   (shuffle wall-visit-order)))
+
+(define (generate-quad/template
+         the-template
+         wall-visit-i)
   (define new-quad (bytes-copy the-template))
   (define cells
     (for*/list ([r (in-range h-height)]
                 [c (in-range h-width)])
       (cons r c)))
+
+  (printf "cells ~a\n" (length cells))
+
   (define (cell-neighbors r*c)
     (match-define (cons r c) r*c)
     (list (cons r (sub1 c))
@@ -89,18 +101,24 @@
     (filter not-wall?
             (cell-neighbors cn)))
 
+  (define hall-cells
+    (filter (λ (r*c) (= hall (quad-cell-ref r*c))) cells))
+
+  (printf "hall cells ~a ~a\n" (length hall-cells) (length wall-visit-i))
+
+  (define visit-order
+    (map (curry list-ref hall-cells) wall-visit-i))
+
   ;; For every cell, consider turning it into a wall if
   ;; all its non-wall neighbors have more than 2 exits
   ;; i.e. doing so does not create a dead-end.
-  (for ([r*c (in-list (shuffle cells))])
-    (when (= hall (quad-cell-ref r*c))
-      (define cns (non-wall-neighbors r*c))
-      (when
-          (for/and ([cn (in-list cns)])
+  (for ([r*c (in-list visit-order)])
+    (define cns (non-wall-neighbors r*c))
+    (when (for/and ([cn (in-list cns)])
             (define how-many-halls
               (length (non-wall-neighbors cn)))
             (how-many-halls . > . 2))
-        (quad-cell-set! r*c wall))))
+      (quad-cell-set! r*c wall)))
 
   (define seen? (make-hash))
   (define (visit r*c)
@@ -111,7 +129,14 @@
                 (filter inside-maze?
                         (non-wall-neighbors r*c)))))
 
-  (define player-entry-cell (locate-cell new-quad player-entry))
+  (define (set-first-hall-to! new-val)
+    (for/or ([r*c visit-order])
+      (and (= hall (quad-cell-ref r*c))
+           (quad-cell-set! r*c new-val)
+           r*c)))
+
+  (define player-entry-cell 
+    (set-first-hall-to! player-entry))
 
   (visit player-entry-cell)
 
@@ -151,7 +176,7 @@
         (when next-c
           (loop next-c))))
 
-    (for ([r*c (in-list (shuffle cells))])
+    (for ([r*c (in-list visit-order)])
       (unless (= wall (quad-cell-ref r*c))
         (unless (hash-has-key? seen? r*c)
           (dig-until-seen r*c)
@@ -164,10 +189,9 @@
     (when (= conn (quad-cell-ref r*c))
       (quad-cell-set! r*c hall)))
 
-  (for ([new-val (in-list (list power-up fruit))])
-    (for/or ([r*c (shuffle cells)])
-      (and (= hall (quad-cell-ref r*c))
-           (quad-cell-set! r*c new-val))))
+  (map set-first-hall-to!
+       (list power-up fruit ghost-entry))
+
   new-quad)
 
 (module+ main
@@ -190,6 +214,27 @@
 
   (for-each display-maze quad:templates)
 
-  (display-maze (generate-quad)))
+  (display-maze
+   (generate-quad))
+
+  (display-maze
+   (generate-quad/template
+    (first quad:templates)
+    wall-visit-order))
+
+  (display-maze
+   (generate-quad/template
+    (first quad:templates)
+    wall-visit-order))
+
+  (display-maze
+   (generate-quad/template
+    (second quad:templates)
+    wall-visit-order))
+
+  (display-maze
+   (generate-quad/template
+    (second quad:templates)
+    wall-visit-order)))
 
 (provide (all-defined-out))
