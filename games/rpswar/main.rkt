@@ -113,7 +113,12 @@
          (add1 wins)
          wins))
      (define next
-       (if ((ceiling (/ round# 2)) . < . total-wins)
+       (if (or (= round# (* 2 (fst-states ai)))
+               (and (> round# 3)
+                    (or (> (/ total-wins round#)
+                           1/2)
+                        (> (/ (- round# total-wins) round#)
+                           1/2))))
          (end match# ai round# total-wins state)
          (let ()
            (define next-state
@@ -137,7 +142,7 @@
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
                        (format "Ratio: ~a/~a" wins round#)
-                       (format "You won the match!")))
+                       (format "The match is over.")))
       (next-menu same))]))
 
 (define (repeat-n n f a)
