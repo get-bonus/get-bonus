@@ -73,8 +73,6 @@
                 [c (in-range h-width)])
       (cons r c)))
 
-  (printf "cells ~a\n" (length cells))
-
   (define (cell-neighbors r*c)
     (match-define (cons r c) r*c)
     (list (cons r (sub1 c))
@@ -104,7 +102,9 @@
   (define hall-cells
     (filter (λ (r*c) (= hall (quad-cell-ref r*c))) cells))
 
-  (printf "hall cells ~a ~a\n" (length hall-cells) (length wall-visit-i))
+  (unless (= (length hall-cells)
+             (length wall-visit-i))
+    (error 'generate-quad "Wall visit order wrong size!"))
 
   (define visit-order
     (map (curry list-ref hall-cells) wall-visit-i))
@@ -220,16 +220,6 @@
   (display-maze
    (generate-quad/template
     (first quad:templates)
-    wall-visit-order))
-
-  (display-maze
-   (generate-quad/template
-    (first quad:templates)
-    wall-visit-order))
-
-  (display-maze
-   (generate-quad/template
-    (second quad:templates)
     wall-visit-order))
 
   (display-maze
