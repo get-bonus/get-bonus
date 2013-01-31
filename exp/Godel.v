@@ -99,7 +99,7 @@ Instance fnat_fnat_FIso
 Admitted.
 
 (* XXX This is based on Z = X + Y * XK *)
-Instance fnat_nat_FIso 
+Instance fnat_inat_FIso 
           (xk:nat) (x:FIso nat (a_nat xk))
           (y:FIso nat pos_inf) 
          : FIso (nat*nat) pos_inf := {
@@ -140,13 +140,13 @@ Proof.
  rewrite <- Heqp. inversion EQ'. auto.
 Qed.
 
-Instance nat_fnat_FIso 
+Instance inat_fnat_FIso 
           (x:FIso nat pos_inf) 
           (yk:nat) (y:FIso nat (a_nat yk)) 
          : FIso (nat * nat) pos_inf.
 Proof.
  apply flip_FIso.
- eapply fnat_nat_FIso; auto.
+ eapply fnat_inat_FIso; auto.
  apply y.
 Qed.
 
@@ -173,3 +173,15 @@ Proof.
  intros x'' EQ. symmetry in EQ. inversion_clear EQ. auto.
 Qed.
 
+Definition join xk yk :=
+ match xk, yk with
+ | pos_inf, _ => pos_inf
+ | _, pos_inf => pos_inf
+ | a_nat xk , a_nat yk => a_nat (xk * yk)
+ end.
+
+Instance pair_FIso (X Y:Type) (xk yk:nati) (x:FIso X xk) (y:FIso Y yk) :
+          FIso (X*Y) (join xk yk).
+Proof.
+ destruct xk as [|xk]; destruct yk as [|yk]; simpl.
+ apply inat_inat_FIso.
