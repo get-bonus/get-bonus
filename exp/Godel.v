@@ -150,7 +150,9 @@ Proof.
  apply y.
 Qed.
 
-Instance unit_FIso (X:Type) (x:X) (is_x_dec : (forall x', { x' = x } + { x' <> x }))
+Instance unit_FIso 
+   (X:Type) (x:X)
+   (is_x_dec : (forall x', { x' = x } + { x' <> x }))
  : FIso X (a_nat 1) := {
  i := fun n => match n with 0 => Some x | _ => None end ;
  o := fun x' => if is_x_dec x' then Some 0 else None ;
@@ -185,3 +187,7 @@ Instance pair_FIso (X Y:Type) (xk yk:nati) (x:FIso X xk) (y:FIso Y yk) :
 Proof.
  destruct xk as [|xk]; destruct yk as [|yk]; simpl.
  apply inat_inat_FIso.
+
+
+
+(* bind : (FIso X xk) -> (X -> FIso Y yk) -> FIso (X*Y) (join xk yk) *)
