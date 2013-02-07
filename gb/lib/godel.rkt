@@ -105,6 +105,8 @@
       ...)))
 
 ;; Specs
+(define null/s
+  (spec 0 error error))
 (define (unit/s v)
   (spec 1 (λ (n) v) (λ (v) 0)))
 (module+ test

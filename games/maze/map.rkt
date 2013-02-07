@@ -57,8 +57,6 @@
 (define wall-visit-order
   (build-list 63 (λ (x) x)))
 
-;; XXX incorporate ghost position (so that I don't put a ghost in a
-;; wall if I'm switching the state of a quad)
 (define (generate-quad)
   (generate-quad/template
    (list-ref/random quad:templates)
@@ -135,7 +133,7 @@
            (quad-cell-set! r*c new-val)
            r*c)))
 
-  (define player-entry-cell 
+  (define player-entry-cell
     (set-first-hall-to! player-entry))
 
   (visit player-entry-cell)
@@ -189,6 +187,8 @@
     (when (= conn (quad-cell-ref r*c))
       (quad-cell-set! r*c hall)))
 
+  ;; XXX incorporate ghost position (so that I don't put a ghost in a
+  ;; wall if I'm switching the state of a quad)
   (map set-first-hall-to!
        (list power-up fruit ghost-entry))
 
@@ -225,6 +225,57 @@
   (display-maze
    (generate-quad/template
     (second quad:templates)
-    wall-visit-order)))
+    wall-visit-order))
+
+  (require gb/lib/godel)
+  (define (remove-at l i)
+    (for/list ([e (in-list l)]
+               [j (in-naturals)]
+               #:unless (= i j))
+      e))
+  (define (list-index l v)
+    (for/or ([e (in-list l)]
+             [i (in-naturals)]
+             #:when (equal? e v))
+      i))
+  (define (permutations/s l)
+    (cond
+      [(empty? l)
+       (unit/s empty)]
+      [else
+       (k*k-bind/s
+        (wrap/s (nat-range/s (length l))
+                (λ (i) (list-ref l i))
+                (λ (v) (list-index l v)))
+        (λ (v)
+          ;; XXX That's ugly
+          (define i (list-index l v))
+          (define l-p (remove-at l i))
+          (permutations/s l-p)))]))
+
+  ;; 8 is the first time you notice
+  ;; 9 is tough
+  (define s (permutations/s '(0 1 2 3 4 5 6 7)))
+  (for ([i (in-range 10)])
+    (printf "~a = ~a\n" i (decode s i)))
+  (newline)
+  (error 'done)
+
+  (define maze/s
+    (wrap/s (cons/s
+             (enum/s quad:templates)
+             (permutations/s wall-visit-order))
+            (match-lambda
+             [(cons template visit-order)
+              (generate-quad/template template visit-order)])
+            (match-lambda
+             [_
+              (error 'maze/s "Encoding not supported")])))
+  (for ([i (in-range 1)])
+    (define m (decode maze/s i))
+    (printf "~a =\n" i)
+    (display-maze m))
+  
+)
 
 (provide (all-defined-out))
