@@ -325,16 +325,18 @@
                         (random 4)))))
 
 (define (k*k-bind/s fst/s fst->rst/s
+                    #:count [count #f]
                     #:rst-k [given-rst-k #f])
   ;; XXX check
   (match-define (spec fst-k fst-in fst-out) fst/s)
 
-  (spec (if (= +inf.0 fst-k)
-          +inf.0
-          (for/sum ([i (in-range fst-k)])
-                   (define fst (fst-in i))
-                   ;; XXX check
-                   (spec-k (fst->rst/s fst))))
+  (spec (or count
+            (if (= +inf.0 fst-k)
+              +inf.0
+              (for/sum ([i (in-range fst-k)])
+                       (define fst (fst-in i))
+                       ;; XXX check
+                       (spec-k (fst->rst/s fst)))))
         (λ (n)
           (define fst (fst-in (pair-hd fst-k (or given-rst-k rst-k) n)))
           ;; XXX check
@@ -387,6 +389,8 @@
    [(cons 2 3) 6]
    [(cons 3 3) 3]))
 
+;; XXX Add an optional function arg that tells you how many elements
+;; there are for each n
 (define (inf*k-bind/s fst/s fst->rst/s)
   ;; XXX check
   (match-define (spec fst-k fst-in fst-out) fst/s)

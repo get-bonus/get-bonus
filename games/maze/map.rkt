@@ -4,6 +4,7 @@
          racket/file
          racket/list
          gb/lib/random
+         math/number-theory
          (only-in gb/ai/path-finding
                   manhattan-distance)
          racket/function)
@@ -244,6 +245,7 @@
        (unit/s empty)]
       [else
        (k*k-bind/s
+        #:count (factorial (length l))
         (wrap/s (nat-range/s (length l))
                 (λ (i) (list-ref l i))
                 (λ (v) (list-index l v)))
@@ -255,11 +257,11 @@
 
   ;; 8 is the first time you notice
   ;; 9 is tough
-  (define s (permutations/s '(0 1 2 3 4 5 6 7)))
+  (define s (permutations/s '(0 1 2 3 4 5 6 7 8 9)))
   (for ([i (in-range 10)])
     (printf "~a = ~a\n" i (decode s i)))
   (newline)
-  (error 'done)
+  ;;(error 'done)
 
   (define maze/s
     (wrap/s (cons/s
@@ -271,6 +273,7 @@
             (match-lambda
              [_
               (error 'maze/s "Encoding not supported")])))
+  (printf "k: ~a\n" (spec-k maze/s))
   (for ([i (in-range 1)])
     (define m (decode maze/s i))
     (printf "~a =\n" i)
