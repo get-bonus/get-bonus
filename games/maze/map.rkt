@@ -277,8 +277,6 @@
   (for ([i (in-range 1)])
     (define m (decode maze/s i))
     (printf "~a =\n" i)
-    (display-maze m))
-  
-)
+    (display-maze m)))
 
 (provide (all-defined-out))
