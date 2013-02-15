@@ -7,6 +7,7 @@
 ** TODO SRS - have games return custom attempt information
    Like what the equipment/etc configuration was in JRPGs, so it can
    be re-presented if it needs to be modified
+** TODO Implement pausing and quitting
 ** TODO main - have a way of browsing attempts (press select?)
    For viewing a replay or other data
 ** TODO generalize score to a hash of different metrics

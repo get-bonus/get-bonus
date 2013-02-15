@@ -186,6 +186,10 @@
                           (/ (attempt-start last) 1000))
                          #t))])))))
 
+(define (id->game-info-display id)
+  (define g (hash-ref game-code->info id))
+  (list (format "      Game: ~a" (game-info-name g))))
+
 (define (go)
   (big-bang/os
    width height center-pos
@@ -241,14 +245,15 @@
                    (list
                     (menu:status "Play the card?")
                     (menu:info
+                     (append
+                      (id->game-info-display
+                       (match data
+                         [#f id]
+                         [(ldata game _ _) game]))
                      (list*
-                      (format "      Game: ~a"
-                              (match data
-                                [#f id]
-                                [(ldata game _ _) game]))
                       (format "      Sort: ~a"
                               (real->decimal-string sort-score))
-                      (history->info-screen-list history)))
+                      (history->info-screen-list history))))
                     (menu:action (λ () (play-card c))))))))))
           (menu:option
            "Games"
@@ -265,7 +270,11 @@
                                   (game-info-id g))))
 
                    (list (menu:status "Play the game?")
-                         (menu:info (history->info-screen-list history))
+                         (menu:info 
+                          (append
+                           (id->game-info-display
+                            (game-info-id g))
+                           (history->info-screen-list history)))
                          (menu:action (λ () (play-game g))))))))))))))
 
      (render-menu #:back (λ () (os/exit 0))
