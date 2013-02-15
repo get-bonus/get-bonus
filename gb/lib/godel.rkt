@@ -2,7 +2,8 @@
 (require racket/match
          racket/contract
          racket/function
-         racket/list)
+         racket/list
+         math/number-theory)
 (module+ test
   (require rackunit)
   (define N 10))
