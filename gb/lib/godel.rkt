@@ -526,6 +526,33 @@
                 (build-list (random (* N N))
                             (λ (_) (random (* N N)))))))
 
+;; Permutations
+(define (remove-at l i)
+  (for/list ([e (in-list l)]
+             [j (in-naturals)]
+             #:unless (= i j))
+    e))
+(define (list-index l v)
+  (for/or ([e (in-list l)]
+           [i (in-naturals)]
+           #:when (equal? e v))
+    i))
+(define (permutations/s l)
+  (cond
+    [(empty? l)
+     (unit/s empty)]
+    [else
+     (k*k-bind/s
+      #:count (factorial (length l))
+      (wrap/s (nat-range/s (length l))
+              (λ (i) (list-ref l i))
+              (λ (v) (list-index l v)))
+      (λ (v)
+        ;; XXX That's ugly
+        (define i (list-index l v))
+        (define l-p (remove-at l i))
+        (permutations/s l-p)))]))
+
 ;; XXX
 (define (spec/c result/c)
   spec?)
