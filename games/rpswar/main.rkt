@@ -188,6 +188,7 @@
 
 (define game
   (game-info 'rpswar "RPS War"
+             (list "Play Rock-Paper-Scissors against an algorithmic opponent. The opponent does not choose its play randomly, but uses a strategy fixed at the beginning of the round. Try to reverse engineer the strategy to win!")
              2
              (godel-generate fst-spec generate-ai)
              (godel-start fst-spec game-start)))

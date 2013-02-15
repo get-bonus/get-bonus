@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract)
 
-(struct game-info (id name version generate start) #:transparent)
+(struct game-info (id name desc version generate start) #:transparent)
 
 (define level? exact-nonnegative-integer?)
 (define score? real?)
@@ -21,6 +21,7 @@
   [struct game-info
           ([id symbol?]
            [name string?]
+           [desc (listof string?)]
            [version exact-nonnegative-integer?]
            [generate (-> level?)]
            [start start/c])]))

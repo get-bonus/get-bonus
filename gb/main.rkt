@@ -84,7 +84,7 @@
      id]))
 
 (define (play-game gi)
-  (match-define (game-info id name version generate start)
+  (match-define (game-info id name desc version generate start)
                 gi)
   (define gcs (game-cards id))
   (define the-card
@@ -102,7 +102,7 @@
                      current-inexact-milliseconds))]
     [_
      (match-define (ldata id _ level) (card-data the-card))
-     (match-define (game-info _ name version generate start)
+     (match-define (game-info _ name _ version generate start)
                    (hash-ref game-code->info id))
      (define start-time (current-inexact-milliseconds))
      (define score (start level))
@@ -186,9 +186,12 @@
                           (/ (attempt-start last) 1000))
                          #t))])))))
 
+(require gb/lib/meta-q)
 (define (id->game-info-display id)
   (define g (hash-ref game-code->info id))
-  (list (format "      Game: ~a" (game-info-name g))))
+  (append (list (game-info-name g) "")          
+          (meta-q 50 (game-info-desc g))
+          (list "")))
 
 (define (go)
   (big-bang/os
@@ -298,7 +301,7 @@
   (write-to-file play-session play-session-pth #:exists 'replace)
 
   (for ([gi (in-list games)])
-    (match-define (game-info id _ version generate _) gi)
+    (match-define (game-info id _ _ version generate _) gi)
     (set-srs-generator! the-srs id
                         (λ () (values (ldata id version (generate))
                                       (adata play-session #f)))))

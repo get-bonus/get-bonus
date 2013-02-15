@@ -75,7 +75,6 @@
 ** TODO Make games return replays (and allow them to accept replays)
    Replay = (random seed, level, controller stream)
 ** TODO Build music libraries based on emotion (fast, race, scary, triump, etc)
-** TODO Add "compare with ..." to game info and display
 ** TODO SRS - Automatically go to the next card
 ** TODO SRS - Deal with games that have a win condition
    (so that you don't get too much credit if you don't actually win,
@@ -969,3 +968,5 @@
    CLOSED: [2013-01-29 Tue 07:20]
 ** DONE maze - use godel
    CLOSED: [2013-02-15 Fri 07:45]
+** DONE Add "compare with ..." to game info and display
+   CLOSED: [2013-02-15 Fri 08:45]
