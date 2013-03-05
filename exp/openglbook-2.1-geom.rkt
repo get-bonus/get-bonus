@@ -31,8 +31,8 @@
 
     #;
     (transform
-     #:d 8.0 4.5
-     (modern/12/string "TEST" #:hw 0.5 #:hh 0.5))
+    #:d 8.0 4.5
+    (modern/12/string "TEST" #:hw 0.5 #:hh 0.5))
 
     #;
 
@@ -81,33 +81,28 @@
   (define draw #f)
 
   (define-values
-    (the-frame the-canvas)
+    (relabel refresh done-sema)
     (make-fullscreen-canvas
-     (λ (c)
-       (define dc (send c get-dc))
-       (define glctx (send dc get-gl-context))
+     (λ (h w swap)
+       (unless draw
+         (set! draw
+               (make-draw
+                texture-atlas-path
+                texture-atlas-size
+                16.0 9.0)))
 
-       (send glctx call-as-current
-             (λ ()
-               (unless draw
-                 (set! draw
-                       (make-draw
-                        texture-atlas-path
-                        texture-atlas-size
-                        16.0 9.0)))
+       (set! Frame (modulo (add1 Frame) 60))
 
-               (set! Frame (modulo (add1 Frame) 60))
+       #;
+       (when (zero? Frame)
+       (set! objects
+       (for/list ([o (in-list objects)])
+       (struct-copy sprite-info o
+       [theta
+       (add1 (sprite-info-theta o))]))))
 
-               #;
-               (when (zero? Frame)
-                 (set! objects
-                       (for/list ([o (in-list objects)])
-                         (struct-copy sprite-info o
-                                      [theta
-                                       (add1 (sprite-info-theta o))]))))
-
-               (draw objects)
-               (send glctx swap-buffers))))
+       (draw objects)
+       (swap))
      (λ (k)
        (void))))
 
@@ -116,14 +111,14 @@
       (current-inexact-milliseconds))
     (define next-time
       (+ before (* 1/60 1000)))
-    (send the-canvas refresh-now)
+    (refresh)
     (define after
       (current-inexact-milliseconds))
-    (send the-frame set-label
-          (format "~a FPS"
-                  (real->decimal-string
-                   (/ 1 (/ (- after before) 1000))
-                   2)))
+    (relabel
+     (format "~a FPS"
+             (real->decimal-string
+              (/ 1 (/ (- after before) 1000))
+              2)))
     (sync (alarm-evt next-time))
     (loop)))
 

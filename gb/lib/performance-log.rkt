@@ -13,18 +13,20 @@
 (define log-op #f)
 
 (define (*performance-log! id val)
-  (write id log-op)
-  (write-char #\space log-op)
-  (write val log-op)
-  (write-char #\space log-op))
+  (when log-op
+    (write id log-op)
+    (write-char #\space log-op)
+    (write val log-op)
+    (write-char #\space log-op)))
 
 (define (performance-log-init! pth)
   (set! log-op (open-output-file pth #:exists 'replace)))
 
 (define (performance-log-done!)
-  (write #f log-op)
-  (write-char #\space log-op)
-  (flush-output log-op))
+  (when log-op
+    (write #f log-op)
+    (write-char #\space log-op)
+    (flush-output log-op)))
 
 (define (performance-log-read p)
   (define (read-log)
