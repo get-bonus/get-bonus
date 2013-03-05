@@ -71,18 +71,28 @@
     (vector-copy! (joystick-state-axes out) 0 (joystick-state-axes in))
     (vector-copy! (joystick-state-buttons out) 0 (joystick-state-buttons in))))
 
+(define IGNORED-JOYSTICKS
+  '(#"applesmc"))
+
 (struct joystick-monitor (t in-sem out-sem out-state))
 (define (make-joystick-monitor)
   (define js-ports
     (map open-input-file
          (filter (λ (p) (regexp-match #rx#"^/dev/input/js" (path->bytes p)))
                  (directory-list "/dev/input/" #:build? #t))))
-  (define state
-    (for/list ([p (in-list js-ports)])
-      (define axes (ioctl_char p JSIOCGAXES))
-      (define buttons (ioctl_char p JSIOCGBUTTONS))
-      (define name (ioctl_str128 p JSIOCGNAME_128))
-      (joystick-state name (make-vector axes 0.0) (make-vector buttons 0))))
+  (define p*state-s
+    (filter (λ (x) x)
+            (for/list ([p (in-list js-ports)])
+              (define axes (ioctl_char p JSIOCGAXES))
+              (define buttons (ioctl_char p JSIOCGBUTTONS))
+              (define name (ioctl_str128 p JSIOCGNAME_128))
+              (and (not (member name IGNORED-JOYSTICKS))
+                   (cons p
+                         (joystick-state name 
+                                         (make-vector axes 0.0)
+                                         (make-vector buttons 0)))))))
+  (define state-ports (map car p*state-s))
+  (define state (map cdr p*state-s))
   (define out-state
     (map deep-copy state))
   (define event-bs
@@ -94,7 +104,7 @@
     (thread
      (λ ()
        (define event-evts
-         (for/list ([p (in-list js-ports)]
+         (for/list ([p (in-list state-ports)]
                     [s (in-list state)])
            (handle-evt (read-bytes!-evt event-bs p)
                        (λ (how-many-or-eof)

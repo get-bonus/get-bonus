@@ -1,4 +1,6 @@
 * General TODO items
+** TODO pseudo-random number generation based on naturals (rather than MAXINT)
+** TODO base infinite sequences off of digits of pi/e/etc
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels
@@ -51,7 +53,6 @@
    
    The main problem seems to be that it would make it so I can't use
    OpenAL directly, because you need to return audio data per frame
-** TODO GLFW - Wait for getting the string identifiers of joysticks
 ** TODO GLFW - Wait for consistent joystick state intra-frame
    So glfwPollEvents calls pollJoystickEvents and Win32 caches
 ** TODO Make a tool for downloading the copyrighted images/music
@@ -970,3 +971,5 @@
    CLOSED: [2013-02-15 Fri 07:45]
 ** DONE Add "compare with ..." to game info and display
    CLOSED: [2013-02-15 Fri 08:45]
+** DONE GLFW - Wait for getting the string identifiers of joysticks
+   CLOSED: [2013-02-15 Fri 11:37]
