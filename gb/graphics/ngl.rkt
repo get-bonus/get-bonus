@@ -68,15 +68,30 @@
 
 (define-syntax-rule
   (define-draw draw
-    texture-atlas-size width height
-    TextureAtlasId ProgramId
+    texture-atlas-path texture-atlas-size width height
+    ProgramId
     SpriteData SpriteData-count SpriteData-count:new SpriteData-components
-    install-objects!
+    install-object!
     #:attrib
     ([AttribId AttribStart AttribEnd] ...)
     #:render
     (DrawType DrawnMult AttributeCount))
   (begin
+    (define (install-objects! t)
+      (let loop ([offset 0] [t t])
+        (match t
+          [(list)
+           offset]
+          [(cons b a)
+           (loop (loop offset b) a)]
+          [o
+           (install-object! offset o)
+           (add1 offset)])))
+
+    (define TextureAtlasId
+      (load-texture texture-atlas-path
+                    #:mipmap #f))
+
     (glLinkProgram ProgramId)
     (print-shader-log glGetProgramInfoLog 'Program ProgramId)
 

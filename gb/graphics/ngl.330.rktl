@@ -11,7 +11,8 @@
    (list SpriteData-X SpriteData-Y SpriteData-HW SpriteData-HH
          SpriteData-R SpriteData-G SpriteData-B SpriteData-A
          SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
-         SpriteData-MX SpriteData-MY SpriteData-ROT)
+         SpriteData-MX SpriteData-MY SpriteData-ROT
+         )
    (build-list SpriteData-components identity))
   (define SpriteData-count
     0)
@@ -27,43 +28,45 @@
       (begin
         (cvector-set!
          SpriteData
-         (+ (* i SpriteData-components) SpriteData-X)
+         (+ (* i SpriteData-components)
+
+            SpriteData-X)
          x)
         ...))
     (when (i . < . SpriteData-count)
-      (install! [SpriteData-X x]
-                [SpriteData-Y y]
-                [SpriteData-HW w]
-                [SpriteData-HH h]
-                [SpriteData-R r]
-                [SpriteData-G g]
-                [SpriteData-B b]
-                [SpriteData-A a]
-                [SpriteData-TX (f32vector-ref tex 0)]
-                [SpriteData-TY (f32vector-ref tex 1)]
-                [SpriteData-TW (f32vector-ref tex 2)]
-                [SpriteData-TH (f32vector-ref tex 3)]
-                [SpriteData-MX mx]
-                [SpriteData-MY my]
-                [SpriteData-ROT theta])))
 
-  (define (install-objects! t)
-    (let loop ([offset 0] [t t])
-      (match t
-        [(list)
-         offset]
-        [(cons b a)
-         (loop (loop offset b) a)]
-        [o
-         (install-object! offset o)
-         (add1 offset)])))
+      (install!
+       [SpriteData-X x]
+       [SpriteData-Y y]
+       [SpriteData-HW w]
+       [SpriteData-HH h]
+       [SpriteData-R r]
+       [SpriteData-G g]
+       [SpriteData-B b]
+       [SpriteData-A a]
+       [SpriteData-TX (f32vector-ref tex 0)]
+       [SpriteData-TY (f32vector-ref tex 1)]
+       [SpriteData-TW (f32vector-ref tex 2)]
+       [SpriteData-TH (f32vector-ref tex 3)]
+       [SpriteData-MX mx]
+       [SpriteData-MY my]
+       [SpriteData-ROT theta]
 
-  (define TextureAtlasId
-    (load-texture texture-atlas-path
-                  #:mipmap #f))
+       ))
+
+
+
+
+
+    )
 
   ;; Create Shaders
   (define ProgramId (glCreateProgram))
+
+
+
+
+
 
   (define&compile-shader VertexShaderId GL_VERTEX_SHADER
     ProgramId VertexShader)
@@ -73,14 +76,15 @@
     ProgramId GeometryShader)
 
   (define-draw draw
-    texture-atlas-size width height
-    TextureAtlasId ProgramId
+    texture-atlas-path texture-atlas-size width height
+    ProgramId
     SpriteData SpriteData-count SpriteData-count:new SpriteData-components
-    install-objects!
+    install-object!
     #:attrib
     ([0 SpriteData-X SpriteData-HH]
      [1 SpriteData-R SpriteData-A]
      [2 SpriteData-TX SpriteData-TH]
-     [3 SpriteData-MX SpriteData-ROT])
+     [3 SpriteData-MX SpriteData-ROT]
+     )
     #:render
-    (GL_POINTS 1 4)))
+    [GL_POINTS 1 4]))

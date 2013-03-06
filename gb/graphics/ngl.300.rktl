@@ -1,6 +1,7 @@
 (define-shader-source Old-VertexShader "ngl.vertex.old.glsl")
 (define-shader-source Old-FragmentShader "ngl.fragment.old.glsl")
 
+
 (define (make-draw/300 texture-atlas-path
                        texture-atlas-size
                        width height)
@@ -59,21 +60,6 @@
       (point-install! +1.0 +1.0 4)
       (point-install! +1.0 -1.0 5)))
 
-  (define (install-objects! t)
-    (let loop ([offset 0] [t t])
-      (match t
-        [(list)
-         offset]
-        [(cons b a)
-         (loop (loop offset b) a)]
-        [o
-         (install-object! offset o)
-         (add1 offset)])))
-
-  (define TextureAtlasId
-    (load-texture texture-atlas-path
-                  #:mipmap #f))
-
   ;; Create Shaders
   (define ProgramId (glCreateProgram))
   (glBindAttribLocation ProgramId 0 "in_Position")
@@ -90,10 +76,10 @@
 
 
   (define-draw draw
-    texture-atlas-size width height
-    TextureAtlasId ProgramId
+    texture-atlas-path texture-atlas-size width height
+    ProgramId
     SpriteData SpriteData-count SpriteData-count:new SpriteData-components
-    install-objects!
+    install-object!
     #:attrib
     ([0 SpriteData-X SpriteData-HH]
      [1 SpriteData-R SpriteData-A]
