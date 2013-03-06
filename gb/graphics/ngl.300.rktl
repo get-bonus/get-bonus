@@ -87,55 +87,18 @@
   (define&compile-shader Old-FragmentShaderId GL_FRAGMENT_SHADER
     ProgramId Old-FragmentShader)
 
-  (glLinkProgram ProgramId)
-  (print-shader-log glGetProgramInfoLog 'Program ProgramId)
 
-  (glUseProgram ProgramId)
-  (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasSize")
-               texture-atlas-size)
-  (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
-               width)
-  (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
-               height)
-  (glUseProgram 0)
-
-  ;; Create VBOs
-  (define VaoId
-    (u32vector-ref (glGenVertexArrays 1) 0))
-  (glBindVertexArray VaoId)
-
-  (define-syntax-rule
-    (define-vertex-attrib-array
-      Index SpriteData-start SpriteData-end type)
-    (begin
-      (define HowMany
-        (add1 (- SpriteData-end SpriteData-start)))
-      (glVertexAttribPointer
-       Index HowMany type
-       #f
-       (* (gl-type-sizeof type)
-          SpriteData-components)
-       (* (gl-type-sizeof type)
-          SpriteData-start))
-      (glEnableVertexAttribArray Index)))
-
-  (define VboId
-    (u32vector-ref (glGenBuffers 1) 0))
-
-  (glBindBuffer GL_ARRAY_BUFFER VboId)
-  (define-vertex-attrib-array 0 SpriteData-X SpriteData-HH GL_FLOAT)
-  (define-vertex-attrib-array 1 SpriteData-R SpriteData-A GL_FLOAT)
-  (define-vertex-attrib-array 2 SpriteData-TX SpriteData-TH GL_FLOAT)
-  (define-vertex-attrib-array 3 SpriteData-MX SpriteData-ROT GL_FLOAT)
-  (define-vertex-attrib-array 4 SpriteData-Horiz SpriteData-Vert GL_FLOAT)
-  (glBindBuffer GL_ARRAY_BUFFER 0)
-
-  (glBindVertexArray 0)
 
   (define-draw draw
-    VaoId TextureAtlasId VboId ProgramId
+    texture-atlas-size width height
+    TextureAtlasId ProgramId
     SpriteData SpriteData-count SpriteData-count:new SpriteData-components
     install-objects!
-    GL_TRIANGLES 6 5)
-
-  draw)
+    #:attrib
+    ([0 SpriteData-X SpriteData-HH]
+     [1 SpriteData-R SpriteData-A]
+     [2 SpriteData-TX SpriteData-TH]
+     [3 SpriteData-MX SpriteData-ROT]
+     [4 SpriteData-Horiz SpriteData-Vert])
+    #:render
+    [GL_TRIANGLES 6 5]))

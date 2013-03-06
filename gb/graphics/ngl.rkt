@@ -66,106 +66,155 @@
 ;; New version w/ geometry shaders
 (include "ngl.330.rktl")
 
-(define-syntax-rule 
+(define-syntax-rule
   (define-draw draw
-    VaoId TextureAtlasId VboId ProgramId
+    texture-atlas-size width height
+    TextureAtlasId ProgramId
     SpriteData SpriteData-count SpriteData-count:new SpriteData-components
     install-objects!
-    DrawType DrawnMult AttributeCount)
-  (define (draw objects)
-    (glBindVertexArray VaoId)
-
-    (for ([i (in-range AttributeCount)])
-      (glEnableVertexAttribArray i))
-
-    (glBindTexture GL_TEXTURE_2D
-                   TextureAtlasId)
-
-    (glBindBuffer GL_ARRAY_BUFFER VboId)
-
-    (unless (>= SpriteData-count SpriteData-count:new)
-      (define SpriteData-count:old SpriteData-count)
-      (set! SpriteData-count
-            (max (* 2 SpriteData-count)
-                 SpriteData-count:new))
-      ;; (printf "~a -> max(~a,~a) = ~a\n"
-      ;;         SpriteData-count:old
-      ;;         (* 2 SpriteData-count)
-      ;;         SpriteData-count:new
-      ;;         SpriteData-count)
-      (glBufferData GL_ARRAY_BUFFER
-                    (* SpriteData-count
-                       DrawnMult
-                       SpriteData-components
-                       (gl-type-sizeof GL_FLOAT))
-                    #f
-                    GL_STREAM_DRAW))
-
-    (performance-log! SpriteData-count)
-
-    (set! SpriteData
-          (make-cvector*
-           (glMapBufferRange
-            GL_ARRAY_BUFFER
-            0
-            (* SpriteData-count
-               DrawnMult
-               SpriteData-components
-               (gl-type-sizeof GL_FLOAT))
-            (bitwise-ior
-             ;; We are overriding everything (this would be wrong if
-             ;; we did the cachinge "optimization" I imagine)
-             GL_MAP_INVALIDATE_RANGE_BIT
-             GL_MAP_INVALIDATE_BUFFER_BIT
-
-             ;; We are not doing complex queues, so don't block other
-             ;; operations (but it doesn't seem to improve performance
-             ;; by having this option)
-             ;; GL_MAP_UNSYNCHRONIZED_BIT
-
-             ;; We are writing
-             GL_MAP_WRITE_BIT))
-           _float
-           (* SpriteData-count
-              DrawnMult
-              SpriteData-components)))
-
-    ;; Reload all data every frame
-    (define this-count (install-objects! objects))
-    (performance-log! this-count)
-    (set! SpriteData-count:new this-count)
-    (glUnmapBuffer GL_ARRAY_BUFFER)
-    (glBindBuffer GL_ARRAY_BUFFER 0)
+    #:attrib
+    ([AttribId AttribStart AttribEnd] ...)
+    #:render
+    (DrawType DrawnMult AttributeCount))
+  (begin
+    (glLinkProgram ProgramId)
+    (print-shader-log glGetProgramInfoLog 'Program ProgramId)
 
     (glUseProgram ProgramId)
+    (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasSize")
+                 texture-atlas-size)
+    (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
+                 width)
+    (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
+                 height)
+    (glUseProgram 0)
 
-    (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+    ;; Create VBOs
+    (define VaoId
+      (u32vector-ref (glGenVertexArrays 1) 0))
+    (glBindVertexArray VaoId)
 
-    (glEnable GL_DEPTH_TEST)
-    (glClearColor 1.0 1.0 1.0 0.0)
+    (define-syntax-rule
+      (define-vertex-attrib-array
+        Index SpriteData-start SpriteData-end type)
+      (begin
+        (define HowMany
+          (add1 (- SpriteData-end SpriteData-start)))
+        (glVertexAttribPointer
+         Index HowMany type
+         #f
+         (* (gl-type-sizeof type)
+            SpriteData-components)
+         (* (gl-type-sizeof type)
+            SpriteData-start))
+        (glEnableVertexAttribArray Index)))
 
-    (glEnable GL_BLEND)
-    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
-    (glEnable GL_ALPHA_TEST)
-    (glAlphaFunc GL_GREATER 0.0)
+    (define VboId
+      (u32vector-ref (glGenBuffers 1) 0))
 
-    (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
-
-    (define drawn-count
-      (min this-count SpriteData-count))
-    (glDrawArrays
-     DrawType 0
-     (* DrawnMult drawn-count))
-
-    (performance-log! drawn-count)
-
-    (glPopAttrib)
-
-    (glBindTexture GL_TEXTURE_2D 0)
-
-    (for ([i (in-range AttributeCount)])
-      (glDisableVertexAttribArray i))
+    (glBindBuffer GL_ARRAY_BUFFER VboId)
+    (define-vertex-attrib-array AttribId AttribStart AttribEnd GL_FLOAT)
+    ...
+    (glBindBuffer GL_ARRAY_BUFFER 0)
 
     (glBindVertexArray 0)
 
-    (glUseProgram 0)))
+    (define (draw objects)
+      (glBindVertexArray VaoId)
+
+      (for ([i (in-range AttributeCount)])
+        (glEnableVertexAttribArray i))
+
+      (glBindTexture GL_TEXTURE_2D
+                     TextureAtlasId)
+
+      (glBindBuffer GL_ARRAY_BUFFER VboId)
+
+      (unless (>= SpriteData-count SpriteData-count:new)
+        (define SpriteData-count:old SpriteData-count)
+        (set! SpriteData-count
+              (max (* 2 SpriteData-count)
+                   SpriteData-count:new))
+        ;; (printf "~a -> max(~a,~a) = ~a\n"
+        ;;         SpriteData-count:old
+        ;;         (* 2 SpriteData-count)
+        ;;         SpriteData-count:new
+        ;;         SpriteData-count)
+        (glBufferData GL_ARRAY_BUFFER
+                      (* SpriteData-count
+                         DrawnMult
+                         SpriteData-components
+                         (gl-type-sizeof GL_FLOAT))
+                      #f
+                      GL_STREAM_DRAW))
+
+      (performance-log! SpriteData-count)
+
+      (set! SpriteData
+            (make-cvector*
+             (glMapBufferRange
+              GL_ARRAY_BUFFER
+              0
+              (* SpriteData-count
+                 DrawnMult
+                 SpriteData-components
+                 (gl-type-sizeof GL_FLOAT))
+              (bitwise-ior
+               ;; We are overriding everything (this would be wrong if
+               ;; we did the cachinge "optimization" I imagine)
+               GL_MAP_INVALIDATE_RANGE_BIT
+               GL_MAP_INVALIDATE_BUFFER_BIT
+
+               ;; We are not doing complex queues, so don't block other
+               ;; operations (but it doesn't seem to improve performance
+               ;; by having this option)
+               ;; GL_MAP_UNSYNCHRONIZED_BIT
+
+               ;; We are writing
+               GL_MAP_WRITE_BIT))
+             _float
+             (* SpriteData-count
+                DrawnMult
+                SpriteData-components)))
+
+      ;; Reload all data every frame
+      (define this-count (install-objects! objects))
+      (performance-log! this-count)
+      (set! SpriteData-count:new this-count)
+      (glUnmapBuffer GL_ARRAY_BUFFER)
+      (glBindBuffer GL_ARRAY_BUFFER 0)
+
+      (glUseProgram ProgramId)
+
+      (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+
+      (glEnable GL_DEPTH_TEST)
+      (glClearColor 1.0 1.0 1.0 0.0)
+
+      (glEnable GL_BLEND)
+      (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
+      (glEnable GL_ALPHA_TEST)
+      (glAlphaFunc GL_GREATER 0.0)
+
+      (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
+
+      (define drawn-count
+        (min this-count SpriteData-count))
+      (glDrawArrays
+       DrawType 0
+       (* DrawnMult drawn-count))
+
+      (performance-log! drawn-count)
+
+      (glPopAttrib)
+
+      (glBindTexture GL_TEXTURE_2D 0)
+
+      (for ([i (in-range AttributeCount)])
+        (glDisableVertexAttribArray i))
+
+      (glBindVertexArray 0)
+
+      (glUseProgram 0))
+
+    draw))
