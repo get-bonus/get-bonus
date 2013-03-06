@@ -82,18 +82,16 @@
 
   (define (install-object! i o)
     (match-define (sprite-info x y w h r g b a tex mx my theta) o)
-    (eprintf "~v\n" (list x y w h r g b a tex mx my theta))
     ;; XXX Would it be faster to do a vector-copy! ?
     (define-syntax-rule
       (install! j [SpriteData-X x] ...)
       (begin
-        (begin
-          (cvector-set!
-           SpriteData
-           (+ (* i 6 SpriteData-components)
-              (* 0 j SpriteData-components)
-              SpriteData-X)
-           x))
+        (cvector-set!
+         SpriteData
+         (+ (* i 6 SpriteData-components)
+            (* j SpriteData-components)
+            SpriteData-X)
+         x)
         ...))
     (when (i . < . SpriteData-count)
       (define-syntax-rule (point-install! Horiz Vert j)
@@ -297,9 +295,7 @@
 
     (glBindVertexArray 0)
 
-    (glUseProgram 0)
-
-    (printf "draw done\n\n"))
+    (glUseProgram 0))
 
   draw)
 

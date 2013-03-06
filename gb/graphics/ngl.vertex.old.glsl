@@ -43,9 +43,9 @@ void main(void)
   // Vertex Shader
   vec4 the_gl_Position;
 
-  gl_Position.xy = in_Position.xy;
-  gl_Position.z = in_Position.z * in_Transforms.x;
-  gl_Position.w = in_Position.w * in_Transforms.y;
+  the_gl_Position.xy = in_Position.xy;
+  the_gl_Position.z = in_Position.z * in_Transforms.x;
+  the_gl_Position.w = in_Position.w * in_Transforms.y;
 
   float mid_Rotation = in_Transforms.z;
   vec4 mid_Color = in_Color;
