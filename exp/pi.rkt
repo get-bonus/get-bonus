@@ -43,7 +43,7 @@
      (define d
        (for/sum ([i (in-range (ceiling (/ (log k) (log 10))))]
                  [sub-d seq])
-                sub-d))
+                (* sub-d (expt 10 i))))
      (yield (modulo d k))
      (loop))))
 
@@ -81,4 +81,9 @@
   (test-tetris 7 1)
   (test-tetris 7 2)
   (test-tetris 15 1)
-  (test-tetris 15 2))
+  (test-tetris 15 2)
+
+  (test-tetris 100 2))
+
+(provide 10-sequence->K-sequence
+         BPP-digits)

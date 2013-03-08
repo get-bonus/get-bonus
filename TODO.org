@@ -1,9 +1,9 @@
 * General TODO items
+** TODO base infinite sequences off of digits of pi/e/etc
+   2013/03/08 - I did this and need to integrate it with tennis and maze
 ** TODO unify different NGL implementations
 ** TODO jake - parallel
 ** TODO write more tests
-** TODO pseudo-random number generation based on naturals (rather than MAXINT)
-** TODO base infinite sequences off of digits of pi/e/etc
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels
@@ -58,6 +58,8 @@
    OpenAL directly, because you need to return audio data per frame
 ** TODO GLFW - Wait for consistent joystick state intra-frame
    So glfwPollEvents calls pollJoystickEvents and Win32 caches
+
+   2013/03/08 - I submitted this patch
 ** TODO Make a tool for downloading the copyrighted images/music
    List the URL, a checksum, and then have the tool download them if
    they aren't there and verify if they are.
@@ -187,6 +189,10 @@
 
    (Probably not useful, because I hit very high frame rates even when
    updating vectors thousands of elements long)
+* Theory Ideas
+** TODO pseudo-random number generation based on naturals (rather than MAXINT)
+   This could be based on a block cipher with unbounded key length
+   and bounded block size
 * Done
 ** DONE Move tests into test submodules
    CLOSED: [2012-05-25 Fri 01:23]

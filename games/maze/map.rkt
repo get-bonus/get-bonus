@@ -211,18 +211,23 @@
       (newline))
     (newline))
 
+  #;
   (display-maze quad:template)
 
+  #;
   (for-each display-maze quad:templates)
 
+  #;
   (display-maze
    (generate-quad))
 
+  #;
   (display-maze
    (generate-quad/template
     (first quad:templates)
     wall-visit-order))
 
+  #;
   (display-maze
    (generate-quad/template
     (second quad:templates)
@@ -247,10 +252,25 @@
             (match-lambda
              [_
               (error 'maze/s "Encoding not supported")])))
-  (printf "k: ~a\n" (spec-k maze/s))
+  (printf "k: ~a (~a)\n" 
+          (spec-k maze/s)
+          (/ (log (spec-k maze/s))
+             (log 10)))
   (for ([i (in-range 1)])
     (define m (decode maze/s i))
     (printf "~a =\n" i)
-    (display-maze m)))
+    (display-maze m))
+
+  (require racket/generator exp/pi)
+  (define last (current-seconds))
+  (for ([i (10-sequence->K-sequence (spec-k maze/s) (in-generator (BPP-digits 100)))]
+        [n (in-range 1)])
+    (define m (decode maze/s i))
+    (define now (current-seconds))
+    (printf "(~a) ~a =\n" (- now last) i)
+    (set! last now)
+    (display-maze m))
+
+)
 
 (provide (all-defined-out))
