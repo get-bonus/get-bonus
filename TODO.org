@@ -1,5 +1,7 @@
 * General TODO items
 ** TODO unify different NGL implementations
+** TODO jake - parallel
+** TODO write more tests
 ** TODO pseudo-random number generation based on naturals (rather than MAXINT)
 ** TODO base infinite sequences off of digits of pi/e/etc
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are

@@ -9,6 +9,8 @@
   (f (argmax f l)))
 
 (define (log-display vs)
+  (printf "Samples: ~a\n" (length vs))
+
   (for ([ht (in-list vs)])
     (hash-set! ht 'memory-diff
                (- (hash-ref ht 'after-memory)
@@ -34,7 +36,8 @@
     (for/list ([t (in-range 0
                             (inexact->exact
                              (ceiling maximum-frame-time)))]
-               #:final (>= last-% 99/100))
+               #:final (or (>= last-% 99/100)
+                           (>= t 17)))
       (define % (frame-times-under t))
       (set! last-% %)
       (set! last-t t)
