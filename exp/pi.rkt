@@ -22,6 +22,8 @@
 
     (loop 8i)))
 
+;; XXX just subtract k if greater than k and then push the digit to
+;; left and go on
 (define (10-sequence->K-sequence k seq)
   (cond
     [(< k 10)

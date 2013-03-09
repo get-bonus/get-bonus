@@ -57,8 +57,6 @@
    The main problem seems to be that it would make it so I can't use
    OpenAL directly, because you need to return audio data per frame
 ** TODO GLFW - Wait for consistent joystick state intra-frame
-   So glfwPollEvents calls pollJoystickEvents and Win32 caches
-
    2013/03/08 - I submitted this patch
 ** TODO Make a tool for downloading the copyrighted images/music
    List the URL, a checksum, and then have the tool download them if
