@@ -34,16 +34,28 @@
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
      (nat-cons hd tl)]
+    [(+inf.0 1) 
+     hd]
+    [(1 +inf.0)
+     tl]
+    [(1 1)
+     0]
     [(+inf.0 tl-k)
-     (+ (* hd tl-k) tl)]
+     (+ (* hd tl-k) tl)]    
     [(hd-k +inf.0)
-     (+ hd (* tl hd-k))]
+     (+ hd (* tl hd-k))]    
     [(hd-k tl-k)
      (+ hd (* tl hd-k))]))
 (define (pair-hd hd-k tl-k n)
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
      (nat-hd n)]
+    [(+inf.0 1) 
+     n]
+    [(1 +inf.0)
+     0]
+    [(1 1)
+     0]
     [(+inf.0 tl-k)
      (quotient n tl-k)]
     [(hd-k +inf.0)
@@ -54,6 +66,12 @@
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
      (nat-tl n)]
+    [(+inf.0 1) 
+     0]
+    [(1 +inf.0)
+     n]
+    [(1 1)
+     0]
     [(+inf.0 tl-k)
      (remainder n tl-k)]
     [(hd-k +inf.0)
@@ -134,7 +152,7 @@
   (match-define (spec hd-k hd-in hd-out) hd/s)
   (match-define (spec tl-k tl-in tl-out) tl/s)
   (spec (* hd-k tl-k)
-        (λ (n)
+        (λ (n)          
           (cons (hd-in (pair-hd hd-k tl-k n))
                 (tl-in (pair-tl hd-k tl-k n))))
         (λ (v)
@@ -560,3 +578,18 @@
 
 ;; XXX
 (provide (all-defined-out))
+
+(module+ main
+  (let ([np/s (cons/s (nat-range/s 4) (nat-range/s 4))])
+    (define (number->bits n)
+      (reverse
+       (let loop ([n n])
+         (cond
+           [(zero? n) '()]
+           [(odd? n) (cons 1 (loop (/ (- n 1) 2)))]
+           [(even? n) (cons 0 (loop (/ n 2)))]))))
+    (define (f p)
+      (+ (length (number->bits (car p)))
+         (length (number->bits (cdr p)))))
+    (for/list ([i (in-range 25)])
+      (f (decode np/s i)))))
