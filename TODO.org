@@ -150,6 +150,7 @@
    Wrap this in a package that switches from game to game like I
    want... it may be perfection
 
+** TODO Implement a gamepad interface to Nethack (preferably with access to alt.org)
 ** TODO Implement Boxing iPhone game
    Like Punch-Out!!!
    
