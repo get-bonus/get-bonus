@@ -360,17 +360,18 @@
           (define fst (fst-in (pair-hd fst-k (or given-rst-k rst-k) n)))
           ;; XXX check
           (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-
+          
           (cons fst
                 (rst-in (pair-tl fst-k (or given-rst-k rst-k) n))))
         (λ (v)
           (match-define (cons fst rst) v)
           ;; XXX check
           (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-
+          
           (pair fst-k rst-k
                 (fst-out fst)
                 (rst-out rst)))))
+
 (module+ test
   (define 3+less-than-three/s
     (k*k-bind/s (enum/s '(0 1 2 3)) (λ (i) (nat-range/s (add1 i)))))
@@ -388,6 +389,59 @@
    [(cons 3 1) 7]
    [(cons 3 2) 11]
    [(cons 3 3) 15]))
+
+(define (k*k-bind2/s fst/s fst->rst/s
+                     #:count [count #f]
+                     #:rst-k [given-rst-k #f])
+  ;; XXX check
+  (match-define (spec fst-k fst-in fst-out) fst/s)
+  
+  (define size-table (make-hash))
+  (define total-size 0)
+  (define subs
+    (for/list ([i (in-range fst-k)])
+      (define fst (fst-in i))
+      (define sub (fst->rst/s fst))
+      (define size (spec-k sub))
+      (hash-set! size-table fst total-size)
+      (set! total-size (+ total-size size))
+      sub))
+  (spec total-size
+        (λ (n)
+          (let loop ([subs subs]
+                     [n n]
+                     [i 0])
+            (define sub (car subs))
+            (define sub-k (spec-k sub))
+            (cond
+              [(< n sub-k)
+               (define fst (fst-in i))
+               (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+               (cons fst (rst-in n))]
+              [else
+               (loop (cdr subs) (- n (spec-k sub)) (+ i 1))])))
+        (λ (v)
+          (match-define (cons fst rst) v)
+          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+          (+ (hash-ref size-table fst) (rst-out rst)))))
+
+(module+ test
+  (define 3+less-than-three2/s
+    (k*k-bind2/s (enum/s '(0 1 2 3)) (λ (i) (nat-range/s (add1 i)))))
+  (test-spec
+   3+less-than-three2/s)
+  (test-spec-exs
+   3+less-than-three2/s
+   [(cons 0 0) 0]
+   [(cons 1 0) 1]
+   [(cons 1 1) 2]
+   [(cons 2 0) 3]
+   [(cons 2 1) 4]
+   [(cons 2 2) 5]
+   [(cons 3 0) 6]
+   [(cons 3 1) 7]
+   [(cons 3 2) 8]
+   [(cons 3 3) 9]))
 
 (define (k*inf-bind/s fst/s fst->rst/s)
   (k*k-bind/s fst/s fst->rst/s))
