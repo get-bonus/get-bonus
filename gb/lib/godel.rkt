@@ -167,6 +167,51 @@
                 (cons (random (* N N))
                       (random (* N N))))))
 
+(define (cantor-cons/s hd/s tl/s)
+  (match-define (spec hd-k hd-in hd-out) hd/s)
+  (match-define (spec tl-k tl-in tl-out) tl/s)
+  (unless (= +inf.0 hd-k)
+    (raise-argument-error 'cantor-cons/s
+                          "an infinite /s"
+                          0
+                          (list hd/s tl/s)))
+  (unless (= +inf.0 tl-k)
+    (raise-argument-error 'cantor-cons/s
+                          "an infinite /s"
+                          1
+                          (list hd/s tl/s)))
+  (spec (* hd-k tl-k)
+        (λ (z)
+          (define q (- (integer-sqrt (+ (* 8 z) 1)) 1))
+          (define w (if (even? q)
+                        (/ q 2)
+                        (/ (- q 1) 2)))
+          (define t (/ (+ (* w w) w) 2))
+          (define y (- z t))
+          (define x (- w y))
+          (cons (hd-in x) (tl-in y)))
+        (λ (v)
+          (define k1 (hd-out (car v)))
+          (define k2 (tl-out (cdr v)))
+          (+ (* 1/2 (+ k1 k2) (+ k1 k2 1)) k2))))
+
+(module+ test
+  (define cantor-2nats/s (cantor-cons/s nat/s nat/s))
+  (test-spec cantor-2nats/s)
+  (for ([i (in-range N)])
+    (test-en/de cantor-2nats/s
+                (cons (random (* N N))
+                      (random (* N N)))))
+  (let ()
+    ;; big-n has the digits you get by doing to the cantor
+    ;; pairing function using normal sqrt (via floats)
+    ;; and then finding the first number that goes wrong
+    ;; via repeated squaring (due to the imprecision of floats)
+    ;; and then concatenating that number's digits with itself
+    (define big-n
+      340282366920938463463374607431768211456340282366920938463463374607431768211456)
+    (test-en/de cantor-2nats/s (cons big-n big-n))))
+
 (define (or/s left? left/s right? right/s)
   (match-define (spec left-k left-in left-out) left/s)
   (match-define (spec right-k right-in right-out) right/s)
