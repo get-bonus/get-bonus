@@ -383,68 +383,120 @@
                         (random 3)
                         (random 4)))))
 
+(define (bind/s fst/s fst->rst/s
+                #:count 
+                [given-count #f]
+                #:fst->rst/s-k
+                [given-fst->rst/s-k
+                 #f]
+                #:rst-always-inf?
+                [rst-always-inf? #f])
+  (define fst->rst/s-k
+    (or given-fst->rst/s-k
+        (λ (i)
+          (define fst (decode fst/s i))
+          (define rst/s (fst->rst/s fst))
+          (spec-k rst/s))))
+  (define fst-k (spec-k fst/s))
+  (cond 
+    [rst-always-inf?
+     (spec (* fst-k +inf.0)
+           (λ (n)
+             (define fst-n
+               (pair-hd fst-k +inf.0 n))
+             (define fst 
+               (decode fst/s fst-n))
+             (define rst/s (fst->rst/s fst))
+             (define rst-n
+               (pair-tl fst-k +inf.0 n))
+             (define rst
+               (decode rst/s rst-n))
+             (cons fst rst))
+           (λ (v)
+             (match-define (cons fst rst) v)
+             (define rst/s (fst->rst/s fst))             
+             (pair fst-k +inf.0
+                   (encode fst/s fst)
+                   (encode rst/s rst))))]
+    [else
+     (define (check-rst-k! rst-k)
+       (when (= +inf.0 rst-k)
+         (error 'bind/s 
+                "rst/s not always inf, but ever inf not supported")))
+     (define count
+       (cond
+         [given-count
+          given-count]
+         [(= +inf.0 fst-k)
+          ;; XXX This is not actually correct if (sum (forall (f) (spec-k
+          ;; (fst->rst/s f)))) is finite, such as when the rst is always
+          ;; empty except a finite number of times, etc.
+          +inf.0]
+         [else
+          (for/fold ([total 0])
+              ([i (in-range fst-k)])
+            (define rst-k
+              (fst->rst/s-k i))
+            (check-rst-k! rst-k)
+            (+ total rst-k))]))
+
+     (define (bind-in i n)
+       (define fst (decode fst/s i))
+       (define rst/s (fst->rst/s fst))
+       (define rst-k (spec-k rst/s))
+       (check-rst-k! rst-k)
+       (cond
+         [(>= n rst-k)
+          (bind-in (add1 i) (- n rst-k))]
+         [else
+          (cons fst (decode rst/s n))]))
+     (define (bind-out-sum i)
+       (cond
+         [(< i 0)
+          0]
+         [else
+          (define fst (decode fst/s i))
+          (define rst/s (fst->rst/s fst))
+          (define rst-k (spec-k rst/s))
+          (check-rst-k! rst-k)
+          (+ rst-k (bind-out-sum (sub1 i)))]))
+
+     (spec count
+           (λ (n) (bind-in 0 n))
+           (λ (v)
+             (define fst (car v))
+             (define fst-n (encode fst/s fst))
+             (define rst/s (fst->rst/s fst))
+             (check-rst-k! (spec-k rst/s))
+             (+ (bind-out-sum (sub1 fst-n))
+                (encode rst/s (cdr v)))))]))
+
 (define (k*k-bind/s fst/s fst->rst/s
                     #:count [count #f]
                     #:rst-k [given-rst-k #f])
-  ;; XXX check
-  (match-define (spec fst-k _ _) fst/s)
-
-  (spec (or count
-            (if (= +inf.0 fst-k)
-              +inf.0
-              (for/sum ([i (in-range fst-k)])
-                       (define fst (decode fst/s i))
-                       ;; XXX check
-                       (spec-k (fst->rst/s fst)))))
-        (λ (n)
-          (define fst-n
-            (pair-hd fst-k (or given-rst-k rst-k) n))
-          (printf "1. ~v\n" (list fst-k (or given-rst-k rst-k) n fst-n))
-          (define fst 
-            (decode fst/s fst-n))
-          (printf "2. ~v\n" fst)
-          (define rst/s (fst->rst/s fst))
-          ;; XXX check
-          (match-define (spec rst-k _ _) rst/s)
-          (define rst-n
-            (pair-tl fst-k (or given-rst-k rst-k) n))
-          (printf "3. ~v\n" (list fst-k (or given-rst-k rst-k) n rst-n))
-          (define rst
-            (decode rst/s rst-n))
-          (cons fst rst))
-        (λ (v)
-          (match-define (cons fst rst) v)
-          (define rst/s (fst->rst/s fst))
-          ;; XXX check
-          (match-define (spec rst-k _ _) rst/s)
-          
-          (pair fst-k rst-k
-                (encode fst/s fst)
-                (encode rst/s rst)))))
+  (bind/s fst/s fst->rst/s
+          #:count count
+          #:fst->rst/s-k
+          (and given-rst-k
+               (λ (i) given-rst-k))))
 
 (module+ test  
   (let ()
     (define outer-s
       (nat-range/s 3))
-    (printf "outer-s k: ~a\n" (spec-k outer-s))
     (define ex-s
       (k*k-bind/s outer-s
                   (λ (i)
                     (define inner-s
-                      (nat-range/s (+ i 1)))
-                    (printf "inner-s[~a] k: ~a\n" 
-                            (+ i 1)
-                            (spec-k inner-s))
+                      (nat-range/s (+ i 1)))                    
                     inner-s)))
-    (printf "ex k: ~a\n" (spec-k ex-s))
     (check-equal?
      (for/list ([i (in-range (spec-k ex-s))])
-       (printf "ex decode: ~a\n" i)
        (decode ex-s i))
      '((0 . 0)
        (1 . 0)
-       (2 . 0)
        (1 . 1)
+       (2 . 0)       
        (2 . 1)
        (2 . 2))))
 
@@ -456,14 +508,14 @@
    3+less-than-three/s
    [(cons 0 0) 0]
    [(cons 1 0) 1]
-   [(cons 1 1) 5]
-   [(cons 2 0) 2]
-   [(cons 2 1) 6]
-   [(cons 2 2) 10]
-   [(cons 3 0) 3]
+   [(cons 1 1) 2]
+   [(cons 2 0) 3]
+   [(cons 2 1) 4]
+   [(cons 2 2) 5]
+   [(cons 3 0) 6]
    [(cons 3 1) 7]
-   [(cons 3 2) 11]
-   [(cons 3 3) 15]))
+   [(cons 3 2) 8]
+   [(cons 3 3) 9]))
 
 (define (k*k-bind2/s fst/s fst->rst/s
                      #:count [count #f]
@@ -521,7 +573,8 @@
    [(cons 3 3) 9]))
 
 (define (k*inf-bind/s fst/s fst->rst/s)
-  (k*k-bind/s fst/s fst->rst/s))
+  (bind/s fst/s fst->rst/s
+          #:rst-always-inf? #t))
 (module+ test
   (define 3+more-than-three/s
     (k*inf-bind/s (enum/s '(0 1 2 3))
@@ -542,39 +595,7 @@
 ;; XXX Add an optional function arg that tells you how many elements
 ;; there are for each n
 (define (inf*k-bind/s fst/s fst->rst/s)
-  ;; XXX check
-  (match-define (spec fst-k _ _) fst/s)
-
-  (define (bind-in i n)
-    (define fst (decode fst/s i))
-    (define rst/s (fst->rst/s fst))
-    ;; XXX check
-    (match-define (spec rst-k _ _) rst/s)
-    (cond
-      [(>= n rst-k)
-       (bind-in (add1 i) (- n rst-k))]
-      [else
-       (cons fst (decode rst/s n))]))
-  (define (bind-out-sum i)
-    (cond
-      [(< i 0)
-       0]
-      [else
-       (define fst (decode fst/s i))
-       (define rst/s (fst->rst/s fst))
-       ;; XXX check
-       (match-define (spec rst-k _ _) rst/s)
-       (+ rst-k (bind-out-sum (sub1 i)))]))
-
-  (spec +inf.0
-        (λ (n) (bind-in 0 n))
-        (λ (v)
-          (define fst (car v))
-          (define fst-n (encode fst/s fst))
-          (define rst/s (fst->rst/s fst))
-          ;; XXX check
-          (match-define (spec rst-k _ _) rst/s)
-          (+ (bind-out-sum (sub1 fst-n)) (encode rst/s (cdr v))))))
+  (bind/s fst/s fst->rst/s))
 
 (module+ test
   (define nat+less-than-n/s
@@ -593,7 +614,8 @@
    [(cons 3 3) 9]))
 
 (define (inf*inf-bind/s fst/s fst->rst/s)
-  (k*k-bind/s fst/s #:rst-k +inf.0 fst->rst/s))
+  (bind/s fst/s fst->rst/s
+          #:rst-always-inf? #t))
 (module+ test
   (define nat+greater-than-n/s
     (inf*inf-bind/s
@@ -725,5 +747,5 @@
     (define (f p)
       (+ (length (number->bits (car p)))
          (length (number->bits (cdr p)))))
-    (for/list ([i (in-range 25)])
+    (for/list ([i (in-range 16)])
       (f (decode np/s i)))))
