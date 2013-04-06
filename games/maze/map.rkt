@@ -264,7 +264,7 @@
   (require racket/generator exp/pi)
   (define last (current-seconds))
   (for ([i (10-sequence->K-sequence (spec-k maze/s) (in-generator (BPP-digits 100)))]
-        [n (in-range 1)])
+        [n (in-range 10)])
     (define m (decode maze/s i))
     (define now (current-seconds))
     (printf "(~a) ~a =\n" (- now last) i)
