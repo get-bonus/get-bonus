@@ -33,13 +33,7 @@
 (define (pair hd-k tl-k hd tl)
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
-     (nat-cons hd tl)]
-    [(+inf.0 1) 
-     hd]
-    [(1 +inf.0)
-     tl]
-    [(1 1)
-     0]
+     (nat-cons hd tl)]            
     [(+inf.0 tl-k)
      (+ (* hd tl-k) tl)]    
     [(hd-k +inf.0)
@@ -49,13 +43,7 @@
 (define (pair-hd hd-k tl-k n)
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
-     (nat-hd n)]
-    [(+inf.0 1) 
-     n]
-    [(1 +inf.0)
-     0]
-    [(1 1)
-     0]
+     (nat-hd n)]    
     [(+inf.0 tl-k)
      (quotient n tl-k)]
     [(hd-k +inf.0)
@@ -65,13 +53,7 @@
 (define (pair-tl hd-k tl-k n)
   (match* (hd-k tl-k)
     [(+inf.0 +inf.0)
-     (nat-tl n)]
-    [(+inf.0 1) 
-     0]
-    [(1 +inf.0)
-     n]
-    [(1 1)
-     0]
+     (nat-tl n)]    
     [(+inf.0 tl-k)
      (remainder n tl-k)]
     [(hd-k +inf.0)
@@ -91,8 +73,21 @@
 (struct spec (k in out) #:transparent)
 
 (define (encode spec v)
-  ((spec-out spec) v))
+  (define n ((spec-out spec) v))
+  (define k (spec-k spec))
+  (unless (< n k)
+    (error 
+     'encode
+     "spec(~e) returned encoding[~e] outside range[~e] for value[~e]"
+     spec n k v))
+  n)
 (define (decode spec n)
+  (define k (spec-k spec))
+  (unless (< n k)
+    (error
+     'decode
+     "spec(~e) received encoding[~e] outside range[~e]"
+     spec n k))  
   ((spec-in spec) n))
 (module+ test
   (define-syntax-rule (test-en/de s-e v-e)
@@ -149,16 +144,16 @@
     (test-en/de (nat-range/s N) i)))
 
 (define (cons/s hd/s tl/s)
-  (match-define (spec hd-k hd-in hd-out) hd/s)
-  (match-define (spec tl-k tl-in tl-out) tl/s)
+  (match-define (spec hd-k _ _) hd/s)
+  (match-define (spec tl-k _ _) tl/s)
   (spec (* hd-k tl-k)
         (λ (n)          
-          (cons (hd-in (pair-hd hd-k tl-k n))
-                (tl-in (pair-tl hd-k tl-k n))))
+          (cons (decode hd/s (pair-hd hd-k tl-k n))
+                (decode tl/s (pair-tl hd-k tl-k n))))
         (λ (v)
           (pair hd-k tl-k
-                (hd-out (car v))
-                (tl-out (cdr v))))))
+                (encode hd/s (car v))
+                (encode tl/s (cdr v))))))
 (module+ test
   (define 2nats/s (cons/s nat/s nat/s))
   (test-spec 2nats/s)
@@ -168,8 +163,8 @@
                       (random (* N N))))))
 
 (define (cantor-cons/s hd/s tl/s)
-  (match-define (spec hd-k hd-in hd-out) hd/s)
-  (match-define (spec tl-k tl-in tl-out) tl/s)
+  (match-define (spec hd-k _ _) hd/s)
+  (match-define (spec tl-k _ _) tl/s)
   (unless (= +inf.0 hd-k)
     (raise-argument-error 'cantor-cons/s
                           "an infinite /s"
@@ -189,10 +184,10 @@
           (define t (/ (+ (* w w) w) 2))
           (define y (- z t))
           (define x (- w y))
-          (cons (hd-in x) (tl-in y)))
+          (cons (decode hd/s x) (decode tl/s y)))
         (λ (v)
-          (define k1 (hd-out (car v)))
-          (define k2 (tl-out (cdr v)))
+          (define k1 (encode hd/s (car v)))
+          (define k2 (encode tl/s (cdr v)))
           (+ (* 1/2 (+ k1 k2) (+ k1 k2 1)) k2))))
 
 (module+ test
@@ -213,37 +208,37 @@
     (test-en/de cantor-2nats/s (cons big-n big-n))))
 
 (define (or/s left? left/s right? right/s)
-  (match-define (spec left-k left-in left-out) left/s)
-  (match-define (spec right-k right-in right-out) right/s)
+  (match-define (spec left-k _ _) left/s)
+  (match-define (spec right-k _ _) right/s)
   (match* (left-k right-k)
     [(+inf.0 +inf.0)
      (spec +inf.0
            (λ (n)
              (match (pair-hd 2 +inf.0 n)
                [0
-                (left-in (pair-tl 2 +inf.0 n))]
+                (decode left/s (pair-tl 2 +inf.0 n))]
                [1
-                (right-in (pair-tl 2 +inf.0 n))]))
+                (decode right/s (pair-tl 2 +inf.0 n))]))
            (λ (v)
              (match v
                [(? left?)
-                (pair 2 +inf.0 0 (left-out v))]
+                (pair 2 +inf.0 0 (encode left/s v))]
                [(? right?)
-                (pair 2 +inf.0 1 (right-out v))])))]
+                (pair 2 +inf.0 1 (encode right/s v))])))]
     [(+inf.0 right-k)
      (or/s right? right/s left? left/s)]
     [(left-k right-k)
      (spec (+ left-k right-k)
            (λ (n)
              (if (< n left-k)
-               (left-in n)
-               (right-in (- n left-k))))
+               (decode left/s n)
+               (decode right/s (- n left-k))))
            (λ (v)
              (match v
                [(? left?)
-                (left-out v)]
+                (encode left/s v)]
                [(? right?)
-                (+ (right-out v) left-k)])))]))
+                (+ (encode right/s v) left-k)])))]))
 
 (module+ test
   (define int/s
@@ -364,10 +359,10 @@
                                   empty))))))
 
 (define (wrap/s inner/s wrap-in wrap-out)
-  (match-define (spec inner-k inner-in inner-out) inner/s)
+  (match-define (spec inner-k _ _) inner/s)
   (spec inner-k
-        (λ (n) (wrap-in (inner-in n)))
-        (λ (v) (inner-out (wrap-out v)))))
+        (λ (n) (wrap-in (decode inner/s n)))
+        (λ (v) (encode inner/s (wrap-out v)))))
 
 (define (hetero-vector/s vector-of-spec)
   (define list-spec
@@ -392,32 +387,67 @@
                     #:count [count #f]
                     #:rst-k [given-rst-k #f])
   ;; XXX check
-  (match-define (spec fst-k fst-in fst-out) fst/s)
+  (match-define (spec fst-k _ _) fst/s)
 
   (spec (or count
             (if (= +inf.0 fst-k)
               +inf.0
               (for/sum ([i (in-range fst-k)])
-                       (define fst (fst-in i))
+                       (define fst (decode fst/s i))
                        ;; XXX check
                        (spec-k (fst->rst/s fst)))))
         (λ (n)
-          (define fst (fst-in (pair-hd fst-k (or given-rst-k rst-k) n)))
+          (define fst-n
+            (pair-hd fst-k (or given-rst-k rst-k) n))
+          (printf "1. ~v\n" (list fst-k (or given-rst-k rst-k) n fst-n))
+          (define fst 
+            (decode fst/s fst-n))
+          (printf "2. ~v\n" fst)
+          (define rst/s (fst->rst/s fst))
           ;; XXX check
-          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-          
-          (cons fst
-                (rst-in (pair-tl fst-k (or given-rst-k rst-k) n))))
+          (match-define (spec rst-k _ _) rst/s)
+          (define rst-n
+            (pair-tl fst-k (or given-rst-k rst-k) n))
+          (printf "3. ~v\n" (list fst-k (or given-rst-k rst-k) n rst-n))
+          (define rst
+            (decode rst/s rst-n))
+          (cons fst rst))
         (λ (v)
           (match-define (cons fst rst) v)
+          (define rst/s (fst->rst/s fst))
           ;; XXX check
-          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+          (match-define (spec rst-k _ _) rst/s)
           
           (pair fst-k rst-k
-                (fst-out fst)
-                (rst-out rst)))))
+                (encode fst/s fst)
+                (encode rst/s rst)))))
 
-(module+ test
+(module+ test  
+  (let ()
+    (define outer-s
+      (nat-range/s 3))
+    (printf "outer-s k: ~a\n" (spec-k outer-s))
+    (define ex-s
+      (k*k-bind/s outer-s
+                  (λ (i)
+                    (define inner-s
+                      (nat-range/s (+ i 1)))
+                    (printf "inner-s[~a] k: ~a\n" 
+                            (+ i 1)
+                            (spec-k inner-s))
+                    inner-s)))
+    (printf "ex k: ~a\n" (spec-k ex-s))
+    (check-equal?
+     (for/list ([i (in-range (spec-k ex-s))])
+       (printf "ex decode: ~a\n" i)
+       (decode ex-s i))
+     '((0 . 0)
+       (1 . 0)
+       (2 . 0)
+       (1 . 1)
+       (2 . 1)
+       (2 . 2))))
+
   (define 3+less-than-three/s
     (k*k-bind/s (enum/s '(0 1 2 3)) (λ (i) (nat-range/s (add1 i)))))
   (test-spec
@@ -439,13 +469,13 @@
                      #:count [count #f]
                      #:rst-k [given-rst-k #f])
   ;; XXX check
-  (match-define (spec fst-k fst-in fst-out) fst/s)
+  (match-define (spec fst-k _ _) fst/s)
   
   (define size-table (make-hash))
   (define total-size 0)
   (define subs
     (for/list ([i (in-range fst-k)])
-      (define fst (fst-in i))
+      (define fst (decode fst/s i))
       (define sub (fst->rst/s fst))
       (define size (spec-k sub))
       (hash-set! size-table fst total-size)
@@ -460,15 +490,17 @@
             (define sub-k (spec-k sub))
             (cond
               [(< n sub-k)
-               (define fst (fst-in i))
-               (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-               (cons fst (rst-in n))]
+               (define fst (decode fst/s i))
+               (define rst/s (fst->rst/s fst))
+               (match-define (spec rst-k _ _) rst/s)
+               (cons fst (decode rst/s n))]
               [else
                (loop (cdr subs) (- n (spec-k sub)) (+ i 1))])))
         (λ (v)
           (match-define (cons fst rst) v)
-          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-          (+ (hash-ref size-table fst) (rst-out rst)))))
+          (define rst/s (fst->rst/s fst))
+          (match-define (spec rst-k _ _) rst/s)
+          (+ (hash-ref size-table fst) (encode rst/s rst)))))
 
 (module+ test
   (define 3+less-than-three2/s
@@ -511,35 +543,38 @@
 ;; there are for each n
 (define (inf*k-bind/s fst/s fst->rst/s)
   ;; XXX check
-  (match-define (spec fst-k fst-in fst-out) fst/s)
+  (match-define (spec fst-k _ _) fst/s)
 
   (define (bind-in i n)
-    (define fst (fst-in i))
+    (define fst (decode fst/s i))
+    (define rst/s (fst->rst/s fst))
     ;; XXX check
-    (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+    (match-define (spec rst-k _ _) rst/s)
     (cond
       [(>= n rst-k)
        (bind-in (add1 i) (- n rst-k))]
       [else
-       (cons fst (rst-in n))]))
+       (cons fst (decode rst/s n))]))
   (define (bind-out-sum i)
     (cond
       [(< i 0)
        0]
       [else
-       (define fst (fst-in i))
+       (define fst (decode fst/s i))
+       (define rst/s (fst->rst/s fst))
        ;; XXX check
-       (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
+       (match-define (spec rst-k _ _) rst/s)
        (+ rst-k (bind-out-sum (sub1 i)))]))
 
   (spec +inf.0
         (λ (n) (bind-in 0 n))
         (λ (v)
           (define fst (car v))
-          (define fst-n (fst-out fst))
+          (define fst-n (encode fst/s fst))
+          (define rst/s (fst->rst/s fst))
           ;; XXX check
-          (match-define (spec rst-k rst-in rst-out) (fst->rst/s fst))
-          (+ (bind-out-sum (sub1 fst-n)) (rst-out (cdr v))))))
+          (match-define (spec rst-k _ _) rst/s)
+          (+ (bind-out-sum (sub1 fst-n)) (encode rst/s (cdr v))))))
 
 (module+ test
   (define nat+less-than-n/s

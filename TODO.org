@@ -1,6 +1,8 @@
 * General TODO items
 ** TODO base infinite sequences off of digits of pi/e/etc
    2013/03/08 - I did this and need to integrate it with tennis and maze
+** TODO Robby's maze idea
+   https://mail.google.com/mail/u/0/#inbox/13dd1b029d348da5
 ** TODO unify different NGL implementations
 ** TODO jake - parallel
 ** TODO write more tests
