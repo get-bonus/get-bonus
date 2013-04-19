@@ -152,6 +152,9 @@
    Wrap this in a package that switches from game to game like I
    want... it may be perfection
 
+   Use Zhiqiang Lin's work on data path recovery analysis:
+   http://www.utdallas.edu/~zxl111930/
+
 ** TODO Implement a gamepad interface to Nethack (preferably with access to alt.org)
 ** TODO Implement Boxing iPhone game
    Like Punch-Out!!!
@@ -175,6 +178,10 @@
 ** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
 ** TODO Make something for Racket/emacs to find out what deps aren't needed
 ** TODO Make Optimization Coach + Macro Stepper available via Emacs
+** TODO Adapt Tom7's NES playing ideas
+   http://www.cs.cmu.edu/~tom7/mario/
+
+   Use A* or BB to discover optimal playthroughs
 * Optimization ideas
 ** TODO Make OS use futures for parallelism
    First experiment, 2012/07/01 failed... got a slower frame rate. I
