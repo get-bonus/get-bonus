@@ -23,8 +23,95 @@
       (draw (cdr t*s)))]))
 
 (module+ main
+  (define (unpair1 z)
+    (define q (- (integer-sqrt (+ (* 8 z) 1)) 1))
+    (define w (if (even? q)
+                  (/ q 2)
+                  (/ (- q 1) 2)))
+    (define t (/ (+ (* w w) w) 2))
+    (define y (- z t))
+    (define x (- w y))
+    (values x y))
+  (define (unpair2 z)
+    (define i (integer-sqrt z))
+    (define i2 (* i i))
+    (cond
+      [(< (- z i2) i)
+       (values (- z i2) i)]
+      [else 
+       (values i (- z i2 i))]))
+
+  (define w 50)
+  (define h 50)
+  
+  (define (draw z)
+    (define-values (x1 y1) (unpair1 z))
+    (define-values (x2 y2) (unpair2 z))
+    (define img (empty-scene (+ (* w 4) 2) (+ (* h 4) 2)))
+    (for* ([i (in-range w)]
+           [j (in-range h)])
+      (define p1? (and (= i x1) (= j y1)))
+      (define p2? (and (= i x2) (= j y2)))
+      (set! img
+            (place-image (circle 2
+                                 'solid (cond
+                                            [(and p1? p2?)
+                                             'purple]
+                                            [p1? 'red]
+                                            [p2? 'blue]
+                                            [else 'lightgray]))
+                         (+ (* i 4) 4)
+                         (+ (* j 4) 4)
+                         img)))
+    img)
+     
+  (enumerate&animate nat/s add1 (λ (x) #f) w h draw))
+
+#;
+(module+ main
   (struct graph (states state->nexts))
 
+  (define graph/s
+    (wrap/s (inf*k-bind/s
+             (wrap/s nat/s (λ (x) (+ x 20)) (λ (x) (- x 20)))
+             (λ (how-many-states)
+               (inf*k-bind/s
+                (wrap/s (nat-range/s (- how-many-states 1)) add1 sub1)
+                (λ (delta)
+                  (nat-range/s how-many-states)))))
+            (match-lambda
+             [(cons how-many-states (cons delta start))
+              (graph how-many-states
+                     (let loop ([i start]
+                                [ht (for/hash ([d (in-range how-many-states)])
+                                      (values d empty))])
+                       (define next (modulo (+ i delta) how-many-states))
+                       (define next-ht (hash-set ht i (list next)))
+                       (cond
+                         [(= next start) next-ht]
+                         [else
+                          (loop next next-ht)])))])
+            error))
+
+  #;
+  (define graph/s
+    (wrap/s (inf*k-bind/s
+             (wrap/s nat/s (λ (x) (+ x 20)) (λ (x) (- x 20)))
+             (λ (how-many-states)
+               (inf*k-bind/s
+                (nat-range/s how-many-states)
+                (λ (delta)
+                  (nat-range/s (- how-many-states delta))))))
+            (match-lambda
+             [(cons how-many-states (cons delta start))
+              (graph how-many-states
+                     (hash-set (for/hash ([d (in-range how-many-states)])
+                                 (values d empty))
+                               start
+                               (list (+ start delta))))])
+            error))
+
+  #;
   (define graph/s
     (wrap/s (inf*k-bind/s
              nat/s
@@ -86,7 +173,8 @@
        ;; This is mesmerizing, but a little fast
        (+ (* n 2) 1)
        ;; Doesn't feel much different than above
-       (+ (inexact->exact (floor (* n (+ 1 (random))))) 1))
+       (+ (inexact->exact (floor (* n (+ 1 (random))))) 1)
+       (add1 n))
      (λ (f) #f)
      (* the-scale N) (* the-scale N)
      draw-graph))
