@@ -4,13 +4,11 @@ all: jake
 
 JAKEFILE=Makefile.rkt
 
-test-make:
-	find . -name '*.rkt' -exec raco make {} \;
-
 test-show:
 	raco test -xt .
 
 test:
+	find . -name '*.rkt' | xargs raco make
 	raco test -xtQq .
 
 jake:

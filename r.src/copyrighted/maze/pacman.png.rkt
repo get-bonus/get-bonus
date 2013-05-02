@@ -1,4 +1,4 @@
-#lang s-exp gb/tools/sprite
+#lang s-exp gb/tools/sprite 556 311
 
 (define (player which-frame)
   (sprite (format "maze/player/~a" which-frame)
