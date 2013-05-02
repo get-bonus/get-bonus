@@ -263,7 +263,7 @@
     (printf "~a =\n" i)
     (display-maze m))
 
-  (require racket/generator exp/pi)
+  (require racket/generator gb/lib/pi)
   (define last (current-seconds))
   (for ([i (10-sequence->K-sequence (spec-k maze/s) (in-generator (BPP-digits 100)))]
         [n (in-range 10)])
