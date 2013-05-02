@@ -4,13 +4,11 @@ all: jake
 
 JAKEFILE=Makefile.rkt
 
-test-show:
-	raco test -xt .
-
-test:
-	find . -name '*.rkt' | xargs raco make
-	raco test -xtQq .
-
 jake:
 	raco make ${JAKEFILE}
 	racket -t ${JAKEFILE} --
+
+FILES := $(shell find . -name '*.rkt')
+test: ${FILES}
+	@echo ${FILES} | xargs raco make
+	raco test -xt . | tee test
