@@ -21,11 +21,17 @@
 
 (define-runtime-path source-dir ".")
 
-(define (xplode p)
-  (define tmp (make-temporary-file "~a.out" 'directory #f))
+(define (xplode p tmp)
+
+  (define right-pixel?
+    (λ (p)
+      (and (= 0 (pixel-r p))
+           (= 64 (pixel-g p))
+           (= 128 (pixel-b p)))))
 
   (define bm (make-object bitmap% p 'png/alpha #f #t))
-  (define objs (components bm (λ (p) (zero? (pixel-a p)))))
+  (define objs
+    (components bm right-pixel?))
 
   (for ([s (in-vector objs)]
         [i (in-naturals)])
@@ -33,14 +39,29 @@
     (define w (- x2 x1 -1))
     (define h (- y2 y1 -1))
 
-    (define new-bm (make-bitmap w h))
-    (define bm-dc (new bitmap-dc% [bitmap new-bm]))
+    (when (> (+ w h) 25)
+      (define new-bm (make-bitmap w h))
+      (define bm-dc (new bitmap-dc% [bitmap new-bm]))
 
-    (send bm-dc draw-bitmap-section
-          bm 0 0
-          x1 y1 w h)
+      (send bm-dc draw-bitmap-section
+            bm 0 0
+            x1 y1 w h)
 
-    (send new-bm save-file (build-path tmp (format "~a.png" i)) 'png 100))
+      (define c (make-object color%))
+      (for* ([x (in-range w)]
+             [y (in-range h)])
+        (send bm-dc get-pixel x y c)
+        (when (right-pixel? 
+               (pixel (send c red)
+                      (send c green)
+                      (send c blue)
+                      (send c alpha)))
+          (send c set 0 0 0 0.0)
+          (send bm-dc set-pixel x y c)))
+
+      (send new-bm save-file (build-path tmp (format "~a.png" i)) 'png 100)))
+
+  (exit 0)
 
   (define (page/main req)
     (response/xexpr
@@ -73,5 +94,5 @@
 (module+ main
   (command-line
    #:program "sprite-xplode"
-   #:args (file)
-   (xplode file)))
+   #:args (file tmp)
+   (xplode file tmp)))
