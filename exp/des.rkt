@@ -41,9 +41,8 @@
 (define (mesh-collisions oid)
   empty)
 
-(define (mesh-add this obj)
+(define (mesh-add this oid obj)
   (match-define (mesh objs) this)
-  (define oid (gensym))
   (mesh (hash-set objs oid obj)))
 
 ;; Examples
@@ -66,9 +65,8 @@
 (module+ test
   (require rackunit)
   (define-values (m l)
-    (react (mesh-add (new-mesh)
+    (react (mesh-add (new-mesh) 'c1
                      (counter 0))
            (list (tick 0))))
-  (check-equal? m (mesh-add (new-mesh) (counter 0)))
+  (check-equal? m (mesh-add (new-mesh) 'c1 (counter 0)))
   (check-equal? l empty))
-

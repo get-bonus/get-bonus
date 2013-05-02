@@ -1,8 +1,4 @@
 * General TODO items
-** TODO Robby's maze idea
-   https://mail.google.com/mail/u/0/#inbox/13dd1b029d348da5
-** TODO unify different NGL implementations
-** TODO jake - parallel
 ** TODO write more tests
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
@@ -21,6 +17,8 @@
    how many balls in the air
    how many pellets
    did you beat the level?
+** TODO Robby's maze idea
+   https://mail.google.com/mail/u/0/#inbox/13dd1b029d348da5
 ** TODO NGL - tennis - it seems like the ball goes too low
    Also, if you try to bring the paddle to the top, it doesn't draw
    the whole way
@@ -56,8 +54,6 @@
    
    The main problem seems to be that it would make it so I can't use
    OpenAL directly, because you need to return audio data per frame
-** TODO GLFW - Wait for consistent joystick state intra-frame
-   2013/03/08 - I submitted this patch
 ** TODO Make a tool for downloading the copyrighted images/music
    List the URL, a checksum, and then have the tool download them if
    they aren't there and verify if they are.
@@ -200,6 +196,13 @@
    This could be based on a block cipher with unbounded key length
    and bounded block size
 * Done
+** DONE GLFW - Wait for consistent joystick state intra-frame
+   CLOSED: [2013-05-02 Thu 13:45]
+   2013/03/08 - I submitted this patch
+** DONE jake - parallel
+   CLOSED: [2013-05-02 Thu 13:45]
+** DONE unify different NGL implementations
+   CLOSED: [2013-05-02 Thu 13:43]
 ** DONE use pi for maze
    CLOSED: [2013-05-02 Thu 13:42]
 ** DONE use pi for tennis

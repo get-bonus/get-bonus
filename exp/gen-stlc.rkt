@@ -570,16 +570,15 @@
    unfolded-s))
 
 (module+ test
-  (printf "Random\n")
-  (exit 0)
-  (define-values (top-id term-s) (random-terms 0))
-  (for/fold ([last (current-inexact-milliseconds)])
-      ([a (in-stream term-s)]
-       [i (in-range 10)])
-    (match-define (vector t ty) a)
-    (define this (current-inexact-milliseconds))
-    (printf "~v>> ~v : ~v\n"
-            (- this last)
-            t
-            (term (dual-lookup ,ty ,top-id)))
-    this))
+  (when #f
+    (define-values (top-id term-s) (random-terms 0))
+    (for/fold ([last (current-inexact-milliseconds)])
+        ([a (in-stream term-s)]
+         [i (in-range 10)])
+      (match-define (vector t ty) a)
+      (define this (current-inexact-milliseconds))
+      (printf "~v>> ~v : ~v\n"
+              (- this last)
+              t
+              (term (dual-lookup ,ty ,top-id)))
+      this)))

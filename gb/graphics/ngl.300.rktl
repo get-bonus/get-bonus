@@ -1,7 +1,6 @@
 (define-shader-source Old-VertexShader "ngl.vertex.old.glsl")
 (define-shader-source Old-FragmentShader "ngl.fragment.old.glsl")
 
-
 (define (make-draw/300 texture-atlas-path
                        texture-atlas-size
                        width height)
@@ -72,8 +71,6 @@
     ProgramId Old-VertexShader)
   (define&compile-shader Old-FragmentShaderId GL_FRAGMENT_SHADER
     ProgramId Old-FragmentShader)
-
-
 
   (define-draw draw
     texture-atlas-path texture-atlas-size width height
