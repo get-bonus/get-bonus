@@ -1,6 +1,4 @@
 * General TODO items
-** TODO base infinite sequences off of digits of pi/e/etc
-   2013/03/08 - I did this and need to integrate it with tennis and maze
 ** TODO Robby's maze idea
    https://mail.google.com/mail/u/0/#inbox/13dd1b029d348da5
 ** TODO unify different NGL implementations
@@ -202,6 +200,14 @@
    This could be based on a block cipher with unbounded key length
    and bounded block size
 * Done
+** DONE use pi for maze
+   CLOSED: [2013-05-02 Thu 13:42]
+** DONE use pi for tennis
+   CLOSED: [2013-05-02 Thu 13:35]
+** DONE base infinite sequences off of digits of pi/e/etc
+   CLOSED: [2013-05-02 Thu 13:15]
+   2013/03/08 - I did this and need to integrate it with tennis and
+   maze
 ** DONE Move tests into test submodules
    CLOSED: [2012-05-25 Fri 01:23]
 ** DONE Write a makefile that runs all the tests with raco test

@@ -119,10 +119,10 @@
                      (+ ;;(* -1 dy) ;;; XXX see comment below
                       (* my (imag-part p))))))
 
-(define ((ball initial-dir initial-ball-speed))
+(define ((ball dir-seq initial-ball-speed))
   (let loop ([taps 0]
              [ball-pos ball-start-pos]
-             [ball-dir initial-dir])
+             [ball-dir (sequence-first dir-seq)])
     (define (ball-speed taps)
       (* (+ 1 (* .1 taps)) initial-ball-speed))
     (define (ball-in-dir ball-pos dir)
@@ -151,7 +151,7 @@
                  (add1 taps))]
         ;; The ball has moved to the left of the lhs paddle
         [((psn-x ball-pos) . <= . lhs-x)
-         (values ball-start-pos initial-dir
+         (values ball-start-pos (sequence-first dir-seq)
                  empty 'right)]
         ;; The ball hit a horizontal wall
         [(or
@@ -181,7 +181,7 @@
         #f
         (if (zero? (modulo taps-n 5))
           (begin (os/thread
-                  (ball (ball-start-dir initial-dir)
+                  (ball dir-seq
                         (ball-speed (/ taps 2))))
                  #t)
           #f)))
@@ -212,26 +212,16 @@
 (define string->sprites
   (make-string-factory modern-12-char))
 
-(define (ball-start-dir base-dir)
-  (define base-degree (radians->0..90 base-dir))
-  (0..90->radians
-   (modulo
-    (+ base-degree
-       (current-frame)
-       (os/read* 'seed 0))
-    91)))
-
 (require racket/generator)
-(define (game-start initial-dir)
+(define (game-start dir-seq)
   (big-bang/os
    width height center-pos
    #:sound-scale width-h
    (λ ()
      (os/thread player-paddle)
-     (os/thread (ball initial-dir initial-ball-speed))
+     (os/thread (ball dir-seq initial-ball-speed))
      (os/write
       (list
-       (cons 'seed 0)
        (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))
        (cons 'listener center-pos)))
      (let loop ([score 0])
@@ -240,13 +230,6 @@
        (define score-n (+ score (apply + (filter number? score?s))))
        (os/write
         (list
-         (cons 'seed
-               (let ()
-                 (define c (os/read* 'controller))
-                 (modulo (+ (os/read* 'seed)
-                            (if (controller-down c) 2 0)
-                            (if (controller-up c) 3 0))
-                         91)))
          (cons 'done? (zero? balls))
          (cons 'return score-n)
          (cons 'graphics
@@ -276,7 +259,8 @@
                  (bgm))))))
        (loop score-n)))))
 
-(require gb/lib/godel)
+(require gb/lib/godel
+         gb/lib/godel-seq)
 
 (define 0..90->radians
   (compose1 degrees->radians (λ (n) (- n 45))))
@@ -293,24 +277,17 @@
 (module+ test
   (for ([i (in-naturals)]
         [x (in-range 10)])
-    (printf "~a. ~v\n" i (decode tennis/s i)))
+    (printf "~a. ~v\n" i (decode tennis/s i))))
 
-  (define (show n)
-    (for ([r (in-list (decode tennis/s n))]
-          [i (in-naturals)]
-          [_ (in-range 10)])
-      (printf "~a.~a. ~v\n" n i r)))
-
-  (require racket/pretty)
-  (pretty-print
-   (show 12390102397103)))
+(define tennis-seq/s
+  (infinite-sequence/s tennis/s))
 
 (define game
   (game-info 'tennis "Tennis!" 
              (list "Bounce the ball against the back wall by moving the paddle up and down. As you hit the ball more times, it moves faster and spawns child balls that start slightly slower. Your score is a function of how many times you've bounced a ball."
                    "Compare to Pong(R) by Atari (1972)")
              0
-             (random-godel-generate tennis/s)
-             (godel-start tennis/s game-start)))
+             (random-godel-generate tennis-seq/s)
+             (godel-start tennis-seq/s game-start)))
 
 (provide game)

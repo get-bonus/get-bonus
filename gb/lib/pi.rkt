@@ -25,20 +25,6 @@
 (define (bits-of k)
   (/ (log k) (log 2)))
 
-#;
-(define (10-sequence->K-sequence k seq)
-  (in-generator
-   (let loop ([next 0]
-              [next-bits 0])
-     (cond
-       [(< (bits-of k) next-bits)
-        (yield (modulo next k))
-        (loop 0 0)]
-       [else
-        (define this (for/or ([e seq]) e))
-        (loop (+ (* next 10) this)
-              (+ next-bits (bits-of 10)))]))))
-
 ;; XXX just subtract k if greater than k and then push the digit to
 ;; left and go on
 (define (10-sequence->K-sequence k seq)
@@ -106,3 +92,4 @@
 
 (provide 10-sequence->K-sequence
          BPP-digits)
+

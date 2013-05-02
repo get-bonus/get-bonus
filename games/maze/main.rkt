@@ -405,12 +405,12 @@
       im2))
   im3)
 
-(define (make-static)
+(define (make-static maze-seq)
   (define quads
-    (hasheq 'nw (generate-quad)
-            'ne (generate-quad)
-            'sw (generate-quad)
-            'se (generate-quad)))
+    (hasheq 'nw (sequence-first maze-seq)
+            'ne (sequence-first maze-seq)
+            'sw (sequence-first maze-seq)
+            'se (sequence-first maze-seq)))
   (define map-display
     (quads->display quads))
   (define map-space
@@ -447,7 +447,7 @@
    ['se 'nw]
    ['sw 'ne]))
 
-(define (static-chomp st x y)
+(define (static-chomp maze-seq st x y)
   (match-define (struct* static
                          ([quads quads]
                           [quad->objs quad->objs]))
@@ -476,7 +476,7 @@
         (let ()
           (define oq (opposite-quad q))
           (define nq
-            (generate-quad))
+            (sequence-first maze-seq))
           (define quads-n
             (hash-set quads oq nq))
           (define old-objs
@@ -551,7 +551,8 @@
          (current-frame)
          (power-left-n . <= . TIME-TO-POWER-WARNING))))
      (transform
-      #:d (* scale (- (psn-x l-target) .5)) (* scale (- (psn-y l-target) .5))
+      #:d (* scale (- (psn-x l-target) .5))
+          (* scale (- (psn-y l-target) .5))
       #:a 1.0
       #:irgbv
       (match ai-n
@@ -682,7 +683,8 @@
             n-switch-n))))
 
 (define (player)
-  (define player-entry-cell (locate-cell/static (os/read* 'static) 'sw player-entry))
+  (define player-entry-cell
+    (locate-cell/static (os/read* 'static) 'sw player-entry))
   (let loop ([p (quad*cell->psn 'sw player-entry-cell)]
              [dir up]
              [next-dir up])
@@ -720,12 +722,12 @@
               (player-animation (current-frame)))))))
     (loop nnp actual-dir next-dir-n)))
 
-(define (game-start)
+(define (game-start maze-seq)
   (big-bang/os
    width (+ height 2) center-pos
    #:sound-scale (/ width 2.)
    (λ ()
-     (define init-st (make-static))
+     (define init-st (make-static maze-seq))
      (os/write
       (list (cons 'static init-st)
             (cons 'player-pos 0.)
@@ -758,7 +760,7 @@
         (pos->cell (os/read* 'player-pos)))
        (define-values
          (st-n event)
-         (static-chomp st x y))
+         (static-chomp maze-seq st x y))
        (define dp1
          (match event
            ['pellet pellet-pts]
@@ -819,12 +821,18 @@
         power-left-n st-n
         next-ghost-n dots-to-ghost-n)))))
 
+(require gb/lib/godel
+         gb/lib/godel-seq)
+
+(define maze-seq/s
+  (infinite-sequence/s maze/s))
+
 (define game
   (game-info 'maze "Maze"
              (list "Avoid ghosts while collecting points in a randomly-generated maze. Eat a power pellet to turn the tables and eat the ghosts. After you clear each quadrant, eat the fruit to respawn it and continue."
                    "Compare to Pac-Man(R) by Namco (1980)")
              0
-             random-generate
-             (random-start game-start)))
+             (random-godel-generate maze-seq/s)
+             (godel-start maze-seq/s game-start)))
 
 (provide game)

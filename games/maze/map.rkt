@@ -4,10 +4,12 @@
          racket/file
          racket/list
          gb/lib/random
+         gb/lib/godel
          math/number-theory
          (only-in gb/ai/path-finding
                   manhattan-distance)
          racket/function)
+
 
 (define-runtime-path template-map "template.map")
 (match-define
@@ -195,6 +197,17 @@
 
   new-quad)
 
+(define maze/s
+  (wrap/s (cons/s
+           (enum/s quad:templates)
+           (permutations/s wall-visit-order))
+          (match-lambda
+           [(cons template visit-order)
+            (generate-quad/template template visit-order)])
+          (match-lambda
+           [_
+            (error 'maze/s "Encoding not supported")])))
+
 (module+ main
   (define (display-maze q)
     (for ([r (in-range h-height)])
@@ -219,21 +232,20 @@
 
   #;
   (display-maze
-   (generate-quad))
+  (generate-quad))
 
   #;
   (display-maze
-   (generate-quad/template
-    (first quad:templates)
-    wall-visit-order))
+  (generate-quad/template
+  (first quad:templates)
+  wall-visit-order))
 
   #;
   (display-maze
-   (generate-quad/template
-    (second quad:templates)
-    wall-visit-order))
+  (generate-quad/template
+  (second quad:templates)
+  wall-visit-order))
 
-  (require gb/lib/godel)
   ;; 8 is the first time you notice
   ;; 9 is tough
   (define s (permutations/s '(0 1 2 3 4 5 6 7 8 9)))
@@ -242,17 +254,7 @@
   (newline)
   ;;(error 'done)
 
-  (define maze/s
-    (wrap/s (cons/s
-             (enum/s quad:templates)
-             (permutations/s wall-visit-order))
-            (match-lambda
-             [(cons template visit-order)
-              (generate-quad/template template visit-order)])
-            (match-lambda
-             [_
-              (error 'maze/s "Encoding not supported")])))
-  (printf "k: ~a (~a)\n" 
+  (printf "k: ~a (~a)\n"
           (spec-k maze/s)
           (/ (log (spec-k maze/s))
              (log 10)))
@@ -269,8 +271,6 @@
     (define now (current-seconds))
     (printf "(~a) ~a =\n" (- now last) i)
     (set! last now)
-    (display-maze m))
-
-)
+    (display-maze m)))
 
 (provide (all-defined-out))
