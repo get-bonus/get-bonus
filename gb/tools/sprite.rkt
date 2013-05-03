@@ -53,23 +53,22 @@
 
     (write-to-file sprite-name the-dest-manifest #:exists 'append)))
 (module+ test
-  (define a-w 100)
-  (define a-h 100)
+  (define a-wh 40)
   (define a.png (make-temporary-file "~a.png"))
 
-  (define a-bm (make-bitmap a-w a-h))
+  (define a-bm (make-bitmap a-wh a-wh))
   (define a-bm-dc (send a-bm make-dc))
   (define (set-color c)
     (send a-bm-dc set-pen c 1 'solid)
     (send a-bm-dc set-brush c 'solid))
   (set-color "red")
-  (send a-bm-dc draw-rectangle  0  0 50 50)
+  (send a-bm-dc draw-rectangle  0  0 (/ a-wh 2) (/ a-wh 2))
   (set-color "blue")
-  (send a-bm-dc draw-rectangle  0 50 50 50)
+  (send a-bm-dc draw-rectangle  0 (/ a-wh 2) (/ a-wh 2) (/ a-wh 2))
   (set-color "green")
-  (send a-bm-dc draw-rectangle 50  0 50 50)
+  (send a-bm-dc draw-rectangle (/ a-wh 2)  0 (/ a-wh 2) (/ a-wh 2))
   (set-color "black")
-  (send a-bm-dc draw-rectangle 50 50 50 50)
+  (send a-bm-dc draw-rectangle (/ a-wh 2) (/ a-wh 2) (/ a-wh 2) (/ a-wh 2))
   (void (send a-bm save-file a.png 'png 100))
 
   (define a.rktd (make-temporary-file "~a.rktd"))
@@ -79,10 +78,10 @@
          #:unless (and (zero? dw) (zero? dh)))
     (check-exn exn:fail?
                (λ ()
-                 (make-write-sprite (+ dw a-w) (+ dh a-h)
+                 (make-write-sprite (+ dw a-wh) (+ dh a-wh)
                                     a.png a.rktd a-root))))
   (define a-write-sprite
-    (make-write-sprite a-w a-h a.png a.rktd a-root))
+    (make-write-sprite a-wh a-wh a.png a.rktd a-root))
 
   (define (check-bitmap check?)
     (define this-bm
@@ -90,16 +89,16 @@
                    (build-path a-root
                                (last (file->list a.rktd)))
                    'png/alpha #f #t))
-    (check-equal? (send this-bm get-width) 50)
-    (check-equal? (send this-bm get-height) 50)
+    (check-equal? (send this-bm get-width) (/ a-wh 2))
+    (check-equal? (send this-bm get-height) (/ a-wh 2))
     (define this-bm-dc (send this-bm make-dc))
     (define c (make-object color%))
-    (for* ([x (in-range 50)]
-           [y (in-range 50)])
+    (for* ([x (in-range (/ a-wh 2))]
+           [y (in-range (/ a-wh 2))])
       (send this-bm-dc get-pixel x y c)
       (check? (send c red) (send c green) (send c blue) (send c alpha))))
 
-  (a-write-sprite   "red"  0  0 50 50)
+  (a-write-sprite   "red"  0  0 (/ a-wh 2) (/ a-wh 2))
   (check-equal? (file->list a.rktd)
                 (list "red.png"))
   (check-bitmap (λ (r g b a)
@@ -108,7 +107,7 @@
                   (check-equal? b   0)
                   (check-equal? a 1.0)))
 
-  (a-write-sprite  "blue"  0 50 50 50)
+  (a-write-sprite  "blue"  0 (/ a-wh 2) (/ a-wh 2) (/ a-wh 2))
   (check-equal? (file->list a.rktd)
                 (list "red.png" "blue.png"))
   (check-bitmap (λ (r g b a)
@@ -117,7 +116,7 @@
                   (check-equal? b 255)
                   (check-equal? a 1.0)))
 
-  (a-write-sprite "green" 50  0 50 50)
+  (a-write-sprite "green" (/ a-wh 2)  0 (/ a-wh 2) (/ a-wh 2))
   (check-equal? (file->list a.rktd)
                 (list "red.png" "blue.png" "green.png"))
   (check-bitmap (λ (r g b a)
@@ -126,7 +125,7 @@
                   (check-equal? b   0)
                   (check-equal? a 1.0)))
 
-  (a-write-sprite "black" 50 50 50 50)
+  (a-write-sprite "black" (/ a-wh 2) (/ a-wh 2) (/ a-wh 2) (/ a-wh 2))
   (check-equal? (file->list a.rktd)
                 (list "red.png" "blue.png" "green.png" "black.png"))
   (check-bitmap (λ (r g b a)
@@ -157,11 +156,11 @@
     (check-within 0 ly height-sb)
     (check-within 0 (+ ly h) height-sb)))
 (module+ test
-  (define test-sprite (make-test-sprite 100 100))
-  (test-sprite "red"    0  0 50 50)
-  (test-sprite "blue"   0 50 50 50)
-  (test-sprite "green" 50  0 50 50)
-  (test-sprite "black" 50 50 50 50))
+  (define test-sprite (make-test-sprite a-wh a-wh))
+  (test-sprite "red"    0  0 (/ a-wh 2) (/ a-wh 2))
+  (test-sprite "blue"   0 (/ a-wh 2) (/ a-wh 2) (/ a-wh 2))
+  (test-sprite "green" (/ a-wh 2)  0 (/ a-wh 2) (/ a-wh 2))
+  (test-sprite "black" (/ a-wh 2) (/ a-wh 2) (/ a-wh 2) (/ a-wh 2)))
 
 (define-syntax-parameter sprite
   (λ (stx) (raise-syntax-error 'sprite "Only allowed inside sprite" stx)))

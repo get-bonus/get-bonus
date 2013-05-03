@@ -129,8 +129,8 @@
     make-bytes bytes-ref bytes-set!)
   (define-evector v:
     make-vector vector-ref vector-set!)
-
-  (define N 100)
+  
+  (define N 40)
   (define e (e:make-vector 10))
   (for* ([try (in-range 2)]
          [i (in-range N)])
