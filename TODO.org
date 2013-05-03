@@ -28,7 +28,6 @@
       0 ./games/rpswar/graph.rkt
       0 ./games/maze/map.rkt
       0 ./cg/main.rkt
-      0 ./info.rkt
       0 ./Makefile.rkt
       0 ./jake/main.rkt
       0 ./tools/log-display.rkt
@@ -73,6 +72,8 @@
       0 ./gb/data/ltq.rkt
       0 ./gb/meta.rkt
       0 ./gb/main.rkt
+** TODO good sprite sheet
+   http://imgur.com/a/uHx4k
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels
@@ -82,6 +83,10 @@
    Like what the equipment/etc configuration was in JRPGs, so it can
    be re-presented if it needs to be modified
 ** TODO Implement pausing and quitting
+** TODO make pi sequences functional
+   Using streams
+** TODO ensure I am using just OpenGL ES
+   https://mail.google.com/mail/u/0/#inbox/13e67b9634c39a5b
 ** TODO main - have a way of browsing attempts (press select?)
    For viewing a replay or other data
 ** TODO generalize score to a hash of different metrics
@@ -249,6 +254,9 @@
    http://www.cs.cmu.edu/~tom7/mario/
 
    Use A* or BB to discover optimal playthroughs
+** TODO Write a Wayland interface for Racket
+   Plus a tiling manager
+   Plus a "video game console" shell
 * Optimization ideas
 ** TODO Make OS use futures for parallelism
    First experiment, 2012/07/01 failed... got a slower frame rate. I

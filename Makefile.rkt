@@ -14,8 +14,6 @@
   (displayln cmd)
   (system cmd))
 
-;; XXX generalize to not rely on CWD = SRC-DIR
-
 (jake
  (define r-pth "r")
  (define r.free-pth "r.free")

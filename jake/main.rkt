@@ -10,7 +10,8 @@
          racket/path
          racket/file
          racket/system
-         racket/cmdline)
+         racket/cmdline
+         racket/runtime-path)
 
 (define target?
   path-string?)
@@ -39,14 +40,21 @@
                 'pos 'neg))
               current-rules)))
 
-(define-syntax-rule (jake . body)
-  (let ()
-    (define rules
-      empty)
-    (splicing-syntax-parameterize
-     ([current-rules (make-rename-transformer #'rules)])
-     . body)
-    (jake-main rules)))
+(define-syntax (jake stx)
+  (syntax-case stx ()
+    [(_ . body)
+     (quasisyntax/loc stx
+       (begin
+         (define (run-main)
+           (define rules empty)
+           (splicing-syntax-parameterize
+            ([current-rules (make-rename-transformer #'rules)])
+            . body)
+           (jake-main rules))
+         (module+ main
+           #,(datum->syntax stx (list #'define-runtime-path 'root #'"."))
+           (parameterize ([current-directory #,(datum->syntax stx 'root)])
+             (run-main)))))]))
 
 (define (jake-main rules)
   (command-line
