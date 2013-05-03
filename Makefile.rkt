@@ -1,6 +1,7 @@
 #lang racket/base
 (require jake
          racket/list
+         racket/runtime-path
          racket/match
          racket/path
          racket/port
@@ -8,11 +9,98 @@
          racket/file
          setup/dirs
          gb/graphics/font-lib)
+(module+ test
+  (require rackunit))
 
 (define (systemf fmt . args)
   (define cmd (apply format fmt args))
   (displayln cmd)
   (system cmd))
+
+(define (compiled pth)
+  (build-path (path-only pth)
+              "compiled"
+              (path-add-suffix (file-name-from-path pth) #".zo")))
+(module+ test
+  (check-equal? (path->string (compiled "a/b/c/foo.rkt"))
+                "a/b/c/compiled/foo_rkt.zo"))
+
+(define (zo->deps zo-pth)
+  (define dep-pth
+    (path-replace-suffix zo-pth #".dep"))
+  (if (file-exists? dep-pth)
+    (flatten
+     (map (match-lambda
+           [(? bytes? b)
+            (compiled (bytes->path b))]
+           [(list-rest 'collects cp)
+            (compiled
+             (apply build-path (find-collects-dir)
+                    (map bytes->path cp)))
+            empty])
+          (list-tail (file->value dep-pth) 2)))
+    empty))
+(module+ test
+  (check-equal? (zo->deps "meh.zo") empty)
+  (define-runtime-path here ".")
+  (check-equal?
+   (zo->deps (build-path here "compiled/Makefile_rkt.zo"))
+   (list (normalize-path
+          (build-path here "jake/compiled/main_rkt.zo"))
+         (normalize-path
+          (build-path here "gb/graphics/compiled/font-lib_rkt.zo")))))
+
+(define racket-pth
+  (find-executable-path "racket"))
+(define raco-pth
+  (find-executable-path "raco"))
+
+(define (zo->file zo-pth)
+  (bytes->path
+   (regexp-replace*
+    #rx#"_"
+    (path->bytes (path-replace-suffix
+                  (file-name-from-path zo-pth)
+                  #""))
+    #".")))
+(module+ test
+  (check-equal? (zo->file (build-path here "compiled/Makefile_rkt.zo"))
+                (build-path "Makefile.rkt")))
+
+(define (zo->src some-pth)  
+  (match some-pth
+    [(app path-only
+          (and (? path-string?)
+               (app explode-path
+                    (and (app (compose path->bytes last)
+                              #"compiled")
+                         (app (compose (λ (x) (apply build-path x))
+                                       reverse rest reverse)
+                              src)))))
+     src]
+    [else
+     #f]))
+(module+ test
+  (check-equal? (zo->src "/Makefile.rkt")
+                #f)
+  (check-equal? (zo->src "/compiled/Makefile_rkt.zo")
+                (build-path "/")))
+
+(define ->path
+   (match-lambda
+    [(? path? x)
+     x]
+    [(? path-string? x)
+     (string->path x)]
+    [(? bytes? x)
+     (bytes->path x)]))
+(module+ test
+  (check-equal? (->path (build-path "/"))
+                (build-path "/"))
+  (check-equal? (->path "/")
+                (build-path "/"))
+  (check-equal? (->path #"/")
+                (build-path "/")))
 
 (jake
  (define r-pth "r")
@@ -21,46 +109,11 @@
  (rule "all"
        (list "r.free.png" "r.png" "gb/graphics/r.rkt"))
 
- (define racket-pth
-   (find-executable-path "racket"))
- (define raco-pth
-   (find-executable-path "raco"))
-
- (define (compiled pth)
-   (build-path (path-only pth)
-               "compiled"
-               (path-add-suffix (file-name-from-path pth) #".zo")))
-
- (rule (and (app path-only
-                 (and (? path-string?)
-                      (app explode-path
-                           (and (app (compose path->bytes last)
-                                     #"compiled")
-                                (app (compose (λ (x) (apply build-path x))
-                                              reverse rest reverse)
-                                     src)))))
-            (app (compose bytes->path
-                          (λ (x) (regexp-replace* #rx#"_" x #"."))
-                          path->bytes
-                          (λ (x) (path-replace-suffix x #""))
-                          file-name-from-path)
-                 file)
+ (rule (and (app zo->src (and (not #f) src))
+            (app zo->file file)
             zo-pth)
        (list (build-path src file)
-             (let ()
-               (define dep-pth
-                 (path-replace-suffix zo-pth #".dep"))
-               (if (file-exists? dep-pth)
-                 (map (match-lambda
-                       [(? bytes? b)
-                        (compiled (bytes->path b))]
-                       [(list-rest 'collects cp)
-                        (compiled
-                         (apply build-path (find-collects-dir)
-                                (map bytes->path cp)))
-                        empty])
-                      (list-tail (file->value dep-pth) 2))
-                 empty))
+             (zo->deps zo-pth)
              racket-pth)
        (system* raco-pth "make" (build-path src file)))
 
@@ -90,7 +143,9 @@
    (map (λ (x) (path-replace-suffix x #".rktd")) SPRITE-DEFS))
 
  (rule (and (app (compose (λ (x) (map path->string x)) explode-path)
-                 (list (== r.src-pth) inner ... (app filename-extension #"rktd")))
+                 (list (== r.src-pth) 
+                       inner ...
+                       (app filename-extension #"rktd")))
             sprite-list)
        (list (compiled "tools/sprite-digest.rkt")
              (compiled (path-replace-suffix sprite-list #".rkt"))
@@ -109,16 +164,7 @@
                     "tools/sprite-digest.rkt"
                     "--"
                     (build-path r-pth some-sprite)
-                    (build-path r.free-pth some-sprite)))))
-
- (define ->path
-   (match-lambda
-    [(? path? x)
-     x]
-    [(? path-string? x)
-     (string->path x)]
-    [(? bytes? x)
-     (bytes->path x)]))
+                    (build-path r.free-pth some-sprite))))) 
 
  (rule (or "r.free.png" "r.png" "gb/graphics/r.rkt")
        (list (compiled "tools/texture-atlas.rkt")

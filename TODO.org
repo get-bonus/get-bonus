@@ -13,7 +13,6 @@
       3 ./exp/godel-lambda.rkt
       2 ./exp/des.rkt
       2 ./gb/data/fvector.rkt
-      0 ./freeglut/main.rkt
       0 ./exp/gen-stlc.rkt
       0 ./exp/wide.rkt
       0 ./exp/fern.rkt
@@ -27,8 +26,6 @@
       0 ./games/rpswar/main.rkt
       0 ./games/rpswar/graph.rkt
       0 ./games/maze/map.rkt
-      0 ./cg/main.rkt
-      0 ./Makefile.rkt
       0 ./jake/main.rkt
       0 ./tools/log-display.rkt
       0 ./tools/texture-atlas.rkt
