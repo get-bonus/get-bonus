@@ -44,25 +44,35 @@
   (define how-many (gvector-count palette))
 
   (when (<= how-many 10)
-    (define sprite-dir 
+    (define sprite-dir
       (build-path db-path "sprites"
-                  (file-name-from-path png-path)))
+                  (path-replace-suffix (file-name-from-path png-path)
+                                       #".spr")))
     (make-directory* sprite-dir)
 
-    (with-output-to-file
-        (build-path sprite-dir "meta")
-      (λ ()
-        (write (cons w h))))
+    (write-to-file
+     (cons w h)
+     (build-path sprite-dir "meta"))
 
-    (with-output-to-file
-        (build-path sprite-dir "0.img")
-      (λ ()
-        (write-bytes new-pixels)))
+    (display-to-file
+     new-pixels
+     (build-path sprite-dir "0.img"))
 
-    (with-output-to-file
-        (build-path sprite-dir "palettes")
-      (λ ()
-        (write (list (gvector->vector palette)))))))
+    (define palette-id
+      (path->string
+       (path-replace-suffix (file-name-from-path png-path)
+                            #"")))
+    (define palette-file
+      (path-replace-suffix (file-name-from-path png-path)
+                            #".pal"))
+    (make-directory* (build-path db-path "palettes"))
+    (write-to-file
+     (gvector->vector palette)
+     (build-path db-path "palettes" palette-file))
+
+    (write-to-file
+     (list palette-id)
+     (build-path sprite-dir "palettes"))))
 
 (module+ main
   (require racket/cmdline)
