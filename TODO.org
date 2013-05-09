@@ -70,7 +70,18 @@
       0 ./gb/meta.rkt
       0 ./gb/main.rkt
 ** TODO good sprite sheet
+   http://quale-art.blogspot.com/p/scroll-o-sprites.html
+
    http://imgur.com/a/uHx4k
+
+   http://oryxdesignlab.com/ultimate
+
+   http://forums.tigsource.com/index.php?topic=8970.0
+** TODO Change sprites/textures to use lower color depth
+   Particularly if I go with 1-bit textures :)
+** TODO Look at Texture Packer's options for artifacts
+   http://www.codeandweb.com/texturepacker/documentation#layout
+** TODO find a way to let the games inform which textures are included in atlas
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels
@@ -203,6 +214,8 @@
    http://kometbomb.net/2008/07/23/collision-detection-with-occlusion-queries-redux/
 ** TODO 2D Lighting
    https://www.youtube.com/watch?v=fsbECSpwtig
+
+   http://robotloveskitty.tumblr.com/post/33164532086/legend-of-dungeon-dynamic-lighting-on-sprites
 ** TODO Winners Don't Do Drugs and other intro screens
 ** TODO rpswar - render fst graphically
 ** TODO Figure out a way to allow and use palettes effectively
@@ -210,6 +223,7 @@
 * Tool and related-app ideas
 ** TODO Master Grafx2 or aseprite or make my own keyboard based system
    https://code.google.com/p/grafx2/
+** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
 ** TODO Add challenges/achievements/training to NES/SNES games
    Hook up with an emulator core to drop into a game with save states
    and then monitor its execution for score, etc
@@ -244,7 +258,6 @@
    Aim for completing a match in 1 to 2 minutes
    
    Shake the phone to get up
-** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
 ** TODO Make something for Racket/emacs to find out what deps aren't needed
 ** TODO Make Optimization Coach + Macro Stepper available via Emacs
 ** TODO Adapt Tom7's NES playing ideas
