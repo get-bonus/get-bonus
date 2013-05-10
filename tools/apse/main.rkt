@@ -123,8 +123,16 @@
               (match-define (vector a r g b) c)
               (make-object color% r g b (/ a 255)))))
     (send palette-list set-messages! 
-          (for/list ([pn (in-list palette-names)])
-            (cons void pn)))
+          (for/list ([pn (in-list palette-names)]
+                     [pv (in-vector palette-vectors)])
+            (cons (λ (dc x y ch)
+                    (define bw (* ch 3/4))
+                    (for ([c (in-vector pv)]
+                          [i (in-naturals)])
+                      (send dc set-brush c 'solid)
+                      (send dc set-pen c 0 'solid)
+                      (send dc draw-rectangle (+ x (* bw i)) y bw ch)))
+                  pn)))
     
     (update-palette! new-palette-i)
 
