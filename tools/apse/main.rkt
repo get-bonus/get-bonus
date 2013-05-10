@@ -84,9 +84,10 @@
     (set! palette-i new-palette-i)
     (send palette-list set-highlight! palette-i)
 
+    (define palette (vector-ref palette-vectors palette-i))
+
     ;; XXX update colors
 
-    (define palette (vector-ref palette-vectors palette-i))
     (set! image-bms
           (for/vector ([ips (in-vector image-pixels)])            
             (define bm (make-object bitmap% w h #f #t))
@@ -154,12 +155,13 @@
 
     (send dc set-scale the-scale the-scale)
 
-    (send dc draw-bitmap (vector-ref image-bms image-i) 0 0)
+    (define bm (vector-ref image-bms image-i))
+    (send dc draw-bitmap bm 0 0)
 
-    ;; XXX Bad code duplication from above
-    (define p (bytes-ref (vector-ref image-pixels image-i) (+ (* y w) x)))
-    (define palette (vector-ref palette-vectors palette-i))
-    (send dc set-brush (vector-ref palette p) 'solid)
+    (define bm-dc (send bm make-dc))
+    (define the-c (make-object color% 0 0 0 0))
+    (send bm-dc get-pixel x y the-c)
+    (send dc set-brush the-c 'solid)
     (send dc set-pen outline-c 0 'solid)
     (send dc draw-rectangle x y 1 1)
 
