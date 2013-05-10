@@ -146,10 +146,10 @@ ASDFG HJKL; : insert the appropriate color [dvorak home row]
     C-q : quit
     Esc : quit
 
- C-left : previous image of sprite
-C-right : next image of sprite
-    C-t : new image of sprite
-    C-h : switch to height map of sprite
+ [ C-left : previous image of sprite
+] C-right : next image of sprite
+      C-t : new image of sprite
+      C-h : switch to height map of sprite
 
    C-up : previous palette
  C-down : next palette
