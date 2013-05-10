@@ -71,6 +71,7 @@ apse does not work on individual files. Instead, it opens a database
 laid out as follows:
 
 * root                  # name of database
+\ last.rktd             # edit state
 \ sprites
   \ <a>
     \ <b>
@@ -132,33 +133,37 @@ system. It looks like this:
 |                                 |                                  |
 +--------------------------------------------------------------------+
 
-Arrows keys : Move around the cursor
-12345 67890 : insert the appropriate color
-AOEUI DHTNS : insert the appropriate color [qwerty home row]
-ASDFG HJKL; : insert the appropriate color [dvorak home row]
-
-    C-s : commit changes
-    C-z : undo (with infinite undo stack, not saved though)
-    C-l : turn on/off lighting in animation
-      - : slow down animation
-      + : speed up animation
-    C-f : change to a different sprite (new name = new sprite)
-    C-q : quit
-    Esc : quit
-
- [ C-left : previous image of sprite
-] C-right : next image of sprite
-      C-t : new image of sprite
-      C-h : switch to height map of sprite
-
-   C-up : previous palette
- C-down : next palette
-    C-p : new palette (name the palette, new name = new palette)
-    C-e : edit palette
+| DONE? | Key         | Command                                           |
+|-------+-------------+---------------------------------------------------|
+| DONE  | Arrows keys | Move around the cursor                            |
+|       | 12345 67890 | insert the appropriate color                      |
+|       | AOEUI DHTNS | insert the appropriate color [qwerty home row]    |
+|       | ASDFG HJKL; | insert the appropriate color [dvorak home row]    |
+|       |             |                                                   |
+|       | C-up        | previous palette                                  |
+|       | C-down      | next palette                                      |
+|       | C-p         | new palette (new name = new palette)              |
+|       | C-e         | edit palette                                      |
+|       |             |                                                   |
+|       | [           | previous image of sprite                          |
+|       | C-left      | previous image of sprite                          |
+|       | ]           | next image of sprite                              |
+|       | C-right     | next image of sprite                              |
+|       | C-t         | new image of sprite                               |
+|       | C-h         | switch to height map of sprite                    |
+|       |             |                                                   |
+|       | C-s         | commit changes                                    |
+|       | C-z         | undo (with infinite undo stack, not saved though) |
+|       | C-l         | turn on/off lighting in animation                 |
+|       | -           | slow down animation                               |
+|       | =           | speed up animation                                |
+|       | C-f         | change to a different sprite                      |
+|       | C-q         | quit                                              |
+|       | Esc         | quit                                              |
 
 * Todo
-** Make a converter from a PNG to this format
+** DONE Make a converter from a PNG to this format
     (if it is allowed, i.e. if it has a palette.)
 ** Make the basic interface (sans animation & lighting)
-** Add animation
+** DONE Add animation
 ** Add height/normal maps & lighting

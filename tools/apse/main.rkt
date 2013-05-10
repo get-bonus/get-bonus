@@ -12,6 +12,8 @@
     (init how-many)
 
     (define vp (new vertical-panel% [parent parent]))
+    (define vw (send vp get-width))
+    (define vh (send vp get-height))
     (define messages
       (for/list ([i (in-range how-many)])
         (new message% [parent vp] [label ""] [auto-resize #t])))
