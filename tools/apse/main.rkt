@@ -24,34 +24,40 @@
     (init-field how-many)
 
     (define (paint-messages! canvas dc)
-      (define-values 
-        (display-indexes how-many-display-indexes)
-        (calculate-visible-options messages
-                                   how-many
-                                   message-i))
+      (unless (empty? messages)
+        (define max-message-len
+          (apply max (map (compose string-length cdr) messages)))
+        (define-values
+          (display-indexes how-many-display-indexes)
+          (calculate-visible-options messages
+                                     how-many
+                                     message-i))
 
-      (send dc set-text-foreground (make-object color% 0 0 0 1))
-      (for ([di (in-list display-indexes)]
-            [i (in-naturals)])
-        (define m 
-          (match di
-            ['after
-             (cons void ">>>>")]
-            ['before
-             (cons void "<<<<")]
-            [(? number? n)
-             (list-ref messages n)]))
-        (match-define (cons p mt) m)
-        (define text
-          (format "~a ~a"
-                  (if (equal? di message-i)
-                    "!"
-                    " ")
-                  mt))
-        (define start-h (* ch i))
-        (send dc draw-text text 0 start-h)
-        (define-values (w _0 _1 _2) (send dc get-text-extent text))
-        (p dc (+ ch w) start-h ch)))
+        (send dc set-text-foreground (make-object color% 0 0 0 1))
+        (for ([di (in-list display-indexes)]
+              [i (in-naturals)])
+          (define m
+            (match di
+              ['after
+               (cons void ">>>>")]
+              ['before
+               (cons void "<<<<")]
+              [(? number? n)
+               (list-ref messages n)]))
+          (match-define (cons p mt) m)
+          (define text
+            (~a
+             #:min-width (+ 2 max-message-len)
+             #:align 'right
+             (format "~a ~a"
+                     (if (equal? di message-i)
+                       "!"
+                       " ")
+                     mt)))
+          (define start-h (* ch i))
+          (send dc draw-text text 0 start-h)
+          (define-values (w _0 _1 _2) (send dc get-text-extent text))
+          (p dc (+ ch w) start-h ch))))
 
     (define c (new canvas% [parent parent]
                    [stretchable-height #f]
@@ -70,7 +76,8 @@
       (set! messages ls)
       (send c refresh-now))
     (define/public (set-highlight! hi)
-      (set! message-i hi))
+      (set! message-i hi)
+      (send c refresh-now))
 
     (super-new)))
 
@@ -122,30 +129,31 @@
             (for/vector ([c (in-vector cs)])
               (match-define (vector a r g b) c)
               (make-object color% r g b (/ a 255)))))
-    (send palette-list set-messages! 
+    (send palette-list set-messages!
           (for/list ([pn (in-list palette-names)]
                      [pv (in-vector palette-vectors)])
             (cons (λ (dc x y ch)
-                    (define bw (* ch 3/4))
+                    (define bw (* ch 1/2))
                     (for ([c (in-vector pv)]
                           [i (in-naturals)])
                       (send dc set-brush c 'solid)
                       (send dc set-pen c 0 'solid)
                       (send dc draw-rectangle (+ x (* bw i)) y bw ch)))
                   pn)))
-    
+
     (update-palette! new-palette-i)
 
     (update-image! new-image-i))
 
   (define (update-image! new-image-i)
-    (set! image-i new-image-i)
+    (set! image-i (modulo new-image-i (length image-names)))
     (send label-m set-label
           (format "~a of ~a" (add1 image-i) (length image-names)))
-    (set-cursor! x y))
+    (set-cursor! x y)
+    (~a "image = " image-i))
 
   (define (update-palette! new-palette-i)
-    (set! palette-i new-palette-i)
+    (set! palette-i (modulo new-palette-i (length palette-names)))
     (send palette-list set-highlight! palette-i)
 
     (define palette (vector-ref palette-vectors palette-i))
@@ -168,7 +176,11 @@
               (define p (bytes-ref ips (+ (* y w) x)))
               (send bm-dc set-pixel x y (vector-ref palette p)))
 
-            bm)))
+            bm))
+
+    (update-canvases!)
+
+    (~a "palette = " palette-i))
 
   (define x 0)
   (define y 0)
@@ -187,7 +199,7 @@
     ;; XXX record on undo stack
 
     (~a "("
-        (~a x 
+        (~a x
             #:min-width (string-length (number->string w))
             #:align 'right)
         ","
@@ -200,17 +212,25 @@
   (define (handle-key! e)
     (define start (current-inexact-milliseconds))
     (define new-status
-      (match* ((send e get-key-code))
-        [('up)
+      (match (cons (send e get-shift-down) (send e get-key-code))
+        [(cons #f 'up)
          (update-cursor!  0 -1)]
-        [('down)
+        [(cons #f 'down)
          (update-cursor!  0 +1)]
-        [('left)
+        [(cons #f 'left)
          (update-cursor! -1  0)]
-        [('right)
+        [(cons #f 'right)
          (update-cursor! +1  0)]
+        [(cons #t 'up)
+         (update-palette! (sub1 palette-i))]
+        [(cons #t 'down)
+         (update-palette! (add1 palette-i))]
+        [(or (cons #t 'left) (cons #f #\[))
+         (update-image! (sub1 image-i))]
+        [(or (cons #t 'right) (cons #f #\]))
+         (update-image! (add1 image-i))]
         ;; xxx add more commands
-        [(kc)
+        [kc
          (printf "ignored: ~a\n" kc)
          #f]))
     (define end (current-inexact-milliseconds))

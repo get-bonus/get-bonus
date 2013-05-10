@@ -142,15 +142,15 @@ system. It looks like this:
 |       | S-color     | change the current color                          |
 |       | Space       | insert current color                              |
 |       |             |                                                   |
-|       | C-up        | previous palette                                  |
-|       | C-down      | next palette                                      |
+| DONE  | S-up        | previous palette                                  |
+| DONE  | S-down      | next palette                                      |
 |       | C-p         | new palette (new name = new palette)              |
 |       | C-e         | edit palette                                      |
 |       |             |                                                   |
-|       | [           | previous image of sprite                          |
-|       | C-left      | previous image of sprite                          |
-|       | ]           | next image of sprite                              |
-|       | C-right     | next image of sprite                              |
+| DONE  | [           | previous image of sprite                          |
+| DONE  | S-left      | previous image of sprite                          |
+| DONE  | ]           | next image of sprite                              |
+| DONE  | S-right     | next image of sprite                              |
 |       | C-t         | new image of sprite                               |
 |       | C-h         | switch to height map of sprite                    |
 |       |             |                                                   |
