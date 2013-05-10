@@ -6,25 +6,66 @@
          racket/match
          racket/list)
 
+(define (color%->hex c)
+  (apply string-append
+         "#"
+         (for/list ([b (in-list (list (inexact->exact (* 255 (send c alpha)))
+                                      (send c red)
+                                      (send c green)
+                                      (send c blue)))])
+           (~a (number->string b 16)
+               #:min-width 2
+               #:pad-string "0"))))
+
 (define messages%
   (class* object% ()
     (init parent)
-    (init how-many)
+    (init-field how-many)
 
-    (define vp (new vertical-panel% [parent parent]))
-    (define vw (send vp get-width))
-    (define vh (send vp get-height))
-    (define messages
-      (for/list ([i (in-range how-many)])
-        (new message% [parent vp] [label ""] [auto-resize #t])))
+    ;; XXX indicate that there may be more than how-many and add
+    ;; scrolling
+    (define (paint-messages! canvas dc)
+      (send dc set-text-foreground (make-object color% 0 0 0 1))
+      (for ([i (in-range how-many)]
+            [m (in-list messages)])
+        (define mt
+          (match m
+            [(cons c mt) mt]
+            [mt mt]))
+        (define text
+          (format "~a ~a"
+                  (if (= i message-i)
+                    "!"
+                    " ")
+                  mt))
+        (define start-h (* ch i))
+        (send dc draw-text text 0 start-h)
+        (define-values (w _0 _1 _2) (send dc get-text-extent text))
+        (match m
+          [(cons c _)
+           (send dc set-brush c 'solid)
+           (send dc set-pen c 0 'solid)
+           (send dc draw-rectangle (+ ch w) start-h ch ch)]
+          [mt (void)])))
+
+    (define c (new canvas% [parent parent]
+                   [stretchable-height #f]
+                   [paint-callback paint-messages!]))
+    (define dc (send c get-dc))
+    (send dc set-font normal-control-font)
+    (define ch (send dc get-char-height))
+    (define h (inexact->exact
+               (ceiling (* how-many ch))))
+    (send c min-height h)
+
+    (define message-i 0)
+    (define messages empty)
 
     (define/public (set-messages! ls)
-      (for ([m (in-list messages)]
-            [l (in-list ls)])
-        (send m set-label l)))
+      (set! messages ls)
+      (send c refresh-now))
     (define/public (set-highlight! hi)
-      ;; XXX
-      (void))
+      (set! message-i hi))
 
     (super-new)))
 
@@ -92,8 +133,10 @@
     (send palette-list set-highlight! palette-i)
 
     (define palette (vector-ref palette-vectors palette-i))
-
-    ;; XXX update colors
+    (send palette-info set-messages!
+          (for/list ([c (in-vector palette)]
+                     [i (in-naturals)])
+            (cons c (format "~a: ~a" i (color%->hex c)))))
 
     (set! image-bms
           (for/vector ([ips (in-vector image-pixels)])
@@ -210,21 +253,11 @@
   (define palette-hp (new horizontal-panel% [parent right-vp]
                           [stretchable-height #f]))
   (define palette-list
-    ;; XXX indicate that there may be more than 8 and add scrolling
     (new messages% [parent palette-hp]
-         [how-many 8]))
+         [how-many 10]))
   (define palette-info
     (new messages% [parent palette-hp]
-         [how-many 8]))
-  (send palette-info set-messages!
-        (list "<Color 2>"
-              "<Color 3>"
-              "<Color 4>"
-              "<Color 5>"
-              "<Color 6>"
-              "<Color 7>"
-              "<Color 8>"
-              "<Color 9>"))
+         [how-many 10]))
   (send palette-info set-highlight! 2)
 
   (define ((make-scaled-panel panel%) me them the-parent i)
@@ -282,7 +315,7 @@
     (set! last-image-i 0)
     (set! last-palette-i 0))
 
-  (load-sprite! last-sprite last-image-i last-palette-i)
+  (void (load-sprite! last-sprite last-image-i last-palette-i))
   (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main

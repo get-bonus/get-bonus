@@ -139,6 +139,7 @@ system. It looks like this:
 |       | 12345 67890 | insert the appropriate color                      |
 |       | AOEUI DHTNS | insert the appropriate color [qwerty home row]    |
 |       | ASDFG HJKL; | insert the appropriate color [dvorak home row]    |
+|       | S-color     | change the current color                          |
 |       |             |                                                   |
 |       | C-up        | previous palette                                  |
 |       | C-down      | next palette                                      |
