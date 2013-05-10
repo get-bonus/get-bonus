@@ -140,6 +140,7 @@ system. It looks like this:
 |       | AOEUI DHTNS | insert the appropriate color [qwerty home row]    |
 |       | ASDFG HJKL; | insert the appropriate color [dvorak home row]    |
 |       | S-color     | change the current color                          |
+|       | Space       | insert current color                              |
 |       |             |                                                   |
 |       | C-up        | previous palette                                  |
 |       | C-down      | next palette                                      |
@@ -153,6 +154,7 @@ system. It looks like this:
 |       | C-t         | new image of sprite                               |
 |       | C-h         | switch to height map of sprite                    |
 |       |             |                                                   |
+|       | C-c         | Hide cursor                                       |
 |       | C-s         | commit changes                                    |
 |       | C-z         | undo (with infinite undo stack, not saved though) |
 |       | C-l         | turn on/off lighting in animation                 |

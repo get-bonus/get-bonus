@@ -191,6 +191,42 @@
   (check-equal? (list-slice 2 8 ex)
                 (list 0 1 2 3 4)))
 
+(define (calculate-visible-options options max-visible-options current-option)
+  (define how-many-options (length options))
+  (define how-many-displayed-options
+    (min max-visible-options how-many-options))
+  (define visible-option-indexes
+    (list-slice current-option
+                (inexact->exact
+                 (quotient how-many-displayed-options 2))
+                how-many-options))
+  (define more-before?
+    (> (first visible-option-indexes) 0))
+  (define more-after?
+    (< (last visible-option-indexes) (sub1 how-many-options)))
+  (define display-indexes
+    (append (if more-before? '(before) empty)
+            (cond
+              [(and more-before? more-after?)
+               (drop-right (drop visible-option-indexes 1) 2)]
+              [more-before?
+               (drop visible-option-indexes 2)]
+              [more-after?
+               (drop-right visible-option-indexes 2)]
+              [else
+               visible-option-indexes])
+            (if more-after? '(after) empty)))
+  (define how-many-display-indexes (length display-indexes))
+  (values display-indexes how-many-display-indexes))
+
+(module+ test
+  (define-values (dis how-many-dis)
+    (calculate-visible-options
+     (build-list 30 (λ (i) i))
+     10
+     15))
+  (eprintf "~a\n" (list dis how-many-dis)))
+
 (define (draw-menu:list top-offset bot-offset st cm)
   (match (filter menu:list? cm)
     [(list)
@@ -202,19 +238,13 @@
         (- (/ (- crt-height (+ top-offset bot-offset))
               char-height)
            (add1 padding))))
-     (define how-many-options (length options))
-     (define how-many-displayed-options
-       (min max-visible-options how-many-options))
      (define current-option (hash-ref st code 0))
-     (define visible-option-indexes
-       (list-slice (hash-ref st code 0)
-                   (inexact->exact
-                    (quotient how-many-displayed-options 2))
-                   how-many-options))
-     (define more-before?
-       (> (first visible-option-indexes) 0))
-     (define more-after?
-       (< (last visible-option-indexes) (sub1 how-many-options)))
+
+     (define-values
+       (display-indexes how-many-display-indexes)
+       (calculate-visible-options options
+                                  max-visible-options
+                                  current-option))
 
      (define (option-entry-height pos)
        (* -1 (+ (* char-height (+ padding pos)))))
@@ -224,20 +254,6 @@
                  (map (compose string-length
                                menu:option-text)
                       options))))
-
-     (define display-indexes
-       (append (if more-before? '(before) empty)
-               (cond 
-                 [(and more-before? more-after?)
-                  (drop-right (drop visible-option-indexes 1) 1)]
-                 [more-before?
-                  (drop visible-option-indexes 1)]
-                 [more-after?
-                  (drop-right visible-option-indexes 1)]
-                 [else 
-                  visible-option-indexes])
-               (if more-after? '(after) empty)))
-     (define how-many-display-indexes (length display-indexes))
 
      (values
       (* char-width
@@ -333,4 +349,5 @@
          menu:info
          menu:status
          menu:action
-         render-menu)
+         render-menu
+         calculate-visible-options)

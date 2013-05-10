@@ -4,7 +4,8 @@
          racket/format
          racket/class
          racket/match
-         racket/list)
+         racket/list
+         (only-in gb/sys/menu calculate-visible-options))
 
 (define (color%->hex c)
   (apply string-append
@@ -22,19 +23,31 @@
     (init parent)
     (init-field how-many)
 
-    ;; XXX indicate that there may be more than how-many and add
-    ;; scrolling
     (define (paint-messages! canvas dc)
+      (define-values 
+        (display-indexes how-many-display-indexes)
+        (calculate-visible-options messages
+                                   how-many
+                                   message-i))
+
       (send dc set-text-foreground (make-object color% 0 0 0 1))
-      (for ([i (in-range how-many)]
-            [m (in-list messages)])
+      (for ([di (in-list display-indexes)]
+            [i (in-naturals)])
+        (define m 
+          (match di
+            ['after
+             ">>>>"]
+            ['before
+             "<<<<"]
+            [(? number? n)
+             (list-ref messages n)]))
         (define mt
           (match m
             [(cons c mt) mt]
             [mt mt]))
         (define text
           (format "~a ~a"
-                  (if (= i message-i)
+                  (if (equal? di message-i)
                     "!"
                     " ")
                   mt))
@@ -161,9 +174,21 @@
   (define (set-cursor! nx ny)
     (set! x (modulo nx w))
     (set! y (modulo ny h))
+
     (update-canvases!)
+
     ;; XXX record on undo stack
-    (format "(~a,~a)" x y))
+
+    (~a "("
+        (~a x 
+            #:min-width (string-length (number->string w))
+            #:align 'right)
+        ","
+        (~a y
+            #:min-width (string-length (number->string h))
+            #:align 'right)
+        ") = "
+        (bytes-ref (vector-ref image-pixels image-i) (+ (* y w) x))))
 
   (define (handle-key! e)
     (define start (current-inexact-milliseconds))
