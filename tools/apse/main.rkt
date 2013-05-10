@@ -43,6 +43,9 @@
   (define palette-i 0)
 
   (define (load-sprite! new-sprite new-image-i new-palette-i)
+    (write-to-file (list new-sprite new-image-i new-palette-i) last-path
+                   #:exists 'replace)
+
     (set! sprite new-sprite)
     (send name-m set-label sprite)
 
@@ -262,9 +265,11 @@
   (send mw show #t)
   (send zoomed-c focus)
 
-  ;; XXX load last setting
+  (define last-path (build-path db-path "last.rktd"))
   (match-define (list last-sprite last-image-i last-palette-i)
-                (list #f #f #f))
+                (if (file-exists? last-path)
+                  (file->value last-path)
+                  (list #f #f #f)))
   (unless last-sprite
     (set! last-sprite
           (first
