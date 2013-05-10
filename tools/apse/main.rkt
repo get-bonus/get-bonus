@@ -36,15 +36,12 @@
         (define m 
           (match di
             ['after
-             ">>>>"]
+             (cons void ">>>>")]
             ['before
-             "<<<<"]
+             (cons void "<<<<")]
             [(? number? n)
              (list-ref messages n)]))
-        (define mt
-          (match m
-            [(cons c mt) mt]
-            [mt mt]))
+        (match-define (cons p mt) m)
         (define text
           (format "~a ~a"
                   (if (equal? di message-i)
@@ -54,12 +51,7 @@
         (define start-h (* ch i))
         (send dc draw-text text 0 start-h)
         (define-values (w _0 _1 _2) (send dc get-text-extent text))
-        (match m
-          [(cons c _)
-           (send dc set-brush c 'solid)
-           (send dc set-pen c 0 'solid)
-           (send dc draw-rectangle (+ ch w) start-h ch ch)]
-          [mt (void)])))
+        (p dc (+ ch w) start-h ch)))
 
     (define c (new canvas% [parent parent]
                    [stretchable-height #f]
@@ -121,7 +113,6 @@
              (build-path sprite-dir i))))
 
     (set! palette-names (file->value (build-path sprite-dir "palettes")))
-    (send palette-list set-messages! palette-names)
     (set! palette-vectors
           (for/vector ([p (in-list palette-names)])
             (define cs
@@ -131,6 +122,10 @@
             (for/vector ([c (in-vector cs)])
               (match-define (vector a r g b) c)
               (make-object color% r g b (/ a 255)))))
+    (send palette-list set-messages! 
+          (for/list ([pn (in-list palette-names)])
+            (cons void pn)))
+    
     (update-palette! new-palette-i)
 
     (update-image! new-image-i))
@@ -149,7 +144,11 @@
     (send palette-info set-messages!
           (for/list ([c (in-vector palette)]
                      [i (in-naturals)])
-            (cons c (format "~a: ~a" i (color%->hex c)))))
+            (cons (λ (dc x y ch)
+                    (send dc set-brush c 'solid)
+                    (send dc set-pen c 0 'solid)
+                    (send dc draw-rectangle x y ch ch))
+                  (format "~a: ~a" i (color%->hex c)))))
 
     (set! image-bms
           (for/vector ([ips (in-vector image-pixels)])
