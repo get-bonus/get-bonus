@@ -36,6 +36,8 @@
   (define image-bms #f)
   (define image-i 0)
 
+  (define animation-i 0)
+
   (define palette-names #f)
   (define palette-vectors #f)
   (define palette-i 0)
@@ -89,7 +91,7 @@
     ;; XXX update colors
 
     (set! image-bms
-          (for/vector ([ips (in-vector image-pixels)])            
+          (for/vector ([ips (in-vector image-pixels)])
             (define bm (make-object bitmap% w h #f #t))
             (define bm-dc (send bm make-dc))
 
@@ -97,7 +99,7 @@
                    [y (in-range h)])
               (define p (bytes-ref ips (+ (* y w) x)))
               (send bm-dc set-pixel x y (vector-ref palette p)))
-            
+
             bm)))
 
   (define x 0)
@@ -127,13 +129,14 @@
          (update-cursor! -1  0)]
         [('right)
          (update-cursor! +1  0)]
+        ;; xxx add more commands
         [(kc)
          (printf "ignored: ~a\n" kc)
          #f]))
     (define end (current-inexact-milliseconds))
     (when new-status
       (send mw set-status-text
-            (~a (~a (- end start) 
+            (~a (~a (- end start)
                     #:min-width 3
                     #:max-width 4
                     #:align 'right)
@@ -141,7 +144,7 @@
                 new-status))))
 
   (define outline-c (make-object color% 255 255 255 1))
-  (define (paint-zoomed! c dc)
+  (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
     (define it (send dc get-transformation))
     (send dc set-smoothing 'unsmoothed)
 
@@ -155,7 +158,7 @@
 
     (send dc set-scale the-scale the-scale)
 
-    (define bm (vector-ref image-bms image-i))
+    (define bm (vector-ref image-bms the-image-i))
     (send dc draw-bitmap bm 0 0)
 
     (define bm-dc (send bm make-dc))
@@ -167,8 +170,7 @@
 
     (send dc set-transformation it))
   (define (paint-animation! c dc)
-    ;; XXX
-    (paint-zoomed! c dc))
+    (paint-zoomed! c dc #:image-i animation-i))
 
   ;; Interact with UI
   (define (update-canvases!)
@@ -231,7 +233,7 @@
               [paint-callback paint-zoomed!]))
        (list* first-c
               (them them me p (sub1 i)))]))
-  (define make-scaled-horizontal 
+  (define make-scaled-horizontal
     (make-scaled-panel horizontal-panel%))
   (define make-scaled-vertical
     (make-scaled-panel vertical-panel%))
@@ -242,12 +244,19 @@
      make-scaled-horizontal
      ;; make-scaled-vertical
      right-vp 4))
-  
+
   (define animation-c
     (new canvas% [parent right-vp]
          [paint-callback paint-animation!]))
 
-  ;; XXX create a timer for animation-c
+  (define animation-timer
+    (new timer%
+         [notify-callback
+          (λ ()
+            (set! animation-i
+                  (modulo (add1 animation-i)
+                          (length image-names)))
+            (send animation-c refresh-now))]))
 
   (send mw create-status-line)
   (send mw show #t)
@@ -258,12 +267,16 @@
                 (list #f #f #f))
   (unless last-sprite
     (set! last-sprite
-          (path->string
-           (first (directory-list (build-path db-path "sprites")))))
+          (first
+           (sort
+            (map path->string
+                 (directory-list (build-path db-path "sprites")))
+            string-ci<=?)))
     (set! last-image-i 0)
     (set! last-palette-i 0))
 
-  (load-sprite! last-sprite last-image-i last-palette-i))
+  (load-sprite! last-sprite last-image-i last-palette-i)
+  (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main
   (require racket/cmdline)
