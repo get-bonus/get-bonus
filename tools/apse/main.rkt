@@ -171,14 +171,11 @@
     (paint-zoomed! c dc))
 
   ;; Interact with UI
-
   (define (update-canvases!)
     (for-each (λ (c) (send c refresh-now))
-              ;; XXX remove animation-c
-              (list zoomed-c scale1-c scale2-c scale3-c animation-c)))
+              (list* zoomed-c animation-c scaled-cs)))
 
   ;; Set up the UI
-
   (define apse-frame%
     (class* frame% ()
       (define/override (on-subwindow-char r e)
@@ -203,8 +200,10 @@
   (define name-m
     (new message% [parent right-vp]
          [label "<Sprite Name>"]))
-  (define palette-hp (new horizontal-panel% [parent right-vp]))
+  (define palette-hp (new horizontal-panel% [parent right-vp]
+                          [stretchable-height #f]))
   (define palette-list
+    ;; XXX indicate that there may be more than 8 and add scrolling
     (new messages% [parent palette-hp]
          [how-many 8]))
   (define palette-info
@@ -220,20 +219,35 @@
               "<Color 8>"
               "<Color 9>"))
   (send palette-info set-highlight! 2)
-  (define scaled-cs (new horizontal-panel% [parent right-vp]))
-  (define scale1-c
-    (new canvas% [parent scaled-cs]
-         [paint-callback paint-zoomed!]))
-  (define iscaled-cs (new vertical-panel% [parent scaled-cs]))
-  (define scale2-c
-    (new canvas% [parent iscaled-cs]
-         [paint-callback paint-zoomed!]))
-  (define scale3-c
-    (new canvas% [parent iscaled-cs]
-         [paint-callback paint-zoomed!]))
+
+  (define ((make-scaled-panel panel%) me them the-parent i)
+    (cond
+      [(zero? i)
+       empty]
+      [else
+       (define p (new panel% [parent the-parent]))
+       (define first-c
+         (new canvas% [parent p]
+              [paint-callback paint-zoomed!]))
+       (list* first-c
+              (them them me p (sub1 i)))]))
+  (define make-scaled-horizontal 
+    (make-scaled-panel horizontal-panel%))
+  (define make-scaled-vertical
+    (make-scaled-panel vertical-panel%))
+
+  (define scaled-cs
+    (make-scaled-horizontal
+     make-scaled-horizontal
+     make-scaled-horizontal
+     ;; make-scaled-vertical
+     right-vp 4))
+  
   (define animation-c
     (new canvas% [parent right-vp]
          [paint-callback paint-animation!]))
+
+  ;; XXX create a timer for animation-c
 
   (send mw create-status-line)
   (send mw show #t)
