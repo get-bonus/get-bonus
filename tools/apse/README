@@ -157,7 +157,7 @@ system. It looks like this:
 |        |             |                                                   |
 | DONE   | c           | Hide cursor                                       |
 | DONE   | g           | Hide grid                                         |
-|        | C-s         | commit changes                                    |
+| DONE   | s           | commit changes                                    |
 |        | C-z         | undo (with infinite undo stack, not saved though) |
 |        | C-l         | turn on/off lighting in animation                 |
 |        | -           | slow down animation                               |

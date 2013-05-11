@@ -119,6 +119,23 @@
      (build-path sprite-dir (format "~a.img" new-image-i)))
     (load-sprite! sprite new-image-i palette-i))
 
+  (define (save!)
+    (cond
+      [need-to-save?
+       ;; dump pixels
+       (for ([i (in-list image-names)]
+             [ps (in-vector image-pixels)])
+         (display-to-file ps (build-path sprite-dir i)
+                          #:exists 'replace))
+       ;; dump palettes
+       (write-to-file palette-names
+                      (build-path sprite-dir "palettes")
+                      #:exists 'replace)
+       (set! need-to-save? #f)
+       (~a "changes saved")]
+      [else
+       (~a "no changes")]))
+
   (define (load-sprite! new-sprite new-image-i new-palette-i)
     (write-to-file (list new-sprite new-image-i new-palette-i) last-path
                    #:exists 'replace)
@@ -307,6 +324,8 @@
         (set! show-cursor? (not show-cursor?))
         (update-canvases!)
         (~a "show-cursor? = " show-cursor?)]
+       [(cons #f #\s)
+        (save!)]
        [(cons #f #\n)
         (new-image!)]
        [(cons #f #\t)
@@ -428,7 +447,12 @@
        (define p (new panel% [parent the-parent]))
        (define first-c
          (new canvas% [parent p]
-              [paint-callback paint-zoomed!]))
+              [paint-callback
+               (if (= 1 i)
+                 (λ (c dc)
+                   (send dc set-background base-color)
+                   (send dc clear))
+                 paint-zoomed!)]))
        (list* first-c
               (them them me p (sub1 i)))]))
   (define make-scaled-horizontal
@@ -436,13 +460,11 @@
   (define make-scaled-vertical
     (make-scaled-panel vertical-panel%))
 
-  ;; xxx it's annoying that the last of these is the same size
   (define scaled-cs
     (make-scaled-horizontal
      make-scaled-horizontal
      make-scaled-horizontal
-     ;; make-scaled-vertical
-     right-vp 4))
+     right-vp 5))
 
   (define animation-c
     (new canvas% [parent right-vp]
