@@ -156,6 +156,7 @@ system. It looks like this:
 |       | C-h         | switch to height map of sprite                    |
 |       |             |                                                   |
 |       | C-c         | Hide cursor                                       |
+|       | C-g         | Hide grid                                         |
 |       | C-s         | commit changes                                    |
 |       | C-z         | undo (with infinite undo stack, not saved though) |
 |       | C-l         | turn on/off lighting in animation                 |

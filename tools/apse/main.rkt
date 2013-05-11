@@ -24,12 +24,17 @@
                #:min-width 2
                #:pad-string "0"))))
 
+(define base-color (make-object color% #xFD #xF6 #xE3 1))
+
 (define messages%
   (class* object% ()
     (init parent)
     (init-field how-many)
 
     (define (paint-messages! canvas dc)
+      (send dc set-background base-color)
+      (send dc clear)
+
       (unless (empty? messages)
         (define max-message-len
           (apply max (map (compose string-length cdr) messages)))
@@ -203,8 +208,6 @@
     (define ips (vector-ref image-pixels image-i))
     (define bm (make-object bitmap% w h #f #t))
     (define bm-dc (send bm make-dc))
-    (send bm-dc set-background color0)
-    (send bm-dc erase)
 
     (for* ([x (in-range w)]
            [y (in-range h)])
@@ -221,7 +224,6 @@
     (send palette-info set-highlight! color-i)
     (~a "color = " color-i))
   (define (insert-current-color!)
-    ;; xxx transparency is broken (color 0)
     ;; xxx mark that you should save
     (bytes-set! (vector-ref image-pixels image-i)
                 ;; xxx third copy
@@ -320,10 +322,11 @@
        [kc
         #f])))
 
-  (define outline-c (make-object color% 255 255 255 1))
+  (define outline-c (make-object color% #xFF #x14 #x93 1))
+  (define all-white (make-object color% 255 255 255 1))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
-    (send dc set-background color0)
-    (send dc erase)
+    (send dc set-background base-color)
+    (send dc clear)
     (define it (send dc get-transformation))
     (send dc set-smoothing 'unsmoothed)
 
@@ -336,6 +339,16 @@
           (/ (- ch (* h the-scale)) 2))
 
     (send dc set-scale the-scale the-scale)
+
+    (send dc set-pen all-white 0 'solid)
+    (send dc set-brush all-white 'solid)
+    (send dc draw-rectangle 0 0 w h)
+
+    (send dc set-pen color1 0 'solid)
+    (for ([x (in-range (add1 w))])
+      (send dc draw-line x 0 x h))
+    (for ([y (in-range (add1 h))])
+      (send dc draw-line 0 y w y))
 
     (define bm (vector-ref image-bms the-image-i))
     (send dc draw-bitmap bm 0 0)
