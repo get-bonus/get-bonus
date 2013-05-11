@@ -211,10 +211,13 @@
 
     (for* ([x (in-range w)]
            [y (in-range h)])
-      (define p (bytes-ref ips (+ (* y w) x)))
+      (define p (bytes-ref ips (xy->byte x y)))
       (send bm-dc set-pixel x y (vector-ref palette p)))
 
     (vector-set! image-bms image-i bm))
+
+  (define (xy->byte x y)
+    (+ (* y w) x))
 
   (define (insert-color! c)
     (update-color! c)
@@ -224,10 +227,10 @@
     (send palette-info set-highlight! color-i)
     (~a "color = " color-i))
   (define (insert-current-color!)
-    ;; xxx mark that you should save
+    (set! need-to-save? #t)
+    ;; xxx undo stack
     (bytes-set! (vector-ref image-pixels image-i)
-                ;; xxx third copy
-                (+ (* y w) x)
+                (xy->byte x y)
                 color-i)
     (update-bitmap! image-i)
     (update-canvases!)
@@ -240,6 +243,7 @@
   (define h 0)
   (define show-cursor? #t)
   (define show-grid? #t)
+  (define need-to-save? #f)
 
   (define (update-cursor! dx dy)
     (set-cursor! (+ dx x) (+ dy y)))
@@ -250,8 +254,6 @@
 
     (update-canvases!)
 
-    ;; XXX record on undo stack
-
     (~a "("
         (~a x
             #:min-width (string-length (number->string w))
@@ -261,7 +263,7 @@
             #:min-width (string-length (number->string h))
             #:align 'right)
         ") = "
-        (bytes-ref (vector-ref image-pixels image-i) (+ (* y w) x))))
+        (bytes-ref (vector-ref image-pixels image-i) (xy->byte x y))))
 
   (define (color-key? c)
     (for/or ([some-c (in-string "0123456789")]
@@ -282,12 +284,17 @@
       (define end (current-inexact-milliseconds))
       (when new-status
         (send mw set-status-text
-              (~a (~a (- end start)
-                      #:min-width 3
-                      #:max-width 4
-                      #:align 'right)
-                  "ms: "
-                  new-status)))))
+              (~a
+               (if need-to-save?
+                 "!"
+                 " ")
+               " "
+               (~a (- end start)
+                   #:min-width 3
+                   #:max-width 4
+                   #:align 'right)
+               "ms: "
+               new-status)))))
 
   (define (handle-key! e)
     (set-status!
@@ -321,7 +328,7 @@
        [(or (cons #t 'right) (cons #f #\]))
         (update-image! (add1 image-i))]
        [(or (cons _ 'escape) (cons _ #\q))
-        ;; xxx save?
+        ;; xxx check need-to-save?
         (exit 0)]
        [(cons #f #\space)
         (insert-current-color!)]
@@ -459,6 +466,7 @@
                 (if (file-exists? last-path)
                   (file->value last-path)
                   (list #f #f #f)))
+  ;; XXX all sorts of broken on first opening with no sprites
   (unless last-sprite
     (set! last-sprite
           (first (directory-list* (build-path db-path "sprites"))))
