@@ -144,7 +144,8 @@ system. It looks like this:
 |        |             |                                                   |
 | DONE   | S-up        | previous palette                                  |
 | DONE   | S-down      | next palette                                      |
-|        | C-p         | add palette (new name = new palette)              |
+|        | r           | remove current palette from sprite                |
+| DONE   | a           | add palette (new name = new palette)              |
 | DONE   | e           | edit palette                                      |
 |        |             |                                                   |
 | DONE   | [           | previous image of sprite                          |
@@ -153,16 +154,16 @@ system. It looks like this:
 | DONE   | S-right     | next image of sprite                              |
 | DONE   | t           | new image of sprite (copied from current)         |
 | DONE   | n           | new image of sprite (empty)                       |
-|        | C-h         | switch to height map of sprite                    |
+|        | h           | switch to height map of sprite                    |
 |        |             |                                                   |
 | DONE   | c           | Hide cursor                                       |
 | DONE   | g           | Hide grid                                         |
 | DONE   | s           | commit changes                                    |
 | DONE   | z           | undo (with infinite undo stack, not saved though) |
-|        | C-l         | turn on/off lighting in animation                 |
+|        | l           | turn on/off lighting in animation                 |
 |        | -           | slow down animation                               |
 |        | =           | speed up animation                                |
-|        | C-f         | change to a different sprite                      |
+| DONE   | f           | change to a different sprite                      |
 | DONE   | q           | quit                                              |
 | DONE   | Esc         | quit                                              |
 

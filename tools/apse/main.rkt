@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/gui/base
          racket/file
+         racket/path
          racket/format
          racket/class
          racket/match
@@ -173,7 +174,7 @@
     (set! sprite new-sprite)
     (send name-m set-label sprite)
 
-    (set! sprite-dir (build-path db-path "sprites" sprite))
+    (set! sprite-dir (build-path db-path "sprites" (format "~a.spr" sprite)))
 
     (match-define (cons new-w new-h)
                   (file->value (build-path sprite-dir "meta")))
@@ -189,12 +190,7 @@
              (build-path sprite-dir i))))
 
     (set! palette-names (file->value (build-path sprite-dir "palettes")))
-    (set! palette-raw-vectors
-          (for/vector ([p (in-list palette-names)])
-            (file->value
-             (build-path db-path "palettes"
-                         (format "~a.pal" p)))))
-    (update-palette-vectors!)
+    (update-palettes!)
 
     (update-palette! new-palette-i)
     (update-color! color-i)
@@ -202,6 +198,13 @@
 
     (~a "load " sprite " img#" new-image-i " pal#" new-palette-i))
 
+  (define (update-palettes!)
+    (set! palette-raw-vectors
+          (for/vector ([p (in-list palette-names)])
+            (file->value
+             (build-path db-path "palettes"
+                         (format "~a.pal" p)))))
+    (update-palette-vectors!))
 
   (define (update-palette-vectors!)
     (set! palette-vectors
@@ -345,11 +348,14 @@
              #:when (eq? c some-c))
       i))
 
+  (define status-prompt-tag (make-continuation-prompt-tag 'status))
   (define-syntax-rule (set-status! expr)
     (let ()
       (define start (current-inexact-milliseconds))
       (define new-status
-        expr)
+        (call-with-continuation-prompt
+         (λ () expr)
+         status-prompt-tag))
       (define end (current-inexact-milliseconds))
       (when new-status
         (send mw set-status-text
@@ -364,6 +370,8 @@
                    #:align 'right)
                "ms: "
                new-status)))))
+  (define (throw-status v)
+    (abort-current-continuation status-prompt-tag (λ () v)))
 
   (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
   (define minibuffer-run! #f)
@@ -414,6 +422,78 @@
                minibuffer-prompt-tag)
       (set! minibuffer-run! #f)))
 
+  (define (not-empty-string? s)
+    (not (string=? "" s)))
+  (define (valid-sprite-char? c)
+    (or (char-alphabetic? c)
+        (char-numeric? c)
+        (char=? #\/ c)
+        (char=? #\- c)))
+
+  (define (all-from root suffix)
+    (define suffix-re
+      (regexp (format "\\.~a$" (regexp-quote suffix))))
+    (define root-re
+      (regexp (format "^~a/" (regexp-quote (path->string root)))))
+    (map (λ (p)
+           (regexp-replace root-re
+                           (regexp-replace suffix-re
+                                           (path->string p)
+                                           "")
+                           ""))
+         (find-files (λ (p) (regexp-match suffix-re (path->string p)))
+                     root)))
+
+  (define (read-palette label)
+    (define all-palette-names
+      (all-from (build-path db-path "palettes") "pal"))
+    (define palette-name
+      (minibuffer-read (~a label " palette")
+                       #:completions all-palette-names
+                       #:valid-char? valid-sprite-char?
+                       #:accept-predicate? not-empty-string?))
+    (unless (member palette-name all-palette-names)
+      (define palette-path
+        (build-path db-path "palettes"
+                    (format "~a.pal"
+                            palette-name)))
+      (make-directory* (path-only palette-path))
+      (write-to-file
+       (vector (vector 0 0 0 0)
+               (vector 255 0 0 0)
+
+               (vector 0 0 0 0)
+               (vector 0 0 0 0)
+               (vector 0 0 0 0)
+               (vector 0 0 0 0)
+
+               (vector 0 0 0 0)
+               (vector 0 0 0 0)
+               (vector 0 0 0 0)
+               (vector 0 0 0 0))
+       palette-path))
+    palette-name)
+
+  (define (ensure-saved!)
+    (when need-to-save?
+      (define yes/no-options '("y" "n" "Y" "N"))
+      (define ret
+        (minibuffer-read "Save your changes? [Yn]"
+                         #:completions
+                         yes/no-options
+                         #:valid-char?
+                         (λ (c)
+                           (member (char-downcase c)
+                                   '(#\y #\n)))
+                         #:accept-predicate?
+                         (λ (s) (or (string=? s "")
+                                    (member s yes/no-options)))))
+      (match (string-downcase ret)
+        [(or "y" "")
+         (throw-status (save!))]
+        ["n"
+         (void)])))
+
   (define (handle-key! e)
     (with-minibuffer
      e
@@ -451,29 +531,50 @@
          (update-image! (sub1 image-i))]
         [(or (cons #t 'right) (cons #f #\]))
          (update-image! (add1 image-i))]
+        [(cons #f #\a)
+         (ensure-saved!)
+         (define new-palette (read-palette "Additional"))
+         (set! palette-names (append palette-names (list new-palette)))
+         (set! need-to-save? #t)
+         (update-palettes!)
+         (update-palette! (sub1 (length palette-names)))
+         (~a "added palette " new-palette)]
+        [(cons #f #\f)
+         (define all-sprite-names
+           (all-from (build-path db-path "sprites") "spr"))
+         (define sprite-name
+           (minibuffer-read "Sprite"
+                            #:completions all-sprite-names
+                            #:valid-char? valid-sprite-char?
+                            #:accept-predicate? not-empty-string?))
+         (unless (member sprite-name all-sprite-names)
+           (define w
+             (string->number
+              (minibuffer-read (~a sprite-name "'s width")
+                               #:valid-char? char-numeric?
+                               #:accept-predicate? not-empty-string?)))
+           (define h
+             (string->number
+              (minibuffer-read (~a sprite-name "'s height (width = " w ")")
+                               #:valid-char? char-numeric?
+                               #:accept-predicate? not-empty-string?)))
+           (define init-palette (read-palette "Initial"))
+           (define sprite-dir
+             (build-path db-path "sprites"
+                         (format "~a.spr"
+                                 sprite-name)))
+           (make-directory* sprite-dir)
+           (write-to-file (cons w h)
+                          (build-path sprite-dir "meta"))
+           (display-to-file
+            (make-bytes (* w h) 0)
+            (build-path sprite-dir (format "~a.img" 0)))
+           (write-to-file (list init-palette)
+                          (build-path sprite-dir "palettes")))
+         (load-sprite! sprite-name 0 0)]
         [(or (cons _ 'escape) (cons _ #\q))
-         (or
-          (cond
-            [need-to-save?
-             (define yes/no-options '("y" "n" "Y" "N"))
-             (define ret
-               (minibuffer-read "Save your changes? [Yn]"
-                                #:completions
-                                yes/no-options
-                                #:valid-char?
-                                (λ (c)
-                                  (member (char-downcase c)
-                                          '(#\y #\n)))
-                                #:accept-predicate?
-                                (λ (s) (or (string=? s "")
-                                           (member s yes/no-options)))))
-             (match (string-downcase ret)
-               [(or "y" "")
-                (save!)]
-               ["n"
-                #f])]
-            [else #f])
-          (exit 0))]
+         (ensure-saved!)
+         (exit 0)]
         [(cons #f #\e)
          (cond
            [(<= color-i 1)
@@ -556,6 +657,12 @@
 
     (send dc set-transformation it))
   (define (paint-animation! c dc)
+    ;; The image may have been updated since the timer was called
+    (set! animation-i
+          (modulo animation-i
+                  (length image-names)))
+    ;; xxx There actually is the possibility of a race between this
+    ;; code and the rest
     (paint-zoomed! c dc #:image-i animation-i))
 
   ;; Interact with UI
@@ -632,9 +739,7 @@
     (new timer%
          [notify-callback
           (λ ()
-            (set! animation-i
-                  (modulo (add1 animation-i)
-                          (length image-names)))
+            (set! animation-i (add1 animation-i))
             (send animation-c refresh-now))]))
 
   (send mw create-status-line)
