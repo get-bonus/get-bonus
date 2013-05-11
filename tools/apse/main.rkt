@@ -385,7 +385,6 @@
                  (set! minibuffer-run!
                        (λ (ke)
                          (match (send ke get-key-code)
-                           ;; xxx C-g and ESC
                            [#\return
                             (when (accept? input-so-far)
                               (return-to-minibuffer-call input-so-far))]
@@ -403,7 +402,14 @@
                                                  (string c)))]
                            [_ (void)])
                          (send mw set-status-text
-                               (~a prompt " > " input-so-far))))
+                               (~a prompt " > " input-so-far))
+                         (when (or (eq? 'escape (send ke get-key-code))
+                                   (and (send ke get-control-down)
+                                        (eq? #\g (send ke get-key-code))))
+                           (send mw set-status-text
+                                 (~a prompt " > " input-so-far
+                                     " [CANCELLED]"))
+                           (set! minibuffer-run! #f))))
                  (abort-current-continuation minibuffer-prompt-tag void))
                minibuffer-prompt-tag)
       (set! minibuffer-run! #f)))
@@ -446,25 +452,28 @@
         [(or (cons #t 'right) (cons #f #\]))
          (update-image! (add1 image-i))]
         [(or (cons _ 'escape) (cons _ #\q))
-         (when need-to-save?
-           (define yes/no-options '("y" "n" "Y" "N"))
-           (define ret
-             (minibuffer-read "Save your changes? [Yn]"
-                              #:completions
-                              yes/no-options
-                              #:valid-char?
-                              (λ (c)
-                                (member (char-downcase c)
-                                        '(#\y #\n)))
-                              #:accept-predicate?
-                              (λ (s) (or (string=? s "")
-                                         (member s yes/no-options)))))
-           (match (string-downcase ret)
-             [(or "y" "")
-              (save!)]
-             ["n"
-              (void)]))
-         (exit 0)]
+         (or
+          (cond
+            [need-to-save?
+             (define yes/no-options '("y" "n" "Y" "N"))
+             (define ret
+               (minibuffer-read "Save your changes? [Yn]"
+                                #:completions
+                                yes/no-options
+                                #:valid-char?
+                                (λ (c)
+                                  (member (char-downcase c)
+                                          '(#\y #\n)))
+                                #:accept-predicate?
+                                (λ (s) (or (string=? s "")
+                                           (member s yes/no-options)))))
+             (match (string-downcase ret)
+               [(or "y" "")
+                (save!)]
+               ["n"
+                #f])]
+            [else #f])
+          (exit 0))]
         [(cons #f #\e)
          (cond
            [(<= color-i 1)
