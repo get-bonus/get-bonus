@@ -170,5 +170,7 @@ system. It looks like this:
 ** DONE Make a converter from a PNG to this format
     (if it is allowed, i.e. if it has a palette.)
 ** Make the basic interface (sans animation & lighting)
+** Make purely functional and have better undo system 
+   (where it goes back to earlier system states)
 ** DONE Add animation
 ** Add height/normal maps & lighting
