@@ -270,50 +270,55 @@
              #:when (eq? c some-c))
       i))
 
+  (define-syntax-rule (set-status! expr)
+    (let ()
+      (define start (current-inexact-milliseconds))
+      (define new-status
+        expr)
+      (define end (current-inexact-milliseconds))
+      (when new-status
+        (send mw set-status-text
+              (~a (~a (- end start)
+                      #:min-width 3
+                      #:max-width 4
+                      #:align 'right)
+                  "ms: "
+                  new-status)))))
+
   (define (handle-key! e)
-    (define start (current-inexact-milliseconds))
-    (define new-status
-      (match (cons (send e get-shift-down) (send e get-key-code))
-        [(cons #f #\n)
-         (new-image!)]
-        [(cons #f #\t)
-         (new-image! image-i)]
-        [(cons #f 'up)
-         (update-cursor!  0 -1)]
-        [(cons #f 'down)
-         (update-cursor!  0 +1)]
-        [(cons #f 'left)
-         (update-cursor! -1  0)]
-        [(cons #f 'right)
-         (update-cursor! +1  0)]
-        [(cons #t 'up)
-         (update-palette! (sub1 palette-i))]
-        [(cons #t 'down)
-         (update-palette! (add1 palette-i))]
-        [(or (cons #t 'left) (cons #f #\[))
-         (update-image! (sub1 image-i))]
-        [(or (cons #t 'right) (cons #f #\]))
-         (update-image! (add1 image-i))]
-        [(or (cons _ 'escape) (cons _ #\q))
-         ;; xxx save?
-         (exit 0)]
-        [(cons #f #\space)
-         (insert-current-color!)]
-        [(cons #f (app color-key? (and (not #f) c)))
-         (insert-color! c)]
-        [(cons #t (app shifted-color-key? (and (not #f) c)))
-         (update-color! c)]
-        [kc
-         #f]))
-    (define end (current-inexact-milliseconds))
-    (when new-status
-      (send mw set-status-text
-            (~a (~a (- end start)
-                    #:min-width 3
-                    #:max-width 4
-                    #:align 'right)
-                "ms: "
-                new-status))))
+    (set-status!
+     (match (cons (send e get-shift-down) (send e get-key-code))
+       [(cons #f #\n)
+        (new-image!)]
+       [(cons #f #\t)
+        (new-image! image-i)]
+       [(cons #f 'up)
+        (update-cursor!  0 -1)]
+       [(cons #f 'down)
+        (update-cursor!  0 +1)]
+       [(cons #f 'left)
+        (update-cursor! -1  0)]
+       [(cons #f 'right)
+        (update-cursor! +1  0)]
+       [(cons #t 'up)
+        (update-palette! (sub1 palette-i))]
+       [(cons #t 'down)
+        (update-palette! (add1 palette-i))]
+       [(or (cons #t 'left) (cons #f #\[))
+        (update-image! (sub1 image-i))]
+       [(or (cons #t 'right) (cons #f #\]))
+        (update-image! (add1 image-i))]
+       [(or (cons _ 'escape) (cons _ #\q))
+        ;; xxx save?
+        (exit 0)]
+       [(cons #f #\space)
+        (insert-current-color!)]
+       [(cons #f (app color-key? (and (not #f) c)))
+        (insert-color! c)]
+       [(cons #t (app shifted-color-key? (and (not #f) c)))
+        (update-color! c)]
+       [kc
+        #f])))
 
   (define outline-c (make-object color% 255 255 255 1))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
@@ -336,9 +341,7 @@
     (send dc draw-bitmap bm 0 0)
 
     (define bm-dc (send bm make-dc))
-    (define the-c (make-object color% 0 0 0 0))
-    (send bm-dc get-pixel x y the-c)
-    (send dc set-brush the-c 'solid)
+    (send dc set-brush color0 'solid)
     (send dc set-pen outline-c 0 'solid)
     (send dc draw-rectangle x y 1 1)
 
@@ -437,7 +440,7 @@
     (set! last-image-i 0)
     (set! last-palette-i 0))
 
-  (void (load-sprite! last-sprite last-image-i last-palette-i))
+  (set-status! (load-sprite! last-sprite last-image-i last-palette-i))
   (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main
