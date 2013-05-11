@@ -7,6 +7,12 @@
          racket/list
          (only-in gb/sys/menu calculate-visible-options))
 
+(define (directory-list* d)
+  (sort
+   (map path->string
+        (directory-list d))
+   string-ci<=?))
+
 (define (color%->hex c)
   (apply string-append
          "#"
@@ -97,6 +103,17 @@
   (define palette-vectors #f)
   (define palette-i 0)
 
+  (define color-i 0)
+
+  (define (new-image! [copy-from #f])
+    (define new-image-i (length image-names))
+    (display-to-file
+     (if copy-from
+       (vector-ref image-pixels copy-from)
+       (make-bytes (* w h) 0))
+     (build-path sprite-dir (format "~a.img" new-image-i)))
+    (load-sprite! sprite new-image-i palette-i))
+
   (define (load-sprite! new-sprite new-image-i new-palette-i)
     (write-to-file (list new-sprite new-image-i new-palette-i) last-path
                    #:exists 'replace)
@@ -112,8 +129,8 @@
     (set! h new-h)
 
     (set! image-names
-          (filter (λ (p) (regexp-match #rx".img$" (path->string p)))
-                  (directory-list sprite-dir)))
+          (filter (λ (p) (regexp-match #rx".img$" p))
+                  (directory-list* sprite-dir)))
     (set! image-pixels
           (for/vector ([i (in-list image-names)])
             (file->bytes
@@ -142,8 +159,10 @@
                   pn)))
 
     (update-palette! new-palette-i)
+    (update-color! color-i)
+    (update-image! new-image-i)
 
-    (update-image! new-image-i))
+    (~a "load " sprite " img#" new-image-i " pal#" new-palette-i))
 
   (define (update-image! new-image-i)
     (set! image-i (modulo new-image-i (length image-names)))
@@ -166,21 +185,52 @@
                     (send dc draw-rectangle x y ch ch))
                   (format "~a: ~a" i (color%->hex c)))))
 
-    (set! image-bms
-          (for/vector ([ips (in-vector image-pixels)])
-            (define bm (make-object bitmap% w h #f #t))
-            (define bm-dc (send bm make-dc))
-
-            (for* ([x (in-range w)]
-                   [y (in-range h)])
-              (define p (bytes-ref ips (+ (* y w) x)))
-              (send bm-dc set-pixel x y (vector-ref palette p)))
-
-            bm))
+    (set! image-bms (make-vector (length image-names) #f))
+    (for ([image-i (in-range (length image-names))])
+      (update-bitmap! image-i))
 
     (update-canvases!)
 
     (~a "palette = " palette-i))
+
+  ;; transparent
+  (define color0 (make-object color% 0 0 0 0))
+  ;; black
+  (define color1 (make-object color% 0 0 0 1))
+
+  (define (update-bitmap! image-i)
+    (define palette (vector-ref palette-vectors palette-i))
+    (define ips (vector-ref image-pixels image-i))
+    (define bm (make-object bitmap% w h #f #t))
+    (define bm-dc (send bm make-dc))
+    (send bm-dc set-background color0)
+    (send bm-dc erase)
+
+    (for* ([x (in-range w)]
+           [y (in-range h)])
+      (define p (bytes-ref ips (+ (* y w) x)))
+      (send bm-dc set-pixel x y (vector-ref palette p)))
+
+    (vector-set! image-bms image-i bm))
+
+  (define (insert-color! c)
+    (update-color! c)
+    (insert-current-color!))
+  (define (update-color! new-color-i)
+    (set! color-i (modulo new-color-i 10))
+    (send palette-info set-highlight! color-i)
+    (~a "color = " color-i))
+  (define (insert-current-color!)
+    ;; xxx transparency is broken (color 0)
+    ;; xxx mark that you should save
+    (bytes-set! (vector-ref image-pixels image-i)
+                ;; xxx third copy
+                (+ (* y w) x)
+                color-i)
+    (update-bitmap! image-i)
+    (update-canvases!)
+
+    (set-cursor! x y))
 
   (define x 0)
   (define y 0)
@@ -209,10 +259,25 @@
         ") = "
         (bytes-ref (vector-ref image-pixels image-i) (+ (* y w) x))))
 
+  (define (color-key? c)
+    (for/or ([some-c (in-string "0123456789")]
+             [i (in-naturals)]
+             #:when (eq? c some-c))
+      i))
+  (define (shifted-color-key? c)
+    (for/or ([some-c (in-string ")!@#$%^&*(")]
+             [i (in-naturals)]
+             #:when (eq? c some-c))
+      i))
+
   (define (handle-key! e)
     (define start (current-inexact-milliseconds))
     (define new-status
       (match (cons (send e get-shift-down) (send e get-key-code))
+        [(cons #f #\n)
+         (new-image!)]
+        [(cons #f #\t)
+         (new-image! image-i)]
         [(cons #f 'up)
          (update-cursor!  0 -1)]
         [(cons #f 'down)
@@ -229,9 +294,16 @@
          (update-image! (sub1 image-i))]
         [(or (cons #t 'right) (cons #f #\]))
          (update-image! (add1 image-i))]
-        ;; xxx add more commands
+        [(or (cons _ 'escape) (cons _ #\q))
+         ;; xxx save?
+         (exit 0)]
+        [(cons #f #\space)
+         (insert-current-color!)]
+        [(cons #f (app color-key? (and (not #f) c)))
+         (insert-color! c)]
+        [(cons #t (app shifted-color-key? (and (not #f) c)))
+         (update-color! c)]
         [kc
-         (printf "ignored: ~a\n" kc)
          #f]))
     (define end (current-inexact-milliseconds))
     (when new-status
@@ -245,6 +317,8 @@
 
   (define outline-c (make-object color% 255 255 255 1))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
+    (send dc set-background color0)
+    (send dc erase)
     (define it (send dc get-transformation))
     (send dc set-smoothing 'unsmoothed)
 
@@ -310,7 +384,6 @@
   (define palette-info
     (new messages% [parent palette-hp]
          [how-many 10]))
-  (send palette-info set-highlight! 2)
 
   (define ((make-scaled-panel panel%) me them the-parent i)
     (cond
@@ -328,6 +401,7 @@
   (define make-scaled-vertical
     (make-scaled-panel vertical-panel%))
 
+  ;; xxx it's annoying that the last of these is the same size
   (define scaled-cs
     (make-scaled-horizontal
      make-scaled-horizontal
@@ -359,11 +433,7 @@
                   (list #f #f #f)))
   (unless last-sprite
     (set! last-sprite
-          (first
-           (sort
-            (map path->string
-                 (directory-list (build-path db-path "sprites")))
-            string-ci<=?)))
+          (first (directory-list* (build-path db-path "sprites"))))
     (set! last-image-i 0)
     (set! last-palette-i 0))
 

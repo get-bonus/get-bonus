@@ -25,9 +25,9 @@
 
   (define right-pixel?
     (λ (p)
-      (and (= 0 (pixel-r p))
-           (= 64 (pixel-g p))
-           (= 128 (pixel-b p)))))
+      (and (= 17 (pixel-r p))
+           (= 17 (pixel-g p))
+           (= 51 (pixel-b p)))))
 
   (define bm (make-object bitmap% p 'png/alpha #f #t))
   (define objs
