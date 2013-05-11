@@ -238,6 +238,8 @@
   (define y 0)
   (define w 0)
   (define h 0)
+  (define show-cursor? #t)
+  (define show-grid? #t)
 
   (define (update-cursor! dx dy)
     (set-cursor! (+ dx x) (+ dy y)))
@@ -290,6 +292,14 @@
   (define (handle-key! e)
     (set-status!
      (match (cons (send e get-shift-down) (send e get-key-code))
+       [(cons #f #\g)
+        (set! show-grid? (not show-grid?))
+        (update-canvases!)
+        (~a "show-grid? = " show-grid?)]
+       [(cons #f #\c)
+        (set! show-cursor? (not show-cursor?))
+        (update-canvases!)
+        (~a "show-cursor? = " show-cursor?)]
        [(cons #f #\n)
         (new-image!)]
        [(cons #f #\t)
@@ -344,19 +354,21 @@
     (send dc set-brush all-white 'solid)
     (send dc draw-rectangle 0 0 w h)
 
-    (send dc set-pen color1 0 'solid)
-    (for ([x (in-range (add1 w))])
-      (send dc draw-line x 0 x h))
-    (for ([y (in-range (add1 h))])
-      (send dc draw-line 0 y w y))
+    (when show-grid?
+      (send dc set-pen color1 0 'solid)
+      (for ([x (in-range (add1 w))])
+        (send dc draw-line x 0 x h))
+      (for ([y (in-range (add1 h))])
+        (send dc draw-line 0 y w y)))
 
     (define bm (vector-ref image-bms the-image-i))
     (send dc draw-bitmap bm 0 0)
 
-    (define bm-dc (send bm make-dc))
-    (send dc set-brush color0 'solid)
-    (send dc set-pen outline-c 0 'solid)
-    (send dc draw-rectangle x y 1 1)
+    (when show-cursor?
+      (define bm-dc (send bm make-dc))
+      (send dc set-brush color0 'solid)
+      (send dc set-pen outline-c 0 'solid)
+      (send dc draw-rectangle x y 1 1))
 
     (send dc set-transformation it))
   (define (paint-animation! c dc)

@@ -144,19 +144,19 @@ system. It looks like this:
 |       |             |                                                   |
 | DONE  | S-up        | previous palette                                  |
 | DONE  | S-down      | next palette                                      |
-|       | C-p         | new palette (new name = new palette)              |
+|       | C-p         | add palette (new name = new palette)              |
 |       | C-e         | edit palette                                      |
 |       |             |                                                   |
 | DONE  | [           | previous image of sprite                          |
 | DONE  | S-left      | previous image of sprite                          |
 | DONE  | ]           | next image of sprite                              |
 | DONE  | S-right     | next image of sprite                              |
-| DONE  | C-t         | new image of sprite (copied from current)         |
-| DONE  | C-n         | new image of sprite (empty)                       |
+| DONE  | t           | new image of sprite (copied from current)         |
+| DONE  | n           | new image of sprite (empty)                       |
 |       | C-h         | switch to height map of sprite                    |
 |       |             |                                                   |
-|       | C-c         | Hide cursor                                       |
-|       | C-g         | Hide grid                                         |
+| DONE  | c           | Hide cursor                                       |
+| DONE  | g           | Hide grid                                         |
 |       | C-s         | commit changes                                    |
 |       | C-z         | undo (with infinite undo stack, not saved though) |
 |       | C-l         | turn on/off lighting in animation                 |
