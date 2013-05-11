@@ -330,52 +330,112 @@
                "ms: "
                new-status)))))
 
+  (define (valid-char? c)
+    (and (char? c)
+         (or (char-alphabetic? c)
+             (char-numeric? c)
+             (char=? c #\-)
+             (char=? c #\/))))
+  (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
+  (define minibuffer-run! #f)
+  (define-syntax-rule (with-minibuffer ke e)
+    (call-with-continuation-prompt
+     (λ () (if minibuffer-run!
+             (minibuffer-run! ke)
+             e))
+     minibuffer-prompt-tag))
+  (define (minibuffer-read prompt
+                           #:accept-predicate? accept?
+                           #:completions comps)
+    (begin0
+      (call/cc (λ (return-to-minibuffer-call)
+                 (define input-so-far "")
+                 (set! minibuffer-run!
+                       (λ (ke)
+                         (match (send ke get-key-code)
+                           [#\return
+                            (when (accept? input-so-far)
+                              (return-to-minibuffer-call input-so-far))]
+                           ;; xxx comps with tab
+                           [(or #\backspace #\rubout)
+                            (unless (string=? "" input-so-far)
+                              (set! input-so-far
+                                    (substring
+                                     input-so-far 0
+                                     (sub1
+                                      (string-length input-so-far)))))]
+                           [(? valid-char? c)
+                            (set! input-so-far
+                                  (string-append input-so-far
+                                                 (string c)))]
+                           [_ (void)])
+                         (send mw set-status-text
+                               (~a prompt " > " input-so-far))))
+                 (abort-current-continuation minibuffer-prompt-tag void))
+               minibuffer-prompt-tag)
+      (set! minibuffer-run! #f)))
+
   (define (handle-key! e)
-    (set-status!
-     (match (cons (send e get-shift-down) (send e get-key-code))
-       [(cons #f #\g)
-        (set! show-grid? (not show-grid?))
-        (update-canvases!)
-        (~a "show-grid? = " show-grid?)]
-       [(cons #f #\c)
-        (set! show-cursor? (not show-cursor?))
-        (update-canvases!)
-        (~a "show-cursor? = " show-cursor?)]
-       [(cons #f #\s)
-        (save!)]
-       [(cons #f #\z)
-        (undo!)]
-       [(cons #f #\n)
-        (new-image!)]
-       [(cons #f #\t)
-        (new-image! image-i)]
-       [(cons #f 'up)
-        (update-cursor!  0 -1)]
-       [(cons #f 'down)
-        (update-cursor!  0 +1)]
-       [(cons #f 'left)
-        (update-cursor! -1  0)]
-       [(cons #f 'right)
-        (update-cursor! +1  0)]
-       [(cons #t 'up)
-        (update-palette! (sub1 palette-i))]
-       [(cons #t 'down)
-        (update-palette! (add1 palette-i))]
-       [(or (cons #t 'left) (cons #f #\[))
-        (update-image! (sub1 image-i))]
-       [(or (cons #t 'right) (cons #f #\]))
-        (update-image! (add1 image-i))]
-       [(or (cons _ 'escape) (cons _ #\q))
-        ;; xxx check need-to-save?
-        (exit 0)]
-       [(cons #f #\space)
-        (insert-current-color!)]
-       [(cons #f (app color-key? (and (not #f) c)))
-        (insert-color! c)]
-       [(cons #t (app shifted-color-key? (and (not #f) c)))
-        (update-color! c)]
-       [kc
-        #f])))
+    (with-minibuffer
+     e
+     (set-status!
+      (match (cons (send e get-shift-down) (send e get-key-code))
+        [(cons #f #\g)
+         (set! show-grid? (not show-grid?))
+         (update-canvases!)
+         (~a "show-grid? = " show-grid?)]
+        [(cons #f #\c)
+         (set! show-cursor? (not show-cursor?))
+         (update-canvases!)
+         (~a "show-cursor? = " show-cursor?)]
+        [(cons #f #\s)
+         (save!)]
+        [(cons #f #\z)
+         (undo!)]
+        [(cons #f #\n)
+         (new-image!)]
+        [(cons #f #\t)
+         (new-image! image-i)]
+        [(cons #f 'up)
+         (update-cursor!  0 -1)]
+        [(cons #f 'down)
+         (update-cursor!  0 +1)]
+        [(cons #f 'left)
+         (update-cursor! -1  0)]
+        [(cons #f 'right)
+         (update-cursor! +1  0)]
+        [(cons #t 'up)
+         (update-palette! (sub1 palette-i))]
+        [(cons #t 'down)
+         (update-palette! (add1 palette-i))]
+        [(or (cons #t 'left) (cons #f #\[))
+         (update-image! (sub1 image-i))]
+        [(or (cons #t 'right) (cons #f #\]))
+         (update-image! (add1 image-i))]
+        [(or (cons _ 'escape) (cons _ #\q))
+         (when need-to-save?
+           (define yes/no-options '("y" "n" "Y" "N"))
+           (define ret
+             (minibuffer-read "Save your changes? [Yn]"
+                              #:completions
+                              yes/no-options
+                              #:accept-predicate?
+                              (λ (s) (or (string=? s "")
+                                         (member s yes/no-options)))))
+           (match (string-downcase ret)
+             [(or "y" "")
+              (save!)]
+             ["n"
+              (void)]))
+         (exit 0)]
+        [(cons #f #\space)
+         (insert-current-color!)]
+        [(cons #f (app color-key? (and (not #f) c)))
+         (insert-color! c)]
+        [(cons #t (app shifted-color-key? (and (not #f) c)))
+         (update-color! c)]
+        [kc
+         #f]))))
 
   (define outline-c (make-object color% #xFF #x14 #x93 1))
   (define all-white (make-object color% 255 255 255 1))
@@ -515,11 +575,13 @@
     (set! last-palette-i 0))
 
   (set-status! (load-sprite! last-sprite last-image-i last-palette-i))
+  ;; xxx this is not a good rate
   (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main
   (require racket/cmdline)
   (define db-path "db")
+  ;; xxx create a db object and don't expose db-path
   (command-line #:program "apse"
                 #:args ()
                 (printf "Starting on db(~v)...\n" db-path)
