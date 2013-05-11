@@ -494,6 +494,40 @@
         ["n"
          (void)])))
 
+  (define (read-sprite)
+    (define all-sprite-names
+      (all-from (build-path db-path "sprites") "spr"))
+    (define sprite-name
+      (minibuffer-read "Sprite"
+                       #:completions all-sprite-names
+                       #:valid-char? valid-sprite-char?
+                       #:accept-predicate? not-empty-string?))
+    (unless (member sprite-name all-sprite-names)
+      (define w
+        (string->number
+         (minibuffer-read (~a sprite-name "'s width")
+                          #:valid-char? char-numeric?
+                          #:accept-predicate? not-empty-string?)))
+      (define h
+        (string->number
+         (minibuffer-read (~a sprite-name "'s height (width = " w ")")
+                          #:valid-char? char-numeric?
+                          #:accept-predicate? not-empty-string?)))
+      (define init-palette (read-palette "Initial"))
+      (define sprite-dir
+        (build-path db-path "sprites"
+                    (format "~a.spr"
+                            sprite-name)))
+      (make-directory* sprite-dir)
+      (write-to-file (cons w h)
+                     (build-path sprite-dir "meta"))
+      (display-to-file
+       (make-bytes (* w h) 0)
+       (build-path sprite-dir (format "~a.img" 0)))
+      (write-to-file (list init-palette)
+                     (build-path sprite-dir "palettes")))
+    sprite-name)
+
   (define (handle-key! e)
     (with-minibuffer
      e
@@ -540,38 +574,7 @@
          (update-palette! (sub1 (length palette-names)))
          (~a "added palette " new-palette)]
         [(cons #f #\f)
-         (define all-sprite-names
-           (all-from (build-path db-path "sprites") "spr"))
-         (define sprite-name
-           (minibuffer-read "Sprite"
-                            #:completions all-sprite-names
-                            #:valid-char? valid-sprite-char?
-                            #:accept-predicate? not-empty-string?))
-         (unless (member sprite-name all-sprite-names)
-           (define w
-             (string->number
-              (minibuffer-read (~a sprite-name "'s width")
-                               #:valid-char? char-numeric?
-                               #:accept-predicate? not-empty-string?)))
-           (define h
-             (string->number
-              (minibuffer-read (~a sprite-name "'s height (width = " w ")")
-                               #:valid-char? char-numeric?
-                               #:accept-predicate? not-empty-string?)))
-           (define init-palette (read-palette "Initial"))
-           (define sprite-dir
-             (build-path db-path "sprites"
-                         (format "~a.spr"
-                                 sprite-name)))
-           (make-directory* sprite-dir)
-           (write-to-file (cons w h)
-                          (build-path sprite-dir "meta"))
-           (display-to-file
-            (make-bytes (* w h) 0)
-            (build-path sprite-dir (format "~a.img" 0)))
-           (write-to-file (list init-palette)
-                          (build-path sprite-dir "palettes")))
-         (load-sprite! sprite-name 0 0)]
+         (load-sprite! (read-sprite) 0 0)]
         [(or (cons _ 'escape) (cons _ #\q))
          (ensure-saved!)
          (exit 0)]
@@ -620,6 +623,7 @@
   (define outline-c (make-object color% #xFF #x14 #x93 1))
   (define all-white (make-object color% 255 255 255 1))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
+    ;; xxx painting can race with key handler
     (send dc set-background base-color)
     (send dc clear)
     (define it (send dc get-transformation))
@@ -657,12 +661,11 @@
 
     (send dc set-transformation it))
   (define (paint-animation! c dc)
+    ;; xxx painting can race with key handler
     ;; The image may have been updated since the timer was called
     (set! animation-i
           (modulo animation-i
                   (length image-names)))
-    ;; xxx There actually is the possibility of a race between this
-    ;; code and the rest
     (paint-zoomed! c dc #:image-i animation-i))
 
   ;; Interact with UI
@@ -747,18 +750,20 @@
   (send zoomed-c focus)
 
   (define last-path (build-path db-path "last.rktd"))
-  (match-define (list last-sprite last-image-i last-palette-i)
-                (if (file-exists? last-path)
-                  (file->value last-path)
-                  (list #f #f #f)))
-  ;; XXX all sorts of broken on first opening with no sprites
-  (unless last-sprite
-    (set! last-sprite
-          (first (directory-list* (build-path db-path "sprites"))))
-    (set! last-image-i 0)
-    (set! last-palette-i 0))
+  (set-status!
+   (let ()
+     (match-define (list last-sprite last-image-i last-palette-i)
+                   (if (file-exists? last-path)
+                     (file->value last-path)
+                     (list #f #f #f)))
+     (unless last-sprite
+       (set! last-sprite
+             ;; xxx fails on empty database
+             (first (all-from (build-path db-path "sprites") "spr")))
+       (set! last-image-i 0)
+       (set! last-palette-i 0))
+     (load-sprite! last-sprite last-image-i last-palette-i)))
 
-  (set-status! (load-sprite! last-sprite last-image-i last-palette-i))
   ;; xxx this is not a good rate
   (send animation-timer start (floor (* 1000 1/15))))
 

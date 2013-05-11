@@ -137,17 +137,13 @@ system. It looks like this:
 |--------+-------------+---------------------------------------------------|
 | DONE   | Arrows keys | Move around the cursor                            |
 | DONE   | 12345 67890 | insert the appropriate color                      |
-|        | AOEUI DHTNS | insert the appropriate color [qwerty home row]    |
-|        | ASDFG HJKL; | insert the appropriate color [dvorak home row]    |
 | DONE   | S-color     | change the current color                          |
 | DONE   | Space       | insert current color                              |
-|        |             |                                                   |
 | DONE   | S-up        | previous palette                                  |
 | DONE   | S-down      | next palette                                      |
 |        | r           | remove current palette from sprite                |
 | DONE   | a           | add palette (new name = new palette)              |
 | DONE   | e           | edit palette                                      |
-|        |             |                                                   |
 | DONE   | [           | previous image of sprite                          |
 | DONE   | S-left      | previous image of sprite                          |
 | DONE   | ]           | next image of sprite                              |
@@ -155,7 +151,6 @@ system. It looks like this:
 | DONE   | t           | new image of sprite (copied from current)         |
 | DONE   | n           | new image of sprite (empty)                       |
 |        | h           | switch to height map of sprite                    |
-|        |             |                                                   |
 | DONE   | c           | Hide cursor                                       |
 | DONE   | g           | Hide grid                                         |
 | DONE   | s           | commit changes                                    |
@@ -163,6 +158,9 @@ system. It looks like this:
 |        | l           | turn on/off lighting in animation                 |
 |        | -           | slow down animation                               |
 |        | =           | speed up animation                                |
+|        | y           | copy sprite                                       |
+|        | d           | delete sprite                                     |
+|        | m           | rename sprite                                     |
 | DONE   | f           | change to a different sprite                      |
 | DONE   | q           | quit                                              |
 | DONE   | Esc         | quit                                              |
