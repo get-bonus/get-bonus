@@ -145,7 +145,7 @@ system. It looks like this:
 | DONE   | S-up        | previous palette                                  |
 | DONE   | S-down      | next palette                                      |
 |        | C-p         | add palette (new name = new palette)              |
-|        | C-e         | edit palette                                      |
+| DONE   | e           | edit palette                                      |
 |        |             |                                                   |
 | DONE   | [           | previous image of sprite                          |
 | DONE   | S-left      | previous image of sprite                          |

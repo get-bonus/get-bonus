@@ -6,6 +6,8 @@
          racket/match
          racket/list
          (only-in gb/sys/menu calculate-visible-options))
+(module+ test
+  (require rackunit))
 
 (define (directory-list* d)
   (sort
@@ -23,6 +25,25 @@
            (~a (number->string b 16)
                #:min-width 2
                #:pad-string "0"))))
+(define (color-hex? s)
+  (and (string? s)
+       (= (string-length s) 9)
+       (match s
+         [(regexp #rx"^#(..)(..)(..)(..)$" (list _ as rs gs bs))
+          (define a (string->number as 16))
+          (define r (string->number rs 16))
+          (define g (string->number gs 16))
+          (define b (string->number bs 16))
+          (and a r g b (vector a r g b))]
+         [_
+          #f])))
+(module+ test
+  (check-equal? (color-hex? #f) #f)
+  (check-equal? (color-hex? "12345678") #f)
+  (check-equal? (color-hex? "1234567890") #f)
+  (check-equal? (color-hex? "123456789") #f)
+  (check-equal? (color-hex? "#abcdefgh") #f)
+  (check-equal? (color-hex? "#ffffffff") (vector 255 255 255 255)))
 
 (define base-color (make-object color% #xFD #xF6 #xE3 1))
 
@@ -105,6 +126,7 @@
   (define animation-i 0)
 
   (define palette-names #f)
+  (define palette-raw-vectors #f)
   (define palette-vectors #f)
   (define palette-i 0)
 
@@ -131,6 +153,14 @@
        (write-to-file palette-names
                       (build-path sprite-dir "palettes")
                       #:exists 'replace)
+       ;; dump palette content
+       (for ([pn (in-list palette-names)]
+             [cvs (in-vector palette-raw-vectors)])
+         (write-to-file
+          cvs
+          (build-path db-path "palettes"
+                      (format "~a.pal" pn))
+          #:exists 'replace))
        (set! need-to-save? #f)
        (~a "changes saved")]
       [else
@@ -159,12 +189,23 @@
              (build-path sprite-dir i))))
 
     (set! palette-names (file->value (build-path sprite-dir "palettes")))
-    (set! palette-vectors
+    (set! palette-raw-vectors
           (for/vector ([p (in-list palette-names)])
-            (define cs
-              (file->value
-               (build-path db-path "palettes"
-                           (format "~a.pal" p))))
+            (file->value
+             (build-path db-path "palettes"
+                         (format "~a.pal" p)))))
+    (update-palette-vectors!)
+
+    (update-palette! new-palette-i)
+    (update-color! color-i)
+    (update-image! new-image-i)
+
+    (~a "load " sprite " img#" new-image-i " pal#" new-palette-i))
+
+
+  (define (update-palette-vectors!)
+    (set! palette-vectors
+          (for/vector ([cs (in-vector palette-raw-vectors)])
             (for/vector ([c (in-vector cs)])
               (match-define (vector a r g b) c)
               (make-object color% r g b (/ a 255)))))
@@ -178,13 +219,7 @@
                       (send dc set-brush c 'solid)
                       (send dc set-pen c 0 'solid)
                       (send dc draw-rectangle (+ x (* bw i)) y bw ch)))
-                  pn)))
-
-    (update-palette! new-palette-i)
-    (update-color! color-i)
-    (update-image! new-image-i)
-
-    (~a "load " sprite " img#" new-image-i " pal#" new-palette-i))
+                  pn))))
 
   (define (update-image! new-image-i)
     (set! image-i (modulo new-image-i (length image-names)))
@@ -330,12 +365,6 @@
                "ms: "
                new-status)))))
 
-  (define (valid-char? c)
-    (and (char? c)
-         (or (char-alphabetic? c)
-             (char-numeric? c)
-             (char=? c #\-)
-             (char=? c #\/))))
   (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
   (define minibuffer-run! #f)
   (define-syntax-rule (with-minibuffer ke e)
@@ -345,14 +374,18 @@
              e))
      minibuffer-prompt-tag))
   (define (minibuffer-read prompt
+                           #:valid-char? this-valid-char?
                            #:accept-predicate? accept?
-                           #:completions comps)
+                           #:completions [comps empty])
+    (define (valid-char? c)
+      (and (char? c) (this-valid-char? c)))
     (begin0
       (call/cc (λ (return-to-minibuffer-call)
                  (define input-so-far "")
                  (set! minibuffer-run!
                        (λ (ke)
                          (match (send ke get-key-code)
+                           ;; xxx C-g and ESC
                            [#\return
                             (when (accept? input-so-far)
                               (return-to-minibuffer-call input-so-far))]
@@ -419,6 +452,10 @@
              (minibuffer-read "Save your changes? [Yn]"
                               #:completions
                               yes/no-options
+                              #:valid-char?
+                              (λ (c)
+                                (member (char-downcase c)
+                                        '(#\y #\n)))
                               #:accept-predicate?
                               (λ (s) (or (string=? s "")
                                          (member s yes/no-options)))))
@@ -428,6 +465,39 @@
              ["n"
               (void)]))
          (exit 0)]
+        [(cons #f #\e)
+         (cond
+           [(<= color-i 1)
+            (~a "cannot modify colors 0 and 1")]
+           [else
+            (define (get-cx)
+              (color%->hex
+               (vector-ref (vector-ref palette-vectors palette-i)
+                           color-i)))
+            (define old-cx (get-cx))
+            (define color-hex
+              (minibuffer-read (format "Change color ~a (~a) to "
+                                       color-i
+                                       old-cx)
+                               #:valid-char?
+                               (λ (c)
+                                 (or (char=? #\# c)
+                                     (string->number (string c) 16)))
+                               #:accept-predicate? color-hex?))
+            (define new-cv (color-hex? color-hex))
+            (vector-set! (vector-ref palette-raw-vectors palette-i)
+                         color-i
+                         new-cv)
+            (set! need-to-save? #t)
+            (update-palette-vectors!)
+            (update-palette! palette-i)
+            (define new-cx (get-cx))
+            (~a "changed color "
+                color-i
+                " from "
+                old-cx
+                " to "
+                new-cx)])]
         [(cons #f #\space)
          (insert-current-color!)]
         [(cons #f (app color-key? (and (not #f) c)))
