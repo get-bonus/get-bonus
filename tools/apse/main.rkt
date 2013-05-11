@@ -244,15 +244,19 @@
     (send palette-info set-highlight! color-i)
     (~a "color = " color-i))
   (define (insert-current-color!)
-    (set! need-to-save? #t)
-    ;; xxx undo stack
-    (bytes-set! (vector-ref image-pixels image-i)
-                (xy->byte x y)
-                color-i)
-    (update-bitmap! image-i)
-    (update-canvases!)
+    (define ps (vector-ref image-pixels image-i))
+    (define b (xy->byte x y))
+    (define old (bytes-ref ps b))
 
-    (set-cursor! x y))
+    (define (change-pixel! new)
+      (set! need-to-save? #t)
+      (bytes-set! ps b new)
+      (update-bitmap! image-i)
+      (update-canvases!)
+      (set-cursor! x y))
+
+    (push-undo! (λ () (change-pixel! old)))
+    (change-pixel! color-i))
 
   (define x 0)
   (define y 0)
@@ -261,6 +265,19 @@
   (define show-cursor? #t)
   (define show-grid? #t)
   (define need-to-save? #f)
+
+  (define undos empty)
+  (define (push-undo! t)
+    (set! undos (cons t undos)))
+  (define (undo!)
+    (cond
+      [(empty? undos)
+       (~a "empty undo stack")]
+      [else
+       (define this (first undos))
+       (set! undos (rest undos))
+       (define msg (this))
+       (~a "undo: " msg)]))
 
   (define (update-cursor! dx dy)
     (set-cursor! (+ dx x) (+ dy y)))
@@ -326,6 +343,8 @@
         (~a "show-cursor? = " show-cursor?)]
        [(cons #f #\s)
         (save!)]
+       [(cons #f #\z)
+        (undo!)]
        [(cons #f #\n)
         (new-image!)]
        [(cons #f #\t)
