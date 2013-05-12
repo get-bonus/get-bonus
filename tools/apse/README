@@ -141,7 +141,7 @@ system. It looks like this:
 | DONE   | Space       | insert current color                              |
 | DONE   | S-up        | previous palette                                  |
 | DONE   | S-down      | next palette                                      |
-|        | r           | remove current palette from sprite                |
+| DONE   | r           | remove current palette from sprite                |
 | DONE   | a           | add palette (new name = new palette)              |
 | DONE   | e           | edit current color                                |
 | DONE   | [           | previous image of sprite                          |

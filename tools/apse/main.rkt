@@ -10,6 +10,12 @@
 (module+ test
   (require rackunit))
 
+(define (list-remove-at l i)
+  (for/list ([e (in-list l)]
+             [n (in-naturals)]
+             #:unless (= n i))
+    e))
+
 (define (directory-list* d)
   (sort
    (map path->string
@@ -580,6 +586,12 @@
                      (build-path sprite-dir "palettes")))
     sprite-name)
 
+  (define (change-palettes! new-palettes)
+    (set! palette-names new-palettes)
+    (set! need-to-save? #t)
+    (update-palettes!)
+    (update-palette! (sub1 (length palette-names))))
+
   (define (handle-key! e)
     (with-minibuffer
      e
@@ -617,13 +629,19 @@
          (update-image! (sub1 image-i))]
         [(or (cons #t 'right) (cons #f #\]))
          (update-image! (add1 image-i))]
+        [(cons #f #\r)
+         (cond
+           [(= (length palette-names) 1)
+            (~a "cannot remove last palette")]
+           [else
+            (ensure-saved!)
+            (begin0
+              (~a "removed palette " palette-i)
+              (change-palettes! (list-remove-at palette-names palette-i)))])]
         [(cons #f #\a)
          (ensure-saved!)
          (define new-palette (read-palette "Additional"))
-         (set! palette-names (append palette-names (list new-palette)))
-         (set! need-to-save? #t)
-         (update-palettes!)
-         (update-palette! (sub1 (length palette-names)))
+         (change-palettes! (append palette-names (list new-palette)))
          (~a "added palette " new-palette)]
         [(cons #f #\f)
          (ensure-saved!)
