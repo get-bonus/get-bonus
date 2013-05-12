@@ -100,7 +100,9 @@
           (define start-h (* ch i))
           (send dc draw-text text 0 start-h)
           (define-values (w _0 _1 _2) (send dc get-text-extent text))
-          (p dc (+ ch w) start-h ch))))
+          (define start-w (+ ch w))
+          (define rw (max 0 (- (send canvas get-width) start-w)))
+          (p dc start-w start-h ch rw))))
 
     (define c (new canvas% [parent parent]
                    [stretchable-height #f]
@@ -261,14 +263,13 @@
     (send palette-list set-messages!
           (for/list ([pn (in-list palette-names)]
                      [pv (in-vector palette-vectors)])
-            (cons (λ (dc x y ch)
-                    ;; xxx use space more effectively
-                    (define bw (* ch 1/2))
-                    (for ([c (in-vector pv)]
-                          [i (in-naturals)])
+            (cons (λ (dc x y ch rw)
+                    (define bw (/ rw 8))
+                    (for ([i (in-range 2 9)])
+                      (define c (vector-ref pv i))
                       (send dc set-brush c 'solid)
                       (send dc set-pen c 0 'solid)
-                      (send dc draw-rectangle (+ x (* bw i)) y bw ch)))
+                      (send dc draw-rectangle (+ x (* bw (- i 2))) y bw ch)))
                   pn))))
 
   (define (update-image! new-image-i)
@@ -286,10 +287,10 @@
     (send palette-info set-messages!
           (for/list ([c (in-vector palette)]
                      [i (in-naturals)])
-            (cons (λ (dc x y ch)
+            (cons (λ (dc x y ch rw)
                     (send dc set-brush c 'solid)
                     (send dc set-pen c 0 'solid)
-                    (send dc draw-rectangle x y ch ch))
+                    (send dc draw-rectangle x y rw ch))
                   (format "~a: ~a" i (color%->hex c)))))
 
     (set! image-bms (make-vector (length image-names) #f))
