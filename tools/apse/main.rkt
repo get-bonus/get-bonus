@@ -114,6 +114,42 @@
 
     (super-new)))
 
+(define (string-prefix-of? pre)
+  (define pre-re (regexp (format "^~a" (regexp-quote pre))))
+  (λ (str)
+    (regexp-match pre-re str)))
+(define (longest-common-prefix l)
+  (define empty-trie (hasheq))
+  (define empty-entry (cons #f empty-trie))
+  (define (trie-add t w)
+    (if (empty? w)
+      t
+      (hash-update t (first w)
+                   (lambda (the-e)
+                     (match-define (cons word? rest-t) the-e)
+                     (cons (or word? (empty? (rest w)))
+                           (trie-add rest-t (rest w))))
+                   empty-entry)))
+  (define (trie-add* s t)
+    (trie-add t (string->list s)))
+  (define l-trie (foldr trie-add* empty-trie l))
+  (list->string
+   (let loop ([t l-trie])
+     (define c (hash-count t))
+     (cond
+       [(= c 1)
+        (match-define (list (cons k (cons word? nt))) (hash->list t))
+        (if word?
+          (list k)
+          (cons k (loop nt)))]
+       [else
+        empty]))))
+(module+ test
+  (check-equal? (longest-common-prefix (list "36" "36-0" "36-1"
+                                             "36-2" "36-3"))
+                "36"))
+
+
 (define (apse db-path)
   ;; Run the state machine
   (define sprite #f)
@@ -372,32 +408,6 @@
                new-status)))))
   (define (throw-status v)
     (abort-current-continuation status-prompt-tag (λ () v)))
-
-  (define (string-prefix-of? pre)
-    (define pre-re (regexp (format "^~a" (regexp-quote pre))))
-    (λ (str)
-      (regexp-match pre-re str)))
-  (define (longest-common-prefix l)
-    (define empty-trie (hasheq))
-    (define (trie-add t w)
-      (if (empty? w)
-        t
-        (hash-update t (first w)
-                     (lambda (rest-t)
-                       (trie-add rest-t (rest w)))
-                     empty-trie)))
-    (define (trie-add* s t)
-      (trie-add t (string->list s)))
-    (define l-trie (foldr trie-add* empty-trie l))
-    (list->string
-     (let loop ([t l-trie])
-       (define c (hash-count t))
-       (cond
-         [(= c 1)
-          (match-define (list (cons k nt)) (hash->list t))
-          (cons k (loop nt))]
-         [else
-          empty]))))
 
   (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
   (define minibuffer-run! #f)
