@@ -113,8 +113,16 @@
                (format "~a.pal" pn))
    #:exists 'replace))
 
-;; xxx
-(define name/c string?)
+(define (name? x)
+  (and (string? x)
+       (not (string=? "" x))
+       (andmap valid-name-char? (string->list x))))
+(define (valid-name-char? c)
+  (or (char-alphabetic? c)
+      (char-numeric? c)
+      (char=? #\/ c)
+      (char=? #\- c)))
+
 (define (power-of-two? i)
   (define x (/ (log i) (log 2)))
   (= x (ceiling x) (floor x)))
@@ -136,23 +144,27 @@
   (apply vector/c (make-list len element/c)))
 (define palette-color/c
   (sized-vector/c 4 byte?))
+
 (provide/contract
+ [dimension? (-> any/c boolean?)]
+ [name? (-> any/c boolean?)]
+ [valid-name-char? (-> char? boolean?)]
  [db? (-> any/c boolean?)]
  [load-db (-> path-string? db?)]
- [db-palettes (-> db? (listof name/c))]
- [db-sprites (-> db? (listof name/c))]
- [load-last (-> db? name/c)]
- [last-save! (-> db? name/c void?)]
+ [db-palettes (-> db? (listof name?))]
+ [db-sprites (-> db? (listof name?))]
+ [load-last (-> db? name?)]
+ [last-save! (-> db? name? void?)]
  [struct sprite
-         ([name name/c]
+         ([name name?]
           [width dimension?]
           [height dimension?]
           [images (vectorof image?)]
-          [palettes (listof name/c)])]
- [load-sprite (-> db? name/c sprite?)]
+          [palettes (listof name?)])]
+ [load-sprite (-> db? name? sprite?)]
  [sprite-save! (-> db? sprite? void?)]
  [struct palette
-         ([name name/c]
+         ([name name?]
           [colors (sized-vector/c 10 palette-color/c)])]
- [load-palette (-> db? name/c palette?)]
+ [load-palette (-> db? name? palette?)]
  [palette-save! (-> db? palette? void?)])

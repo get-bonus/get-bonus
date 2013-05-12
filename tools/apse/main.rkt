@@ -163,6 +163,9 @@
   (begin (push! l e ...)
          (set! l (remove-duplicates l))))
 
+(define (dimension-string? s)
+  (dimension? (string->number s)))
+
 (define (apse db)
   ;; Run the state machine
   (define changed-sprites empty)
@@ -473,23 +476,15 @@
                            (set! minibuffer-run! #f))))
                  (abort-current-continuation minibuffer-prompt-tag void))
                minibuffer-prompt-tag)
-      (set! minibuffer-run! #f)))
-
-  (define (not-empty-string? s)
-    (not (string=? "" s)))
-  (define (valid-sprite-char? c)
-    (or (char-alphabetic? c)
-        (char-numeric? c)
-        (char=? #\/ c)
-        (char=? #\- c)))
+      (set! minibuffer-run! #f)))  
 
   (define (read-palette label)
     (define all-palette-names (db-palettes db))
     (define palette-name
       (minibuffer-read (~a label " palette")
                        #:completions all-palette-names
-                       #:valid-char? valid-sprite-char?
-                       #:accept-predicate? not-empty-string?))
+                       #:valid-char? valid-name-char?
+                       #:accept-predicate? name?))
     (unless (member palette-name all-palette-names)
       (define new-palette
         (palette palette-name
@@ -534,8 +529,8 @@
     (define sprite-name
       (minibuffer-read "Sprite"
                        #:completions all-sprite-names
-                       #:valid-char? valid-sprite-char?
-                       #:accept-predicate? not-empty-string?))
+                       #:valid-char? valid-name-char?
+                       #:accept-predicate? name?))
     (cond
       [(member sprite-name all-sprite-names)
        (load-sprite! sprite-name 0 0)]
@@ -544,12 +539,12 @@
          (string->number
           (minibuffer-read (~a sprite-name "'s width")
                            #:valid-char? char-numeric?
-                           #:accept-predicate? not-empty-string?)))
+                           #:accept-predicate? dimension-string?)))
        (define h
          (string->number
           (minibuffer-read (~a sprite-name "'s height (width = " w ")")
                            #:valid-char? char-numeric?
-                           #:accept-predicate? not-empty-string?)))
+                           #:accept-predicate? dimension-string?)))
        (define init-palette (read-palette "Initial"))
        (define new-sprite
          (sprite sprite-name w h
