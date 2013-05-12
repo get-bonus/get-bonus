@@ -143,24 +143,23 @@ system. It looks like this:
 | DONE   | S-down      | next palette                                      |
 |        | r           | remove current palette from sprite                |
 | DONE   | a           | add palette (new name = new palette)              |
-| DONE   | e           | edit palette                                      |
+| DONE   | e           | edit current color                                |
 | DONE   | [           | previous image of sprite                          |
 | DONE   | S-left      | previous image of sprite                          |
 | DONE   | ]           | next image of sprite                              |
 | DONE   | S-right     | next image of sprite                              |
 | DONE   | t           | new image of sprite (copied from current)         |
 | DONE   | n           | new image of sprite (empty)                       |
+| fs?    | w           | delete image from sprite                          |
 |        | h           | switch to height map of sprite                    |
 | DONE   | c           | Hide cursor                                       |
 | DONE   | g           | Hide grid                                         |
 | DONE   | s           | commit changes                                    |
 | DONE   | z           | undo (with infinite undo stack, not saved though) |
 |        | l           | turn on/off lighting in animation                 |
-|        | -           | slow down animation                               |
-|        | =           | speed up animation                                |
-|        | y           | copy sprite                                       |
-|        | d           | delete sprite                                     |
-|        | m           | rename sprite                                     |
+| fs?    | y           | copy sprite                                       |
+| fs?    | d           | delete sprite                                     |
+| fs?    | m           | rename sprite                                     |
 | DONE   | f           | change to a different sprite                      |
 | DONE   | q           | quit                                              |
 | DONE   | Esc         | quit                                              |

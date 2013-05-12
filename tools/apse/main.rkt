@@ -574,6 +574,7 @@
          (update-palette! (sub1 (length palette-names)))
          (~a "added palette " new-palette)]
         [(cons #f #\f)
+         (ensure-saved!)
          (load-sprite! (read-sprite) 0 0)]
         [(or (cons _ 'escape) (cons _ #\q))
          (ensure-saved!)
@@ -623,7 +624,6 @@
   (define outline-c (make-object color% #xFF #x14 #x93 1))
   (define all-white (make-object color% 255 255 255 1))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
-    ;; xxx painting can race with key handler
     (send dc set-background base-color)
     (send dc clear)
     (define it (send dc get-transformation))
@@ -661,7 +661,6 @@
 
     (send dc set-transformation it))
   (define (paint-animation! c dc)
-    ;; xxx painting can race with key handler
     ;; The image may have been updated since the timer was called
     (set! animation-i
           (modulo animation-i
@@ -674,10 +673,15 @@
               (list* zoomed-c animation-c scaled-cs)))
 
   ;; Set up the UI
+  (define model-lock (make-semaphore 1))
+
   (define apse-frame%
     (class* frame% ()
       (define/override (on-subwindow-char r e)
-        (handle-key! e)
+        (call-with-semaphore
+         model-lock
+         (λ ()
+           (handle-key! e)))
         #t)
       (super-new)))
 
@@ -742,8 +746,11 @@
     (new timer%
          [notify-callback
           (λ ()
-            (set! animation-i (add1 animation-i))
-            (send animation-c refresh-now))]))
+            (call-with-semaphore
+             model-lock
+             (λ ()
+               (set! animation-i (add1 animation-i))
+               (send animation-c refresh-now))))]))
 
   (send mw create-status-line)
   (send mw show #t)
