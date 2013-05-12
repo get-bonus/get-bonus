@@ -151,6 +151,7 @@ system. It looks like this:
 | DONE   | t           | new image of sprite (copied from current)         |
 | DONE   | n           | new image of sprite (empty)                       |
 | fs?    | w           | delete image from sprite                          |
+| DONE   | i           | invert background                                 |
 |        | h           | switch to height map of sprite                    |
 | DONE   | c           | Hide cursor                                       |
 | DONE   | g           | Hide grid                                         |
@@ -164,10 +165,32 @@ system. It looks like this:
 | DONE   | q           | quit                                              |
 | DONE   | Esc         | quit                                              |
 
-* Todo
+* Tasks
 ** DONE Make a converter from a PNG to this format
     (if it is allowed, i.e. if it has a palette.)
-** Make the basic interface (sans animation & lighting)
+** DONE Make the basic interface (sans animation & lighting)
+   CLOSED: [2013-05-11 Sat 21:47]
+** DONE make some good palettes
+   CLOSED: [2013-05-12 Sun 07:40]
+   ...like grayscale, gameboy, monochrome
+** TODO import some sprites, including fonts
+** TODO make sprites sized for current games
+** TODO figure out best animation speed
+** TODO make a database object, rather than using path everywhere
+** TODO make robust against empty db
+** TODO make a texture atlas/palette output
+   - encode 4 pixels into one 32-bit pixel
+   NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
+
+   (2^n)x(2^m) = 2^(n+m) if n & m > 0, then this is divisible by 4:
+   2^(a+b+2) / 4 = 2^(a+b)
+
+   - encode n palettes as nx16 32-bit png
+     
+     we need 16 because there are really 10 colors and it would be a
+     pain in the gpu to do an if for 0 and 1, but I could try that.
+
+** TODO connect to engine
 ** Make purely functional and have better undo system 
    (where it goes back to earlier system states)
 ** DONE Add animation

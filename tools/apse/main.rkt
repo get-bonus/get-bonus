@@ -52,7 +52,11 @@
   (check-equal? (color-hex? "#abcdefgh") #f)
   (check-equal? (color-hex? "#ffffffff") (vector 255 255 255 255)))
 
-(define base-color (make-object color% #xFD #xF6 #xE3 1))
+(define base-c (make-object color% #xFD #xF6 #xE3 1))
+(define outline-c (make-object color% #xFF #x14 #x93 1))
+(define all-white-c (make-object color% 255 255 255 1))
+(define all-black-c (make-object color% 0 0 0 1))
+(define all-transparent-c (make-object color% 0 0 0 0))
 
 (define messages%
   (class* object% ()
@@ -60,7 +64,7 @@
     (init-field how-many)
 
     (define (paint-messages! canvas dc)
-      (send dc set-background base-color)
+      (send dc set-background base-c)
       (send dc clear)
 
       (unless (empty? messages)
@@ -72,7 +76,7 @@
                                      how-many
                                      message-i))
 
-        (send dc set-text-foreground (make-object color% 0 0 0 1))
+        (send dc set-text-foreground all-black-c)
         (for ([di (in-list display-indexes)]
               [i (in-naturals)])
           (define m
@@ -258,6 +262,7 @@
           (for/list ([pn (in-list palette-names)]
                      [pv (in-vector palette-vectors)])
             (cons (λ (dc x y ch)
+                    ;; xxx use space more effectively
                     (define bw (* ch 1/2))
                     (for ([c (in-vector pv)]
                           [i (in-naturals)])
@@ -294,11 +299,6 @@
     (update-canvases!)
 
     (~a "palette = " palette-i))
-
-  ;; transparent
-  (define color0 (make-object color% 0 0 0 0))
-  ;; black
-  (define color1 (make-object color% 0 0 0 1))
 
   (define (update-bitmap! image-i)
     (define palette (vector-ref palette-vectors palette-i))
@@ -345,6 +345,7 @@
   (define show-cursor? #t)
   (define show-grid? #t)
   (define need-to-save? #f)
+  (define inverted? #f)
 
   (define undos empty)
   (define (push-undo! t)
@@ -621,6 +622,10 @@
          (update-cursor! -1  0)]
         [(cons #f 'right)
          (update-cursor! +1  0)]
+        [(cons #f #\i)
+         (set! inverted? (not inverted?))
+         (update-canvases!)
+         (~a "inverted? = " inverted?)]
         [(cons #t 'up)
          (update-palette! (sub1 palette-i))]
         [(cons #t 'down)
@@ -691,10 +696,8 @@
         [kc
          #f]))))
 
-  (define outline-c (make-object color% #xFF #x14 #x93 1))
-  (define all-white (make-object color% 255 255 255 1))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
-    (send dc set-background base-color)
+    (send dc set-background base-c)
     (send dc clear)
     (define it (send dc get-transformation))
     (send dc set-smoothing 'unsmoothed)
@@ -709,12 +712,14 @@
 
     (send dc set-scale the-scale the-scale)
 
-    (send dc set-pen all-white 0 'solid)
-    (send dc set-brush all-white 'solid)
+    (define bg-c (if inverted? all-black-c all-white-c))
+    (send dc set-pen bg-c 0 'solid)
+    (send dc set-brush bg-c 'solid)
     (send dc draw-rectangle 0 0 w h)
 
     (when show-grid?
-      (send dc set-pen color1 0 'solid)
+      (define grid-c (if inverted? all-white-c all-black-c))
+      (send dc set-pen grid-c 0 'solid)
       (for ([x (in-range (add1 w))])
         (send dc draw-line x 0 x h))
       (for ([y (in-range (add1 h))])
@@ -725,7 +730,7 @@
 
     (when show-cursor?
       (define bm-dc (send bm make-dc))
-      (send dc set-brush color0 'solid)
+      (send dc set-brush all-transparent-c 'solid)
       (send dc set-pen outline-c 0 'solid)
       (send dc draw-rectangle x y 1 1))
 
@@ -792,7 +797,7 @@
               [paint-callback
                (if (= 1 i)
                  (λ (c dc)
-                   (send dc set-background base-color)
+                   (send dc set-background base-c)
                    (send dc clear))
                  paint-zoomed!)]))
        (list* first-c
@@ -835,19 +840,16 @@
                      (list #f #f #f)))
      (unless last-sprite
        (set! last-sprite
-             ;; xxx fails on empty database
              (first (all-from (build-path db-path "sprites") "spr")))
        (set! last-image-i 0)
        (set! last-palette-i 0))
      (load-sprite! last-sprite last-image-i last-palette-i)))
 
-  ;; xxx this is not a good rate
   (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main
   (require racket/cmdline)
   (define db-path "db")
-  ;; xxx create a db object and don't expose db-path
   (command-line #:program "apse"
                 #:args ()
                 (printf "Starting on db(~v)...\n" db-path)
