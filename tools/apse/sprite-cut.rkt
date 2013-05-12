@@ -48,6 +48,7 @@
         [(eq? k #\=)
          (set! the-scale (* the-scale 2.0))
          (~a "scale = " the-scale)]
+        
         [(send ke get-control-down)
          (cond [(eq? k 'left)  (sprite-offset! -1 +0)]
                [(eq? k 'right) (sprite-offset! +1 +0)]
@@ -64,9 +65,15 @@
         [(eq? k 'right) (view-offset! +1 +0)]
         [(eq? k 'up)    (view-offset! +0 -1)]
         [(eq? k 'down)  (view-offset! +0 +1)]
+
+        [(eq? k 'home)  (view-offset! (* -1 0.1 w) +0)]
+        [(eq? k 'end)   (view-offset! (* +1 0.1 w) +0)]
+        [(eq? k 'next)  (view-offset! +0 (* +1 0.1 h))]
+        [(eq? k 'prior) (view-offset! +0 (* -1 0.1 h))]
         [(eq? k #\q)
          (exit 0)]
         [else
+         (eprintf "ignored: ~a\n" k)
          #f])
       (send ss-c refresh-now)))
 

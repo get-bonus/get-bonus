@@ -20,36 +20,6 @@
              #:unless (= n i))
     e))
 
-(define (color%->hex c)
-  (apply string-append
-         "#"
-         (for/list ([b (in-list (list (inexact->exact (* 255 (send c alpha)))
-                                      (send c red)
-                                      (send c green)
-                                      (send c blue)))])
-           (~a (number->string b 16)
-               #:min-width 2
-               #:pad-string "0"))))
-(define (color-hex? s)
-  (and (string? s)
-       (= (string-length s) 9)
-       (match s
-         [(regexp #rx"^#(..)(..)(..)(..)$" (list _ as rs gs bs))
-          (define a (string->number as 16))
-          (define r (string->number rs 16))
-          (define g (string->number gs 16))
-          (define b (string->number bs 16))
-          (and a r g b (vector a r g b))]
-         [_
-          #f])))
-(module+ test
-  (check-equal? (color-hex? #f) #f)
-  (check-equal? (color-hex? "12345678") #f)
-  (check-equal? (color-hex? "1234567890") #f)
-  (check-equal? (color-hex? "123456789") #f)
-  (check-equal? (color-hex? "#abcdefgh") #f)
-  (check-equal? (color-hex? "#ffffffff") (vector 255 255 255 255)))
-
 (define messages%
   (class* object% ()
     (init parent)
@@ -505,14 +475,10 @@
              (vector-ref c%v color-i)))
           (define old-cx (get-cx))
           (define color-hex
-            (minibuffer-read (format "Change color ~a (~a) to "
-                                     color-i
-                                     old-cx)
-                             #:valid-char?
-                             (λ (c)
-                               (or (char=? #\# c)
-                                   (string->number (string c) 16)))
-                             #:accept-predicate? color-hex?))
+            (read-color-hex minibuffer-read
+                            (format "Change color ~a (~a) to "
+                                    color-i
+                                    old-cx)))
           (define new-cv (color-hex? color-hex))
           (vector-set! (palette-colors p) color-i new-cv)
           (set-push! changed-palettes p)

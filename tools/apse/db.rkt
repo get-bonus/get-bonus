@@ -100,10 +100,12 @@
                  #:exists 'replace))
 
 (struct palette (name colors))
+(define (palette-color->color% c)
+  (match-define (vector a r g b) c)
+  (make-object color% r g b (/ a 255)))
 (define (palette-color%s p)
   (for/vector ([c (in-vector (palette-colors p))])
-    (match-define (vector a r g b) c)
-    (make-object color% r g b (/ a 255))))
+    (palette-color->color% c)))
 (define (load-palette a-db pn)
   (match-define (db db-path) a-db)
   (palette pn
