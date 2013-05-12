@@ -144,12 +144,12 @@ system. It looks like this:
 | DONE   | r           | remove current palette from sprite                |
 | DONE   | a           | add palette (new name = new palette)              |
 | DONE   | e           | edit current color                                |
+| DONE   | t           | new image of sprite (copied from current)         |
+| DONE   | n           | new image of sprite (empty)                       |
 | DONE   | [           | previous image of sprite                          |
 | DONE   | S-left      | previous image of sprite                          |
 | DONE   | ]           | next image of sprite                              |
 | DONE   | S-right     | next image of sprite                              |
-| DONE   | t           | new image of sprite (copied from current)         |
-| DONE   | n           | new image of sprite (empty)                       |
 | fs?    | w           | delete image from sprite                          |
 | DONE   | i           | invert background                                 |
 |        | h           | switch to height map of sprite                    |
@@ -176,8 +176,10 @@ system. It looks like this:
 ** TODO import some sprites, including fonts
 ** TODO make sprites sized for current games
 ** TODO figure out best animation speed
-** TODO make a database object, rather than using path everywhere
-** TODO make robust against empty db
+** DONE make a database object, rather than using path everywhere
+   CLOSED: [2013-05-12 Sun 10:51]
+** DONE make robust against empty db
+   CLOSED: [2013-05-12 Sun 10:51]
 ** TODO make a texture atlas/palette output
    - encode 4 pixels into one 32-bit pixel
    NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
@@ -191,7 +193,7 @@ system. It looks like this:
      pain in the gpu to do an if for 0 and 1, but I could try that.
 
 ** TODO connect to engine
-** Make purely functional and have better undo system 
+** TODO Make purely functional and have better undo system 
    (where it goes back to earlier system states)
 ** DONE Add animation
 ** Add height/normal maps & lighting

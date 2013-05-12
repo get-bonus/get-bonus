@@ -2,11 +2,13 @@
 (require racket/gui/base
          racket/file
          racket/path
+         racket/function
          racket/format
          racket/class
          racket/match
          racket/list
-         (only-in gb/sys/menu calculate-visible-options))
+         (only-in gb/sys/menu calculate-visible-options)
+         "db.rkt")
 (module+ test
   (require rackunit))
 
@@ -15,12 +17,6 @@
              [n (in-naturals)]
              #:unless (= n i))
     e))
-
-(define (directory-list* d)
-  (sort
-   (map path->string
-        (directory-list d))
-   string-ci<=?))
 
 (define (color%->hex c)
   (apply string-append
@@ -161,108 +157,92 @@
                                              "36-2" "36-3"))
                 "36"))
 
+(define-syntax-rule (push! l e ...)
+  (set! l (list* e ... l)))
+(define-syntax-rule (set-push! l e ...)
+  (begin (push! l e ...)
+         (set! l (remove-duplicates l))))
 
-(define (apse db-path)
+(define (apse db)
   ;; Run the state machine
-  (define sprite #f)
-  (define sprite-dir #f)
+  (define changed-sprites empty)
+  (define changed-palettes empty)
+  (define sprite-s #f)
 
-  (define image-names #f)
-  (define image-pixels #f)
   (define image-bms #f)
+
   (define image-i 0)
-
   (define animation-i 0)
-
-  (define palette-names #f)
-  (define palette-raw-vectors #f)
-  (define palette-vectors #f)
   (define palette-i 0)
-
   (define color-i 0)
 
+  (define (any-changes?)
+    (not (and (empty? changed-palettes)
+              (empty? changed-sprites))))
+
   (define (new-image! [copy-from #f])
-    (define new-image-i (length image-names))
-    (display-to-file
-     (if copy-from
-       (vector-ref image-pixels copy-from)
-       (make-bytes (* w h) 0))
-     (build-path sprite-dir (format "~a.img" new-image-i)))
-    (load-sprite! sprite new-image-i palette-i))
+    (define new-image-i (vector-length (sprite-images sprite-s)))
+    (define images-v (sprite-images sprite-s))
+    (define new-images-v
+      (build-vector (add1 new-image-i)
+                    (λ (i)
+                      (if (= i new-image-i)
+                        (if copy-from
+                          (vector-ref images-v copy-from)
+                          (make-bytes (* (sprite-width sprite-s)
+                                         (sprite-height sprite-s))
+                                      0))
+                        (vector-ref images-v i)))))
+    (set-sprite-images! sprite-s new-images-v)
+    (set-push! changed-sprites sprite-s)
+    (update-palette! palette-i)
+    (update-image! new-image-i))
 
   (define (save!)
     (cond
-      [need-to-save?
-       ;; dump pixels
-       (for ([i (in-list image-names)]
-             [ps (in-vector image-pixels)])
-         (display-to-file ps (build-path sprite-dir i)
-                          #:exists 'replace))
-       ;; dump palettes
-       (write-to-file palette-names
-                      (build-path sprite-dir "palettes")
-                      #:exists 'replace)
-       ;; dump palette content
-       (for ([pn (in-list palette-names)]
-             [cvs (in-vector palette-raw-vectors)])
-         (write-to-file
-          cvs
-          (build-path db-path "palettes"
-                      (format "~a.pal" pn))
-          #:exists 'replace))
-       (set! need-to-save? #f)
+      [(any-changes?)
+       (for-each (curry sprite-save! db) changed-sprites)
+       (set! changed-sprites empty)
+       (for-each (curry palette-save! db) changed-palettes)
+       (set! changed-palettes empty)
        (~a "changes saved")]
       [else
        (~a "no changes")]))
 
   (define (load-sprite! new-sprite new-image-i new-palette-i)
-    (write-to-file (list new-sprite new-image-i new-palette-i) last-path
-                   #:exists 'replace)
-
-    (set! sprite new-sprite)
-    (send name-m set-label sprite)
-
-    (set! sprite-dir (build-path db-path "sprites" (format "~a.spr" sprite)))
-
-    (match-define (cons new-w new-h)
-                  (file->value (build-path sprite-dir "meta")))
-    (set! w new-w)
-    (set! h new-h)
-
-    (set! image-names
-          (filter (λ (p) (regexp-match #rx".img$" p))
-                  (directory-list* sprite-dir)))
-    (set! image-pixels
-          (for/vector ([i (in-list image-names)])
-            (file->bytes
-             (build-path sprite-dir i))))
-
-    (set! palette-names (file->value (build-path sprite-dir "palettes")))
+    (set-sprite! (load-sprite db new-sprite) new-image-i new-palette-i))
+  (define (set-sprite! new-sprite-s new-image-i new-palette-i)
+    (set! sprite-s new-sprite-s)
+    (define name (sprite-name sprite-s))
+    (send name-m set-label name)
     (update-palettes!)
-
     (update-palette! new-palette-i)
     (update-color! color-i)
     (update-image! new-image-i)
+    (last-save! db name)
+    (~a "load " name " img#" image-i " pal#" palette-i))
 
-    (~a "load " sprite " img#" new-image-i " pal#" new-palette-i))
-
+  (define palette-name->palette (make-weak-hash))
   (define (update-palettes!)
-    (set! palette-raw-vectors
-          (for/vector ([p (in-list palette-names)])
-            (file->value
-             (build-path db-path "palettes"
-                         (format "~a.pal" p)))))
+    (for ([pn (in-list (sprite-palettes sprite-s))])
+      (hash-ref! palette-name->palette pn
+                 (λ ()
+                   (load-palette db pn))))
     (update-palette-vectors!))
 
+  (define palette->color-vector (make-weak-hasheq))
   (define (update-palette-vectors!)
-    (set! palette-vectors
-          (for/vector ([cs (in-vector palette-raw-vectors)])
-            (for/vector ([c (in-vector cs)])
-              (match-define (vector a r g b) c)
-              (make-object color% r g b (/ a 255)))))
+    (for ([(pn p) (in-hash palette-name->palette)])
+      (hash-ref! palette->color-vector p
+                 (λ ()
+                   (for/vector ([c (in-vector (palette-colors p))])
+                     (match-define (vector a r g b) c)
+                     (make-object color% r g b (/ a 255))))))
     (send palette-list set-messages!
-          (for/list ([pn (in-list palette-names)]
-                     [pv (in-vector palette-vectors)])
+          (for/list ([pn (in-list (sprite-palettes sprite-s))])
+            (define pv
+              (hash-ref palette->color-vector
+                        (hash-ref palette-name->palette pn)))
             (cons (λ (dc x y ch rw)
                     (define bw (/ rw 8))
                     (for ([i (in-range 2 9)])
@@ -273,17 +253,27 @@
                   pn))))
 
   (define (update-image! new-image-i)
-    (set! image-i (modulo new-image-i (length image-names)))
+    (define how-many-images
+      (vector-length (sprite-images sprite-s)))
+    (set! image-i (modulo new-image-i how-many-images))
     (send label-m set-label
-          (format "~a of ~a" (add1 image-i) (length image-names)))
+          (format "~a of ~a" (add1 image-i)
+                  how-many-images))
     (set-cursor! x y)
     (~a "image = " image-i))
 
+  (define (current-palette-vector)
+    (hash-ref
+     palette->color-vector
+     (hash-ref palette-name->palette
+               (list-ref (sprite-palettes sprite-s) palette-i))))
+
   (define (update-palette! new-palette-i)
-    (set! palette-i (modulo new-palette-i (length palette-names)))
+    (set! palette-i
+          (modulo new-palette-i (length (sprite-palettes sprite-s))))
     (send palette-list set-highlight! palette-i)
 
-    (define palette (vector-ref palette-vectors palette-i))
+    (define palette (current-palette-vector))
     (send palette-info set-messages!
           (for/list ([c (in-vector palette)]
                      [i (in-naturals)])
@@ -293,8 +283,10 @@
                     (send dc draw-rectangle x y rw ch))
                   (format "~a: ~a" i (color%->hex c)))))
 
-    (set! image-bms (make-vector (length image-names) #f))
-    (for ([image-i (in-range (length image-names))])
+    (define how-many-images
+      (vector-length (sprite-images sprite-s)))
+    (set! image-bms (make-vector how-many-images #f))
+    (for ([image-i (in-range how-many-images)])
       (update-bitmap! image-i))
 
     (update-canvases!)
@@ -302,9 +294,12 @@
     (~a "palette = " palette-i))
 
   (define (update-bitmap! image-i)
-    (define palette (vector-ref palette-vectors palette-i))
-    (define ips (vector-ref image-pixels image-i))
-    (define bm (make-object bitmap% w h #f #t))
+    (define palette (current-palette-vector))
+    (define ips (vector-ref (sprite-images sprite-s) image-i))
+    (define w (sprite-width sprite-s))
+    (define h (sprite-height sprite-s))
+    (define bm
+      (make-object bitmap% w h #f #t))
     (define bm-dc (send bm make-dc))
 
     (for* ([x (in-range w)]
@@ -315,7 +310,7 @@
     (vector-set! image-bms image-i bm))
 
   (define (xy->byte x y)
-    (+ (* y w) x))
+    (+ (* y (sprite-width sprite-s)) x))
 
   (define (insert-color! c)
     (update-color! c)
@@ -325,32 +320,27 @@
     (send palette-info set-highlight! color-i)
     (~a "color = " color-i))
   (define (insert-current-color!)
-    (define ps (vector-ref image-pixels image-i))
+    (define ps (vector-ref (sprite-images sprite-s) image-i))
     (define b (xy->byte x y))
     (define old (bytes-ref ps b))
 
     (define (change-pixel! new)
-      (set! need-to-save? #t)
+      (set-push! changed-sprites sprite-s)
       (bytes-set! ps b new)
       (update-bitmap! image-i)
       (update-canvases!)
       (set-cursor! x y))
 
-    (push-undo! (λ () (change-pixel! old)))
+    (push! undos (λ () (change-pixel! old)))
     (change-pixel! color-i))
 
   (define x 0)
   (define y 0)
-  (define w 0)
-  (define h 0)
   (define show-cursor? #t)
   (define show-grid? #t)
-  (define need-to-save? #f)
   (define inverted? #f)
 
   (define undos empty)
-  (define (push-undo! t)
-    (set! undos (cons t undos)))
   (define (undo!)
     (cond
       [(empty? undos)
@@ -365,6 +355,8 @@
     (set-cursor! (+ dx x) (+ dy y)))
 
   (define (set-cursor! nx ny)
+    (define w (sprite-width sprite-s))
+    (define h (sprite-height sprite-s))
     (set! x (modulo nx w))
     (set! y (modulo ny h))
 
@@ -379,7 +371,8 @@
             #:min-width (string-length (number->string h))
             #:align 'right)
         ") = "
-        (bytes-ref (vector-ref image-pixels image-i) (xy->byte x y))))
+        (bytes-ref (vector-ref (sprite-images sprite-s) image-i)
+                   (xy->byte x y))))
 
   (define (color-key? c)
     (for/or ([some-c (in-string "0123456789")]
@@ -404,7 +397,7 @@
       (when new-status
         (send mw set-status-text
               (~a
-               (if need-to-save?
+               (if (any-changes?)
                  "!"
                  " ")
                " "
@@ -490,52 +483,34 @@
         (char=? #\/ c)
         (char=? #\- c)))
 
-  (define (all-from root suffix)
-    (define suffix-re
-      (regexp (format "\\.~a$" (regexp-quote suffix))))
-    (define root-re
-      (regexp (format "^~a/" (regexp-quote (path->string root)))))
-    (map (λ (p)
-           (regexp-replace root-re
-                           (regexp-replace suffix-re
-                                           (path->string p)
-                                           "")
-                           ""))
-         (find-files (λ (p) (regexp-match suffix-re (path->string p)))
-                     root)))
-
   (define (read-palette label)
-    (define all-palette-names
-      (all-from (build-path db-path "palettes") "pal"))
+    (define all-palette-names (db-palettes db))
     (define palette-name
       (minibuffer-read (~a label " palette")
                        #:completions all-palette-names
                        #:valid-char? valid-sprite-char?
                        #:accept-predicate? not-empty-string?))
     (unless (member palette-name all-palette-names)
-      (define palette-path
-        (build-path db-path "palettes"
-                    (format "~a.pal"
-                            palette-name)))
-      (make-directory* (path-only palette-path))
-      (write-to-file
-       (vector (vector 0 0 0 0)
-               (vector 255 0 0 0)
+      (define new-palette
+        (palette palette-name
+                 (vector (vector 0 0 0 0)
+                         (vector 255 0 0 0)
 
-               (vector 0 0 0 0)
-               (vector 0 0 0 0)
-               (vector 0 0 0 0)
-               (vector 0 0 0 0)
+                         (vector 0 0 0 0)
+                         (vector 0 0 0 0)
+                         (vector 0 0 0 0)
+                         (vector 0 0 0 0)
 
-               (vector 0 0 0 0)
-               (vector 0 0 0 0)
-               (vector 0 0 0 0)
-               (vector 0 0 0 0))
-       palette-path))
+                         (vector 0 0 0 0)
+                         (vector 0 0 0 0)
+                         (vector 0 0 0 0)
+                         (vector 0 0 0 0))))
+      (hash-set! palette-name->palette palette-name new-palette)
+      (set-push! changed-palettes new-palette))
     palette-name)
 
   (define (ensure-saved!)
-    (when need-to-save?
+    (when (any-changes?)
       (define yes/no-options '("y" "n" "Y" "N"))
       (define ret
         (minibuffer-read "Save your changes? [Yn]"
@@ -554,45 +529,40 @@
         ["n"
          (void)])))
 
-  (define (read-sprite)
-    (define all-sprite-names
-      (all-from (build-path db-path "sprites") "spr"))
+  (define (read-and-set-sprite!)
+    (define all-sprite-names (db-sprites db))
     (define sprite-name
       (minibuffer-read "Sprite"
                        #:completions all-sprite-names
                        #:valid-char? valid-sprite-char?
                        #:accept-predicate? not-empty-string?))
-    (unless (member sprite-name all-sprite-names)
-      (define w
-        (string->number
-         (minibuffer-read (~a sprite-name "'s width")
-                          #:valid-char? char-numeric?
-                          #:accept-predicate? not-empty-string?)))
-      (define h
-        (string->number
-         (minibuffer-read (~a sprite-name "'s height (width = " w ")")
-                          #:valid-char? char-numeric?
-                          #:accept-predicate? not-empty-string?)))
-      (define init-palette (read-palette "Initial"))
-      (define sprite-dir
-        (build-path db-path "sprites"
-                    (format "~a.spr"
-                            sprite-name)))
-      (make-directory* sprite-dir)
-      (write-to-file (cons w h)
-                     (build-path sprite-dir "meta"))
-      (display-to-file
-       (make-bytes (* w h) 0)
-       (build-path sprite-dir (format "~a.img" 0)))
-      (write-to-file (list init-palette)
-                     (build-path sprite-dir "palettes")))
-    sprite-name)
+    (cond
+      [(member sprite-name all-sprite-names)
+       (load-sprite! sprite-name 0 0)]
+      [else
+       (define w
+         (string->number
+          (minibuffer-read (~a sprite-name "'s width")
+                           #:valid-char? char-numeric?
+                           #:accept-predicate? not-empty-string?)))
+       (define h
+         (string->number
+          (minibuffer-read (~a sprite-name "'s height (width = " w ")")
+                           #:valid-char? char-numeric?
+                           #:accept-predicate? not-empty-string?)))
+       (define init-palette (read-palette "Initial"))
+       (define new-sprite
+         (sprite sprite-name w h
+                 (vector (make-bytes (* w h) 0))
+                 (list init-palette)))
+       (set-push! changed-sprites new-sprite)
+       (set-sprite! new-sprite 0 0)]))
 
   (define (change-palettes! new-palettes)
-    (set! palette-names new-palettes)
-    (set! need-to-save? #t)
+    (set-sprite-palettes! sprite-s new-palettes)
+    (set-push! changed-sprites sprite-s)
     (update-palettes!)
-    (update-palette! (sub1 (length palette-names))))
+    (update-palette! palette-i))
 
   (define (handle-key! e)
     (with-minibuffer
@@ -637,21 +607,21 @@
          (update-image! (add1 image-i))]
         [(cons #f #\r)
          (cond
-           [(= (length palette-names) 1)
+           [(= (length (sprite-palettes sprite-s)) 1)
             (~a "cannot remove last palette")]
            [else
-            (ensure-saved!)
             (begin0
               (~a "removed palette " palette-i)
-              (change-palettes! (list-remove-at palette-names palette-i)))])]
+              (change-palettes!
+               (list-remove-at (sprite-palettes sprite-s)
+                               palette-i)))])]
         [(cons #f #\a)
-         (ensure-saved!)
          (define new-palette (read-palette "Additional"))
-         (change-palettes! (append palette-names (list new-palette)))
+         (change-palettes! (append (sprite-palettes sprite-s)
+                                   (list new-palette)))
          (~a "added palette " new-palette)]
         [(cons #f #\f)
-         (ensure-saved!)
-         (load-sprite! (read-sprite) 0 0)]
+         (read-and-set-sprite!)]
         [(or (cons _ 'escape) (cons _ #\q))
          (ensure-saved!)
          (exit 0)]
@@ -660,10 +630,12 @@
            [(<= color-i 1)
             (~a "cannot modify colors 0 and 1")]
            [else
+            (define pn (list-ref (sprite-palettes sprite-s) palette-i))
+            (define p (hash-ref palette-name->palette pn))
+            (define c%v (hash-ref palette->color-vector p))
             (define (get-cx)
               (color%->hex
-               (vector-ref (vector-ref palette-vectors palette-i)
-                           color-i)))
+               (vector-ref c%v color-i)))
             (define old-cx (get-cx))
             (define color-hex
               (minibuffer-read (format "Change color ~a (~a) to "
@@ -675,10 +647,9 @@
                                      (string->number (string c) 16)))
                                #:accept-predicate? color-hex?))
             (define new-cv (color-hex? color-hex))
-            (vector-set! (vector-ref palette-raw-vectors palette-i)
-                         color-i
-                         new-cv)
-            (set! need-to-save? #t)
+            (vector-set! (palette-colors p) color-i new-cv)
+            (set-push! changed-palettes p)
+            (hash-remove! palette->color-vector p)
             (update-palette-vectors!)
             (update-palette! palette-i)
             (define new-cx (get-cx))
@@ -705,6 +676,8 @@
 
     (define cw (send c get-width))
     (define ch (send c get-height))
+    (define w (sprite-width sprite-s))
+    (define h (sprite-height sprite-s))
     (define the-scale
       (floor (min (/ cw w) (/ ch h))))
     (send dc translate
@@ -740,7 +713,7 @@
     ;; The image may have been updated since the timer was called
     (set! animation-i
           (modulo animation-i
-                  (length image-names)))
+                  (vector-length (sprite-images sprite-s))))
     (paint-zoomed! c dc #:image-i animation-i))
 
   ;; Interact with UI
@@ -832,20 +805,7 @@
   (send mw show #t)
   (send zoomed-c focus)
 
-  (define last-path (build-path db-path "last.rktd"))
-  (set-status!
-   (let ()
-     (match-define (list last-sprite last-image-i last-palette-i)
-                   (if (file-exists? last-path)
-                     (file->value last-path)
-                     (list #f #f #f)))
-     (unless last-sprite
-       (set! last-sprite
-             (first (all-from (build-path db-path "sprites") "spr")))
-       (set! last-image-i 0)
-       (set! last-palette-i 0))
-     (load-sprite! last-sprite last-image-i last-palette-i)))
-
+  (set-status! (load-sprite! (load-last db) 0 0))
   (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main
@@ -853,5 +813,4 @@
   (define db-path "db")
   (command-line #:program "apse"
                 #:args ()
-                (printf "Starting on db(~v)...\n" db-path)
-                (apse db-path)))
+                (apse (load-db db-path))))
