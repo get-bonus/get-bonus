@@ -12,6 +12,7 @@
   (define h (send ss-bm get-height))
 
   (define inverted? #t)
+  (define label-color #f)
   (define the-scale 1)
 
   (define sprite-w 16)
@@ -48,7 +49,41 @@
         [(eq? k #\=)
          (set! the-scale (* the-scale 2.0))
          (~a "scale = " the-scale)]
-        
+        [(eq? k #\p)
+         ;; find every color in the image
+         (define colors (make-hash))
+
+         (define pxs (make-bytes (* w h 4)))
+         (send ss-bm get-argb-pixels 0 0 w h pxs)
+         (for* ([x (in-range w)]
+                [y (in-range h)])
+           (define xy-offset (+ (* 4 y w) (* 4 x)))
+           (define a (bytes-ref pxs (+ xy-offset 0)))
+           (define r (bytes-ref pxs (+ xy-offset 1)))
+           (define g (bytes-ref pxs (+ xy-offset 2)))
+           (define b (bytes-ref pxs (+ xy-offset 3)))
+           (define c (vector a r g b))
+           (hash-update! colors c add1 0))
+
+         ;; assign it a number
+         (define color->index
+           (for/hash ([(c count) (in-hash colors)])
+             (set! label-color (palette-color->color% c))
+             (send query-c refresh-now)
+             (define label
+               (string->number
+                (minibuffer-read "Label color"
+                                 #:valid-char? color-key?
+                                 #:accept-predicate?
+                                 (λ (s) (= (string-length s) 1)))))   
+             (set! label-color #f)
+             (values c label)))
+         (send query-c refresh-now)
+
+         (eprintf "~a\n" color->index)
+
+         (~a "palette set")]
+
         [(send ke get-control-down)
          (cond [(eq? k 'left)  (sprite-offset! -1 +0)]
                [(eq? k 'right) (sprite-offset! +1 +0)]
@@ -77,6 +112,15 @@
          #f])
       (send ss-c refresh-now)))
 
+  (define (paint-query c dc)
+    (send dc set-background base-c)
+    (send dc clear)
+
+    (cond
+      [label-color
+       (send dc set-background label-color)
+       (send dc clear)]))
+
   (define (paint-ss c dc)
     ;; Make a copy of the bitmap with the grid in place
     (define ss/grid-bm (make-object bitmap% w h #f #t))
@@ -104,12 +148,12 @@
     ;; Scale
     (send dc set-scale the-scale the-scale)
 
-    (send dc draw-bitmap-section 
-          ss/grid-bm 
+    (send dc draw-bitmap-section
+          ss/grid-bm
           0 0
           view-dx view-dy
           (- w view-dx) (- h view-dy))
-    
+
 
     (send dc set-transformation it))
 
@@ -120,9 +164,13 @@
      "sprite-cut" (λ () #f)
      handle-key!))
 
+  (define hp (new horizontal-panel% [parent mw]))
   (define ss-c
-    (new canvas% [parent mw]
+    (new canvas% [parent hp]
          [paint-callback paint-ss]))
+  (define query-c
+    (new canvas% [parent hp]
+         [paint-callback paint-query]))
 
   (initialize! "ready"))
 

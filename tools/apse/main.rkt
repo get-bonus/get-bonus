@@ -312,16 +312,7 @@
         (bytes-ref (vector-ref (sprite-images sprite-s) image-i)
                    (xy->byte x y))))
 
-  (define (color-key? c)
-    (for/or ([some-c (in-string "0123456789")]
-             [i (in-naturals)]
-             #:when (eq? c some-c))
-      i))
-  (define (shifted-color-key? c)
-    (for/or ([some-c (in-string ")!@#$%^&*(")]
-             [i (in-naturals)]
-             #:when (eq? c some-c))
-      i))
+  
 
   (define (read-palette label)
     (define all-palette-names (db-palettes db))

@@ -175,6 +175,7 @@
  [struct palette
          ([name name?]
           [colors (sized-vector/c 10 palette-color/c)])]
+ [palette-color->color% (-> palette-color/c (is-a?/c color%))]
  [palette-color%s (-> palette? (sized-vector/c 10 (is-a?/c color%)))]
  [load-palette (-> db? name? palette?)]
  [palette-save! (-> db? palette? void?)])

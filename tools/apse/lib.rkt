@@ -15,6 +15,17 @@
 (define (clamp lo v hi)
   (max lo (min v hi)))
 
+(define (color-key? c)
+  (for/or ([some-c (in-string "0123456789")]
+           [i (in-naturals)]
+           #:when (eq? c some-c))
+    i))
+(define (shifted-color-key? c)
+  (for/or ([some-c (in-string ")!@#$%^&*(")]
+           [i (in-naturals)]
+           #:when (eq? c some-c))
+    i))
+
 (define (color%->hex c)
   (apply string-append
          "#"
