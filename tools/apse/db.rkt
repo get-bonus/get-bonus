@@ -1,5 +1,7 @@
 #lang racket/base
 (require racket/contract
+         racket/draw
+         racket/class
          racket/file
          racket/list
          racket/match
@@ -98,6 +100,10 @@
                  #:exists 'replace))
 
 (struct palette (name colors))
+(define (palette-color%s p)
+  (for/vector ([c (in-vector (palette-colors p))])
+    (match-define (vector a r g b) c)
+    (make-object color% r g b (/ a 255))))
 (define (load-palette a-db pn)
   (match-define (db db-path) a-db)
   (palette pn
@@ -133,7 +139,8 @@
     (check-false (power-of-two? i))))
 (define (dimension? a)
   (and (exact-nonnegative-integer? a)
-       (power-of-two? a)))
+       (power-of-two? a)
+       (not (= a 1))))
 
 (define (image? a)
   (and (bytes? a)
@@ -166,5 +173,6 @@
  [struct palette
          ([name name?]
           [colors (sized-vector/c 10 palette-color/c)])]
+ [palette-color%s (-> palette? (sized-vector/c 10 (is-a?/c color%)))]
  [load-palette (-> db? name? palette?)]
  [palette-save! (-> db? palette? void?)])

@@ -1,1 +1,1 @@
-("default" 0 0)
+"default"

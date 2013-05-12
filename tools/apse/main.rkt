@@ -238,9 +238,7 @@
     (for ([(pn p) (in-hash palette-name->palette)])
       (hash-ref! palette->color-vector p
                  (λ ()
-                   (for/vector ([c (in-vector (palette-colors p))])
-                     (match-define (vector a r g b) c)
-                     (make-object color% r g b (/ a 255))))))
+                   (palette-color%s p))))
     (send palette-list set-messages!
           (for/list ([pn (in-list (sprite-palettes sprite-s))])
             (define pv
@@ -807,5 +805,7 @@
   (require racket/cmdline)
   (define db-path "db")
   (command-line #:program "apse"
+                #:once-each
+                ["--db" some-path "Use database" (set! db-path some-path)]
                 #:args ()
                 (apse (load-db db-path))))

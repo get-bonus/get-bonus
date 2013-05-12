@@ -180,7 +180,8 @@ system. It looks like this:
    CLOSED: [2013-05-12 Sun 10:51]
 ** DONE make robust against empty db
    CLOSED: [2013-05-12 Sun 10:51]
-** TODO make a texture atlas/palette output
+** DONE make a texture atlas/palette output
+   CLOSED: [2013-05-12 Sun 11:42]
    - encode 4 pixels into one 32-bit pixel
    NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
 
@@ -193,7 +194,8 @@ system. It looks like this:
      pain in the gpu to do an if for 0 and 1, but I could try that.
 
 ** TODO connect to engine
-** TODO Make purely functional and have better undo system 
+   images were written in ARGB order at w/2 x h/2   
+** TODO Make apse purely functional and have better undo system 
    (where it goes back to earlier system states)
 ** DONE Add animation
 ** Add height/normal maps & lighting
