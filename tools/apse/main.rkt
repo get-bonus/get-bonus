@@ -312,8 +312,6 @@
         (bytes-ref (vector-ref (sprite-images sprite-s) image-i)
                    (xy->byte x y))))
 
-  
-
   (define (read-palette label)
     (define all-palette-names (db-palettes db))
     (define palette-name
@@ -345,6 +343,7 @@
       (define yes/no-options '("y" "n" "Y" "N"))
       (define ret
         (minibuffer-read "Save your changes? [Yn]"
+                         #:auto-accept? #t
                          #:completions
                          yes/no-options
                          #:valid-char?

@@ -74,6 +74,7 @@
                (string->number
                 (minibuffer-read "Label color"
                                  #:valid-char? color-key?
+                                 #:auto-accept? #t
                                  #:accept-predicate?
                                  (λ (s) (= (string-length s) 1)))))   
              (set! label-color #f)

@@ -80,6 +80,7 @@
   (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
   (define (minibuffer-read prompt
                            #:valid-char? this-valid-char?
+                           #:auto-accept? [auto? #f]
                            #:accept-predicate? accept?
                            #:completions [orig-comps empty])
     (define (valid-char? c)
@@ -95,10 +96,10 @@
                            (filter
                             (string-prefix-of? input-so-far)
                             comps))
+                         (define try-to-accept? #f)
                          (match (send ke get-key-code)
                            [#\return
-                            (when (accept? input-so-far)
-                              (return-to-minibuffer-call input-so-far))]
+                            (set! try-to-accept? #t)]
                            [#\tab
                             (if (empty? prefix-comps)
                               (bell)
@@ -117,6 +118,9 @@
                                   (string-append input-so-far
                                                  (string c)))]
                            [_ (void)])
+                         (when (or try-to-accept? auto?)
+                           (when (accept? input-so-far)
+                             (return-to-minibuffer-call input-so-far)))
                          (send mw set-status-text
                                (~a prompt " > " input-so-far
                                    " ["
