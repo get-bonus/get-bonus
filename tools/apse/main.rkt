@@ -373,6 +373,32 @@
   (define (throw-status v)
     (abort-current-continuation status-prompt-tag (λ () v)))
 
+  (define (string-prefix-of? pre)
+    (define pre-re (regexp (format "^~a" (regexp-quote pre))))
+    (λ (str)
+      (regexp-match pre-re str)))
+  (define (longest-common-prefix l)
+    (define empty-trie (hasheq))
+    (define (trie-add t w)
+      (if (empty? w)
+        t
+        (hash-update t (first w)
+                     (lambda (rest-t)
+                       (trie-add rest-t (rest w)))
+                     empty-trie)))
+    (define (trie-add* s t)
+      (trie-add t (string->list s)))
+    (define l-trie (foldr trie-add* empty-trie l))
+    (list->string
+     (let loop ([t l-trie])
+       (define c (hash-count t))
+       (cond
+         [(= c 1)
+          (match-define (list (cons k nt)) (hash->list t))
+          (cons k (loop nt))]
+         [else
+          empty]))))
+
   (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
   (define minibuffer-run! #f)
   (define-syntax-rule (with-minibuffer ke e)
@@ -384,19 +410,30 @@
   (define (minibuffer-read prompt
                            #:valid-char? this-valid-char?
                            #:accept-predicate? accept?
-                           #:completions [comps empty])
+                           #:completions [orig-comps empty])
     (define (valid-char? c)
       (and (char? c) (this-valid-char? c)))
+    (define comps
+      (sort (sort orig-comps string-ci<?) < #:key string-length))
     (begin0
       (call/cc (λ (return-to-minibuffer-call)
                  (define input-so-far "")
                  (set! minibuffer-run!
                        (λ (ke)
+                         (define prefix-comps
+                           (filter
+                            (string-prefix-of? input-so-far)
+                            comps))
                          (match (send ke get-key-code)
                            [#\return
                             (when (accept? input-so-far)
                               (return-to-minibuffer-call input-so-far))]
-                           ;; xxx comps with tab
+                           [#\tab
+                            (if (empty? prefix-comps)
+                              (bell)
+                              (set! input-so-far
+                                    (longest-common-prefix
+                                     prefix-comps)))]
                            [(or #\backspace #\rubout)
                             (unless (string=? "" input-so-far)
                               (set! input-so-far
@@ -410,13 +447,18 @@
                                                  (string c)))]
                            [_ (void)])
                          (send mw set-status-text
-                               (~a prompt " > " input-so-far))
+                               (~a prompt " > " input-so-far
+                                   " ["
+                                   (if (empty? prefix-comps)
+                                     "no matches"
+                                     (apply ~a
+                                            (add-between prefix-comps " ")))
+                                   "]"))
                          (when (or (eq? 'escape (send ke get-key-code))
                                    (and (send ke get-control-down)
                                         (eq? #\g (send ke get-key-code))))
                            (send mw set-status-text
-                                 (~a prompt " > " input-so-far
-                                     " [CANCELLED]"))
+                                 (~a prompt " > " "[CANCELLED]"))
                            (set! minibuffer-run! #f))))
                  (abort-current-continuation minibuffer-prompt-tag void))
                minibuffer-prompt-tag)
