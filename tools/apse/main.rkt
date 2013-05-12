@@ -8,6 +8,8 @@
          racket/match
          racket/list
          (only-in gb/sys/menu calculate-visible-options)
+         "mb-frame.rkt"
+         "lib.rkt"
          "db.rkt")
 (module+ test
   (require rackunit))
@@ -47,12 +49,6 @@
   (check-equal? (color-hex? "123456789") #f)
   (check-equal? (color-hex? "#abcdefgh") #f)
   (check-equal? (color-hex? "#ffffffff") (vector 255 255 255 255)))
-
-(define base-c (make-object color% #xFD #xF6 #xE3 1))
-(define outline-c (make-object color% #xFF #x14 #x93 1))
-(define all-white-c (make-object color% 255 255 255 1))
-(define all-black-c (make-object color% 0 0 0 1))
-(define all-transparent-c (make-object color% 0 0 0 0))
 
 (define messages%
   (class* object% ()
@@ -122,41 +118,6 @@
 
     (super-new)))
 
-(define (string-prefix-of? pre)
-  (define pre-re (regexp (format "^~a" (regexp-quote pre))))
-  (λ (str)
-    (regexp-match pre-re str)))
-(define (longest-common-prefix l)
-  (define empty-trie (hasheq))
-  (define empty-entry (cons #f empty-trie))
-  (define (trie-add t w)
-    (if (empty? w)
-      t
-      (hash-update t (first w)
-                   (lambda (the-e)
-                     (match-define (cons word? rest-t) the-e)
-                     (cons (or word? (empty? (rest w)))
-                           (trie-add rest-t (rest w))))
-                   empty-entry)))
-  (define (trie-add* s t)
-    (trie-add t (string->list s)))
-  (define l-trie (foldr trie-add* empty-trie l))
-  (list->string
-   (let loop ([t l-trie])
-     (define c (hash-count t))
-     (cond
-       [(= c 1)
-        (match-define (list (cons k (cons word? nt))) (hash->list t))
-        (if word?
-          (list k)
-          (cons k (loop nt)))]
-       [else
-        empty]))))
-(module+ test
-  (check-equal? (longest-common-prefix (list "36" "36-0" "36-1"
-                                             "36-2" "36-3"))
-                "36"))
-
 (define-syntax-rule (push! l e ...)
   (set! l (list* e ... l)))
 (define-syntax-rule (set-push! l e ...)
@@ -217,7 +178,11 @@
   (define (set-sprite! new-sprite-s new-image-i new-palette-i)
     (set! sprite-s new-sprite-s)
     (define name (sprite-name sprite-s))
-    (send name-m set-label name)
+    (send name-m set-label
+          (format "~a [~ax~a]"
+                  name
+                  (sprite-width sprite-s)
+                  (sprite-height sprite-s)))
     (update-palettes!)
     (update-palette! new-palette-i)
     (update-color! color-i)
@@ -258,7 +223,9 @@
       (vector-length (sprite-images sprite-s)))
     (set! image-i (modulo new-image-i how-many-images))
     (send label-m set-label
-          (format "~a of ~a" (add1 image-i)
+          (format "Image #~a: ~a of ~a"
+                  image-i
+                  (add1 image-i)
                   how-many-images))
     (set-cursor! x y)
     (~a "image = " image-i))
@@ -386,96 +353,6 @@
              #:when (eq? c some-c))
       i))
 
-  (define status-prompt-tag (make-continuation-prompt-tag 'status))
-  (define-syntax-rule (set-status! expr)
-    (let ()
-      (define start (current-inexact-milliseconds))
-      (define new-status
-        (call-with-continuation-prompt
-         (λ () expr)
-         status-prompt-tag))
-      (define end (current-inexact-milliseconds))
-      (when new-status
-        (send mw set-status-text
-              (~a
-               (if (any-changes?)
-                 "!"
-                 " ")
-               " "
-               (~a (- end start)
-                   #:min-width 3
-                   #:max-width 4
-                   #:align 'right)
-               "ms: "
-               new-status)))))
-  (define (throw-status v)
-    (abort-current-continuation status-prompt-tag (λ () v)))
-
-  (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
-  (define minibuffer-run! #f)
-  (define-syntax-rule (with-minibuffer ke e)
-    (call-with-continuation-prompt
-     (λ () (if minibuffer-run!
-             (minibuffer-run! ke)
-             e))
-     minibuffer-prompt-tag))
-  (define (minibuffer-read prompt
-                           #:valid-char? this-valid-char?
-                           #:accept-predicate? accept?
-                           #:completions [orig-comps empty])
-    (define (valid-char? c)
-      (and (char? c) (this-valid-char? c)))
-    (define comps
-      (sort (sort orig-comps string-ci<?) < #:key string-length))
-    (begin0
-      (call/cc (λ (return-to-minibuffer-call)
-                 (define input-so-far "")
-                 (set! minibuffer-run!
-                       (λ (ke)
-                         (define prefix-comps
-                           (filter
-                            (string-prefix-of? input-so-far)
-                            comps))
-                         (match (send ke get-key-code)
-                           [#\return
-                            (when (accept? input-so-far)
-                              (return-to-minibuffer-call input-so-far))]
-                           [#\tab
-                            (if (empty? prefix-comps)
-                              (bell)
-                              (set! input-so-far
-                                    (longest-common-prefix
-                                     prefix-comps)))]
-                           [(or #\backspace #\rubout)
-                            (unless (string=? "" input-so-far)
-                              (set! input-so-far
-                                    (substring
-                                     input-so-far 0
-                                     (sub1
-                                      (string-length input-so-far)))))]
-                           [(? valid-char? c)
-                            (set! input-so-far
-                                  (string-append input-so-far
-                                                 (string c)))]
-                           [_ (void)])
-                         (send mw set-status-text
-                               (~a prompt " > " input-so-far
-                                   " ["
-                                   (if (empty? prefix-comps)
-                                     "no matches"
-                                     (apply ~a
-                                            (add-between prefix-comps " ")))
-                                   "]"))
-                         (when (or (eq? 'escape (send ke get-key-code))
-                                   (and (send ke get-control-down)
-                                        (eq? #\g (send ke get-key-code))))
-                           (send mw set-status-text
-                                 (~a prompt " > " "[CANCELLED]"))
-                           (set! minibuffer-run! #f))))
-                 (abort-current-continuation minibuffer-prompt-tag void))
-               minibuffer-prompt-tag)
-      (set! minibuffer-run! #f)))  
-
   (define (read-palette label)
     (define all-palette-names (db-palettes db))
     (define palette-name
@@ -558,150 +435,131 @@
     (update-palette! palette-i))
 
   (define (handle-key! e)
-    (with-minibuffer
-     e
-     (set-status!
-      (match (cons (send e get-shift-down) (send e get-key-code))
-        [(cons #f #\g)
-         (set! show-grid? (not show-grid?))
-         (update-canvases!)
-         (~a "show-grid? = " show-grid?)]
-        [(cons #f #\c)
-         (set! show-cursor? (not show-cursor?))
-         (update-canvases!)
-         (~a "show-cursor? = " show-cursor?)]
-        [(cons #f #\s)
-         (save!)]
-        [(cons #f #\z)
-         (undo!)]
-        [(cons #f #\n)
-         (new-image!)]
-        [(cons #f #\t)
-         (new-image! image-i)]
-        [(cons #f 'up)
-         (update-cursor!  0 -1)]
-        [(cons #f 'down)
-         (update-cursor!  0 +1)]
-        [(cons #f 'left)
-         (update-cursor! -1  0)]
-        [(cons #f 'right)
-         (update-cursor! +1  0)]
-        [(cons #f #\i)
-         (set! inverted? (not inverted?))
-         (update-canvases!)
-         (~a "inverted? = " inverted?)]
-        [(cons #t 'up)
-         (update-palette! (sub1 palette-i))]
-        [(cons #t 'down)
-         (update-palette! (add1 palette-i))]
-        [(or (cons #t 'left) (cons #f #\[))
-         (update-image! (sub1 image-i))]
-        [(or (cons #t 'right) (cons #f #\]))
-         (update-image! (add1 image-i))]
-        [(cons #f #\r)
-         (cond
-           [(= (length (sprite-palettes sprite-s)) 1)
-            (~a "cannot remove last palette")]
-           [else
-            (begin0
-              (~a "removed palette " palette-i)
-              (change-palettes!
-               (list-remove-at (sprite-palettes sprite-s)
-                               palette-i)))])]
-        [(cons #f #\a)
-         (define new-palette (read-palette "Additional"))
-         (change-palettes! (append (sprite-palettes sprite-s)
-                                   (list new-palette)))
-         (~a "added palette " new-palette)]
-        [(cons #f #\f)
-         (read-and-set-sprite!)]
-        [(or (cons _ 'escape) (cons _ #\q))
-         (ensure-saved!)
-         (exit 0)]
-        [(cons #f #\e)
-         (cond
-           [(<= color-i 1)
-            (~a "cannot modify colors 0 and 1")]
-           [else
-            (define pn (list-ref (sprite-palettes sprite-s) palette-i))
-            (define p (hash-ref palette-name->palette pn))
-            (define c%v (hash-ref palette->color-vector p))
-            (define (get-cx)
-              (color%->hex
-               (vector-ref c%v color-i)))
-            (define old-cx (get-cx))
-            (define color-hex
-              (minibuffer-read (format "Change color ~a (~a) to "
-                                       color-i
-                                       old-cx)
-                               #:valid-char?
-                               (λ (c)
-                                 (or (char=? #\# c)
-                                     (string->number (string c) 16)))
-                               #:accept-predicate? color-hex?))
-            (define new-cv (color-hex? color-hex))
-            (vector-set! (palette-colors p) color-i new-cv)
-            (set-push! changed-palettes p)
-            (hash-remove! palette->color-vector p)
-            (update-palette-vectors!)
-            (update-palette! palette-i)
-            (define new-cx (get-cx))
-            (~a "changed color "
-                color-i
-                " from "
-                old-cx
-                " to "
-                new-cx)])]
-        [(cons #f #\space)
-         (insert-current-color!)]
-        [(cons #f (app color-key? (and (not #f) c)))
-         (insert-color! c)]
-        [(cons #t (app shifted-color-key? (and (not #f) c)))
-         (update-color! c)]
-        [kc
-         #f]))))
+    (match (cons (send e get-shift-down) (send e get-key-code))
+      [(cons #f #\g)
+       (set! show-grid? (not show-grid?))
+       (update-canvases!)
+       (~a "show-grid? = " show-grid?)]
+      [(cons #f #\c)
+       (set! show-cursor? (not show-cursor?))
+       (update-canvases!)
+       (~a "show-cursor? = " show-cursor?)]
+      [(cons #f #\s)
+       (save!)]
+      [(cons #f #\z)
+       (undo!)]
+      [(cons #f #\n)
+       (new-image!)]
+      [(cons #f #\t)
+       (new-image! image-i)]
+      [(cons #f 'up)
+       (update-cursor!  0 -1)]
+      [(cons #f 'down)
+       (update-cursor!  0 +1)]
+      [(cons #f 'left)
+       (update-cursor! -1  0)]
+      [(cons #f 'right)
+       (update-cursor! +1  0)]
+      [(cons #f #\i)
+       (set! inverted? (not inverted?))
+       (update-canvases!)
+       (~a "inverted? = " inverted?)]
+      [(cons #t 'up)
+       (update-palette! (sub1 palette-i))]
+      [(cons #t 'down)
+       (update-palette! (add1 palette-i))]
+      [(or (cons #t 'left) (cons #f #\[))
+       (update-image! (sub1 image-i))]
+      [(or (cons #t 'right) (cons #f #\]))
+       (update-image! (add1 image-i))]
+      [(cons #f #\r)
+       (cond
+         [(= (length (sprite-palettes sprite-s)) 1)
+          (~a "cannot remove last palette")]
+         [else
+          (begin0
+            (~a "removed palette " palette-i)
+            (change-palettes!
+             (list-remove-at (sprite-palettes sprite-s)
+                             palette-i)))])]
+      [(cons #f #\a)
+       (define new-palette (read-palette "Additional"))
+       (change-palettes! (append (sprite-palettes sprite-s)
+                                 (list new-palette)))
+       (~a "added palette " new-palette)]
+      [(cons #f #\f)
+       (read-and-set-sprite!)]
+      [(or (cons _ 'escape) (cons _ #\q))
+       (ensure-saved!)
+       (exit 0)]
+      [(cons #f #\e)
+       (cond
+         [(<= color-i 1)
+          (~a "cannot modify colors 0 and 1")]
+         [else
+          (define pn (list-ref (sprite-palettes sprite-s) palette-i))
+          (define p (hash-ref palette-name->palette pn))
+          (define c%v (hash-ref palette->color-vector p))
+          (define (get-cx)
+            (color%->hex
+             (vector-ref c%v color-i)))
+          (define old-cx (get-cx))
+          (define color-hex
+            (minibuffer-read (format "Change color ~a (~a) to "
+                                     color-i
+                                     old-cx)
+                             #:valid-char?
+                             (λ (c)
+                               (or (char=? #\# c)
+                                   (string->number (string c) 16)))
+                             #:accept-predicate? color-hex?))
+          (define new-cv (color-hex? color-hex))
+          (vector-set! (palette-colors p) color-i new-cv)
+          (set-push! changed-palettes p)
+          (hash-remove! palette->color-vector p)
+          (update-palette-vectors!)
+          (update-palette! palette-i)
+          (define new-cx (get-cx))
+          (~a "changed color "
+              color-i
+              " from "
+              old-cx
+              " to "
+              new-cx)])]
+      [(cons #f #\space)
+       (insert-current-color!)]
+      [(cons #f (app color-key? (and (not #f) c)))
+       (insert-color! c)]
+      [(cons #t (app shifted-color-key? (and (not #f) c)))
+       (update-color! c)]
+      [kc
+       #f]))
 
+  (define (vector-ref* v i)
+    (vector-ref v (modulo i (vector-length v))))
   (define (paint-zoomed! c dc #:image-i [the-image-i image-i])
-    (send dc set-background base-c)
-    (send dc clear)
-    (define it (send dc get-transformation))
-    (send dc set-smoothing 'unsmoothed)
-
-    (define cw (send c get-width))
-    (define ch (send c get-height))
+    (define bg-c (if inverted? all-black-c all-white-c))
     (define w (sprite-width sprite-s))
     (define h (sprite-height sprite-s))
-    (define the-scale
-      (floor (min (/ cw w) (/ ch h))))
-    (send dc translate
-          (/ (- cw (* w the-scale)) 2)
-          (/ (- ch (* h the-scale)) 2))
+    (scale-and-center
+     c dc bg-c w h
+     (λ ()
+       (when show-grid?
+         (define grid-c (if inverted? all-white-c all-black-c))
+         (send dc set-pen grid-c 0 'solid)
+         (for ([x (in-range (add1 w))])
+           (send dc draw-line x 0 x h))
+         (for ([y (in-range (add1 h))])
+           (send dc draw-line 0 y w y)))
 
-    (send dc set-scale the-scale the-scale)
+       (define bm (vector-ref* image-bms the-image-i))
+       (send dc draw-bitmap bm 0 0)
 
-    (define bg-c (if inverted? all-black-c all-white-c))
-    (send dc set-pen bg-c 0 'solid)
-    (send dc set-brush bg-c 'solid)
-    (send dc draw-rectangle 0 0 w h)
-
-    (when show-grid?
-      (define grid-c (if inverted? all-white-c all-black-c))
-      (send dc set-pen grid-c 0 'solid)
-      (for ([x (in-range (add1 w))])
-        (send dc draw-line x 0 x h))
-      (for ([y (in-range (add1 h))])
-        (send dc draw-line 0 y w y)))
-
-    (define bm (vector-ref image-bms the-image-i))
-    (send dc draw-bitmap bm 0 0)
-
-    (when show-cursor?
-      (define bm-dc (send bm make-dc))
-      (send dc set-brush all-transparent-c 'solid)
-      (send dc set-pen outline-c 0 'solid)
-      (send dc draw-rectangle x y 1 1))
-
-    (send dc set-transformation it))
+       (when show-cursor?
+         (define bm-dc (send bm make-dc))
+         (send dc set-brush all-transparent-c 'solid)
+         (send dc set-pen outline-c 0 'solid)
+         (send dc draw-rectangle x y 1 1)))))
   (define (paint-animation! c dc)
     ;; The image may have been updated since the timer was called
     (set! animation-i
@@ -715,23 +573,13 @@
               (list* zoomed-c animation-c scaled-cs)))
 
   ;; Set up the UI
-  (define model-lock (make-semaphore 1))
+  (define-values (mw model-lock
+                     minibuffer-read throw-status
+                     initialize!)
+    (create-mb-frame
+     "apse" any-changes?
+     handle-key!))
 
-  (define apse-frame%
-    (class* frame% ()
-      (define/override (on-subwindow-char r e)
-        (call-with-semaphore
-         model-lock
-         (λ ()
-           (handle-key! e)))
-        #t)
-      (super-new)))
-
-  (define mw (new apse-frame% [label "apse"]
-                  [style '(no-resize-border
-                           no-caption
-                           hide-menu-bar
-                           no-system-menu)]))
   (define hp (new horizontal-panel% [parent mw]))
   (define left-vp (new vertical-panel% [parent hp]))
   (define right-vp (new vertical-panel% [parent hp]))
@@ -743,6 +591,7 @@
          [paint-callback paint-zoomed!]))
   (define name-m
     (new message% [parent right-vp]
+         [auto-resize #t]
          [label "<Sprite Name>"]))
   (define palette-hp (new horizontal-panel% [parent right-vp]
                           [stretchable-height #f]))
@@ -794,11 +643,7 @@
                (set! animation-i (add1 animation-i))
                (send animation-c refresh-now))))]))
 
-  (send mw create-status-line)
-  (send mw show #t)
-  (send zoomed-c focus)
-
-  (set-status! (load-sprite! (load-last db) 0 0))
+  (initialize! (load-sprite! (load-last db) 0 0))
   (send animation-timer start (floor (* 1000 1/15))))
 
 (module+ main
