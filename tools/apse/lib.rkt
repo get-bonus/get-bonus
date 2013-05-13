@@ -12,6 +12,9 @@
 (define all-black-c (make-object color% 0 0 0 1))
 (define all-transparent-c (make-object color% 0 0 0 0))
 
+(define-syntax-rule (push! l e ...)
+  (set! l (list* e ... l)))
+
 (define (clamp lo v hi)
   (max lo (min v hi)))
 

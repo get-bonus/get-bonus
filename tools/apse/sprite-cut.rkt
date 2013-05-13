@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/gui/base
          racket/format
+         racket/list
          racket/class
          "mb-frame.rkt"
          "lib.rkt"
@@ -12,8 +13,14 @@
   (define h (send ss-bm get-height))
 
   (define inverted? #t)
-  (define label-color #f)
+  (define query-color #f)
+  (define query-sprite #f)
   (define the-scale 1)
+
+  (define palette #f)
+  (define locked? #f)
+  (define ignored-sprites empty)
+  (define chosen-sprites empty)
 
   (define sprite-w 16)
   (define sprite-h 16)
@@ -49,7 +56,21 @@
         [(eq? k #\=)
          (set! the-scale (* the-scale 2.0))
          (~a "scale = " the-scale)]
-        [(eq? k #\p)
+        [(and palette (not query-sprite) (eq? k #\c))
+         (set! query-sprite 0)
+         (set! locked? #t)
+         (~a "beginning cutting...")]
+        [(and query-sprite (eq? k #\space))
+         (begin0 (~a "ignored " query-sprite)
+                 (push! ignored-sprites query-sprite)
+                 (set! query-sprite (add1 query-sprite)))]
+        [(and query-sprite (eq? k #\return))
+         (begin0 (~a "chosen " query-sprite)
+                 (push! chosen-sprites query-sprite)
+                 (set! query-sprite (add1 query-sprite)))]
+        ;; xxx know when we're done
+        ;; xxx save them to the database (name as we go? auto name?)
+        [(and (not palette) (eq? k #\p))
          ;; find every color in the image
          (define colors (make-hash))
 
@@ -68,7 +89,7 @@
          ;; assign it a number
          (define color->index
            (for/hash ([(c count) (in-hash colors)])
-             (set! label-color (palette-color->color% c))
+             (set! query-color (palette-color->color% c))
              (send query-c refresh-now)
              (define label
                (string->number
@@ -76,22 +97,22 @@
                                  #:valid-char? color-key?
                                  #:auto-accept? #t
                                  #:accept-predicate?
-                                 (λ (s) (= (string-length s) 1)))))   
-             (set! label-color #f)
+                                 (λ (s) (= (string-length s) 1)))))
+             (set! query-color #f)
              (values c label)))
          (send query-c refresh-now)
 
-         (eprintf "~a\n" color->index)
+         (set! palette color->index)
 
          (~a "palette set")]
 
-        [(send ke get-control-down)
+        [(and (not locked?) (send ke get-control-down))
          (cond [(eq? k 'left)  (sprite-offset! -1 +0)]
                [(eq? k 'right) (sprite-offset! +1 +0)]
                [(eq? k 'up)    (sprite-offset! +0 -1)]
                [(eq? k 'down)  (sprite-offset! +0 +1)]
                [else #f])]
-        [(send ke get-shift-down)
+        [(and (not locked?) (send ke get-shift-down))
          (cond [(eq? k 'left)  (sprite-box! -1 +0)]
                [(eq? k 'right) (sprite-box! +1 +0)]
                [(eq? k 'up)    (sprite-box! +0 -1)]
@@ -111,6 +132,7 @@
         [else
          (eprintf "ignored: ~a\n" k)
          #f])
+      (send query-c refresh-now)
       (send ss-c refresh-now)))
 
   (define (paint-query c dc)
@@ -118,9 +140,30 @@
     (send dc clear)
 
     (cond
-      [label-color
-       (send dc set-background label-color)
+      [query-sprite
+       (scale-and-center
+        c dc all-white-c
+        sprite-w sprite-h
+        (λ ()
+          (send dc draw-bitmap-section
+                ss-bm
+                0 0
+                (query-sprite-x) (query-sprite-y)
+                sprite-w sprite-h)))]
+      [query-color
+       (send dc set-background query-color)
        (send dc clear)]))
+
+  (define (query-sprite-y)
+    (sprite-y query-sprite))
+  (define (query-sprite-x)
+    (sprite-x query-sprite))
+  (define (sprites-per-row)
+    (quotient w sprite-w))
+  (define (sprite-y i)
+    (+ sprite-dy (* sprite-h (quotient i (sprites-per-row)))))
+  (define (sprite-x i)
+    (+ sprite-dx (* sprite-w (remainder i (sprites-per-row)))))
 
   (define (paint-ss c dc)
     ;; Make a copy of the bitmap with the grid in place
@@ -133,6 +176,20 @@
       (send ss/grid-dc draw-line x sprite-dy x h))
     (for ([y (in-range sprite-dy (add1 h) sprite-h)])
       (send ss/grid-dc draw-line sprite-dx y w y))
+
+    (for ([sprite-i (in-list ignored-sprites)])
+      (send ss/grid-dc set-pen base-c 0 'solid)
+      (send ss/grid-dc set-brush base-c 'solid)
+      (send ss/grid-dc draw-rectangle
+            (sprite-x sprite-i) (sprite-y sprite-i)
+            sprite-w sprite-h))
+
+    (when query-sprite
+      (send ss/grid-dc set-pen outline-c 0 'solid)
+      (send ss/grid-dc set-brush all-transparent-c 'solid)
+      (send ss/grid-dc draw-rectangle
+            (query-sprite-x) (query-sprite-y)
+            sprite-w sprite-h))
 
     ;; Draw the copy zoomed in
     (send dc set-background base-c)

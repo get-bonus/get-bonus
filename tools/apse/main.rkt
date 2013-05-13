@@ -88,8 +88,6 @@
 
     (super-new)))
 
-(define-syntax-rule (push! l e ...)
-  (set! l (list* e ... l)))
 (define-syntax-rule (set-push! l e ...)
   (begin (push! l e ...)
          (set! l (remove-duplicates l))))
