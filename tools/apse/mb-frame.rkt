@@ -80,6 +80,7 @@
   (define minibuffer-prompt-tag (make-continuation-prompt-tag 'minibuffer))
   (define (minibuffer-read prompt
                            #:valid-char? this-valid-char?
+                           #:init [init ""]
                            #:auto-accept? [auto? #f]
                            #:accept-predicate? accept?
                            #:completions [orig-comps empty])
@@ -89,7 +90,7 @@
       (sort (sort orig-comps string-ci<?) < #:key string-length))
     (begin0
       (call/cc (λ (return-to-minibuffer-call)
-                 (define input-so-far "")
+                 (define input-so-far init)
                  (set! minibuffer-run!
                        (λ (ke)
                          (define prefix-comps

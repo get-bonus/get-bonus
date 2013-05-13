@@ -63,13 +63,56 @@
         [(and query-sprite (eq? k #\space))
          (begin0 (~a "ignored " query-sprite)
                  (push! ignored-sprites query-sprite)
-                 (set! query-sprite (add1 query-sprite)))]
+                 (increment-query-sprite!))]
         [(and query-sprite (eq? k #\return))
          (begin0 (~a "chosen " query-sprite)
                  (push! chosen-sprites query-sprite)
-                 (set! query-sprite (add1 query-sprite)))]
-        ;; xxx know when we're done
-        ;; xxx save them to the database (name as we go? auto name?)
+                 (increment-query-sprite!))]
+        [(and (not (empty? chosen-sprites))
+              (eq? k #\s))
+         (define pxs (make-bytes (* sprite-w sprite-h 4)))
+         (define old-query-sprite query-sprite)
+         (for/fold ([last-name ""])
+             ([cs (in-list (reverse chosen-sprites))])
+           (set! query-sprite cs)
+           (refresh-canvases!)
+           (let loop ()
+             (define all-sprite-names (db-sprites db))
+             (define name
+               (minibuffer-read "Name"
+                                #:completions all-sprite-names
+                                #:init last-name
+                                #:valid-char? valid-name-char?
+                                #:accept-predicate? name?))
+             (cond
+               [(member name all-sprite-names)
+                (loop)]
+               [else
+                (define img0 (make-bytes (* sprite-w sprite-h) 0))
+
+                (send ss-bm get-argb-pixels
+                      (query-sprite-x) (query-sprite-y)
+                      sprite-w sprite-h pxs)
+                (for* ([x (in-range sprite-w)]
+                       [y (in-range sprite-h)])
+                  (define c (pixels-color pxs sprite-w sprite-h x y))
+                  (bytes-set! img0
+                              (byte-xy-offset sprite-w sprite-h x y)
+                              (hash-ref palette c)))
+
+                (define new-sprite
+                  (sprite name sprite-w sprite-h
+                          (vector img0)
+                          ;; xxx save the palette they chose?
+                          (list "grayscale")))
+
+                (sprite-save! db new-sprite)
+
+                name])))
+         (set! query-sprite old-query-sprite)
+         (begin0
+           (~a "saved " (length chosen-sprites) " sprites")
+           (set! chosen-sprites empty))]
         [(and (not palette) (eq? k #\p))
          ;; find every color in the image
          (define colors (make-hash))
@@ -78,19 +121,13 @@
          (send ss-bm get-argb-pixels 0 0 w h pxs)
          (for* ([x (in-range w)]
                 [y (in-range h)])
-           (define xy-offset (+ (* 4 y w) (* 4 x)))
-           (define a (bytes-ref pxs (+ xy-offset 0)))
-           (define r (bytes-ref pxs (+ xy-offset 1)))
-           (define g (bytes-ref pxs (+ xy-offset 2)))
-           (define b (bytes-ref pxs (+ xy-offset 3)))
-           (define c (vector a r g b))
-           (hash-update! colors c add1 0))
+           (hash-update! colors (pixels-color pxs w h x y) add1 0))
 
          ;; assign it a number
          (define color->index
            (for/hash ([(c count) (in-hash colors)])
              (set! query-color (palette-color->color% c))
-             (send query-c refresh-now)
+             (refresh-canvases!)
              (define label
                (string->number
                 (minibuffer-read "Label color"
@@ -100,7 +137,7 @@
                                  (λ (s) (= (string-length s) 1)))))
              (set! query-color #f)
              (values c label)))
-         (send query-c refresh-now)
+         (refresh-canvases!)
 
          (set! palette color->index)
 
@@ -132,8 +169,11 @@
         [else
          (eprintf "ignored: ~a\n" k)
          #f])
-      (send query-c refresh-now)
-      (send ss-c refresh-now)))
+      (refresh-canvases!)))
+
+  (define (refresh-canvases!)
+    (send query-c refresh-now)
+    (send ss-c refresh-now))
 
   (define (paint-query c dc)
     (send dc set-background base-c)
@@ -158,6 +198,11 @@
     (sprite-y query-sprite))
   (define (query-sprite-x)
     (sprite-x query-sprite))
+  (define (increment-query-sprite!)
+    (set! query-sprite (add1 query-sprite))
+    (when (>= (query-sprite-y) h)
+      (set! query-sprite #f)))
+
   (define (sprites-per-row)
     (quotient w sprite-w))
   (define (sprite-y i)
@@ -237,9 +282,11 @@
   (define db-path "db")
   (current-command-line-arguments
    #("/home/jay/Downloads/Scroll-o-Sprites.png"))
+  (current-command-line-arguments
+   #("/home/jay/Dev/scm/github.jeapostrophe/exp/anki-monster/anki-monster-pngs/36.png"))
   (command-line #:program "apse"
                 #:once-each
                 ["--db" some-path "Use database" (set! db-path some-path)]
                 #:args (sprite-sheet-p)
-                (load-db db-path)
-                (sprite-cut #f sprite-sheet-p)))
+                (sprite-cut (load-db db-path)
+                            sprite-sheet-p)))

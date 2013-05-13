@@ -15,6 +15,17 @@
 (define-syntax-rule (push! l e ...)
   (set! l (list* e ... l)))
 
+(define (byte-xy-offset w h x y)
+    (+ (* y w) x))
+
+(define (pixels-color pxs w h x y)
+  (define xy-offset (+ (* 4 y w) (* 4 x)))
+  (define a (bytes-ref pxs (+ xy-offset 0)))
+  (define r (bytes-ref pxs (+ xy-offset 1)))
+  (define g (bytes-ref pxs (+ xy-offset 2)))
+  (define b (bytes-ref pxs (+ xy-offset 3)))
+  (vector a r g b))
+
 (define (clamp lo v hi)
   (max lo (min v hi)))
 

@@ -246,7 +246,7 @@
     (vector-set! image-bms image-i bm))
 
   (define (xy->byte x y)
-    (+ (* y (sprite-width sprite-s)) x))
+    (byte-xy-offset (sprite-width sprite-s) (sprite-height sprite-s) x y))
 
   (define (insert-color! c)
     (update-color! c)
