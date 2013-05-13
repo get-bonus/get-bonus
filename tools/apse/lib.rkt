@@ -1,5 +1,7 @@
 #lang racket/base
 (require racket/draw
+         racket/list
+         racket/gui/base
          racket/format
          racket/match
          racket/class)
@@ -14,6 +16,9 @@
 
 (define-syntax-rule (push! l e ...)
   (set! l (list* e ... l)))
+(define-syntax-rule (pop! l)
+  (begin0 (first l)
+          (set! l (rest l))))
 
 (define (byte-xy-offset w h x y)
     (+ (* y w) x))
@@ -105,5 +110,22 @@
   (inner)
 
   (send dc set-transformation it))
+
+(define ((make-scaled-panel panel% paint!) me them the-parent i)
+  (cond
+    [(zero? i)
+     empty]
+    [else
+     (define p (new panel% [parent the-parent]))
+     (define first-c
+       (new canvas% [parent p]
+            [paint-callback
+             (if (= 1 i)
+               (λ (c dc)
+                 (send dc set-background base-c)
+                 (send dc clear))
+               paint!)]))
+     (list* first-c
+            (them them me p (sub1 i)))]))
 
 (provide (all-defined-out))

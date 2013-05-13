@@ -555,27 +555,9 @@
   (define palette-info
     (new messages% [parent palette-hp]
          [how-many 10]))
-
-  (define ((make-scaled-panel panel%) me them the-parent i)
-    (cond
-      [(zero? i)
-       empty]
-      [else
-       (define p (new panel% [parent the-parent]))
-       (define first-c
-         (new canvas% [parent p]
-              [paint-callback
-               (if (= 1 i)
-                 (λ (c dc)
-                   (send dc set-background base-c)
-                   (send dc clear))
-                 paint-zoomed!)]))
-       (list* first-c
-              (them them me p (sub1 i)))]))
+  
   (define make-scaled-horizontal
-    (make-scaled-panel horizontal-panel%))
-  (define make-scaled-vertical
-    (make-scaled-panel vertical-panel%))
+    (make-scaled-panel horizontal-panel% paint-zoomed!))
 
   (define scaled-cs
     (make-scaled-horizontal
