@@ -2,7 +2,8 @@
 (require racket/runtime-path
          racket/match
          racket/file
-         racket/list
+         (except-in racket/list
+                    permutations)
          gb/lib/random
          gb/lib/godel
          math/number-theory

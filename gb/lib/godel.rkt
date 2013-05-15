@@ -2,7 +2,7 @@
 (require racket/match
          racket/contract
          racket/function
-         racket/list
+         (except-in racket/list permutations)
          math/number-theory)
 (module+ test
   (require rackunit)
