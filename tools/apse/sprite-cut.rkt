@@ -12,6 +12,7 @@
   (define w (send ss-bm get-width))
   (define h (send ss-bm get-height))
 
+  (define hide-ignored? #t)
   (define inverted? #t)
   (define query-color #f)
   (define query-sprite #f)
@@ -19,14 +20,17 @@
 
   (define palette #f)
   (define locked? #f)
-  (define ignored-sprites empty)
+  (define ignored-sprites-ht (make-hasheq))
   (define undos empty)
   (define last-name "")
   (define saved-sprites (make-hasheq))
 
+  (define-syntax-rule (set-query-sprite! nv)
+    (begin (set! query-sprite nv)
+           (set! view-dy (clamp 0 (- (query-sprite-y) sprite-h) h))))
+
   (define (increment-query-sprite!)
-    (set! query-sprite (add1 query-sprite))
-    (set! view-dy (clamp 0 (- (query-sprite-y) sprite-h) h))
+    (set-query-sprite! (add1 query-sprite))
     (when (>= (query-sprite-y) h)
       (set! query-sprite #f)))
 
@@ -58,33 +62,38 @@
         [(eq? k #\i)
          (set! inverted? (not inverted?))
          (~a "inverted? = " inverted?)]
+        [(eq? k #\h)
+         (set! hide-ignored? (not hide-ignored?))
+         (~a "hide-ignored? = " hide-ignored?)]
         [(eq? k #\-)
          (set! the-scale (* the-scale 0.5))
          (~a "scale = " the-scale)]
         [(eq? k #\=)
          (set! the-scale (* the-scale 2.0))
          (~a "scale = " the-scale)]
-        [(and palette (not query-sprite) (eq? k #\c))
-         (set! query-sprite 0)
+        [(and palette
+              (not query-sprite) 
+              (zero? (hash-count saved-sprites)))
+         (set-query-sprite! 0)
          (set! locked? #t)
          (~a "beginning cutting...")]
         [(and query-sprite (eq? k #\space))
          (define this-query-sprite query-sprite)
-         (push! ignored-sprites this-query-sprite)
+         (hash-set! ignored-sprites-ht this-query-sprite #t)
          (push! undos
                 (λ ()
-                  ;; xxx refocus
-                  (set! query-sprite this-query-sprite)
-                  (set! ignored-sprites
-                        (remove this-query-sprite ignored-sprites))
+                  (set-query-sprite! this-query-sprite)
+                  (hash-remove! ignored-sprites-ht this-query-sprite)
                   (~a "restored " this-query-sprite)))
          (begin0 (~a "ignored " query-sprite)
                  (increment-query-sprite!))]
         [(and query-sprite (not (empty? undos)) (eq? k #\z))
          ((pop! undos))]
         [(and query-sprite (eq? k #\return))
-         ;; xxx need to consider ones we just added
-         (define all-sprite-names (db-sprites db))
+         (define all-sprite-names
+           (append
+            (map sprite-name (hash-values saved-sprites))
+            (db-sprites db)))
          (define name
            (minibuffer-read "Name"
                             #:completions all-sprite-names
@@ -121,15 +130,13 @@
             (define this-query-sprite query-sprite)
             (push! undos
                    (λ ()
-                  ;; xxx refocus
-                     (set! query-sprite this-query-sprite)
+                     (set-query-sprite! this-query-sprite)
                      (hash-remove! saved-sprites this-query-sprite)
                      (~a "restored " this-query-sprite)))
 
             (begin0 (~a "saved " query-sprite " to " name)
                     (increment-query-sprite!))])]
-        [(and (not query-sprite)
-              (not (zero? (hash-count saved-sprites)))
+        [(and (not (zero? (hash-count saved-sprites)))
               (eq? k #\s))
          (for ([s (in-hash-values saved-sprites)])
            (sprite-save! db s))
@@ -188,8 +195,8 @@
         [(eq? k 'next)  (view-offset! +0 (* +1 0.1 h))]
         [(eq? k 'prior) (view-offset! +0 (* -1 0.1 h))]
         [(eq? k #\q)
-         ;; xxx ask to save
-         (exit 0)]
+         (unless (empty? saved-sprites)
+           (exit 0))]
         [else
          (eprintf "ignored: ~a\n" k)
          #f])
@@ -243,20 +250,25 @@
     (for ([y (in-range sprite-dy (add1 h) sprite-h)])
       (send ss/grid-dc draw-line sprite-dx y w y))
 
-    ;; xxx toggle this on and off, or just highlight somehow
-    (for ([sprite-i (in-list ignored-sprites)])
-      (send ss/grid-dc set-pen base-c 0 'solid)
-      (send ss/grid-dc set-brush base-c 'solid)
-      (send ss/grid-dc draw-rectangle
-            (sprite-x sprite-i) (sprite-y sprite-i)
-            sprite-w sprite-h))
+    (define (colors-for-i sprite-i)
+      (cond
+        [(= sprite-i query-sprite)
+         (values outline-c all-transparent-c)]
+        [(hash-ref ignored-sprites-ht sprite-i #f)
+         (if hide-ignored?
+           (values base-c base-c)
+           (values all-transparent-c all-transparent-c))]
+        [else
+         (values all-transparent-c all-transparent-c)]))
 
     (when query-sprite
-      (send ss/grid-dc set-pen outline-c 0 'solid)
-      (send ss/grid-dc set-brush all-transparent-c 'solid)
-      (send ss/grid-dc draw-rectangle
-            (query-sprite-x) (query-sprite-y)
-            sprite-w sprite-h))
+      (for ([sprite-i (in-range (add1 query-sprite))])
+        (define-values (pen-c brush-c) (colors-for-i sprite-i))
+        (send ss/grid-dc set-pen pen-c 0 'solid)
+        (send ss/grid-dc set-brush brush-c 'solid)
+        (send ss/grid-dc draw-rectangle
+              (sprite-x sprite-i) (sprite-y sprite-i)
+              sprite-w sprite-h)))
 
     ;; Draw the copy zoomed in
     (send dc set-background base-c)

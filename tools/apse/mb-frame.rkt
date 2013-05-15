@@ -69,7 +69,7 @@
   (define (throw-status v)
     (abort-current-continuation status-prompt-tag (λ () v)))
 
-
+  ;; xxx does not allow nested minibuffer calls?
   (define minibuffer-run! #f)
   (define-syntax-rule (with-minibuffer ke e)
     (call-with-continuation-prompt
@@ -134,7 +134,7 @@
                                    (and (send ke get-control-down)
                                         (eq? #\g (send ke get-key-code))))
                            (send mw set-status-text
-                                 (~a prompt " > " "[CANCELLED]"))
+                                 (~a prompt " > " "[CANCELED]"))
                            (set! minibuffer-run! #f))))
                  (abort-current-continuation minibuffer-prompt-tag void))
                minibuffer-prompt-tag)
