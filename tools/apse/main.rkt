@@ -179,7 +179,7 @@
                         (hash-ref palette-name->palette pn)))
             (cons (λ (dc x y ch rw)
                     (define bw (/ rw 8))
-                    (for ([i (in-range 2 9)])
+                    (for ([i (in-range 2 10)])
                       (define c (vector-ref pv i))
                       (send dc set-brush c 'solid)
                       (send dc set-pen c 0 'solid)
