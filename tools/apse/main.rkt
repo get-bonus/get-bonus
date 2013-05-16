@@ -7,7 +7,7 @@
          racket/class
          racket/match
          racket/list
-         (only-in gb/sys/menu calculate-visible-options)
+         gb/sys/menu-lib
          "mb-frame.rkt"
          "lib.rkt"
          "db.rkt")

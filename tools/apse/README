@@ -173,8 +173,13 @@ system. It looks like this:
 ** DONE make some good palettes
    CLOSED: [2013-05-12 Sun 07:40]
    ...like grayscale, gameboy, monochrome
-** TODO import some sprites, including fonts
-** TODO make sprites sized for current games
+** DONE import some sprites, including fonts
+   CLOSED: [2013-05-15 Wed 06:43]
+** DONE make sprites sized for current games
+   CLOSED: [2013-05-15 Wed 06:45]
+** TODO rename some of the S-o-S sprites
+   change the font to have 255 images, one for each ASCII char
+   make a down-only wall
 ** TODO figure out best animation speed
 ** DONE make a database object, rather than using path everywhere
    CLOSED: [2013-05-12 Sun 10:51]

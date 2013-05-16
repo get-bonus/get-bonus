@@ -1,1 +1,1 @@
-"sos/character/cat"
+"fonts/default"
