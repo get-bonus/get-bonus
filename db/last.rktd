@@ -1,1 +1,1 @@
-"sos/font"
+"sos/character/dog"

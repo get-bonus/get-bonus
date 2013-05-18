@@ -182,8 +182,10 @@ system. It looks like this:
 
 ** DONE change the font to have 255 images, one for each ASCII char
    CLOSED: [2013-05-18 Sat 09:58]
-** TODO animate some sprites
-** TODO figure out best animation speed
+** DONE animate some sprites
+   CLOSED: [2013-05-18 Sat 11:49]
+** DONE figure out best animation speed
+   CLOSED: [2013-05-18 Sat 11:49]
 ** DONE make a database object, rather than using path everywhere
    CLOSED: [2013-05-12 Sun 10:51]
 ** DONE make robust against empty db

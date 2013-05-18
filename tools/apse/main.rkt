@@ -580,7 +580,7 @@
                (send animation-c refresh-now))))]))
 
   (initialize! (load-sprite! (load-last db) 0 0))
-  (send animation-timer start (floor (* 1000 1/15))))
+  (send animation-timer start (floor (* 1000 1/2))))
 
 (module+ main
   (require racket/cmdline)
