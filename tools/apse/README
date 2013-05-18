@@ -180,7 +180,8 @@ system. It looks like this:
 ** DONE make a down-only wall
    CLOSED: [2013-05-18 Sat 09:41]
 
-** TODO change the font to have 255 images, one for each ASCII char
+** DONE change the font to have 255 images, one for each ASCII char
+   CLOSED: [2013-05-18 Sat 09:58]
 ** TODO animate some sprites
 ** TODO figure out best animation speed
 ** DONE make a database object, rather than using path everywhere
