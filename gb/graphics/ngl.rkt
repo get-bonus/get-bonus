@@ -46,10 +46,6 @@
                    texture-atlas-size
                    width height)
   (cond
-    [(gl-version-at-least? (list 3 3))
-     (make-draw/330 texture-atlas-path
-                    texture-atlas-size
-                    width height)]
     [(gl-version-at-least? (list 3 0))
      (make-draw/300 texture-atlas-path
                     texture-atlas-size
@@ -62,9 +58,6 @@
 
 ;; Old version w/o geometry shaders
 (include "ngl.300.rktl")
-
-;; New version w/ geometry shaders
-(include "ngl.330.rktl")
 
 (define-syntax-rule
   (define-draw draw
@@ -176,7 +169,7 @@
                  (gl-type-sizeof GL_FLOAT))
               (bitwise-ior
                ;; We are overriding everything (this would be wrong if
-               ;; we did the cachinge "optimization" I imagine)
+               ;; we did the caching "optimization" I imagine)
                GL_MAP_INVALIDATE_RANGE_BIT
                GL_MAP_INVALIDATE_BUFFER_BIT
 
