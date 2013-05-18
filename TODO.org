@@ -85,7 +85,8 @@
 ** TODO look into google play services
    https://developers.google.com/games/services/web/gettingstarted
 ** TODO find a way to let the games inform which textures are included in atlas
-** TODO maze - sometimes the player can be put into a wall and can't move
+** DONE maze - sometimes the player can be put into a wall and can't move
+   CLOSED: [2013-05-18 Sat 11:00]
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels
