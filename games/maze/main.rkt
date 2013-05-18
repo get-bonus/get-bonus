@@ -52,7 +52,7 @@
 (define-sound se:power-up "power-up.ogg")
 
 (require games/maze/map)
-(define scale 14)
+(define scale 16)
 
 (define center-pos
   (psn (/ width 2.) (/ height 2.)))
