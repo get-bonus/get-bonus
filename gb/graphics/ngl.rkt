@@ -286,7 +286,8 @@
                 SpriteData-components)))
 
       ;; Reload all data every frame
-      (define this-count (install-objects! objects))
+      (install-objects! objects)
+      (define this-count early-count)
       (performance-log! this-count)
       (glUnmapBuffer GL_ARRAY_BUFFER)
       (glBindBuffer GL_ARRAY_BUFFER 0)
@@ -305,8 +306,7 @@
 
       (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
-      (define drawn-count
-        (min this-count SpriteData-count))
+      (define drawn-count this-count)
       (glDrawArrays
        DrawType 0
        (* DrawnMult drawn-count))
