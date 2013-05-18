@@ -173,9 +173,9 @@
   (define-values
     (x y)
     (match q
-      ['sw (values c r)]
-      ['nw (values c (- height r 1))]
-      ['se (values (- width c 1) r)]
+      ['sw (values            c         (- r 1))]
+      ['nw (values            c  (- height r 1))]
+      ['se (values (- width c 1)        (- r 1))]
       ['ne (values (- width c 1) (- height r 1))]))
   (psn (exact->inexact (+ x .5)) (exact->inexact (+ y .5))))
 
