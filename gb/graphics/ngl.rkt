@@ -12,6 +12,8 @@
          gb/lib/performance-log
          opengl)
 
+(define debug? #f)
+
 (define sprite-tree/c
   ;; XXX really a tree of sprite-info?, but that's expensive to check
   any/c)
@@ -71,8 +73,6 @@
    (build-list SpriteData-components identity))
   (define SpriteData-count
     0)
-  (define SpriteData-count:new
-    (* 2 512))
   (define SpriteData #f)
 
   (define (install-object! i o)
@@ -131,7 +131,7 @@
   (define-draw draw
     texture-atlas-path texture-atlas-size width height
     ProgramId
-    SpriteData SpriteData-count SpriteData-count:new SpriteData-components
+    SpriteData SpriteData-count SpriteData-components
     install-object!
     #:attrib
     ([0 SpriteData-X SpriteData-HH]
@@ -146,13 +146,16 @@
   (define-draw draw
     texture-atlas-path texture-atlas-size width height
     ProgramId
-    SpriteData SpriteData-count SpriteData-count:new SpriteData-components
+    SpriteData SpriteData-count SpriteData-components
     install-object!
     #:attrib
     ([AttribId AttribStart AttribEnd] ...)
     #:render
     (DrawType DrawnMult AttributeCount))
   (begin
+    (define *initialize-count*
+      (* 2 512))
+
     (define (install-objects! t)
       (let loop ([offset 0] [t t])
         (match t
@@ -163,6 +166,14 @@
           [o
            (install-object! offset o)
            (add1 offset)])))
+    (define (count-objects t)
+      (match t
+        [(list)
+         0]
+        [(cons b a)
+         (+ (count-objects b) (count-objects a))]
+        [o
+         1]))
 
     (define TextureAtlasId
       (load-texture texture-atlas-path
@@ -221,16 +232,22 @@
 
       (glBindBuffer GL_ARRAY_BUFFER VboId)
 
+      (define early-count (count-objects objects))
+      (when debug?
+        (printf "early count is ~a\n" early-count))
+      (define SpriteData-count:new (max *initialize-count* early-count))
+
       (unless (>= SpriteData-count SpriteData-count:new)
         (define SpriteData-count:old SpriteData-count)
         (set! SpriteData-count
               (max (* 2 SpriteData-count)
                    SpriteData-count:new))
-        ;; (printf "~a -> max(~a,~a) = ~a\n"
-        ;;         SpriteData-count:old
-        ;;         (* 2 SpriteData-count)
-        ;;         SpriteData-count:new
-        ;;         SpriteData-count)
+        (when debug?
+          (printf "~a -> max(~a,~a) = ~a\n"
+                  SpriteData-count:old
+                  (* 2 SpriteData-count)
+                  SpriteData-count:new
+                  SpriteData-count))
         (glBufferData GL_ARRAY_BUFFER
                       (* SpriteData-count
                          DrawnMult
@@ -269,11 +286,8 @@
                 SpriteData-components)))
 
       ;; Reload all data every frame
-
-      ;; xxx it would be nice to get more consistency by counting twice
       (define this-count (install-objects! objects))
       (performance-log! this-count)
-      (set! SpriteData-count:new this-count)
       (glUnmapBuffer GL_ARRAY_BUFFER)
       (glBindBuffer GL_ARRAY_BUFFER 0)
 
