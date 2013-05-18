@@ -15,6 +15,9 @@
 ;; various places. So, we'll use crt-scale 28, or 448x252. This makes
 ;; the GBIES basically a "widescreen" SNES.
 (define crt-scale 28)
+;; xxx another option might to make it 32 or 512x288 because then
+;; everything is divisible by 8, 16, and 32, which are common sprite
+;; sizes
 (define crt-width (* crt-scale 16))
 (define crt-height (* crt-scale 9))
 
@@ -117,6 +120,7 @@
 
   (glUseProgram 0)
 
+  ;; xxx turn this entirely into a shader
   (define (draw-on-crt do-the-drawing)
     (glBindFramebuffer GL_FRAMEBUFFER myFBO)
 

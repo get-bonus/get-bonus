@@ -203,4 +203,4 @@ system. It looks like this:
 ** TODO Make apse purely functional and have better undo system 
    (where it goes back to earlier system states)
 ** DONE Add animation
-** Add height/normal maps & lighting
+** TODO Add height/normal maps & lighting

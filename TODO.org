@@ -81,6 +81,8 @@
    Particularly if I go with 1-bit textures :)
 ** TODO Look at Texture Packer's options for artifacts
    http://www.codeandweb.com/texturepacker/documentation#layout
+** TODO look into google play services
+   https://developers.google.com/games/services/web/gettingstarted
 ** TODO find a way to let the games inform which textures are included in atlas
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
