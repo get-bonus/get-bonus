@@ -7,6 +7,7 @@
          racket/function
          racket/list
          gb/lib/korf-bin
+         "lib.rkt"
          "db.rkt")
 
 (define (compile db atlas-p pal-p idx-p)
@@ -23,8 +24,8 @@
 
       (define-values
         (tex-size places)
-        (pack (λ (s*i) (/ (sprite-width (vector-ref s*i 0)) 2))
-              (λ (s*i) (/ (sprite-height (vector-ref s*i 0)) 2))
+        (pack (λ (s*i) (sprite-width (vector-ref s*i 0)))
+              (λ (s*i) (sprite-height (vector-ref s*i 0)))
               images))
 
       (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
@@ -42,13 +43,29 @@
            (match-define (placement ax ay (vector s i img)) pl)
            (define w (sprite-width s))
            (define h (sprite-height s))
-           (define bm (make-object bitmap% (/ w 2) (/ h 2) #f #t))
-           (send bm set-argb-pixels 0 0 (/ w 2) (/ h 2) img)
+           (define bm (make-object bitmap% w h #f #t))
+           (define new-img (make-bytes (* 4 w h) 0))
+           (for* ([x (in-range w)]
+                  [y (in-range h)])
+             (define new-offset (+ (* 4 y w) (* 4 x)))
+             (define palette-val
+               (bytes-ref img
+                          (byte-xy-offset w h x y)))
+             (bytes-set! new-img
+                         (+ new-offset 1)
+                         palette-val)
+             (unless (zero? palette-val)
+               (bytes-set! new-img
+                           (+ new-offset 0)
+                           255)))
+           (send bm set-argb-pixels 0 0 w h new-img)
            (send atlas-bm-dc draw-bitmap bm ax ay)
-           `(define-sprite-image ,(sprite-name s) ,i ,ax ,ay ,w ,h))
+           `(define-sprite-image ,(sprite-name s) ,i
+              ,(* 1.0 ax) ,(* 1.0 ay)
+              ,(* 1.0 w) ,(* 1.0 h)))
          (list ";; sprites")
          (for/list ([s (in-list sprites)])
-           `(define-sprite ,(sprite-name s) 
+           `(define-sprite ,(sprite-name s)
               ,(vector-length (sprite-images s)))))
 
         (send atlas-bm save-file atlas-p 'png 100))))
@@ -87,15 +104,13 @@
         (newline)
         (for-each pretty-display atlas-indexes)
         (newline)
-        (for-each pretty-display palette-indexes)))))
+        (for-each pretty-display palette-indexes)
+        (newline)
+        (pretty-display
+         `(provide (all-defined-out)))))))
 
 (module+ main
   (require racket/cmdline)
-  ;; xxx
-  (current-command-line-arguments #("db"))
   (command-line #:program "apse"
-                #:args (db-path)
-                (compile (load-db db-path)
-                         (path-add-suffix db-path #".atlas.png")
-                         (path-add-suffix db-path #".palettes.png")
-                         (path-add-suffix db-path #".index.rkt"))))
+                #:args (db-path atlas-path pal-path index-path)
+                (compile (load-db db-path) atlas-path pal-path index-path)))

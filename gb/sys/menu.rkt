@@ -18,14 +18,12 @@
 (struct menu:action (fun) #:transparent)
 (struct menu:auto (code fun) #:transparent)
 
-(define char
-  (make-char-factory modern 7))
 (define char-height
-  (texture-height (char #\a)))
+  (texture-height tex:sos/font:0))
 (define char-width
-  (texture-width (char #\a)))
+  (texture-width tex:sos/font:0))
 (define string->sprites
-  (make-string-factory char))
+  (make-string-factory spr:sos/font))
 (define cursor ">>")
 (define padding 2)
 

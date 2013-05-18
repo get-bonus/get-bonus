@@ -1,1 +1,1 @@
-"sos/character/dog"
+"sos/fauna/snake"

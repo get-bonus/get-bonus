@@ -43,6 +43,11 @@
 
 (define blocks-in-a-paddle 4)
 
+(define tennis/paddle
+  tex:sos/font:111)
+(define tennis/ball
+  tex:sos/face/smile:0)
+
 (define paddle-w
   (texture-width tennis/paddle))
 (define paddle-hw
@@ -80,9 +85,8 @@
    (sprite tennis/ball)))
 
 (define (bgm)
-  (transform
-   #:d (/ width 2.0) (/ height 2.0)
-   (sprite tennis/bg)))
+  ;; xxx make a background out of overworld bricks
+  empty)
 
 (define lhs-x
   (- (/ width 32.0) paddle-hw))
@@ -203,14 +207,12 @@
             (ball-in-dir ball-pos-n ball-dir-n)
             ball-dir-n))))
 
-(define modern-12-char
-  (make-char-factory modern 12))
 (define char-height
-  (texture-height (modern-12-char #\a)))
+  (texture-height tex:sos/font:0))
 (define char-width
-  (texture-width (modern-12-char #\a)))
+  (texture-width tex:sos/font:0))
 (define string->sprites
-  (make-string-factory modern-12-char))
+  (make-string-factory spr:sos/font))
 
 (require racket/generator)
 (define (game-start dir-seq)

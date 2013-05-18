@@ -1,173 +1,173 @@
 * apse - Animated Paletted Sprite Editor
-
-This is a raster graphics editor designed for precise designs for the
-Get Bonus Infinite Entertainment System. It uses a graphics system
-designed like the Nintendo Entertainment System.
-
+  
+  This is a raster graphics editor designed for precise designs for the
+  Get Bonus Infinite Entertainment System. It uses a graphics system
+  designed like the Nintendo Entertainment System.
+  
 * Data Concepts
-
-A sprite is a sequence of NxM images, an NxM height map, and a set of
-palettes references.
-
-An image is a NxM matrix of values from [0,9]. 0 always designates
-total transparency. 1 always designates total blackness. [2,9]
-designate a color from a 8-color palette.
-
-A height map is a NxM matrix of values from 0-8, representing the
-height of the image.
-
-A palette reference names a palette.
-
-A palette is a sequence of 8 32-bit colors from RGBA color space.
-
+  
+  A sprite is a sequence of NxM images, an NxM height map, and a set of
+  palettes references.
+  
+  An image is a NxM matrix of values from [0,9]. 0 always designates
+  total transparency. 1 always designates total blackness. [2,9]
+  designate a color from a 8-color palette.
+  
+  A height map is a NxM matrix of values from 0-8, representing the
+  height of the image.
+  
+  A palette reference names a palette.
+  
+  A palette is a sequence of 8 32-bit colors from RGBA color space.
+  
 * Questions
-
-Q: Is 8 too small of a color palette?
-
-A: My gut says no because the NES has basically 12 per sprite and the
-SNES had 16 per sprite. But I assume (without much evidence) that most
-of those were used for shading (like a light version and a dark
-version), so it was really 8 in the SNES. Given that I'll have more
-powerful and dynamic shading, I don't think this is a big deal.
-
-Q: Would it be a good idea to have a concept of a "mega palette" which
-has all the colors a given game would use? For example, all the brick
-areas in a platformer might use 14 different colors, but each only 8
-at a time. It would be nice to come up with a new 14 color
-mega-palette and automatically get all the variations of the bricks.
-
-A: This is a good idea, but I'm not sure the best way to do it. One
-idea is to have "linked palettes" where a palette specification can
-refer to another one. That is:
-
-A palette is a vector of palette colors. A palette color is either a
-32-bit color or a reference to another palette and its color. Palettes
-with at least 8 colors are valid for an image.
-
-This would allow a consistent specification of all the palettes for a
-given game, but it would not be helpful for creating a new
-"mega-palette" and getting all the sprites that use the old one
-duplicated. One idea to do that is to have a unit-like system where
-sprites/palettes would have input/output signatures. That is:
-
-mega-man-sprite@ requires mega-man-pal^
-blue-mm-palette@ provides mega-man-pal^
-red-mm-palette@ provides mega-man-pal^
-
-brick-sprite@ requires brick-pal^
-default-brick-pal@ requires mario-pal^ and provides brick-pal^
-stair-sprite@ requires stair-pal^
-default-stair-pal@ requires mario-pal^ and provides stair-pal^
-mario-pal@ provides mario-pal^
-
-Using these specifications, apse could display all the different
-palettes valid for the sprite. (Essentially by solving a Prolog query
-to synthesize the palettes.) Editing and creating such palettes would
-be complicated though.
-
+  
+  Q: Is 8 too small of a color palette?
+  
+  A: My gut says no because the NES has basically 12 per sprite and the
+  SNES had 16 per sprite. But I assume (without much evidence) that most
+  of those were used for shading (like a light version and a dark
+  version), so it was really 8 in the SNES. Given that I'll have more
+  powerful and dynamic shading, I don't think this is a big deal.
+  
+  Q: Would it be a good idea to have a concept of a "mega palette" which
+  has all the colors a given game would use? For example, all the brick
+  areas in a platformer might use 14 different colors, but each only 8
+  at a time. It would be nice to come up with a new 14 color
+  mega-palette and automatically get all the variations of the bricks.
+  
+  A: This is a good idea, but I'm not sure the best way to do it. One
+  idea is to have "linked palettes" where a palette specification can
+  refer to another one. That is:
+  
+  A palette is a vector of palette colors. A palette color is either a
+  32-bit color or a reference to another palette and its color. Palettes
+  with at least 8 colors are valid for an image.
+  
+  This would allow a consistent specification of all the palettes for a
+  given game, but it would not be helpful for creating a new
+  "mega-palette" and getting all the sprites that use the old one
+  duplicated. One idea to do that is to have a unit-like system where
+  sprites/palettes would have input/output signatures. That is:
+  
+  mega-man-sprite@ requires mega-man-pal^
+  blue-mm-palette@ provides mega-man-pal^
+  red-mm-palette@ provides mega-man-pal^
+  
+  brick-sprite@ requires brick-pal^
+  default-brick-pal@ requires mario-pal^ and provides brick-pal^
+  stair-sprite@ requires stair-pal^
+  default-stair-pal@ requires mario-pal^ and provides stair-pal^
+  mario-pal@ provides mario-pal^
+  
+  Using these specifications, apse could display all the different
+  palettes valid for the sprite. (Essentially by solving a Prolog query
+  to synthesize the palettes.) Editing and creating such palettes would
+  be complicated though.
+  
 * Data Layout
-
-apse does not work on individual files. Instead, it opens a database
-laid out as follows:
-
+  
+  apse does not work on individual files. Instead, it opens a database
+  laid out as follows:
+  
 * root                  # name of database
-\ last.rktd             # edit state
-\ sprites
+  \ last.rktd             # edit state
+  \ sprites
   \ <a>
-    \ <b>
-      \ <c>.spr         # data for sprite "a/b/c"
-       | meta           # width and height information
-       | 0.img
-       | ...            # image sequence
-       | n.img         
-       | height.map     # height map (optionally auto-generated)
-       | normal.map     # normal map (auto-generated)
-       | palettes       # list of palette strings
-\ palettes
+  \ <b>
+  \ <c>.spr         # data for sprite "a/b/c"
+  | meta           # width and height information
+  | 0.img
+  | ...            # image sequence
+  | n.img
+  | height.map     # height map (optionally auto-generated)
+  | normal.map     # normal map (auto-generated)
+  | palettes       # list of palette strings
+  \ palettes
   \ <a>
-    \ <b>
-      | <c>.pal         # data for palette "a/b/c"
-
-We assume the database is (or is part of) a git repository.
-
+  \ <b>
+  | <c>.pal         # data for palette "a/b/c"
+  
+  We assume the database is (or is part of) a git repository.
+  
 * Data Notes
-
-A height map can be automatically generated by overlaying all the
-non-0 pixels from the image sequence of a sprite, then applying a
-gradient from the inside to the outside. apse does this automatically
-when you change any image. You can modify the normal map manually, at
-which point apse won't automatically update it, but will just warn you
-that it is out-of-date.
-
-A height map is converted into a normal map for lighting effects. This
-is done automatically when an out-of-date normal map (relative to the
-height map) is detected.
-
+  
+  A height map can be automatically generated by overlaying all the
+  non-0 pixels from the image sequence of a sprite, then applying a
+  gradient from the inside to the outside. apse does this automatically
+  when you change any image. You can modify the normal map manually, at
+  which point apse won't automatically update it, but will just warn you
+  that it is out-of-date.
+  
+  A height map is converted into a normal map for lighting effects. This
+  is done automatically when an out-of-date normal map (relative to the
+  height map) is detected.
+  
 * Interface
-
-The interface is primarily keyboard driven using an Emacs/Vim style
-system. It looks like this:
-
-+--------------------------------------------------------------------+
-| <Image Index> of <Image Max>    | <Sprite Name>                    |
-+---------------------------------+----------------------------------+
-| <Zoomed>                        | <Palette 1>      | <Palette Info>|
-|                                 | <Palette 2>      | 2: <color>    |
-|                                 | <Active Palette> | ...           |
-|                                 | <Palette 4>      | 9: <color>    |
-|                                 | <Palette 5>      |               |
-|  cursor -> *                    +------------------+---------------+
-|             (x,y)               | <Scale 1>        | <Scale 2>     |
-|                                 |                  |               |
-|                                 |                  |               |
-|                                 |                  +---------------+
-|                                 |                  | <Actual>      |
-|                                 |                  |               |
-|                                 +----------------------------------+
-|                                 | <Animated Sequence>              |
-|                                 |                                  |
-|                                 |                                  |
-|                                 |                                  |
-|                                 |                                  |
-|                                 |                                  |
-|                                 |                                  |
-+--------------------------------------------------------------------+
-
-| Status | Key         | Command                                           |
-|--------+-------------+---------------------------------------------------|
-| DONE   | Arrows keys | Move around the cursor                            |
-| DONE   | 12345 67890 | insert the appropriate color                      |
-| DONE   | S-color     | change the current color                          |
-| DONE   | Space       | insert current color                              |
-| DONE   | S-up        | previous palette                                  |
-| DONE   | S-down      | next palette                                      |
-| DONE   | r           | remove current palette from sprite                |
-| DONE   | a           | add palette (new name = new palette)              |
-| DONE   | e           | edit current color                                |
-| DONE   | t           | new image of sprite (copied from current)         |
-| DONE   | n           | new image of sprite (empty)                       |
-| DONE   | [           | previous image of sprite                          |
-| DONE   | S-left      | previous image of sprite                          |
-| DONE   | ]           | next image of sprite                              |
-| DONE   | S-right     | next image of sprite                              |
-| fs?    | w           | delete image from sprite                          |
-| DONE   | i           | invert background                                 |
-|        | h           | switch to height map of sprite                    |
-| DONE   | c           | Hide cursor                                       |
-| DONE   | g           | Hide grid                                         |
-| DONE   | s           | commit changes                                    |
-| DONE   | z           | undo (with infinite undo stack, not saved though) |
-|        | l           | turn on/off lighting in animation                 |
-| fs?    | y           | copy sprite                                       |
-| fs?    | d           | delete sprite                                     |
-| fs?    | m           | rename sprite                                     |
-| DONE   | f           | change to a different sprite                      |
-| DONE   | q           | quit                                              |
-| DONE   | Esc         | quit                                              |
-
+  
+  The interface is primarily keyboard driven using an Emacs/Vim style
+  system. It looks like this:
+  
+  +--------------------------------------------------------------------+
+  | <Image Index> of <Image Max>    | <Sprite Name>                    |
+  +---------------------------------+----------------------------------+
+  | <Zoomed>                        | <Palette 1>      | <Palette Info>|
+  |                                 | <Palette 2>      | 2: <color>    |
+  |                                 | <Active Palette> | ...           |
+  |                                 | <Palette 4>      | 9: <color>    |
+  |                                 | <Palette 5>      |               |
+  |  cursor -> *                    +------------------+---------------+
+  |             (x,y)               | <Scale 1>        | <Scale 2>     |
+  |                                 |                  |               |
+  |                                 |                  |               |
+  |                                 |                  +---------------+
+  |                                 |                  | <Actual>      |
+  |                                 |                  |               |
+  |                                 +----------------------------------+
+  |                                 | <Animated Sequence>              |
+  |                                 |                                  |
+  |                                 |                                  |
+  |                                 |                                  |
+  |                                 |                                  |
+  |                                 |                                  |
+  |                                 |                                  |
+  +--------------------------------------------------------------------+
+  
+  | Status | Key         | Command                                           |
+  |--------+-------------+---------------------------------------------------|
+  | DONE   | Arrows keys | Move around the cursor                            |
+  | DONE   | 12345 67890 | insert the appropriate color                      |
+  | DONE   | S-color     | change the current color                          |
+  | DONE   | Space       | insert current color                              |
+  | DONE   | S-up        | previous palette                                  |
+  | DONE   | S-down      | next palette                                      |
+  | DONE   | r           | remove current palette from sprite                |
+  | DONE   | a           | add palette (new name = new palette)              |
+  | DONE   | e           | edit current color                                |
+  | DONE   | t           | new image of sprite (copied from current)         |
+  | DONE   | n           | new image of sprite (empty)                       |
+  | DONE   | [           | previous image of sprite                          |
+  | DONE   | S-left      | previous image of sprite                          |
+  | DONE   | ]           | next image of sprite                              |
+  | DONE   | S-right     | next image of sprite                              |
+  | fs?    | w           | delete image from sprite                          |
+  | DONE   | i           | invert background                                 |
+  |        | h           | switch to height map of sprite                    |
+  | DONE   | c           | Hide cursor                                       |
+  | DONE   | g           | Hide grid                                         |
+  | DONE   | s           | commit changes                                    |
+  | DONE   | z           | undo (with infinite undo stack, not saved though) |
+  |        | l           | turn on/off lighting in animation                 |
+  | fs?    | y           | copy sprite                                       |
+  | fs?    | d           | delete sprite                                     |
+  | fs?    | m           | rename sprite                                     |
+  | DONE   | f           | change to a different sprite                      |
+  | DONE   | q           | quit                                              |
+  | DONE   | Esc         | quit                                              |
+  
 * Tasks
 ** DONE Make a converter from a PNG to this format
-    (if it is allowed, i.e. if it has a palette.)
+   (if it is allowed, i.e. if it has a palette.)
 ** DONE Make the basic interface (sans animation & lighting)
    CLOSED: [2013-05-11 Sat 21:47]
 ** DONE make some good palettes
@@ -192,20 +192,21 @@ system. It looks like this:
    CLOSED: [2013-05-12 Sun 10:51]
 ** DONE make a texture atlas/palette output
    CLOSED: [2013-05-12 Sun 11:42]
-   - encode 4 pixels into one 32-bit pixel
-   NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
-
-   (2^n)x(2^m) = 2^(n+m) if n & m > 0, then this is divisible by 4:
-   2^(a+b+2) / 4 = 2^(a+b)
-
    - encode n palettes as nx16 32-bit png
      
      we need 16 because there are really 10 colors and it would be a
      pain in the gpu to do an if for 0 and 1, but I could try that.
-
-** TODO connect to engine
-   images were written in ARGB order at w/2 x h/2   
-** TODO Make apse purely functional and have better undo system 
+     
+** DONE connect to engine
+   CLOSED: [2013-05-18 Sat 14:48]
+** TODO optimize texture storage
+   - encode 4 pixels into one 32-bit pixel
+     NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
+     
+     (2^n)x(2^m) = 2^(n+m) if n & m > 0, then this is divisible by 4:
+     2^(a+b+2) / 4 = 2^(a+b)
+     
+** TODO Make apse purely functional and have better undo system
    (where it goes back to earlier system states)
 ** DONE Add animation
 ** TODO Add height/normal maps & lighting

@@ -1,10 +1,14 @@
 #version 130
 
-uniform sampler2D TextureAtlas; 
-uniform int TextureAtlasSize;
+uniform sampler2D SpriteAtlasTex; 
+uniform int SpriteAtlasSize;
+uniform sampler2D PaletteAtlasTex;
+uniform int PaletteAtlasCount;
+uniform int PaletteAtlasDepth;
 
 in vec4 Color;
 in vec2 TexCoord;
+in float Palette;
 out vec4 out_Color;
 
 float blurry_mess ( float v ) {
@@ -36,8 +40,16 @@ void main(void)
 
   vec2 TexCoord_uv = 
     vec2(clampit(TexCoord.x), clampit(TexCoord.y))
-    / TextureAtlasSize;
+    / SpriteAtlasSize;
 
+  vec4 SpriteColor = texture2D(SpriteAtlasTex, TexCoord_uv);
+
+  float PaletteOffset = SpriteColor.r * 255;
+  vec2 PalCoord_uv =
+    vec2( PaletteOffset / PaletteAtlasDepth,
+          Palette / PaletteAtlasCount );
+  vec4 PaletteColor = texture2D(PaletteAtlasTex, PalCoord_uv );
+  
   // XXX Do proper blending, allow color to set the alpha, etcs
-  out_Color = Color + texture2D(TextureAtlas, TexCoord_uv);
+  out_Color = Color + PaletteColor;
 }

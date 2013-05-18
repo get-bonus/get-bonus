@@ -33,14 +33,12 @@
 (define (sequence-not-empty? s)
   (for/or ([e s]) #t))
 
-(define modern-12-char
-  (make-char-factory modern 12))
 (define char-height
-  (texture-height (modern-12-char #\a)))
+  (texture-height tex:sos/font:0))
 (define char-width
-  (texture-width (modern-12-char #\a)))
+  (texture-width tex:sos/font:0))
 (define string->sprites
-  (make-string-factory modern-12-char))
+  (make-string-factory spr:sos/font))
 
 (define-runtime-path resource-path "r")
 (define-syntax-rule (define-sound id f)
@@ -87,6 +85,8 @@
                        [set-n (in-range 4)]
                        [frame-n (in-range 2)])
              (list ghost-n set-n frame-n
+                   #'tex:sos/fauna/snake:0
+                   #;
                    (format-id stx "maze/ghost/~a/~a/~a"
                               ghost-n set-n frame-n)))])
        (syntax/loc stx
@@ -118,6 +118,8 @@
    #:d (* scale -.5) (* scale -.5)
    (rectangle
     (* scale 0.5) (* scale 0.5)
+    tex:sos/character/cat:0
+    #;
     (match (rate 3 10 n)
       [0 maze/player/0]
       [1 maze/player/1]

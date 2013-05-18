@@ -3,6 +3,11 @@ all: jake
 .PHONY: jake
 
 JAKEFILE=Makefile.rkt
+APSE=tools/apse/main.rkt
+
+apse:
+	raco make ${APSE}
+	racket -t ${APSE} --
 
 jake:
 	raco make ${JAKEFILE}

@@ -21,14 +21,14 @@
   (sprite-info (current-dx) (current-dy)
                hw hh
                (current-r) (current-g) (current-b) (current-a)
-               tex
+               tex 0 ;; xxx set palette
                (current-mx) (current-my)
                (current-theta)))
 (define (sprite* r g b a tex)
   (sprite-info (current-dx) (current-dy)
                (* 0.5 (texture-width tex)) (* 0.5 (texture-height tex))
                r g b a
-               tex
+               tex 0 ;; xxx set palette
                (current-mx) (current-my)
                (current-theta)))
 (define (sprite tex)

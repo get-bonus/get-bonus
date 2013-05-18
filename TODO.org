@@ -1,4 +1,9 @@
 * General TODO items
+** TODO rescale menu system because fonts are bigger now
+** TODO enable the ability to specify palettes
+** TODO use palettes, plus animation in maze
+** TODO find a better set of sprites for tennis
+
 ** TODO write more tests
     582 ./gb/lib/godel.rkt
      60 ./gb/physics/cd-narrow.rkt

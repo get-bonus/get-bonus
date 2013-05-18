@@ -67,7 +67,7 @@
   (check-equal? (zo->file (build-path here "compiled/Makefile_rkt.zo"))
                 (build-path "Makefile.rkt")))
 
-(define (zo->src some-pth)  
+(define (zo->src some-pth)
   (match some-pth
     [(app path-only
           (and (? path-string?)
@@ -87,13 +87,13 @@
                 (build-path "/")))
 
 (define ->path
-   (match-lambda
-    [(? path? x)
-     x]
-    [(? path-string? x)
-     (string->path x)]
-    [(? bytes? x)
-     (bytes->path x)]))
+  (match-lambda
+   [(? path? x)
+    x]
+   [(? path-string? x)
+    (string->path x)]
+   [(? bytes? x)
+    (bytes->path x)]))
 (module+ test
   (check-equal? (->path (build-path "/"))
                 (build-path "/"))
@@ -103,11 +103,8 @@
                 (build-path "/")))
 
 (jake
- (define r-pth "r")
- (define r.free-pth "r.free")
-
  (rule "all"
-       (list "r.free.png" "r.png" "gb/graphics/r.rkt"))
+       (list "pal.png" "r.png" "gb/graphics/r.rkt"))
 
  (rule (and (app zo->src (and (not #f) src))
             (app zo->file file)
@@ -117,66 +114,13 @@
              racket-pth)
        (system* raco-pth "make" (build-path src file)))
 
- (define FONT-SIZES (list 7 8 10 12))
- (define FONT-FAMILIES (list "roman" "modern"))
- (define FONT-DIRS
-   (for*/list ([size (in-list FONT-SIZES)]
-               [family (in-list FONT-FAMILIES)])
-     (build-path r-pth "fonts" family (number->string size))))
+ (define DB-IMGS
+   (find-files (λ (x) (equal? #"img" (filename-extension x))) "db"))
 
- (rule (app (compose (λ (x) (map path->string x)) explode-path)
-            (list (== r-pth) "fonts" family size _))
-       (list (compiled "tools/make-font.rkt"))
-       (system* racket-pth "-t" "tools/make-font.rkt" r-pth family size))
-
- (define FONT-FILES
-   (for*/list ([dir (in-list FONT-DIRS)]
-               [letter (in-range CHAR-START (add1 CHAR-END))])
-     (build-path dir (format "~a.png" letter))))
-
- (define r.src-pth
-   "r.src")
-
- (define SPRITE-DEFS
-   (find-files (λ (x) (equal? #"rkt" (filename-extension x))) r.src-pth))
- (define SPRITE-LISTS
-   (map (λ (x) (path-replace-suffix x #".rktd")) SPRITE-DEFS))
-
- (rule (and (app (compose (λ (x) (map path->string x)) explode-path)
-                 (list (== r.src-pth) 
-                       inner ...
-                       (app filename-extension #"rktd")))
-            sprite-list)
-       (list (compiled "tools/sprite-digest.rkt")
-             (compiled (path-replace-suffix sprite-list #".rkt"))
-             (path-replace-suffix sprite-list #""))
+ (rule (or "pal.png" "r.png" "gb/graphics/r.rkt")
+       (list (compiled "tools/apse/compile.rkt")
+             DB-IMGS)
        (system* racket-pth
                 "-t"
-                (path-replace-suffix sprite-list #".rkt")
-                "--"
-                (path-replace-suffix sprite-list #"")
-                sprite-list
-                r-pth)
-       (when (member "copyrighted" inner)
-         (for ([some-sprite (in-list (file->list sprite-list))])
-           (system* racket-pth
-                    "-t"
-                    "tools/sprite-digest.rkt"
-                    "--"
-                    (build-path r-pth some-sprite)
-                    (build-path r.free-pth some-sprite))))) 
-
- (rule (or "r.free.png" "r.png" "gb/graphics/r.rkt")
-       (list (compiled "tools/texture-atlas.rkt")
-             FONT-FILES
-             SPRITE-LISTS)
-       (apply system* racket-pth
-              "-t"
-              "tools/texture-atlas.rkt"
-              "r.free.png" "r.png" "gb/graphics/r.rkt"
-              r-pth r.free-pth
-              (map (λ (x)
-                     (regexp-replace #rx"^r/" (path->string (->path x)) ""))
-                   (flatten (list FONT-FILES
-                                  (map file->list
-                                       SPRITE-LISTS)))))))
+                "tools/apse/compile.rkt"
+                "db" "r.png" "pal.png" "gb/graphics/r.rkt")))

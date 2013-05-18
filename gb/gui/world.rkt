@@ -78,7 +78,7 @@
         (sound-destroy! st))))
 
 (define-runtime-path texture-atlas-path "../../r.png")
-(define-runtime-path backup-texture-atlas-path "../../r.free.png")
+(define-runtime-path palette-atlas-path "../../pal.png")
 (define-runtime-path performance-log-path "../../log")
 
 (define current-frame
@@ -112,14 +112,20 @@
                 (cond
                   [(file-exists? texture-atlas-path)
                    texture-atlas-path]
-                  [(file-exists? backup-texture-atlas-path)
-                   backup-texture-atlas-path]
                   [else
                    (error 'world
-                          "No available texture atlas, either ~v or ~v is expected"
-                          texture-atlas-path
-                          backup-texture-atlas-path)])
-                texture-atlas-size
+                          "No available texture atlas; ~v is missing"
+                          texture-atlas-path)])
+                sprite-atlas-size
+                (cond
+                  [(file-exists? palette-atlas-path)
+                   palette-atlas-path]
+                  [else
+                   (error 'world
+                          "No available palette atlas; ~v is missing"
+                          palette-atlas-path)])
+                palette-atlas-count
+                palette-atlas-depth
                 (* 1.0 crt-width)
                 (* 1.0 crt-height))))
        (when last-sprites

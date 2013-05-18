@@ -5,12 +5,14 @@ in vec4 in_Color;
 in vec4 in_TexCoord;
 in vec3 in_Transforms;
 in vec2 in_VertexSpecification;
+in float in_Palette;
 
 uniform float ViewportWidth;
 uniform float ViewportHeight;
 
 out vec4 Color;
 out vec2 TexCoord;
+out float Palette;
 
 mat4 glRotate( float angle, float x, float y, float z ) {
   float c = cos(angle);
@@ -87,4 +89,5 @@ void main(void)
   Color = mid_Color;
   gl_Position = vcorner;
   TexCoord = tcorner;
+  Palette = in_Palette;
 }

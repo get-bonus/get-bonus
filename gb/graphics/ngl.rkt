@@ -26,6 +26,7 @@
   ;; most things with .0 in them are really double flonums in Racket.
   [make-draw
    (-> path-string? fixnum?
+       path-string? fixnum? fixnum?
        flonum? flonum?
        (-> sprite-tree/c void))]
   (struct
@@ -39,11 +40,12 @@
     [b flonum?]
     [a flonum?]
     [tex texture?]
+    [pal palette?]
     [mx flonum?]
     [my flonum?]
     [theta flonum?]))))
 
-(struct sprite-info (x y hw hh r g b a tex mx my theta) #:transparent)
+(struct sprite-info (x y hw hh r g b a tex pal mx my theta) #:transparent)
 
 (define (make-draw . args)
   (cond
@@ -56,14 +58,18 @@
 (define-shader-source VertexShader "ngl.vertex.glsl")
 (define-shader-source FragmentShader "ngl.fragment.glsl")
 
-(define (make-draw/300 texture-atlas-path texture-atlas-size
+(define (make-draw/300 sprite-atlas-path
+                       sprite-atlas-size
+                       palette-atlas-path 
+                       palette-atlas-count palette-atlas-depth
                        width height)
   (define SpriteData-components
-    (+ 4 4 4 3 2))
+    (+ 4 4 4 1 3 2))
   (match-define
    (list SpriteData-X SpriteData-Y SpriteData-HW SpriteData-HH
          SpriteData-R SpriteData-G SpriteData-B SpriteData-A
          SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
+         SpriteData-Pal
          SpriteData-MX SpriteData-MY SpriteData-ROT
          SpriteData-Horiz SpriteData-Vert)
    (build-list SpriteData-components identity))
@@ -72,7 +78,7 @@
   (define SpriteData #f)
 
   (define (install-object! i o)
-    (match-define (sprite-info x y w h r g b a tex mx my theta) o)
+    (match-define (sprite-info x y w h r g b a tex pal mx my theta) o)
     ;; XXX Would it be faster to do a vector-copy! ?
     (define-syntax-rule
       (install! j [SpriteData-X x] ...)
@@ -99,6 +105,7 @@
                   [SpriteData-TY (f32vector-ref tex 1)]
                   [SpriteData-TW (f32vector-ref tex 2)]
                   [SpriteData-TH (f32vector-ref tex 3)]
+                  [SpriteData-Pal (exact->inexact pal)]
                   [SpriteData-MX mx]
                   [SpriteData-MY my]
                   [SpriteData-ROT theta]
@@ -118,6 +125,7 @@
   (glBindAttribLocation ProgramId 2 "in_TexCoord")
   (glBindAttribLocation ProgramId 3 "in_Transforms")
   (glBindAttribLocation ProgramId 4 "in_VertexSpecification")
+  (glBindAttribLocation ProgramId 5 "in_Palette")
 
   (define&compile-shader VertexShaderId GL_VERTEX_SHADER
     ProgramId VertexShader)
@@ -126,7 +134,7 @@
 
   (define DrawType GL_TRIANGLES)
   (define DrawnMult 6)
-  (define AttributeCount 5)
+  (define AttributeCount 6)
 
   (define *initialize-count*
     (* 2 512))
@@ -150,16 +158,27 @@
       [o
        1]))
 
-  (define TextureAtlasId
-    (load-texture texture-atlas-path
+  (define SpriteAtlasId
+    (load-texture sprite-atlas-path
+                  #:mipmap #f))
+  (define PaletteAtlasId
+    (load-texture palette-atlas-path
                   #:mipmap #f))
 
   (glLinkProgram ProgramId)
   (print-shader-log glGetProgramInfoLog 'Program ProgramId)
 
   (glUseProgram ProgramId)
-  (glUniform1i (glGetUniformLocation ProgramId "TextureAtlasSize")
-               texture-atlas-size)
+  (glUniform1i (glGetUniformLocation ProgramId "SpriteAtlasTex")
+               0)
+  (glUniform1i (glGetUniformLocation ProgramId "SpriteAtlasSize")
+               sprite-atlas-size)
+  (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasTex")
+               1)
+  (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasCount")
+               palette-atlas-count)
+  (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasDepth")
+               palette-atlas-depth)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
                width)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
@@ -203,7 +222,8 @@
     [1 SpriteData-R SpriteData-A]
     [2 SpriteData-TX SpriteData-TH]
     [3 SpriteData-MX SpriteData-ROT]
-    [4 SpriteData-Horiz SpriteData-Vert])
+    [4 SpriteData-Horiz SpriteData-Vert]
+    [5 SpriteData-Pal SpriteData-Pal])
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
@@ -214,9 +234,11 @@
 
     (for ([i (in-range AttributeCount)])
       (glEnableVertexAttribArray i))
-
-    (glBindTexture GL_TEXTURE_2D
-                   TextureAtlasId)
+    
+    (glActiveTexture GL_TEXTURE0)
+    (glBindTexture GL_TEXTURE_2D SpriteAtlasId)
+    (glActiveTexture GL_TEXTURE1)
+    (glBindTexture GL_TEXTURE_2D PaletteAtlasId)
 
     (glBindBuffer GL_ARRAY_BUFFER VboId)
 
@@ -303,6 +325,9 @@
 
     (glPopAttrib)
 
+    ;; GL_TEXTURE1 is active
+    (glBindTexture GL_TEXTURE_2D 0)
+    (glActiveTexture GL_TEXTURE0)
     (glBindTexture GL_TEXTURE_2D 0)
 
     (for ([i (in-range AttributeCount)])
