@@ -77,13 +77,15 @@
    http://oryxdesignlab.com/ultimate
 
    http://forums.tigsource.com/index.php?topic=8970.0
-** TODO Change sprites/textures to use lower color depth
+** DONE Change sprites/textures to use lower color depth
+   CLOSED: [2013-05-18 Sat 10:03]
    Particularly if I go with 1-bit textures :)
 ** TODO Look at Texture Packer's options for artifacts
    http://www.codeandweb.com/texturepacker/documentation#layout
 ** TODO look into google play services
    https://developers.google.com/games/services/web/gettingstarted
 ** TODO find a way to let the games inform which textures are included in atlas
+** TODO maze - sometimes the player can be put into a wall and can't move
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels

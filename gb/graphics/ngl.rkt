@@ -193,6 +193,8 @@
                 SpriteData-components)))
 
       ;; Reload all data every frame
+
+      ;; xxx it would be nice to get more consistency by counting twice
       (define this-count (install-objects! objects))
       (performance-log! this-count)
       (set! SpriteData-count:new this-count)

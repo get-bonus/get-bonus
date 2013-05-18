@@ -260,8 +260,10 @@
     (define-values (bot-offset bot-os) (draw-menu:bot st cm))
     (when (< (- crt-height top-offset) bot-offset)
       (error 'menu "Top and bot overlap"))
-    (define-values (left-offset left-os) (draw-menu:list top-offset bot-offset st cm))
-    (define right-os (draw-menu:info top-offset bot-offset left-offset st cm))
+    (define-values (left-offset left-os)
+      (draw-menu:list top-offset bot-offset st cm))
+    (define right-os
+      (draw-menu:info top-offset bot-offset left-offset st cm))
 
     (os/write
      (list

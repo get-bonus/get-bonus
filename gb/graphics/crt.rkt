@@ -5,6 +5,8 @@
          gb/graphics/gl-util
          racket/match
          opengl)
+(module+ test
+  (require rackunit))
 
 (define-shader-source fragment-source "crt.fragment.glsl")
 (define-shader-source vertex-source "crt.vertex.glsl")
@@ -14,10 +16,11 @@
 ;; crt-scale 27, but this makes it so that we have an odd number in
 ;; various places. So, we'll use crt-scale 28, or 448x252. This makes
 ;; the GBIES basically a "widescreen" SNES.
-(define crt-scale 28)
-;; xxx another option might to make it 32 or 512x288 because then
-;; everything is divisible by 8, 16, and 32, which are common sprite
-;; sizes
+;;
+;; But, it is good to have the resolution always divisible by 8, 16,
+;; and 32, which are common sprite sizes. (Just 16 would probably be
+;; okay, but that is smaller than the SNES in height.)
+(define crt-scale 32)
 (define crt-width (* crt-scale 16))
 (define crt-height (* crt-scale 9))
 
@@ -26,17 +29,81 @@
 ;; shader stuff based on
 ;; :bsnes_v085-source/bsnes/ruby/video/opengl.hpp
 
+;; We want to find how to scale the CRT to the real screen, but it is
+;; important to only use powers of two in the decimals and only up to
+;; 2^5
+(define (quotient* x y)
+  (define-values (q r) (quotient/remainder x y))
+  (define (recur r i max-i)
+    (cond
+      [(= i max-i)
+       0]
+      [else
+       (define d (expt 2 (* -1 i)))
+       (define dy (* d y))
+       (cond
+         [(> dy r)
+          (recur r (add1 i) max-i)]
+         [else
+          (+ d (recur (- r dy) (add1 i) max-i))])]))
+  (+ q (recur r 1 5)))
+(module+ test
+  (define-syntax-rule (check-1q name x y e-r)
+    (begin
+      (define a-r (quotient* x y))
+      (check-= a-r e-r 0
+               (format "~a: ~a vs ~a"
+                       name
+                       (exact->inexact a-r)
+                       (exact->inexact e-r)))))
+  (define-syntax-rule (check-q* name (w h) (e-ws e-hs))
+    (begin
+      (check-1q (format "~a width(~a)" name w) w crt-width e-ws)
+      (check-1q (format "~a height(~a)" name h) h crt-height e-hs)))
+
+  (define ws 1)
+  (define hs 1)
+
+  (check-q* "PS Vita"
+            (960 544)
+            ((+ 1 1/2 1/4 1/8)
+             (+ 1 1/2 1/4 1/8)))
+  (check-q* "iPhone 4"
+            (960 640) 
+            ((+ 1 1/2 1/4 1/8)
+             (+ 2 1/8 1/16)))
+  (check-q* "Normal laptop"
+            (1024 640)
+            (2
+             (+ 2 1/8 1/16)))
+  (check-q* "iPhone 5" 
+            (1136 640)
+            ((+ 2 1/8 1/16)
+             (+ 2 1/8 1/16)))
+  (check-q* "720p" 
+            (1280 720)
+            ((+ 2 1/2)
+             (+ 2 1/2)))
+  (check-q* "1080p"
+            (1920 1080)
+            ((+ 3 1/2 1/4) 
+             (+ 3 1/2 1/4)))
+  (check-q* "MacBook Pro Retina, Arch"
+            (1440 900)
+            ((+ 2 1/2 1/4 1/16)
+             (+ 3 1/8))))
+
 (define (make-draw-on-crt actual-screen-width actual-screen-height)
   (define texture-width crt-width)
   (define texture-height crt-height)
 
   (define scale
     (* 1.
-       (min (quotient actual-screen-width crt-width)
-            (quotient actual-screen-height crt-height))))
+       (min (quotient* actual-screen-width crt-width)
+            (quotient* actual-screen-height crt-height))))
 
   (define screen-width (* scale crt-width))
-  (define screen-height (* scale crt-height))
+  (define screen-height (* scale crt-height))  
 
   (define inset-left (/ (- actual-screen-width screen-width) 2.))
   (define inset-right (+ inset-left screen-width))
