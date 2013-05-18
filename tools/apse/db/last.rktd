@@ -1,1 +1,1 @@
-"fonts/default"
+"sos/building/wall/-d--"
