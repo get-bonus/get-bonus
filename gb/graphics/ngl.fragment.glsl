@@ -37,7 +37,6 @@ float clampit ( float v ) {
 void main(void)
 {
   // XXX Would it be faster to use texelFetch with integer coords?
-
   vec2 TexCoord_uv = 
     vec2(clampit(TexCoord.x), clampit(TexCoord.y))
     / SpriteAtlasSize;

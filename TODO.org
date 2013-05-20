@@ -3,6 +3,16 @@
 ** TODO enable the ability to specify palettes
 ** TODO use palettes, plus animation in maze
 ** TODO find a better set of sprites for tennis
+** TODO apse - optimize texture storage
+   - encode 4 pixels into one 32-bit pixel
+     NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
+     
+     (2^n)x(2^m) = 2^(n+m) if n & m > 0, then this is divisible by 4:
+     2^(a+b+2) / 4 = 2^(a+b)
+     
+** TODO apse - Make apse purely functional and have better undo system
+   (where it goes back to earlier system states)
+** TODO apse - Add height/normal maps & lighting
 
 ** TODO write more tests
     582 ./gb/lib/godel.rkt

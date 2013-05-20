@@ -199,14 +199,4 @@
      
 ** DONE connect to engine
    CLOSED: [2013-05-18 Sat 14:48]
-** TODO optimize texture storage
-   - encode 4 pixels into one 32-bit pixel
-     NxM sprite = NxMx1 bytes but we need it to be divisible by 4.
-     
-     (2^n)x(2^m) = 2^(n+m) if n & m > 0, then this is divisible by 4:
-     2^(a+b+2) / 4 = 2^(a+b)
-     
-** TODO Make apse purely functional and have better undo system
-   (where it goes back to earlier system states)
 ** DONE Add animation
-** TODO Add height/normal maps & lighting

@@ -101,6 +101,7 @@
                   [SpriteData-G g]
                   [SpriteData-B b]
                   [SpriteData-A a]
+                  ;; xxx can i make this a sampler2d?
                   [SpriteData-TX (f32vector-ref tex 0)]
                   [SpriteData-TY (f32vector-ref tex 1)]
                   [SpriteData-TW (f32vector-ref tex 2)]
@@ -111,11 +112,17 @@
                   [SpriteData-ROT theta]
                   [SpriteData-Horiz Horiz]
                   [SpriteData-Vert Vert]))
+      ;; A
       (point-install! -1.0 +1.0 0)
+      ;; B
       (point-install! +1.0 +1.0 1)
+      ;; C
       (point-install! -1.0 -1.0 2)
+      ;; C
       (point-install! -1.0 -1.0 3)
+      ;; B
       (point-install! +1.0 +1.0 4)
+      ;; D
       (point-install! +1.0 -1.0 5)))
 
   ;; Create Shaders
@@ -268,6 +275,7 @@
 
     (performance-log! SpriteData-count)
 
+    ;; xxx use arrays of cstructs
     (set! SpriteData
           (make-cvector*
            (glMapBufferRange
