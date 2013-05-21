@@ -1,6 +1,6 @@
 #lang racket/base
 (require gb/graphics/ngl
-         gb/graphics/texture-atlas-lib
+         gb/graphics/r
          racket/contract
          (for-syntax racket/base
                      syntax/parse))
@@ -15,26 +15,27 @@
 (define current-b (make-parameter 0.0))
 (define current-a (make-parameter 0.0))
 
-(define none (texture 0.0 0.0 0.0 0.0))
-
-(define (rectangle hw hh [tex none])
+(define (rectangle hw hh [spr #f] [i #f])
   (sprite-info (current-dx) (current-dy)
                hw hh
                (current-r) (current-g) (current-b) (current-a)
-               tex 0 ;; xxx set palette
+               (if (and spr i)
+                 (sprited-ref spr i)
+                 0)
+               0 ;; xxx set palette
                (current-mx) (current-my)
                (current-theta)))
-(define (sprite* r g b a tex)
+(define (sprite* r g b a spr i)
   (sprite-info (current-dx) (current-dy)
-               (* 0.5 (texture-width tex)) (* 0.5 (texture-height tex))
+               (* 0.5 (sprited-width spr)) (* 0.5 (sprited-height spr))
                r g b a
-               tex 0 ;; xxx set palette
+               (sprited-ref spr i) 0 ;; xxx set palette
                (current-mx) (current-my)
                (current-theta)))
-(define (sprite tex)
-  (sprite* 0.0 0.0 0.0 0.0 tex))
-(define (sprite/tint tex)
-  (sprite* (current-r) (current-g) (current-b) (current-a) tex))
+(define (sprite tex i)
+  (sprite* 0.0 0.0 0.0 0.0 tex i))
+(define (sprite/tint tex i)
+  (sprite* (current-r) (current-g) (current-b) (current-a) tex i))
 
 (define (->float v)
   (if (zero? v)
@@ -114,12 +115,12 @@
 (provide
  transform
  (contract-out
-  [sprite 
-   (-> texture? sprite-info?)]
-  [sprite/tint
-   (-> texture? sprite-info?)]
+  [sprite
+   (-> sprited? sprite-index? sprite-info?)]
+  [sprite/tint 
+   (-> sprited? sprite-index? sprite-info?)]
   [rectangle
    ;; XXX not really a flonum, a single-flonum
    (->* (flonum? flonum?)
-        (texture?)
+        (sprited? sprite-index?)
         sprite-info?)]))

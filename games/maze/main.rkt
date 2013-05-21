@@ -34,9 +34,9 @@
   (for/or ([e s]) #t))
 
 (define char-height
-  (texture-height tex:sos/font:0))
+  (sprited-height spr:sos/font))
 (define char-width
-  (texture-width tex:sos/font:0))
+  (sprited-width spr:sos/font))
 (define string->sprites
   (make-string-factory spr:sos/font))
 
@@ -85,7 +85,7 @@
                        [set-n (in-range 4)]
                        [frame-n (in-range 2)])
              (list ghost-n set-n frame-n
-                   #'tex:sos/fauna/snake:0
+                   #'spr:sos/fauna/snake
                    #;
                    (format-id stx "maze/ghost/~a/~a/~a"
                               ghost-n set-n frame-n)))])
@@ -118,7 +118,7 @@
    #:d (* scale -.5) (* scale -.5)
    (rectangle
     (* scale 0.5) (* scale 0.5)
-    tex:sos/character/cat:0
+    spr:sos/character/cat
     #;
     (match (rate 3 10 n)
       [0 maze/player/0]

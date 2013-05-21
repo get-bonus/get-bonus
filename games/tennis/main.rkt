@@ -44,16 +44,16 @@
 (define blocks-in-a-paddle 4)
 
 (define tennis/paddle
-  tex:sos/font:111)
+  (sprited-ref spr:sos/font 111))
 (define tennis/ball
-  tex:sos/face/smile:0)
+  (sprited-ref spr:sos/face/smile 0))
 
 (define paddle-w
-  (texture-width tennis/paddle))
+  (sprited-width spr:sos/font))
 (define paddle-hw
   (/ paddle-w 2.0))
 (define paddle-h
-  (* blocks-in-a-paddle (texture-height tennis/paddle)))
+  (* blocks-in-a-paddle (sprited-height spr:sos/font)))
 (define paddle-hh
   (/ paddle-h 2.0))
 
@@ -73,10 +73,10 @@
 (define ball-scale
   (/ 1.0 2.0))
 (define ball-hh
-  (* ball-scale (/ (texture-height tennis/ball) 2.0)))
+  (* ball-scale (/ (sprited-height spr:sos/face/smile) 2.0)))
 (define ball-r ball-hh)
 (define ball-hw
-  (* ball-scale (/ (texture-width tennis/ball) 2.0)))
+  (* ball-scale (/ (sprited-width spr:sos/face/smile) 2.0)))
 
 (define (ball-sprite)
   (transform
@@ -208,9 +208,9 @@
             ball-dir-n))))
 
 (define char-height
-  (texture-height tex:sos/font:0))
+  (sprited-height spr:sos/font))
 (define char-width
-  (texture-width tex:sos/font:0))
+  (sprited-width spr:sos/font))
 (define string->sprites
   (make-string-factory spr:sos/font))
 

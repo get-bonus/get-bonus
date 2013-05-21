@@ -103,8 +103,8 @@
                 (build-path "/")))
 
 (jake
- (rule "all"
-       (list "pal.png" "r.bin.gz" "gb/graphics/r.rkt"))
+ (define ATLAS-FILES (list "r.bin.gz" "pal.png" "gb/graphics/r.rkt" "r.idx.bin.gz"))
+ (rule "all" ATLAS-FILES)
 
  (rule (and (app zo->src (and (not #f) src))
             (app zo->file file)
@@ -117,10 +117,13 @@
  (define DB-IMGS
    (find-files (λ (x) (equal? #"img" (filename-extension x))) "db"))
 
- (rule (or "pal.png" "r.bin.gz" "gb/graphics/r.rkt")
+ (rule (? (λ (x) (member x ATLAS-FILES)))
        (list (compiled "tools/apse/compile.rkt")
              DB-IMGS)
-       (system* racket-pth
-                "-t"
-                "tools/apse/compile.rkt"
-                "db" "r.bin.gz" "pal.png" "gb/graphics/r.rkt")))
+       (apply 
+        system* racket-pth
+        "-t"
+        "tools/apse/compile.rkt"
+        "db"
+        ATLAS-FILES)
+       (apply system* "/usr/bin/du" "-bhac" ATLAS-FILES)))

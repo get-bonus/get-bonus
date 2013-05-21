@@ -9,8 +9,9 @@
          gb/graphics/gl-util
          racket/function
          racket/contract
-         gb/graphics/texture-atlas-lib
+         gb/graphics/r
          gb/lib/performance-log
+         gb/lib/math
          gb/lib/gzip
          opengl)
 
@@ -28,6 +29,7 @@
   ;; most things with .0 in them are really double flonums in Racket.
   [make-draw
    (-> path-string? fixnum?
+       path-string?
        path-string? fixnum? fixnum?
        flonum? flonum?
        (-> sprite-tree/c void))]
@@ -41,13 +43,13 @@
     [g flonum?]
     [b flonum?]
     [a flonum?]
-    [tex texture?]
+    [spr sprite-index?]
     [pal palette?]
     [mx flonum?]
     [my flonum?]
     [theta flonum?]))))
 
-(struct sprite-info (x y hw hh r g b a tex pal mx my theta) #:transparent)
+(struct sprite-info (x y hw hh r g b a spr pal mx my theta) #:transparent)
 
 (define (make-draw . args)
   (cond
@@ -62,15 +64,16 @@
 
 (define (make-draw/300 sprite-atlas-path
                        sprite-atlas-size
+                       sprite-index-path
                        palette-atlas-path 
                        palette-atlas-count palette-atlas-depth
                        width height)
   (define SpriteData-components
-    (+ 4 4 4 1 3 2))
+    (+ 4 4 1 1 3 2))
   (match-define
    (list SpriteData-X SpriteData-Y SpriteData-HW SpriteData-HH
          SpriteData-R SpriteData-G SpriteData-B SpriteData-A
-         SpriteData-TX SpriteData-TY SpriteData-TW SpriteData-TH
+         SpriteData-TI
          SpriteData-Pal
          SpriteData-MX SpriteData-MY SpriteData-ROT
          SpriteData-Horiz SpriteData-Vert)
@@ -80,7 +83,7 @@
   (define SpriteData #f)
 
   (define (install-object! i o)
-    (match-define (sprite-info x y w h r g b a tex pal mx my theta) o)
+    (match-define (sprite-info x y w h r g b a spr pal mx my theta) o)
     ;; XXX If I change to using cstructs, then I can do cvector-set
     ;; and plop everything at once, except I don't want the user to
     ;; know about Horiz and Vert, so I'd really need to make a
@@ -106,44 +109,28 @@
                   [SpriteData-G g]
                   [SpriteData-B b]
                   [SpriteData-A a]
-                  ;; xxx Can I change this to a single float and do a
-                  ;; lookup in a nX4 Sampler2D for the other
-                  ;; information? Can I get enough information in each
-                  ;; color?
-                  ;;
-                  ;; GL_RGBA32F or GL_RGBA32UI is what I want
-                  [SpriteData-TX (f32vector-ref tex 0)]
-                  [SpriteData-TY (f32vector-ref tex 1)]
-                  [SpriteData-TW (f32vector-ref tex 2)]
-                  [SpriteData-TH (f32vector-ref tex 3)]
+                  [SpriteData-TI (exact->inexact spr)]
                   [SpriteData-Pal (exact->inexact pal)]
                   [SpriteData-MX mx]
                   [SpriteData-MY my]
                   [SpriteData-ROT theta]
                   [SpriteData-Horiz Horiz]
                   [SpriteData-Vert Vert]))
-
-      ;; XXX look at http://developer.apple.com/library/ios/#documentation/3ddrawing/conceptual/opengles_programmingguide/TechniquesforWorkingwithVertexData/TechniquesforWorkingwithVertexData.html to create degenerative triangle strips and send less information? It seems like I would send D twice rather than C AND B twice
-
-
-      ;; A
+      ;; I once thought I could use a degenerative triangle strip, but
+      ;; that adds 2 additional vertices on all but the first and last
+      ;; triangles, which would save me exactly 2 vertices total.
       (point-install! -1.0 +1.0 0)
-      ;; B
       (point-install! +1.0 +1.0 1)
-      ;; C
       (point-install! -1.0 -1.0 2)
-      ;; C
       (point-install! -1.0 -1.0 3)
-      ;; B
       (point-install! +1.0 +1.0 4)
-      ;; D
       (point-install! +1.0 -1.0 5)))
 
   ;; Create Shaders
   (define ProgramId (glCreateProgram))
   (glBindAttribLocation ProgramId 0 "in_Position")
   (glBindAttribLocation ProgramId 1 "in_Color")
-  (glBindAttribLocation ProgramId 2 "in_TexCoord")
+  (glBindAttribLocation ProgramId 2 "in_TexIndex")
   (glBindAttribLocation ProgramId 3 "in_Transforms")
   (glBindAttribLocation ProgramId 4 "in_VertexSpecification")
   (glBindAttribLocation ProgramId 5 "in_Palette")
@@ -179,22 +166,40 @@
       [o
        1]))
 
+  (define (2D-defaults)
+    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
+    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
+    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
+    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR))
+
   (define SpriteAtlasId (u32vector-ref (glGenTextures 1) 0))
   (glBindTexture GL_TEXTURE_2D SpriteAtlasId)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR)
+  (2D-defaults)
   (glTexImage2D GL_TEXTURE_2D
                 0 GL_R8
                 sprite-atlas-size sprite-atlas-size 0
                 GL_RED GL_UNSIGNED_BYTE
                 (gunzip-bytes (file->bytes sprite-atlas-path)))
 
-  ;; xxx Maybe GL_RGBA8 directly?
   (define PaletteAtlasId
     (load-texture palette-atlas-path
                   #:mipmap #f))
+
+  (define SpriteIndexId (u32vector-ref (glGenTextures 1) 0))
+  (glBindTexture GL_TEXTURE_2D SpriteIndexId)
+  (2D-defaults)
+  (define sprite-index-data 
+    (gunzip-bytes (file->bytes sprite-index-path)))
+  (define sprite-index-bytes 4)
+  (define sprite-index-count (/ (bytes-length sprite-index-data)
+                                (* 4 sprite-index-bytes)))
+  (define effective-sprite-index-count
+    (expt 2 (num->pow2 sprite-index-count)))
+  (glTexImage2D GL_TEXTURE_2D
+                0 GL_RGBA32F
+                1 effective-sprite-index-count 0
+                GL_RGBA GL_FLOAT
+                sprite-index-data)
 
   (glLinkProgram ProgramId)
   (print-shader-log glGetProgramInfoLog 'Program ProgramId)
@@ -210,6 +215,10 @@
                palette-atlas-count)
   (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasDepth")
                palette-atlas-depth)
+  (glUniform1i (glGetUniformLocation ProgramId "SpriteIndexTex")
+               2)
+  (glUniform1i (glGetUniformLocation ProgramId "SpriteIndexCount")
+               effective-sprite-index-count)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
                width)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
@@ -253,7 +262,7 @@
   (define-vertex-attrib-array*
     [0 SpriteData-X SpriteData-HH]
     [1 SpriteData-R SpriteData-A]
-    [2 SpriteData-TX SpriteData-TH]
+    [2 SpriteData-TI SpriteData-TI]
     [3 SpriteData-MX SpriteData-ROT]
     [4 SpriteData-Horiz SpriteData-Vert]
     [5 SpriteData-Pal SpriteData-Pal])
@@ -272,6 +281,8 @@
     (glBindTexture GL_TEXTURE_2D SpriteAtlasId)
     (glActiveTexture GL_TEXTURE1)
     (glBindTexture GL_TEXTURE_2D PaletteAtlasId)
+    (glActiveTexture GL_TEXTURE2)
+    (glBindTexture GL_TEXTURE_2D SpriteIndexId)
 
     (glBindBuffer GL_ARRAY_BUFFER VboId)
 
@@ -358,7 +369,10 @@
 
     (glPopAttrib)
 
-    ;; GL_TEXTURE1 is active
+    ;; This is actually already active
+    (glActiveTexture GL_TEXTURE2)
+    (glBindTexture GL_TEXTURE_2D 0)
+    (glActiveTexture GL_TEXTURE1)
     (glBindTexture GL_TEXTURE_2D 0)
     (glActiveTexture GL_TEXTURE0)
     (glBindTexture GL_TEXTURE_2D 0)

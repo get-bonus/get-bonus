@@ -19,9 +19,9 @@
 (struct menu:auto (code fun) #:transparent)
 
 (define char-height
-  (texture-height tex:sos/font:0))
+  (sprited-height spr:sos/font))
 (define char-width
-  (texture-width tex:sos/font:0))
+  (sprited-width spr:sos/font))
 (define string->sprites
   (make-string-factory spr:sos/font))
 (define cursor ">>")

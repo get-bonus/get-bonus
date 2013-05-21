@@ -1,79 +1,85 @@
 #lang racket/base
-(require (for-syntax racket/base
+(require ffi/vector
+         (for-syntax racket/base
                      syntax/parse
+                     racket/match
+                     gb/lib/math
                      racket/syntax)
+         gb/lib/math
+         ffi/unsafe
          ffi/vector)
 
-(define-syntax (define-sprite-atlas-size stx)
+(define-syntax (define-sprite-atlas stx)
   (syntax-parse stx
-    [(_ size:nat)
-     (quasisyntax/loc stx
-       (define #,(datum->syntax stx 'sprite-atlas-size) size))]))
+    [(_ count:nat size:nat)
+     (with-syntax*
+      ([sas (datum->syntax stx 'sprite-atlas-size)]
+       [s (datum->syntax stx 'sprited)]
+       [s-r (datum->syntax stx 'sprited-ref)]
+       [i? (datum->syntax stx 'sprite-index?)]
+       [_i (datum->syntax stx '_sprite-index)]
+       [s-images (format-id stx "~a-images" #'s)]
+       [(i?_impl _idx idxvector)
+        (match (num->bytes-to-store (syntax->datum #'count))
+          [1 #'(_uint8? _uint8 u8vector)]
+          [2 #'(_uint16? _uint16 u16vector)]
+          [4 #'(_uint32? _uint32 u32vector)]
+          [_ (raise-syntax-error 'define-sprite-atlas
+                                 "Too many sprites to store indexes"
+                                 #'count)])]
+       [idxvector-ref (format-id #'idxvector "~a-ref" #'idxvector)]
+       [ds (datum->syntax stx 'define-sprite)])
+      (syntax/loc stx
+        (begin
+          (define sas size)
+          (define _i _idx)
+          (define i? i?_impl)
+          (struct s (width height images))
+          (define (s-r an-s i)
+            (idxvector-ref (s-images an-s) i))
+          (provide sas _i i? (struct-out s) s-r)
+          (define-syntax (ds stx)
+            (syntax-parse stx
+              [(_ name:id Tw:nat Th:nat (Iidx:nat (... ...)))
+               (with-syntax
+                   ([spr:name (format-id #'name "spr:~a" #'name)])
+                 (syntax/loc stx
+                   (begin
+                     (define spr:name
+                       (s Tw Th (idxvector Iidx (... ...))))
+                     (provide spr:name))))])))))]))
 
-(define-syntax (define-palette-atlas-size stx)
+(define-syntax (define-palette-atlas stx)
   (syntax-parse stx
-    [(_ k:nat depth:nat)
-     (quasisyntax/loc stx
-       (begin
-         (define #,(datum->syntax stx 'palette-atlas-count) k)
-         (define #,(datum->syntax stx 'palette-atlas-depth) depth)))]))
-
-(define-syntax (define-texture stx)
-  (syntax-parse stx
-    [(_ name:id Tllx:number Tlly:number Tw:number Th:number)
-     (with-syntax ([tex:name (format-id #'name "tex:~a" #'name)])
-       (syntax/loc stx
-         (define tex:name
-           (f32vector Tllx Tlly Tw Th))))]))
-
-(define-syntax (define-sprite-image stx)
-  (syntax-parse stx
-    [(_ name:id imgi:nat Tllx:number Tlly:number Tw:number Th:number)
-     (with-syntax ([name:imgi (format-id #'name "~a:~a"
-                                         #'name
-                                         (syntax->datum #'imgi))])
-       (syntax/loc stx
-         (define-texture name:imgi Tllx Tlly Tw Th)))]))
-
-(define-syntax (define-sprite stx)
-  (syntax-parse stx
-    [(_ name:id imgk:nat)
+    [(_ count:nat depth:nat)
      (with-syntax
-         ([spr:name
-           (format-id #'name "spr:~a" #'name)]
-          [(tex:name:imgi ...)
-           (build-list (syntax->datum #'imgk)
-                       (λ (i)
-                         (format-id #'name "tex:~a:~a" #'name i)))])
+         ([pac (datum->syntax stx 'palette-atlas-count)]
+          [pad (datum->syntax stx 'palette-atlas-depth)]
+          [p? (datum->syntax stx 'palette?)]
+          [_p (datum->syntax stx '_palette)]
+          [(p?_impl _pal)
+           (match (num->bytes-to-store (syntax->datum #'count))
+             [1 #'(_uint8? _uint8)]
+             [2 #'(_uint16? _uint16)]
+             [4 #'(_uint32? _uint32)]
+             [_ (raise-syntax-error 'define-palette-atlas
+                                    "Too many palettes to store indexes"
+                                    #'count)])])
        (syntax/loc stx
-         (define spr:name (vector tex:name:imgi ...))))]))
-
-(define texturev?
-  ;; xxx also, of texture?
-  vector?)
-(define texturev-ref vector-ref)
+         (begin
+           (define _p _pal)
+           (define p? p?_impl)
+           (define pac count)
+           (define pad depth)
+           (provide _p p? pac pad))))]))
 
 (define-syntax (define-palette stx)
   (syntax-parse stx
     [(_ name:id index:nat)
      (with-syntax ([pal:name (format-id #'name "pal:~a" #'name)])
        (syntax/loc stx
-         (define pal:name index)))]))
-
-(define palette?
-  exact-nonnegative-integer?)
-
-(define (texture x y w h)
-  (f32vector x y w h))
-;; XXX also 4 long
-(define texture? f32vector?)
-(define (texture-x v)
-  (f32vector-ref v 0))
-(define (texture-y v)
-  (f32vector-ref v 1))
-(define (texture-width v)
-  (f32vector-ref v 2))
-(define (texture-height v)
-  (f32vector-ref v 3))
+         (begin 
+           (define pal:name index)
+           (provide pal:name))))]))
 
 (provide (all-defined-out))

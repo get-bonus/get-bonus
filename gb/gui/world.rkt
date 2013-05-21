@@ -78,6 +78,7 @@
         (sound-destroy! st))))
 
 (define-runtime-path texture-atlas-path "../../r.bin.gz")
+(define-runtime-path texture-index-path "../../r.idx.bin.gz")
 (define-runtime-path palette-atlas-path "../../pal.png")
 (define-runtime-path performance-log-path "../../log")
 
@@ -117,6 +118,13 @@
                           "No available texture atlas; ~v is missing"
                           texture-atlas-path)])
                 sprite-atlas-size
+                (cond
+                  [(file-exists? texture-index-path)
+                   texture-index-path]
+                  [else
+                   (error 'world
+                          "No available texture index; ~v is missing"
+                          texture-index-path)])
                 (cond
                   [(file-exists? palette-atlas-path)
                    palette-atlas-path]

@@ -1,8 +1,12 @@
 #version 130
 
+uniform int SpriteAtlasSize;
+uniform sampler2D SpriteIndexTex; 
+uniform int SpriteIndexCount;
+
 in vec4 in_Position;
 in vec4 in_Color;
-in vec4 in_TexCoord;
+in float in_TexIndex;
 in vec3 in_Transforms;
 in vec2 in_VertexSpecification;
 in float in_Palette;
@@ -42,12 +46,15 @@ mat4 glTranslate( float x, float y, float z ) {
 
 void main(void)
 {
+  vec4 in_TexCoord = texelFetch(SpriteIndexTex, ivec2(0, in_TexIndex), 0);
+
   // Vertex Shader
   vec4 the_gl_Position;
 
   the_gl_Position.xy = in_Position.xy;
   the_gl_Position.z = in_Position.z * in_Transforms.x;
   the_gl_Position.w = in_Position.w * in_Transforms.y;
+
 
   float mid_Rotation = in_Transforms.z;
   vec4 mid_Color = in_Color;

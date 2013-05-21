@@ -6,7 +6,6 @@
          gb/graphics/r
          gb/graphics/ngl
          gb/graphics/ngli
-         gb/graphics/texture-atlas-lib         
          gb/graphics/font-lib
          racket/contract
          racket/list
@@ -20,32 +19,31 @@
     (define maker
       (cond
         [(and hw hh)
-         (λ (tex) (rectangle hw hh tex))]
+         (λ (tex i) (rectangle hw hh tex i))]
         [tint?
          sprite/tint]
-        [else 
+        [else
          sprite]))
     (define tex-offset
       (if (and hw hh)
-        (λ (tex) (* 2.0 hw))
-        texture-width))
+        (* 2.0 hw)
+        (sprited-width tex:font)))
     (define-values
       (tot-offset l)
       (for/fold ([offset 0.0]
                  [l empty])
           ([c (in-string some-string)])
-        (define tex (texturev-ref tex:font (char->integer c)))
-        (define this-offset (tex-offset tex))
+        (define this-offset tex-offset)
         (values (+ offset this-offset)
                 (cons (transform #:dx offset
-                                 (maker tex))
+                                 (maker tex:font (char->integer c)))
                       l))))
     l))
 
-(provide 
+(provide
  (contract-out
   [make-string-factory
-   (-> texturev?
+   (-> sprited?
        (->* (string?)
             (#:hw flonum? #:hh flonum? #:tint? boolean?)
             sprite-tree/c))]))

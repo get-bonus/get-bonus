@@ -41,7 +41,6 @@
 
 (module+ main
   (define the-ptr (malloc _sprite how-many-sprites))
-
   (define sprites (make-cvector* the-ptr _sprite how-many-sprites))
   (cvector-length sprites)
 

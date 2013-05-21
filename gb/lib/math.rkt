@@ -50,7 +50,15 @@
     [else
      #f]))
 
+;; xxx
+(define _uint8? exact-nonnegative-integer?)
+(define _uint16? exact-nonnegative-integer?)
+(define _uint32? exact-nonnegative-integer?)
+
 (provide/contract
+ [_uint8? (-> any/c boolean?)]
+ [_uint16? (-> any/c boolean?)]
+ [_uint32? (-> any/c boolean?)]
  [num->pow2 (-> real? exact-nonnegative-integer?)]
  [num->bytes-to-store (-> real? (or/c false/c exact-nonnegative-integer?))]
  [distance (-> psn? psn?
