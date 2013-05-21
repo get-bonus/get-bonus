@@ -79,7 +79,10 @@
 
   (define (install-object! i o)
     (match-define (sprite-info x y w h r g b a tex pal mx my theta) o)
-    ;; XXX Would it be faster to do a vector-copy! ?
+    ;; XXX If I change to using cstructs, then I can do cvector-set
+    ;; and plop everything at once, except I don't want the user to
+    ;; know about Horiz and Vert, so I'd really need to make a
+    ;; sub-struct with two more fields.
     (define-syntax-rule
       (install! j [SpriteData-X x] ...)
       (begin
@@ -101,7 +104,12 @@
                   [SpriteData-G g]
                   [SpriteData-B b]
                   [SpriteData-A a]
-                  ;; xxx can i make this a sampler2d?
+                  ;; xxx Can I change this to a single float and do a
+                  ;; lookup in a nX4 Sampler2D for the other
+                  ;; information? Can I get enough information in each
+                  ;; color?
+                  ;;
+                  ;; GL_RGBA32F or GL_RGBA32UI is what I want
                   [SpriteData-TX (f32vector-ref tex 0)]
                   [SpriteData-TY (f32vector-ref tex 1)]
                   [SpriteData-TW (f32vector-ref tex 2)]
@@ -112,6 +120,10 @@
                   [SpriteData-ROT theta]
                   [SpriteData-Horiz Horiz]
                   [SpriteData-Vert Vert]))
+
+      ;; XXX look at http://developer.apple.com/library/ios/#documentation/3ddrawing/conceptual/opengles_programmingguide/TechniquesforWorkingwithVertexData/TechniquesforWorkingwithVertexData.html to create degenerative triangle strips and send less information? It seems like I would send D twice rather than C AND B twice
+
+
       ;; A
       (point-install! -1.0 +1.0 0)
       ;; B
@@ -165,9 +177,12 @@
       [o
        1]))
 
+  ;; xxx I might be able to use GL_R8 for this, rather than other
+  ;; complex encoding trick
   (define SpriteAtlasId
     (load-texture sprite-atlas-path
                   #:mipmap #f))
+  ;; xxx Maybe GL_RGBA8 directly?
   (define PaletteAtlasId
     (load-texture palette-atlas-path
                   #:mipmap #f))
@@ -224,6 +239,8 @@
       (define-vertex-attrib-array AttribId AttribStart AttribEnd GL_FLOAT)
       ...))
 
+  ;; xxx this is awkward, but ctype->layout might help on the next
+  ;; version
   (define-vertex-attrib-array*
     [0 SpriteData-X SpriteData-HH]
     [1 SpriteData-R SpriteData-A]
@@ -275,7 +292,6 @@
 
     (performance-log! SpriteData-count)
 
-    ;; xxx use arrays of cstructs
     (set! SpriteData
           (make-cvector*
            (glMapBufferRange

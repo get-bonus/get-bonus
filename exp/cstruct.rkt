@@ -4,14 +4,15 @@
          (for-syntax racket/base
                      racket/syntax))
 
-(define-cstruct _sprite/int32s
+(define-cstruct _sprite
   ([x _int32]
    [y _int32]
+   ;; xxx maybe change to just w/h so that you can't specify
+   ;; non-integral pixels dimenions but can specify odd-numbers of
+   ;; pixels [actually, the sprite database only deals in powers of
+   ;; two, so we they are always divisible by 2]
    [hw _int32]
-   [hh _int32]))
-
-(define-cstruct _sprite
-  ([int32s _sprite/int32s]
+   [hh _int32]
    [r _byte]
    [g _byte]
    [b _byte]
@@ -20,17 +21,15 @@
    [pal _uint8]
    [mx _float]
    [my _float]
-   [theta _float]))
-
-(define (sprite-x s)
-  (sprite/int32s-x (sprite-int32s s)))
-(define (set-sprite-x! s v)
-  (set-sprite/int32s-x! (sprite-int32s s) v))
+   [theta _float]
+   
+   [horiz _sint8]
+   [vert _sint8]))
 
 (define (memory-bandwidth _struct)
   ;; 1 GB / s at 60 FPS
   (real->decimal-string
-   (/ (* 1024 1024 1024 1/60)
+   (/ (* 1024 1024 1024 1/60 6)
       (ctype-sizeof _struct))))
 
 (module+ main
@@ -54,10 +53,9 @@
   (printf "Before Second: ~a\n" (sprite-x a-sprite2))
 
   (define a-sprite3
-    (make-sprite (make-sprite/int32s 1 2 3 4)
-                 5 6 7 8 9 10 11.0 12.0 13.0))
+    (make-sprite 1 2 3 4
+                 5 6 7 8 9 10 11.0 12.0 13.0 0 1))
   (cvector-set! sprites (/ how-many-sprites 2) a-sprite3)
   (printf "After First: ~a\n" (sprite-x a-sprite))
   (printf "After Second: ~a\n" (sprite-x a-sprite2)))
 
-;; XXX look at http://developer.apple.com/library/ios/#documentation/3ddrawing/conceptual/opengles_programmingguide/TechniquesforWorkingwithVertexData/TechniquesforWorkingwithVertexData.html
