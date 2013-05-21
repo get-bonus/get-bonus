@@ -6,7 +6,9 @@ uniform sampler2D PaletteAtlasTex;
 uniform int PaletteAtlasCount;
 uniform int PaletteAtlasDepth;
 
-// xxx make my integer inputs have "flat" interpolation (this doesn't work though)
+// xxx make my integer inputs have "flat" interpolation (this doesn't
+// work though)... but not texcoord because we do want some
+// interpolation to get the different x/ys
 in vec4 Color;
 in vec2 TexCoord;
 in float Palette;

@@ -1,12 +1,14 @@
 #lang racket/base
 (require racket/path
          racket/class
+         racket/file
          racket/pretty
          racket/match
          racket/draw
          racket/function
          racket/list
          gb/lib/korf-bin
+         gb/lib/gzip
          "lib.rkt"
          "db.rkt")
 
@@ -27,6 +29,15 @@
         (pack (λ (s*i) (sprite-width (vector-ref s*i 0)))
               (λ (s*i) (sprite-height (vector-ref s*i 0)))
               images))
+      (define how-many-places (length places))
+
+      (define atlas-bin 
+        (make-bytes (* tex-size tex-size) 0))
+      (define index-values 4)
+      (define index-bytes-per-value 4)
+      (define index-bin 
+        (make-bytes (* index-values index-bytes-per-value
+                       how-many-places) 0))
 
       (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
       (define atlas-bm-dc (new bitmap-dc% [bitmap atlas-bm]))
@@ -39,8 +50,12 @@
          (list `(define-texture
                   none
                   0.0 0.0 0.0 0.0))
-         (for/list ([pl (in-list places)])
+         (for/list ([pl (in-list places)]
+                    [pi (in-naturals)])
            (match-define (placement ax ay (vector s i img)) pl)
+
+           (bytes-copy! atlas-bin (+ (* tex-size ay) ax) img)
+
            (define w (sprite-width s))
            (define h (sprite-height s))
            (define bm (make-object bitmap% w h #f #t))
@@ -60,6 +75,17 @@
                            255)))
            (send bm set-argb-pixels 0 0 w h new-img)
            (send atlas-bm-dc draw-bitmap bm ax ay)
+
+           (for ([v (in-list (list ax ay w h))]
+                 [o (in-naturals)])
+             (integer->integer-bytes
+              v index-bytes-per-value
+              #f #t index-bin
+              (+ (* index-values
+                    index-bytes-per-value
+                    pi)
+                 (* index-bytes-per-value o))))
+
            `(define-sprite-image ,(sprite-name s) ,i
               ,(* 1.0 ax) ,(* 1.0 ay)
               ,(* 1.0 w) ,(* 1.0 h)))
@@ -68,7 +94,13 @@
            `(define-sprite ,(sprite-name s)
               ,(vector-length (sprite-images s)))))
 
-        (send atlas-bm save-file atlas-p 'png 100))))
+        (send atlas-bm save-file atlas-p 'png 100)
+        (display-to-file (gzip-bytes atlas-bin)
+                         #:exists 'replace
+                         (path-replace-suffix atlas-p #".bin.gz"))
+        (display-to-file (gzip-bytes index-bin)
+                         #:exists 'replace
+                         (path-replace-suffix atlas-p #".idx.bin.gz")))))
 
   ;; Make the palette
   (define palette-indexes
