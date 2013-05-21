@@ -2,6 +2,8 @@
 (require gb/data/psn
          racket/math
          racket/contract)
+(module+ test
+  (require rackunit))
 
 (define (clamp bot x top)
   (max bot (min x top)))
@@ -22,7 +24,21 @@
        [b (in-bytes bs)])
     (* b (expt 256 i))))
 
+(define (num->pow2 n)
+  (inexact->exact
+   (ceiling
+    (/ (log n)
+       (log 2)))))
+(module+ test
+  (check-equal? (num->pow2 1) 0)
+  (check-equal? (num->pow2 2) 1)
+  (check-equal? (num->pow2 3) 2)
+  (check-equal? (num->pow2 4) 2)
+  (check-equal? (num->pow2 5) 3)
+  (check-equal? (num->pow2 10) 4))
+
 (provide/contract
+ [num->pow2 (-> real? exact-nonnegative-integer?)]
  [distance (-> psn? psn?
                real?)]
  [cardinate (-> psn?

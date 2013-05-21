@@ -4,7 +4,8 @@
          racket/gui/base
          racket/format
          racket/match
-         racket/class)
+         racket/class
+         gb/lib/math)
 (module+ test
   (require rackunit))
 
@@ -30,9 +31,6 @@
   (define g (bytes-ref pxs (+ xy-offset 2)))
   (define b (bytes-ref pxs (+ xy-offset 3)))
   (vector a r g b))
-
-(define (clamp lo v hi)
-  (max lo (min v hi)))
 
 (define (color-key? c)
   (for/or ([some-c (in-string "0123456789")]

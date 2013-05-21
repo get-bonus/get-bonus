@@ -1,22 +1,10 @@
 #lang racket/base
 (require racket/list
          racket/match
-         racket/contract)
+         racket/contract
+         gb/lib/math)
 (module+ test
   (require rackunit))
-
-(define (num->pow2 n)
-  (inexact->exact
-   (ceiling
-    (/ (log n)
-       (log 2)))))
-(module+ test
-  (check-equal? (num->pow2 1) 0)
-  (check-equal? (num->pow2 2) 1)
-  (check-equal? (num->pow2 3) 2)
-  (check-equal? (num->pow2 4) 2)
-  (check-equal? (num->pow2 5) 3)
-  (check-equal? (num->pow2 10) 4))
 
 (struct layout (w h) #:transparent)
 (struct space layout () #:transparent)

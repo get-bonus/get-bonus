@@ -8,6 +8,7 @@
          racket/function
          racket/list
          gb/lib/korf-bin
+         gb/lib/math
          gb/lib/gzip
          "lib.rkt"
          "db.rkt")
@@ -32,12 +33,25 @@
       (define how-many-places (length places))
 
       (define atlas-bin 
-        (make-bytes (* tex-size tex-size) 0))
+        (make-bytes (* tex-size tex-size)))
       (define index-values 4)
-      (define index-bytes-per-value 4)
+      (define index-bytes-per-value
+        (let ()
+          (define bits (num->pow2 tex-size))
+          (define bytes (/ bits 8))
+          (cond
+            [(and (< 0 bytes) (<= bytes 1))
+             1]
+            [(and (< 1 bytes) (<= bytes 2))
+             2]
+            [(and (< 2 bytes) (<= bytes 4))
+             4]
+            [else
+             (error 'compile "Texture too large to create index: ~e"
+                    (list tex-size bits bytes))])))
       (define index-bin 
         (make-bytes (* index-values index-bytes-per-value
-                       how-many-places) 0))
+                       how-many-places)))
 
       (begin0
         (append
@@ -93,14 +107,14 @@
   (define palette-indexes
     (let ()
       (define palettes (db-palettes db))
-
-      (define pal-bm (make-object bitmap% 16 (length palettes) #f #t))
+      (define palette-depth 16)
+      (define pal-bm (make-object bitmap% palette-depth (length palettes) #f #t))
       (define pal-bm-dc (new bitmap-dc% [bitmap pal-bm]))
 
       (begin0
         (append
          (list ";; palette info")
-         (list `(define-palette-atlas-size ,(length palettes) 16))
+         (list `(define-palette-atlas-size ,(length palettes) ,palette-depth))
          (list ";; palettes")
          (for/list ([pn (in-list palettes)]
                     [y (in-naturals)])
