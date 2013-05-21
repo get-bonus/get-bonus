@@ -32,24 +32,14 @@
               images))
       (define how-many-places (length places))
 
-      (define atlas-bin 
+      (define atlas-bin
         (make-bytes (* tex-size tex-size)))
       (define index-values 4)
       (define index-bytes-per-value
-        (let ()
-          (define bits (num->pow2 tex-size))
-          (define bytes (/ bits 8))
-          (cond
-            [(and (< 0 bytes) (<= bytes 1))
-             1]
-            [(and (< 1 bytes) (<= bytes 2))
-             2]
-            [(and (< 2 bytes) (<= bytes 4))
-             4]
-            [else
-             (error 'compile "Texture too large to create index: ~e"
-                    (list tex-size bits bytes))])))
-      (define index-bin 
+        (or (num->bytes-to-store tex-size)
+            (error 'compile "Texture too large to create index: ~e"
+                   tex-size)))
+      (define index-bin
         (make-bytes (* index-values index-bytes-per-value
                        how-many-places)))
 
@@ -66,7 +56,7 @@
            (match-define (placement ax ay (vector s i img)) pl)
 
            (define w (sprite-width s))
-           (define h (sprite-height s))                     
+           (define h (sprite-height s))
            (for* ([x (in-range w)]
                   [y (in-range h)])
              (define palette-val
@@ -74,9 +64,9 @@
                           (byte-xy-offset w h x y)))
 
              (bytes-set! atlas-bin
-                         (+ (* tex-size (+ ay y)) (+ ax x)) 
+                         (+ (* tex-size (+ ay y)) (+ ax x))
                          palette-val))
-           
+
 
            (for ([v (in-list (list ax ay w h))]
                  [o (in-naturals)])

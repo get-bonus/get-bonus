@@ -37,8 +37,22 @@
   (check-equal? (num->pow2 5) 3)
   (check-equal? (num->pow2 10) 4))
 
+(define (num->bytes-to-store n)
+  (define bits (num->pow2 n))
+  (define bytes (/ bits 8))
+  (cond
+    [(and (< 0 bytes) (<= bytes 1))
+     1]
+    [(and (< 1 bytes) (<= bytes 2))
+     2]
+    [(and (< 2 bytes) (<= bytes 4))
+     4]
+    [else
+     #f]))
+
 (provide/contract
  [num->pow2 (-> real? exact-nonnegative-integer?)]
+ [num->bytes-to-store (-> real? (or/c false/c exact-nonnegative-integer?))]
  [distance (-> psn? psn?
                real?)]
  [cardinate (-> psn?

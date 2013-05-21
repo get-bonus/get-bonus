@@ -4,8 +4,7 @@
 
 (define (gzip-bytes bs)
   (define out (open-output-bytes))
-  (gzip-through-ports (open-input-bytes bs) out
-                      #f (current-seconds))
+  (gzip-through-ports (open-input-bytes bs) out #f 0)
   (get-output-bytes out))
 
 (define (gunzip-bytes bs)
