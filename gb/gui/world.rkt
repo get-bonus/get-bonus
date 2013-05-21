@@ -77,7 +77,7 @@
       (λ ()
         (sound-destroy! st))))
 
-(define-runtime-path texture-atlas-path "../../r.png")
+(define-runtime-path texture-atlas-path "../../r.bin.gz")
 (define-runtime-path palette-atlas-path "../../pal.png")
 (define-runtime-path performance-log-path "../../log")
 

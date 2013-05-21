@@ -39,9 +39,6 @@
         (make-bytes (* index-values index-bytes-per-value
                        how-many-places) 0))
 
-      (define atlas-bm (make-object bitmap% tex-size tex-size #f #t))
-      (define atlas-bm-dc (new bitmap-dc% [bitmap atlas-bm]))
-
       (begin0
         (append
          (list ";; sprite info")
@@ -54,27 +51,18 @@
                     [pi (in-naturals)])
            (match-define (placement ax ay (vector s i img)) pl)
 
-           (bytes-copy! atlas-bin (+ (* tex-size ay) ax) img)
-
            (define w (sprite-width s))
-           (define h (sprite-height s))
-           (define bm (make-object bitmap% w h #f #t))
-           (define new-img (make-bytes (* 4 w h) 0))
+           (define h (sprite-height s))                     
            (for* ([x (in-range w)]
                   [y (in-range h)])
-             (define new-offset (+ (* 4 y w) (* 4 x)))
              (define palette-val
                (bytes-ref img
                           (byte-xy-offset w h x y)))
-             (bytes-set! new-img
-                         (+ new-offset 1)
-                         palette-val)
-             (unless (zero? palette-val)
-               (bytes-set! new-img
-                           (+ new-offset 0)
-                           255)))
-           (send bm set-argb-pixels 0 0 w h new-img)
-           (send atlas-bm-dc draw-bitmap bm ax ay)
+
+             (bytes-set! atlas-bin
+                         (+ (* tex-size (+ ay y)) (+ ax x)) 
+                         palette-val))
+           
 
            (for ([v (in-list (list ax ay w h))]
                  [o (in-naturals)])
@@ -94,10 +82,9 @@
            `(define-sprite ,(sprite-name s)
               ,(vector-length (sprite-images s)))))
 
-        (send atlas-bm save-file atlas-p 'png 100)
         (display-to-file (gzip-bytes atlas-bin)
                          #:exists 'replace
-                         (path-replace-suffix atlas-p #".bin.gz"))
+                         atlas-p)
         (display-to-file (gzip-bytes index-bin)
                          #:exists 'replace
                          (path-replace-suffix atlas-p #".idx.bin.gz")))))

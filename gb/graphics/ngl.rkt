@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/match
          ffi/vector
+         racket/file
          ffi/cvector
          (only-in ffi/unsafe
                   _float)
@@ -10,6 +11,7 @@
          racket/contract
          gb/graphics/texture-atlas-lib
          gb/lib/performance-log
+         gb/lib/gzip
          opengl)
 
 (define debug? #f)
@@ -177,11 +179,18 @@
       [o
        1]))
 
-  ;; xxx I might be able to use GL_R8 for this, rather than other
-  ;; complex encoding trick
-  (define SpriteAtlasId
-    (load-texture sprite-atlas-path
-                  #:mipmap #f))
+  (define SpriteAtlasId (u32vector-ref (glGenTextures 1) 0))
+  (glBindTexture GL_TEXTURE_2D SpriteAtlasId)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR)
+  (glTexImage2D GL_TEXTURE_2D
+                0 GL_R8
+                sprite-atlas-size sprite-atlas-size 0
+                GL_RED GL_UNSIGNED_BYTE
+                (gunzip-bytes (file->bytes sprite-atlas-path)))
+
   ;; xxx Maybe GL_RGBA8 directly?
   (define PaletteAtlasId
     (load-texture palette-atlas-path
