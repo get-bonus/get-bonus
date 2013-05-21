@@ -1,13 +1,13 @@
 * General TODO items
 ** DONE use r.bin (should work right now)
    CLOSED: [2013-05-21 Tue 07:12]
+** DONE use r.idx.bin (should be easy?)
+   wasn't easy
 ** TODO try to use optimization ideas
-   - use r.idx.bin (should be easy?)
    - use a cstruct for sprite-info and cvector for spritedata [all
      floats]
    - change cstruct to use integers too
    - have the size of the data types be generated/derived from atlases
-   - try to use a triangle strip with degenerate vertices
 ** TODO enable the ability to specify palettes
    - rearrange structures greatly..
 

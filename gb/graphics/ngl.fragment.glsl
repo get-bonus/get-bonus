@@ -1,14 +1,11 @@
 #version 130
 
 uniform sampler2D SpriteAtlasTex; 
-uniform int SpriteAtlasSize;
 uniform sampler2D PaletteAtlasTex;
-uniform int PaletteAtlasCount;
-uniform int PaletteAtlasDepth;
 
-// xxx make my integer inputs have "flat" interpolation (this doesn't
-// work though)... but not texcoord because we do want some
-// interpolation to get the different x/ys
+// None of these are "flat" because they are the same on all vertices
+// anyways, except TexCoord which needs to be interpolated across the
+// triangle.
 in vec4 Color;
 in vec2 TexCoord;
 in float Palette;
@@ -39,18 +36,12 @@ float clampit ( float v ) {
  
 void main(void)
 {
-  // XXX Would it be faster to use texelFetch with integer coords?
-  vec2 TexCoord_uv = 
-    vec2(clampit(TexCoord.x), clampit(TexCoord.y))
-    / SpriteAtlasSize;
-
-  vec4 SpriteColor = texture2D(SpriteAtlasTex, TexCoord_uv);
+  ivec2 TexCoord_uv = ivec2(clampit(TexCoord.x), clampit(TexCoord.y));
+  vec4 SpriteColor = texelFetch(SpriteAtlasTex, TexCoord_uv, 0);
 
   float PaletteOffset = SpriteColor.r * 255;
-  vec2 PalCoord_uv =
-    vec2( PaletteOffset / PaletteAtlasDepth,
-          Palette / PaletteAtlasCount );
-  vec4 PaletteColor = texture2D(PaletteAtlasTex, PalCoord_uv );
+  ivec2 PalCoord_uv = ivec2( PaletteOffset, Palette );
+  vec4 PaletteColor = texelFetch(PaletteAtlasTex, PalCoord_uv, 0 );
   
   // XXX Do proper blending, allow color to set the alpha, etcs
   out_Color = Color + PaletteColor;

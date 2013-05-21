@@ -1,8 +1,6 @@
 #version 130
 
-uniform int SpriteAtlasSize;
 uniform sampler2D SpriteIndexTex; 
-uniform int SpriteIndexCount;
 
 in vec4 in_Position;
 in vec4 in_Color;

@@ -36,12 +36,7 @@
         (make-bytes (* tex-size tex-size)))
 
       (define index-values 4)
-      (define index-bytes-per-value
-        4
-        #;
-        (or (num->bytes-to-store tex-size)
-        (error 'compile "Texture too large to create index: ~e"
-        tex-size)))
+      (define index-bytes-per-value 4)
       (define index-bin
         (make-bytes (* index-values index-bytes-per-value
                        how-many-places)))
@@ -90,7 +85,6 @@
 
                   (for ([v (in-list (list ax ay w h))]
                         [o (in-naturals)])
-                    (printf "~a " v)
                     (real->floating-point-bytes
                      v index-bytes-per-value
                      (system-big-endian?) index-bin
@@ -98,7 +92,6 @@
                            index-bytes-per-value
                            pi)
                         (* index-bytes-per-value o))))
-                  (newline)
 
                   pi))
 

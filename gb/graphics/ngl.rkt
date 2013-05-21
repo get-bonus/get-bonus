@@ -63,9 +63,11 @@
 (define-shader-source FragmentShader "ngl.fragment.glsl")
 
 (define (make-draw/300 sprite-atlas-path
+                       ;; xxx can remove these given below
                        sprite-atlas-size
                        sprite-index-path
                        palette-atlas-path 
+                       ;; xxx can remove these
                        palette-atlas-count palette-atlas-depth
                        width height)
   (define SpriteData-components
@@ -177,6 +179,8 @@
   (2D-defaults)
   (glTexImage2D GL_TEXTURE_2D
                 0 GL_R8
+                ;; xxx could figure this out from the size of the
+                ;; data, since we know it is a power of two squared
                 sprite-atlas-size sprite-atlas-size 0
                 GL_RED GL_UNSIGNED_BYTE
                 (gunzip-bytes (file->bytes sprite-atlas-path)))
@@ -207,18 +211,10 @@
   (glUseProgram ProgramId)
   (glUniform1i (glGetUniformLocation ProgramId "SpriteAtlasTex")
                0)
-  (glUniform1i (glGetUniformLocation ProgramId "SpriteAtlasSize")
-               sprite-atlas-size)
   (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasTex")
                1)
-  (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasCount")
-               palette-atlas-count)
-  (glUniform1i (glGetUniformLocation ProgramId "PaletteAtlasDepth")
-               palette-atlas-depth)
   (glUniform1i (glGetUniformLocation ProgramId "SpriteIndexTex")
                2)
-  (glUniform1i (glGetUniformLocation ProgramId "SpriteIndexCount")
-               effective-sprite-index-count)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
                width)
   (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
