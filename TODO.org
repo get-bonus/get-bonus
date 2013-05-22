@@ -3,9 +3,9 @@
    CLOSED: [2013-05-21 Tue 07:12]
 ** DONE use r.idx.bin (should be easy?)
    wasn't easy
+** DONE use a cstruct for sprite-info and cvector for spritedata [all floats]
+   This cut the frame time down from about 7 or 8 to about 2!
 ** TODO try to use optimization ideas
-   - use a cstruct for sprite-info and cvector for spritedata [all
-     floats]
    - change cstruct to use integers too
    - have the size of the data types be generated/derived from atlases
 ** TODO enable the ability to specify palettes

@@ -4,6 +4,8 @@
          racket/file
          ffi/cvector
          (only-in ffi/unsafe
+                  ctype-sizeof
+                  define-cstruct
                   _float)
          ffi/unsafe/cvector
          gb/graphics/gl-util
@@ -32,24 +34,40 @@
        path-string?
        path-string? fixnum? fixnum?
        flonum? flonum?
-       (-> sprite-tree/c void))]
-  (struct
-   sprite-info
-   ([x flonum?]
-    [y flonum?]
-    [hw flonum?]
-    [hh flonum?]
-    [r flonum?]
-    [g flonum?]
-    [b flonum?]
-    [a flonum?]
-    [spr sprite-index?]
-    [pal palette?]
-    [mx flonum?]
-    [my flonum?]
-    [theta flonum?]))))
+       (-> sprite-tree/c void))])
+ ;; xxx contract
+ sprite-info?
+ (rename-out
+  [create-sprite-info sprite-info]))
 
-(struct sprite-info (x y hw hh r g b a spr pal mx my theta) #:transparent)
+(define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
+  (make-sprite-info x y hw hh r g b a
+                    (exact->inexact spr)
+                    (exact->inexact pal)
+                    mx my theta
+                    0.0 0.0))
+
+(define-cstruct _sprite-info
+  ([x _float]     ;; 0
+   [y _float]     ;; 1
+   [hw _float]    ;; 2
+   [hh _float]    ;; 3
+   [r _float]     ;; 4
+   [g _float]     ;; 5
+   [b _float]     ;; 6
+   [a _float]     ;; 7
+   [spr _float]   ;; 8
+   [pal _float]   ;; 9
+   [mx _float]    ;; 10
+   [my _float]    ;; 11
+   [theta _float] ;; 12
+   [horiz _float] ;; 13
+   [vert _float]  ;; 14
+   ))
+
+(module+ test
+  (eprintf "sprite-info is ~a bytes\n"
+           (ctype-sizeof _sprite-info)))
 
 (define (make-draw . args)
   (cond
@@ -66,67 +84,32 @@
                        ;; xxx can remove these given below
                        sprite-atlas-size
                        sprite-index-path
-                       palette-atlas-path 
+                       palette-atlas-path
                        ;; xxx can remove these
                        palette-atlas-count palette-atlas-depth
                        width height)
-  (define SpriteData-components
-    (+ 4 4 1 1 3 2))
-  (match-define
-   (list SpriteData-X SpriteData-Y SpriteData-HW SpriteData-HH
-         SpriteData-R SpriteData-G SpriteData-B SpriteData-A
-         SpriteData-TI
-         SpriteData-Pal
-         SpriteData-MX SpriteData-MY SpriteData-ROT
-         SpriteData-Horiz SpriteData-Vert)
-   (build-list SpriteData-components identity))
   (define SpriteData-count
     0)
   (define SpriteData #f)
 
   (define (install-object! i o)
-    (match-define (sprite-info x y w h r g b a spr pal mx my theta) o)
-    ;; XXX If I change to using cstructs, then I can do cvector-set
-    ;; and plop everything at once, except I don't want the user to
-    ;; know about Horiz and Vert, so I'd really need to make a
-    ;; sub-struct with two more fields.
-    (define-syntax-rule
-      (install! j [SpriteData-X x] ...)
+    (define-syntax-rule (point-install! Horiz Vert j)
       (begin
-        (cvector-set!
-         SpriteData
-         (+ (* i 6 SpriteData-components)
-            (* j SpriteData-components)
-            SpriteData-X)
-         x)
-        ...))
-    (when (i . < . SpriteData-count)
-      (define-syntax-rule (point-install! Horiz Vert j)
-        (install! j
-                  [SpriteData-X x]
-                  [SpriteData-Y y]
-                  [SpriteData-HW w]
-                  [SpriteData-HH h]
-                  [SpriteData-R r]
-                  [SpriteData-G g]
-                  [SpriteData-B b]
-                  [SpriteData-A a]
-                  [SpriteData-TI (exact->inexact spr)]
-                  [SpriteData-Pal (exact->inexact pal)]
-                  [SpriteData-MX mx]
-                  [SpriteData-MY my]
-                  [SpriteData-ROT theta]
-                  [SpriteData-Horiz Horiz]
-                  [SpriteData-Vert Vert]))
-      ;; I once thought I could use a degenerative triangle strip, but
-      ;; that adds 2 additional vertices on all but the first and last
-      ;; triangles, which would save me exactly 2 vertices total.
-      (point-install! -1.0 +1.0 0)
-      (point-install! +1.0 +1.0 1)
-      (point-install! -1.0 -1.0 2)
-      (point-install! -1.0 -1.0 3)
-      (point-install! +1.0 +1.0 4)
-      (point-install! +1.0 -1.0 5)))
+        (set-sprite-info-horiz! o Horiz)
+        (set-sprite-info-vert! o Vert)
+        (cvector-set! SpriteData (+ (* i 6) j) o)))
+    ;; I once thought I could use a degenerative triangle strip, but
+    ;; that adds 2 additional vertices on all but the first and last
+    ;; triangles, which would save me exactly 2 vertices total.
+    ;;
+    ;; xxx Maybe I could change this to install it in multiple
+    ;; places so I only do the set! once?
+    (point-install! -1.0 +1.0 0)
+    (point-install! +1.0 +1.0 1)
+    (point-install! -1.0 -1.0 2)
+    (point-install! -1.0 -1.0 3)
+    (point-install! +1.0 +1.0 4)
+    (point-install! +1.0 -1.0 5))
 
   ;; Create Shaders
   (define ProgramId (glCreateProgram))
@@ -192,7 +175,7 @@
   (define SpriteIndexId (u32vector-ref (glGenTextures 1) 0))
   (glBindTexture GL_TEXTURE_2D SpriteIndexId)
   (2D-defaults)
-  (define sprite-index-data 
+  (define sprite-index-data
     (gunzip-bytes (file->bytes sprite-index-path)))
   (define sprite-index-bytes 4)
   (define sprite-index-count (/ (bytes-length sprite-index-data)
@@ -235,8 +218,7 @@
       (glVertexAttribPointer
        Index HowMany type
        #f
-       (* (gl-type-sizeof type)
-          SpriteData-components)
+       (ctype-sizeof _sprite-info)
        (* (gl-type-sizeof type)
           SpriteData-start))
       (glEnableVertexAttribArray Index)))
@@ -253,15 +235,14 @@
       (define-vertex-attrib-array AttribId AttribStart AttribEnd GL_FLOAT)
       ...))
 
-  ;; xxx this is awkward, but ctype->layout might help on the next
-  ;; version
+  ;; xxx this is awkward, but ctype-layout might help?
   (define-vertex-attrib-array*
-    [0 SpriteData-X SpriteData-HH]
-    [1 SpriteData-R SpriteData-A]
-    [2 SpriteData-TI SpriteData-TI]
-    [3 SpriteData-MX SpriteData-ROT]
-    [4 SpriteData-Horiz SpriteData-Vert]
-    [5 SpriteData-Pal SpriteData-Pal])
+    [0 0 3]
+    [1 4 7]
+    [2 8 8]
+    [3 10 12]
+    [4 13 14]
+    [5 9 9])
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
@@ -272,7 +253,7 @@
 
     (for ([i (in-range AttributeCount)])
       (glEnableVertexAttribArray i))
-    
+
     (glActiveTexture GL_TEXTURE0)
     (glBindTexture GL_TEXTURE_2D SpriteAtlasId)
     (glActiveTexture GL_TEXTURE1)
@@ -301,8 +282,7 @@
       (glBufferData GL_ARRAY_BUFFER
                     (* SpriteData-count
                        DrawnMult
-                       SpriteData-components
-                       (gl-type-sizeof GL_FLOAT))
+                       (ctype-sizeof _sprite-info))
                     #f
                     GL_STREAM_DRAW))
 
@@ -315,8 +295,7 @@
             0
             (* SpriteData-count
                DrawnMult
-               SpriteData-components
-               (gl-type-sizeof GL_FLOAT))
+               (ctype-sizeof _sprite-info))
             (bitwise-ior
              ;; We are overriding everything (this would be wrong if
              ;; we did the caching "optimization" I imagine)
@@ -330,10 +309,9 @@
 
              ;; We are writing
              GL_MAP_WRITE_BIT))
-           _float
+           _sprite-info
            (* SpriteData-count
-              DrawnMult
-              SpriteData-components)))
+              DrawnMult)))
 
     ;; Reload all data every frame
     (install-objects! objects)
@@ -349,6 +327,7 @@
     (glEnable GL_DEPTH_TEST)
     (glClearColor 1.0 1.0 1.0 0.0)
 
+    ;; xxx turn off this?
     (glEnable GL_BLEND)
     (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
     (glEnable GL_ALPHA_TEST)
