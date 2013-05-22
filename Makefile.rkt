@@ -113,12 +113,14 @@
              racket-pth)
        (system* raco-pth "make" (build-path src file)))
 
- (define DB-IMGS
-   (find-files (λ (x) (equal? #"img" (filename-extension x))) "db"))
+ (define DB-FILES
+   (find-files (λ (x) (or (equal? #"img" (filename-extension x))
+                          (equal? #"pal" (filename-extension x))))
+               "db"))
 
  (rule (? (λ (x) (member x ATLAS-FILES)))
        (list (compiled "tools/apse/compile.rkt")
-             DB-IMGS)
+             DB-FILES)
        (apply 
         system* racket-pth
         "-t"
