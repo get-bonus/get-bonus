@@ -83,6 +83,26 @@
 (define (ctype-offset _type offset)
   (sum (map ctype-name->bytes (take (ctype->layout _type) offset))))
 
+(define (sublist l s e)
+  (for/list ([x (in-list l)]
+             [i (in-naturals)]
+             #:when (<= s i)
+             #:when (<= i e))
+    x))
+
+(define (list-only l)
+  (define v (first l))
+  (for ([x (in-list (rest l))])
+    (unless (eq? v x) (error 'list-only "List is not uniform: ~e" l)))
+  v)
+
+(define (ctype-range-type _type s e)
+  (list-only (sublist (ctype->layout _type) s e)))
+
+(define ctype->gltype
+  (match-lambda
+   ['float GL_FLOAT]))
+
 (define (make-draw . args)
   (cond
     [(gl-version-at-least? (list 3 0))
@@ -118,7 +138,6 @@
     ;; I once thought I could use a degenerative triangle strip, but
     ;; that adds 2 additional vertices on all but the first and last
     ;; triangles, which would save me exactly 2 vertices total.
-
     (point-install! -1.0 +1.0 0)
     (point-install! +1.0 +1.0 1 4)
     (point-install! -1.0 -1.0 2 3)
@@ -223,8 +242,10 @@
 
   (define-syntax-rule
     (define-vertex-attrib-array
-      Index SpriteData-start SpriteData-end type)
+      Index SpriteData-start SpriteData-end)
     (begin
+      (define type
+        (ctype->gltype (ctype-range-type _sprite-info SpriteData-start SpriteData-end)))
       (define HowMany
         (add1 (- SpriteData-end SpriteData-start)))
       (eprintf "~v\n"
@@ -254,19 +275,19 @@
 
   (define-syntax-rule
     (define-vertex-attrib-array*
-      [AttribId AttribStart AttribEnd Type] ...)
+      [AttribId AttribStart AttribEnd] ...)
     (begin
-      (define-vertex-attrib-array AttribId AttribStart AttribEnd Type)
+      (define-vertex-attrib-array AttribId AttribStart AttribEnd)
       ...))
 
   ;; xxx this is awkward, but ctype-layout might help?
   (define-vertex-attrib-array*
-    [0  0  3 GL_FLOAT]
-    [1  4  7 GL_FLOAT]
-    [2  8  8 GL_FLOAT]
-    [3 10 12 GL_FLOAT]
-    [4 13 14 GL_FLOAT]
-    [5  9  9 GL_FLOAT])
+    [0  0  3]
+    [1  4  7]
+    [2  8  8]
+    [3 10 12]
+    [4 13 14]
+    [5  9  9])
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
