@@ -4,10 +4,10 @@ uniform sampler2D SpriteIndexTex;
 
 in vec4 in_Position;
 in uvec4 in_iColor;
-in float in_TexIndex;
+in uint in_iTexIndex;
 in vec3 in_Transforms;
 in ivec2 in_iVertexSpecification;
-in float in_Palette;
+in uint in_iPalette;
 
 uniform float ViewportWidth;
 uniform float ViewportHeight;
@@ -45,8 +45,8 @@ mat4 glTranslate( float x, float y, float z ) {
 void main(void)
 {
   vec4 in_Color = vec4(in_iColor.r, in_iColor.g, in_iColor.b, in_iColor.a) / 255.0;
-  //float in_TexIndex = 373.0; //in_iTexIndex;
-  //float in_Palette = 0.0; //in_iPalette;
+  float in_TexIndex = in_iTexIndex;
+  float in_Palette = in_iPalette;
   vec4 in_TexCoord = texelFetch(SpriteIndexTex, ivec2(0, in_TexIndex), 0);
   vec2 in_VertexSpecification = vec2(in_iVertexSpecification.x, in_iVertexSpecification.y);
 

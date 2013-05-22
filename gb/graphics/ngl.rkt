@@ -62,8 +62,8 @@
    [my _float]    ;; 9
    [theta _float] ;; 10
 
-   [pal _float]   ;; 11
-   [spr _float]   ;; 12
+   [pal _uint32]   ;; 11
+   [spr _uint32]   ;; 12
 
    [horiz _sint8] ;; 13
    [vert _sint8]  ;; 14
@@ -74,9 +74,8 @@
 (define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
   (make-sprite-info x y hw hh 
                     r g b a
-                    mx my theta                    
-                    (exact->inexact pal)
-                    (exact->inexact spr)
+                    mx my theta                  
+                    pal spr
                     0 0))
 
 (module+ test
@@ -167,10 +166,10 @@
   (define ProgramId (glCreateProgram))
   (glBindAttribLocation ProgramId 0 "in_Position")
   (glBindAttribLocation ProgramId 1 "in_iColor")
-  (glBindAttribLocation ProgramId 2 "in_TexIndex")
+  (glBindAttribLocation ProgramId 2 "in_iTexIndex")
   (glBindAttribLocation ProgramId 3 "in_Transforms")
   (glBindAttribLocation ProgramId 4 "in_VertexSpecification")
-  (glBindAttribLocation ProgramId 5 "in_Palette")
+  (glBindAttribLocation ProgramId 5 "in_iPalette")
 
   (define&compile-shader VertexShaderId GL_VERTEX_SHADER
     ProgramId VertexShader)
