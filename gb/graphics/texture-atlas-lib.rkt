@@ -6,6 +6,7 @@
                      gb/lib/math
                      racket/syntax)
          gb/lib/math
+         gb/lib/fstree
          ffi/unsafe
          ffi/vector)
 
@@ -18,6 +19,7 @@
        [s-r (datum->syntax stx 'sprited-ref)]
        [i? (datum->syntax stx 'sprite-index?)]
        [_i (datum->syntax stx '_sprite-index)]
+       [st (datum->syntax stx 'sprite-tree)]
        [s-images (format-id stx "~a-images" #'s)]
        [(i?_impl _idx idxvector)
         (match (num->bytes-to-store (syntax->datum #'count))
@@ -37,16 +39,19 @@
           (struct s (width height images))
           (define (s-r an-s i)
             (idxvector-ref (s-images an-s) i))
-          (provide sas _i i? (struct-out s) s-r)
+          (define st (make-fstree))
+          (provide sas _i i? (struct-out s) s-r st)
           (define-syntax (ds stx)
             (syntax-parse stx
               [(_ name:id Tw:nat Th:nat (Iidx:nat (... ...)))
                (with-syntax
-                   ([spr:name (format-id #'name "spr:~a" #'name)])
+                   ([spr:name (format-id #'name "spr:~a" #'name)]
+                    [name-str (symbol->string (syntax-e #'name))])
                  (syntax/loc stx
                    (begin
                      (define spr:name
                        (s Tw Th (idxvector Iidx (... ...))))
+                     (fstree-insert! st name-str spr:name)
                      (provide spr:name))))])))))]))
 
 (define-syntax (define-palette-atlas stx)
@@ -78,7 +83,7 @@
     [(_ name:id index:nat)
      (with-syntax ([pal:name (format-id #'name "pal:~a" #'name)])
        (syntax/loc stx
-         (begin 
+         (begin
            (define pal:name index)
            (provide pal:name))))]))
 

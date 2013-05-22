@@ -15,18 +15,20 @@
      palette = integer
 ** DONE enable the ability to specify palettes
    CLOSED: [2013-05-22 Wed 10:22]
-** TODO delete stuff?
+** DONE delete stuff?
+   CLOSED: [2013-05-22 Wed 10:52]
    font-lib
    texture-atlas tool
 ** DONE rescale menu system because fonts are bigger now
    CLOSED: [2013-05-22 Wed 10:37]
-** TODO create a new small font for menu
-   http://www.omnimaga.org/index.php?topic=3692.0
-** TODO apse compile - build a tree to get, for example, all items
+** DONE apse compile - build a tree to get, for example, all items
+   CLOSED: [2013-05-22 Wed 13:42]
 ** TODO better maze sprites
 ** TODO use palettes, plus animation in maze
 ** TODO find a better set of sprites for tennis
 
+** TODO create a new small font for menu
+   http://www.omnimaga.org/index.php?topic=3692.0
 ** TODO apse - Make apse purely functional and have better undo system
    (where it goes back to earlier system states)
 ** TODO apse - Add height/normal maps & lighting

@@ -10,6 +10,7 @@
          gb/lib/korf-bin
          gb/lib/math
          gb/lib/gzip
+         gb/lib/fstree
          "lib.rkt"
          "db.rkt")
 
@@ -102,7 +103,7 @@
                          atlas-p)
         (display-to-file (gzip-bytes index-bin)
                          #:exists 'replace
-                         idx-bin-p))))
+                         idx-bin-p))))  
 
   ;; Make the palette
   (define palette-indexes
