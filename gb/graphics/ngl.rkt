@@ -2,14 +2,18 @@
 (require racket/match
          ffi/vector
          racket/file
+         racket/list
          ffi/cvector
          (only-in ffi/unsafe
                   ctype-sizeof
+                  ctype->layout
                   define-cstruct
-                  _float)
+                  _float
+                  _sint8)
          ffi/unsafe/cvector
          gb/graphics/gl-util
          racket/function
+         (only-in math/base sum)
          racket/contract
          gb/graphics/r
          gb/lib/performance-log
@@ -63,11 +67,21 @@
    [theta _float] ;; 12
    [horiz _float] ;; 13
    [vert _float]  ;; 14
-   ))
+   )
+  #:alignment 4)
 
 (module+ test
   (eprintf "sprite-info is ~a bytes\n"
-           (ctype-sizeof _sprite-info)))
+           (ctype-sizeof _sprite-info))
+  (eprintf "sprite takes sprite-info is ~a bytes\n"
+           (* DrawnMult (ctype-sizeof _sprite-info))))
+
+(define ctype-name->bytes
+  (match-lambda
+   ['sint8 1]
+   ['float 4]))
+(define (ctype-offset _type offset)
+  (sum (map ctype-name->bytes (take (ctype->layout _type) offset))))
 
 (define (make-draw . args)
   (cond
@@ -79,6 +93,8 @@
 
 (define-shader-source VertexShader "ngl.vertex.glsl")
 (define-shader-source FragmentShader "ngl.fragment.glsl")
+
+(define DrawnMult 6)
 
 (define (make-draw/300 sprite-atlas-path
                        ;; xxx can remove these given below
@@ -101,9 +117,8 @@
     ;; I once thought I could use a degenerative triangle strip, but
     ;; that adds 2 additional vertices on all but the first and last
     ;; triangles, which would save me exactly 2 vertices total.
-    ;;
-    ;; xxx Maybe I could change this to install it in multiple
-    ;; places so I only do the set! once?
+
+    ;; xxx merge
     (point-install! -1.0 +1.0 0)
     (point-install! +1.0 +1.0 1)
     (point-install! -1.0 -1.0 2)
@@ -126,7 +141,6 @@
     ProgramId FragmentShader)
 
   (define DrawType GL_TRIANGLES)
-  (define DrawnMult 6)
   (define AttributeCount 6)
 
   (define *initialize-count*
@@ -215,12 +229,24 @@
     (begin
       (define HowMany
         (add1 (- SpriteData-end SpriteData-start)))
+      (eprintf "~v\n"
+               `(glVertexAttribPointer
+                 ,Index ,HowMany ,type
+                 #f
+                 ,(ctype-sizeof _sprite-info)                 
+                 old
+                 ,(* (gl-type-sizeof type)
+                     SpriteData-start)
+                 old-end
+                 ,(* (gl-type-sizeof type)
+                     SpriteData-end)
+                 new
+                 ,(ctype-offset _sprite-info SpriteData-start)))
       (glVertexAttribPointer
        Index HowMany type
        #f
        (ctype-sizeof _sprite-info)
-       (* (gl-type-sizeof type)
-          SpriteData-start))
+       (ctype-offset _sprite-info SpriteData-start))
       (glEnableVertexAttribArray Index)))
 
   (define VboId
@@ -237,12 +263,12 @@
 
   ;; xxx this is awkward, but ctype-layout might help?
   (define-vertex-attrib-array*
-    [0 0 3 GL_FLOAT]
-    [1 4 7 GL_FLOAT]
-    [2 8 8 GL_FLOAT]
+    [0  0  3 GL_FLOAT]
+    [1  4  7 GL_FLOAT]
+    [2  8  8 GL_FLOAT]
     [3 10 12 GL_FLOAT]
     [4 13 14 GL_FLOAT]
-    [5 9 9 GL_FLOAT])
+    [5  9  9 GL_FLOAT])
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 

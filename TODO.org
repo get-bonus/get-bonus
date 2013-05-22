@@ -99,6 +99,8 @@
    http://oryxdesignlab.com/ultimate
 
    http://forums.tigsource.com/index.php?topic=8970.0
+** TODO implement A* + JPS
+   http://zerowidth.com/2013/05/05/jump-point-search-explained.html
 ** DONE Change sprites/textures to use lower color depth
    CLOSED: [2013-05-18 Sat 10:03]
    Particularly if I go with 1-bit textures :)
