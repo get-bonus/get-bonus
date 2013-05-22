@@ -230,19 +230,19 @@
 
   (define-syntax-rule
     (define-vertex-attrib-array*
-      [AttribId AttribStart AttribEnd] ...)
+      [AttribId AttribStart AttribEnd Type] ...)
     (begin
-      (define-vertex-attrib-array AttribId AttribStart AttribEnd GL_FLOAT)
+      (define-vertex-attrib-array AttribId AttribStart AttribEnd Type)
       ...))
 
   ;; xxx this is awkward, but ctype-layout might help?
   (define-vertex-attrib-array*
-    [0 0 3]
-    [1 4 7]
-    [2 8 8]
-    [3 10 12]
-    [4 13 14]
-    [5 9 9])
+    [0 0 3 GL_FLOAT]
+    [1 4 7 GL_FLOAT]
+    [2 8 8 GL_FLOAT]
+    [3 10 12 GL_FLOAT]
+    [4 13 14 GL_FLOAT]
+    [5 9 9 GL_FLOAT])
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
