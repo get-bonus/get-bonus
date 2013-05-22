@@ -23,6 +23,9 @@
    CLOSED: [2013-05-22 Wed 10:37]
 ** DONE apse compile - build a tree to get, for example, all items
    CLOSED: [2013-05-22 Wed 13:42]
+** DONE apse - palette dir creation broken
+   CLOSED: [2013-05-22 Wed 14:02]
+** TODO maze - palette broken
 ** TODO better maze sprites
 ** TODO use palettes, plus animation in maze
 ** TODO find a better set of sprites for tennis

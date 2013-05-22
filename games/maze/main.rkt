@@ -105,7 +105,13 @@
    #:d (* scale -.5) (* scale -.5)
    (rectangle
     (* scale 0.5) (* scale 0.5)
-    (ghost-match which-ghost which-set (rate 2 10 frame-n)))))
+    (ghost-match which-ghost which-set (rate 2 10 frame-n))
+    0
+    (match which-ghost
+      [0 pal:maze/shadow]
+      [1 pal:maze/speedy]
+      [2 pal:maze/bashful]
+      [3 pal:maze/pokey]))))
 
 (define (scared-ghost-animation frame-n warning?)
   (ghost-sprite
@@ -118,7 +124,8 @@
    #:d (* scale -.5) (* scale -.5)
    (rectangle
     (* scale 0.5) (* scale 0.5)
-    spr:sos/character/cat
+    spr:sos/character/cat 0
+    pal:maze/runner
     #;
     (match (rate 3 10 n)
       [0 maze/player/0]
@@ -175,9 +182,9 @@
   (define-values
     (x y)
     (match q
-      ['sw (values            c         (- r 1))]
+      ['sw (values            c         (+ r 1))]
       ['nw (values            c  (- height r 1))]
-      ['se (values (- width c 1)        (- r 1))]
+      ['se (values (- width c 1)        (+ r 1))]
       ['ne (values (- width c 1) (- height r 1))]))
   (psn (exact->inexact (+ x .5)) (exact->inexact (+ y .5))))
 
@@ -370,7 +377,7 @@
 
 (define (quads->display qs)
   (transform
-   #:rgba 0. 0. 1. 1.
+   #:rgba 0 0 255 255
    (for*/list
        ([x (in-range width)]
         [y (in-range height)])
@@ -427,7 +434,7 @@
 
 (define (quad-objs->display os)
   (transform
-   #:irgbv (vector 255 161 69) #:a 1.0
+   #:irgbv (vector 255 161 69) #:a 255
    (for*/list
        ([x (in-range width)]
         [y (in-range height)])
@@ -555,7 +562,7 @@
      (transform
       #:d (* scale (- (psn-x l-target) .5))
           (* scale (- (psn-y l-target) .5))
-      #:a 1.0
+      #:a 255
       #:irgbv
       (match ai-n
         [0 (vector 169 16 0)]
@@ -799,14 +806,14 @@
                 10.
                 (list
                  (transform
-                  #:rgba 1. 1. 1. 1.
+                  #:rgba 255 255 255 255
                   (transform
                    #:d (* scale (/ width 2.)) (* scale (+ height 0.5))
                    (string->sprites
                     (format "~a" score-n))))
                  (static-objs-display st)
                  (static-map-display st)
-                 (transform #:a 1.0
+                 (transform #:a 255
                             #:dx (* scale (/ width 2.))
                             #:dy (* scale (/ height 2.))
                             (rectangle (* scale (/ width 2.))

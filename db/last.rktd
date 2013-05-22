@@ -1,1 +1,1 @@
-"sos/building/block/in"
+"sos/fauna/snake"

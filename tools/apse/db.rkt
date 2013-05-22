@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract
          racket/draw
+         racket/path
          racket/class
          racket/file
          racket/list
@@ -115,11 +116,12 @@
 (define (palette-save! a-db p)
   (match-define (db db-path) a-db)
   (match-define (palette pn cvs) p)
-  (write-to-file
-   cvs
-   (build-path db-path "palettes"
-               (format "~a.pal" pn))
-   #:exists 'replace))
+  (define ppath
+    (build-path db-path "palettes"
+                (format "~a.pal" pn)))
+  (make-directory* (path-only ppath))
+  (write-to-file cvs ppath
+                 #:exists 'replace))
 
 (define (name? x)
   (and (string? x)

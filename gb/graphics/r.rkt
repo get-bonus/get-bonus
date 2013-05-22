@@ -315,7 +315,12 @@
 (define-sprite none 0 0 (0))
 
 ;; palette info
-(define-palette-atlas 2 16)
+(define-palette-atlas 7 16)
 ;; palettes
 (define-palette grayscale 0)
-(define-palette monochrome 1)
+(define-palette maze/bashful 1)
+(define-palette maze/pokey 2)
+(define-palette maze/runner 3)
+(define-palette maze/shadow 4)
+(define-palette maze/speedy 5)
+(define-palette monochrome 6)
