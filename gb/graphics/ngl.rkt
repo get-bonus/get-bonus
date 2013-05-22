@@ -26,7 +26,7 @@
          gb/lib/gzip
          opengl)
 
-(define debug? #t)
+(define debug? #f)
 
 (define sprite-tree/c
   ;; XXX really a tree of sprite-info?, but that's expensive to check
@@ -62,27 +62,36 @@
    [my _float]    ;; 9
    [theta _float] ;; 10
 
-   [pal _uint32]   ;; 11
-   [spr _uint32]   ;; 12
+   ;; xxx This is a hack because we need to ensure we are aligned for
+   ;; OpenGL, so we're ignoring _palette and _sprite-index. At this
+   ;; moment, pal is "too" large and spr is just right. When we have
+   ;; more than 65k palettes or 65k sprites, there will be a
+   ;; problem. (BTW, because of normal alignment, if we change pal to
+   ;; just be a byte, it will still take up the same amount of space
+   ;; total.)
+   [pal _uint16]   ;; 11
+   [spr _uint16]   ;; 12
 
-   [horiz _sint8] ;; 13
-   [vert _sint8]  ;; 14
-   
-
-   ))
+   [horiz _sint8]  ;; 13
+   [vert _sint8])) ;; 14
 
 (define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
-  (make-sprite-info x y hw hh 
+  (make-sprite-info x y hw hh
                     r g b a
-                    mx my theta                  
+                    mx my theta
                     pal spr
                     0 0))
 
 (module+ test
-  (eprintf "sprite-info is ~a bytes\n"
-           (ctype-sizeof _sprite-info))
-  (eprintf "sprite takes sprite-info is ~a bytes\n"
-           (* DrawnMult (ctype-sizeof _sprite-info))))
+  (define vert-size (ctype-sizeof _sprite-info))
+  (eprintf "One vert is ~a bytes\n" vert-size)
+  (eprintf "One sprite is ~a verts\n" DrawnMult)
+  (eprintf "One sprite is ~a bytes\n" (* DrawnMult vert-size))
+  (eprintf "One sprite @ 60 FPS is ~a bytes per second\n" (* 60 DrawnMult vert-size))
+  (eprintf "Intel HD Graphics 4000 would give ~a sprites at 60 FPS (considering only memory)\n"
+           (real->decimal-string
+            (/ (* 25.6 1024 1024 1024)
+               (* 60 DrawnMult vert-size)))))
 
 (define ctype-name->bytes
   (match-lambda
@@ -269,7 +278,7 @@
       (define-values (int? type)
         (ctype->gltype (ctype-range-type _sprite-info SpriteData-start SpriteData-end)))
       (define byte-offset
-       (ctype-offset _sprite-info SpriteData-start))
+        (ctype-offset _sprite-info SpriteData-start))
       (define HowMany
         (add1 (- SpriteData-end SpriteData-start)))
       (when debug?
@@ -279,8 +288,6 @@
                    #f
                    ,(ctype-sizeof _sprite-info)
                    ,byte-offset)))
-      (unless (zero? (modulo byte-offset 4))
-        (error 'define-vertex-attrib-array "Not aligned!"))
       ((if int? glVertexAttribIPointer* glVertexAttribPointer)
        Index HowMany type
        #f
@@ -308,8 +315,7 @@
     [2 12 12] ;; spr
     [3  8 10] ;; mx--theta
     [4 13 14] ;; horiz--vert
-    [5 11 11] ;; pal
-    )
+    [5 11 11]) ;; pal
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 
