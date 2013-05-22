@@ -73,7 +73,7 @@
 
 (define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
   (define (->c i)
-    (exact->inexact (/ i 255.0)))
+    (exact->inexact i))
   (make-sprite-info x y hw hh 
                     (->c r) (->c g) (->c b) (->c a)                    
                     mx my theta                    
@@ -168,7 +168,7 @@
   ;; Create Shaders
   (define ProgramId (glCreateProgram))
   (glBindAttribLocation ProgramId 0 "in_Position")
-  (glBindAttribLocation ProgramId 1 "in_Color")
+  (glBindAttribLocation ProgramId 1 "in_iColor")
   (glBindAttribLocation ProgramId 2 "in_TexIndex")
   (glBindAttribLocation ProgramId 3 "in_Transforms")
   (glBindAttribLocation ProgramId 4 "in_VertexSpecification")
