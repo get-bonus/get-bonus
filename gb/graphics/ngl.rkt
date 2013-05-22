@@ -26,7 +26,7 @@
          gb/lib/gzip
          opengl)
 
-(define debug? #f)
+(define debug? #t)
 
 (define sprite-tree/c
   ;; XXX really a tree of sprite-info?, but that's expensive to check
@@ -58,21 +58,27 @@
    [g _float]     ;; 5
    [b _float]     ;; 6
    [a _float]     ;; 7
-   [spr _float]   ;; 8
-   [pal _float]   ;; 9
-   [mx _float]    ;; 10
-   [my _float]    ;; 11
-   [theta _float] ;; 12
+   [mx _float]    ;; 8
+   [my _float]    ;; 9
+   [theta _float] ;; 10
+
+   [pal _float]   ;; 11
+   [spr _float]   ;; 12
+
    [horiz _sint8] ;; 13
    [vert _sint8]  ;; 14
-   )
-  #:alignment 4)
+   
+
+   ))
 
 (define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
-  (make-sprite-info x y hw hh r g b a
-                    (exact->inexact spr)
+  (define (->c i)
+    (exact->inexact (/ i 255.0)))
+  (make-sprite-info x y hw hh 
+                    (->c r) (->c g) (->c b) (->c a)                    
+                    mx my theta                    
                     (exact->inexact pal)
-                    mx my theta
+                    (exact->inexact spr)
                     0 0))
 
 (module+ test
@@ -86,7 +92,9 @@
    ['uint8 1]
    ['int8 1]
    ['int16 2]
+   ['uint16 2]
    ['int32 4]
+   ['uint32 4]
    ['float 4]))
 (define (ctype-offset _type offset)
   (sum (map ctype-name->bytes (take (ctype->layout _type) offset))))
@@ -111,7 +119,9 @@
   (match-lambda
    ['uint8 (values #t GL_UNSIGNED_BYTE)]
    ['int8 (values #t GL_BYTE)]
+   ['uint16 (values #t GL_UNSIGNED_SHORT)]
    ['int16 (values #t GL_SHORT)]
+   ['uint32 (values #t GL_UNSIGNED_INT)]
    ['int32 (values #t GL_INT)]
    ['float (values #f GL_FLOAT)]))
 
@@ -261,6 +271,8 @@
     (begin
       (define-values (int? type)
         (ctype->gltype (ctype-range-type _sprite-info SpriteData-start SpriteData-end)))
+      (define byte-offset
+       (ctype-offset _sprite-info SpriteData-start))
       (define HowMany
         (add1 (- SpriteData-end SpriteData-start)))
       (when debug?
@@ -269,19 +281,14 @@
                    ,Index ,HowMany ,type
                    #f
                    ,(ctype-sizeof _sprite-info)
-                   old
-                   ,(* (gl-type-sizeof type)
-                       SpriteData-start)
-                   old-end
-                   ,(* (gl-type-sizeof type)
-                       SpriteData-end)
-                   new
-                   ,(ctype-offset _sprite-info SpriteData-start))))
+                   ,byte-offset)))
+      (unless (zero? (modulo byte-offset 4))
+        (error 'define-vertex-attrib-array "Not aligned!"))
       ((if int? glVertexAttribIPointer* glVertexAttribPointer)
        Index HowMany type
        #f
        (ctype-sizeof _sprite-info)
-       (ctype-offset _sprite-info SpriteData-start))
+       byte-offset)
       (glEnableVertexAttribArray Index)))
 
   (define VboId
@@ -299,12 +306,13 @@
   ;; XXX This is gross that I can't use names of either the attribute
   ;; tables or the start/end
   (define-vertex-attrib-array*
-    [0  0  3]
-    [1  4  7]
-    [2  8  8]
-    [3 10 12]
-    [4 13 14]
-    [5  9  9])
+    [0  0  3] ;; x--hh
+    [1  4  7] ;; r--a
+    [2 12 12] ;; spr
+    [3  8 10] ;; mx--theta
+    [4 13 14] ;; horiz--vert
+    [5 11 11] ;; pal
+    )
 
   (glBindBuffer GL_ARRAY_BUFFER 0)
 

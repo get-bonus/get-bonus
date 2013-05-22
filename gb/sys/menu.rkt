@@ -227,7 +227,7 @@
   (define hw (/ w 2.0))
   (define hh (/ h 2.0))
   (transform #:d cx cy
-             #:rgba (/ 207.0 255.0) (/ 227.0 255.0) (/ 255.0 255.0) 1.0
+             #:rgba 207 227 255 255
              (rectangle hw hh)))
 
 (define (draw-menu:info top-offset bot-offset left-offset st cm)

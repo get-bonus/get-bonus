@@ -10,10 +10,10 @@
 (define current-mx (make-parameter 1.0))
 (define current-my (make-parameter 1.0))
 (define current-theta (make-parameter 0.0))
-(define current-r (make-parameter 0.0))
-(define current-g (make-parameter 0.0))
-(define current-b (make-parameter 0.0))
-(define current-a (make-parameter 0.0))
+(define current-r (make-parameter 0))
+(define current-g (make-parameter 0))
+(define current-b (make-parameter 0))
+(define current-a (make-parameter 0))
 
 (define (rectangle hw hh [spr #f] [i #f])
   (sprite-info (current-dx) (current-dy)
@@ -33,7 +33,7 @@
                (current-mx) (current-my)
                (current-theta)))
 (define (sprite tex i)
-  (sprite* 0.0 0.0 0.0 0.0 tex i))
+  (sprite* 0 0 0 0 tex i))
 (define (sprite/tint tex i)
   (sprite* (current-r) (current-g) (current-b) (current-a) tex i))
 
@@ -47,10 +47,11 @@
     ;; Color
     [(_ #:irgbv irgbv:expr . more:expr)
      (syntax/loc stx
+       ;; xxx u8vector
        (let* ([irgbv-v irgbv]
-              [r (->float (/ (vector-ref irgbv-v 0) 255))]
-              [g (->float (/ (vector-ref irgbv-v 1) 255))]
-              [b (->float (/ (vector-ref irgbv-v 2) 255))])
+              [r (vector-ref irgbv-v 0)]
+              [g (vector-ref irgbv-v 1)]
+              [b (vector-ref irgbv-v 2)])
          (transform #:r r #:g g #:b b . more)))]
     [(_ #:rgb r:expr g:expr b:expr . more:expr)
      (syntax/loc stx

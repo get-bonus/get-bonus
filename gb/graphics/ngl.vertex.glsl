@@ -44,6 +44,9 @@ mat4 glTranslate( float x, float y, float z ) {
 
 void main(void)
 {
+  //vec4 in_Color = vec4(in_iColor.r / 255.0, in_iColor.g / 255.0, in_iColor.b / 255.0, in_iColor.a / 255.0);
+  //float in_TexIndex = 373.0; //in_iTexIndex;
+  //float in_Palette = 0.0; //in_iPalette;
   vec4 in_TexCoord = texelFetch(SpriteIndexTex, ivec2(0, in_TexIndex), 0);
   vec2 in_VertexSpecification = vec2(in_iVertexSpecification.x, in_iVertexSpecification.y);
 
