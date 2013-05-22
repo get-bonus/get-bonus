@@ -3,7 +3,7 @@
 uniform sampler2D SpriteIndexTex; 
 
 in vec4 in_Position;
-in vec4 in_iColor;
+in uvec4 in_iColor;
 in float in_TexIndex;
 in vec3 in_Transforms;
 in ivec2 in_iVertexSpecification;

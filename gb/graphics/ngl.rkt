@@ -54,10 +54,10 @@
    [y _float]     ;; 1
    [hw _float]    ;; 2
    [hh _float]    ;; 3
-   [r _float]     ;; 4
-   [g _float]     ;; 5
-   [b _float]     ;; 6
-   [a _float]     ;; 7
+   [r _uint8]     ;; 4
+   [g _uint8]     ;; 5
+   [b _uint8]     ;; 6
+   [a _uint8]     ;; 7
    [mx _float]    ;; 8
    [my _float]    ;; 9
    [theta _float] ;; 10
@@ -72,10 +72,8 @@
    ))
 
 (define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
-  (define (->c i)
-    (exact->inexact i))
   (make-sprite-info x y hw hh 
-                    (->c r) (->c g) (->c b) (->c a)                    
+                    r g b a
                     mx my theta                    
                     (exact->inexact pal)
                     (exact->inexact spr)
