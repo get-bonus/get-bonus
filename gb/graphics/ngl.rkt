@@ -109,21 +109,19 @@
   (define SpriteData #f)
 
   (define (install-object! i o)
-    (define-syntax-rule (point-install! Horiz Vert j)
+    (define-syntax-rule (point-install! Horiz Vert j ...)
       (begin
         (set-sprite-info-horiz! o Horiz)
         (set-sprite-info-vert! o Vert)
-        (cvector-set! SpriteData (+ (* i 6) j) o)))
+        (cvector-set! SpriteData (+ (* i 6) j) o)
+        ...))
     ;; I once thought I could use a degenerative triangle strip, but
     ;; that adds 2 additional vertices on all but the first and last
     ;; triangles, which would save me exactly 2 vertices total.
 
-    ;; xxx merge
     (point-install! -1.0 +1.0 0)
-    (point-install! +1.0 +1.0 1)
-    (point-install! -1.0 -1.0 2)
-    (point-install! -1.0 -1.0 3)
-    (point-install! +1.0 +1.0 4)
+    (point-install! +1.0 +1.0 1 4)
+    (point-install! -1.0 -1.0 2 3)
     (point-install! +1.0 -1.0 5))
 
   ;; Create Shaders
