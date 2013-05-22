@@ -36,13 +36,9 @@
  (contract-out
   [sprite-tree/c
    contract?]
-  ;; XXX these functions really take single-flonum? not flonum? but
-  ;; most things with .0 in them are really double flonums in Racket.
   [make-draw
-   (-> path-string? fixnum?
-       path-string?
-       path-string? fixnum? fixnum?
-       flonum? flonum?
+   (-> path-string? path-string? path-string?
+       exact-nonnegative-integer? exact-nonnegative-integer?
        (-> sprite-tree/c void))])
  ;; xxx contract
  sprite-info?
@@ -62,7 +58,7 @@
    [my _float]    ;; 9
    [theta _float] ;; 10
 
-   ;; xxx This is a hack because we need to ensure we are aligned for
+   ;; This is a hack because we need to ensure we are aligned for
    ;; OpenGL, so we're ignoring _palette and _sprite-index. At this
    ;; moment, pal is "too" large and spr is just right. When we have
    ;; more than 65k palettes or 65k sprites, there will be a
@@ -145,12 +141,8 @@
 (define DrawnMult 6)
 
 (define (make-draw/300 sprite-atlas-path
-                       ;; xxx can remove these given below
-                       sprite-atlas-size
                        sprite-index-path
                        palette-atlas-path
-                       ;; xxx can remove these
-                       palette-atlas-count palette-atlas-depth
                        width height)
   (define SpriteData-count
     0)
@@ -219,13 +211,14 @@
   (define SpriteAtlasId (u32vector-ref (glGenTextures 1) 0))
   (glBindTexture GL_TEXTURE_2D SpriteAtlasId)
   (2D-defaults)
-  (glTexImage2D GL_TEXTURE_2D
-                0 GL_R8
-                ;; xxx could figure this out from the size of the
-                ;; data, since we know it is a power of two squared
-                sprite-atlas-size sprite-atlas-size 0
-                GL_RED GL_UNSIGNED_BYTE
-                (gunzip-bytes (file->bytes sprite-atlas-path)))
+  (let ()
+    (define sprite-atlas-bytes (gunzip-bytes (file->bytes sprite-atlas-path)))
+    (define sprite-atlas-size (sqrt (bytes-length sprite-atlas-bytes)))
+    (glTexImage2D GL_TEXTURE_2D
+                  0 GL_R8
+                  sprite-atlas-size sprite-atlas-size 0
+                  GL_RED GL_UNSIGNED_BYTE
+                  sprite-atlas-bytes))
 
   (define PaletteAtlasId
     (load-texture palette-atlas-path
@@ -234,18 +227,19 @@
   (define SpriteIndexId (u32vector-ref (glGenTextures 1) 0))
   (glBindTexture GL_TEXTURE_2D SpriteIndexId)
   (2D-defaults)
-  (define sprite-index-data
-    (gunzip-bytes (file->bytes sprite-index-path)))
-  (define sprite-index-bytes 4)
-  (define sprite-index-count (/ (bytes-length sprite-index-data)
-                                (* 4 sprite-index-bytes)))
-  (define effective-sprite-index-count
-    (expt 2 (num->pow2 sprite-index-count)))
-  (glTexImage2D GL_TEXTURE_2D
-                0 GL_RGBA32F
-                1 effective-sprite-index-count 0
-                GL_RGBA GL_FLOAT
-                sprite-index-data)
+  (let ()
+    (define sprite-index-data
+      (gunzip-bytes (file->bytes sprite-index-path)))
+    (define sprite-index-bytes 4)
+    (define sprite-index-count (/ (bytes-length sprite-index-data)
+                                  (* 4 sprite-index-bytes)))
+    (define effective-sprite-index-count
+      (expt 2 (num->pow2 sprite-index-count)))
+    (glTexImage2D GL_TEXTURE_2D
+                  0 GL_RGBA32F
+                  1 effective-sprite-index-count 0
+                  GL_RGBA GL_FLOAT
+                  sprite-index-data))
 
   (glLinkProgram ProgramId)
   (print-shader-log glGetProgramInfoLog 'Program ProgramId)
@@ -257,10 +251,10 @@
                1)
   (glUniform1i (glGetUniformLocation ProgramId "SpriteIndexTex")
                2)
-  (glUniform1f (glGetUniformLocation ProgramId "ViewportWidth")
-               width)
-  (glUniform1f (glGetUniformLocation ProgramId "ViewportHeight")
-               height)
+  (glUniform1ui (glGetUniformLocation ProgramId "ViewportWidth")
+                width)
+  (glUniform1ui (glGetUniformLocation ProgramId "ViewportHeight")
+                height)
   (glUseProgram 0)
 
   ;; Create VBOs
@@ -307,8 +301,7 @@
       (define-vertex-attrib-array AttribId AttribStart AttribEnd)
       ...))
 
-  ;; XXX This is gross that I can't use names of either the attribute
-  ;; tables or the start/end
+  ;; XXX I can't use either the attributes or the fields :(
   (define-vertex-attrib-array*
     [0  0  3] ;; x--hh
     [1  4  7] ;; r--a
@@ -400,7 +393,6 @@
     (glEnable GL_DEPTH_TEST)
     (glClearColor 1.0 1.0 1.0 0.0)
 
-    ;; xxx turn off this?
     (glEnable GL_BLEND)
     (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
     (glEnable GL_ALPHA_TEST)

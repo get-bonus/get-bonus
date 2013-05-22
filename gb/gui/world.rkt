@@ -110,32 +110,11 @@
        (unless draw-sprites
          (set! draw-sprites
                (make-draw
-                (cond
-                  [(file-exists? texture-atlas-path)
-                   texture-atlas-path]
-                  [else
-                   (error 'world
-                          "No available texture atlas; ~v is missing"
-                          texture-atlas-path)])
-                sprite-atlas-size
-                (cond
-                  [(file-exists? texture-index-path)
-                   texture-index-path]
-                  [else
-                   (error 'world
-                          "No available texture index; ~v is missing"
-                          texture-index-path)])
-                (cond
-                  [(file-exists? palette-atlas-path)
-                   palette-atlas-path]
-                  [else
-                   (error 'world
-                          "No available palette atlas; ~v is missing"
-                          palette-atlas-path)])
-                palette-atlas-count
-                palette-atlas-depth
-                (* 1.0 crt-width)
-                (* 1.0 crt-height))))
+                texture-atlas-path
+                texture-index-path
+                palette-atlas-path
+                crt-width
+                crt-height)))
        (when last-sprites
          (draw-on-crt (λ () (draw-sprites last-sprites))))
        (done!)

@@ -9,8 +9,8 @@ in vec3 in_Transforms;
 in ivec2 in_iVertexSpecification;
 in uint in_iPalette;
 
-uniform float ViewportWidth;
-uniform float ViewportHeight;
+uniform uint ViewportWidth;
+uniform uint ViewportHeight;
 
 out vec4 Color;
 out vec2 TexCoord;
