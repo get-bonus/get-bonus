@@ -7,8 +7,7 @@
          racket/port
          racket/system
          racket/file
-         setup/dirs
-         gb/graphics/font-lib)
+         setup/dirs)
 (module+ test
   (require rackunit))
 

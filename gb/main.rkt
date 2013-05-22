@@ -128,7 +128,7 @@
     (define max.v (apply max l))
     (define mean.v (/ (apply + l) (length l)))
     (define median.v (list-ref (sort l <) (floor (/ (length l) 2))))
-    (apply format "[~a -| (med: ~a|mean: ~a) |- ~a]"
+    (apply format "[~a/~a/~a/~a]"
            (map fmt
                 (list min.v
                       median.v
@@ -154,20 +154,20 @@
 
 (define (history->info-screen-list history)
   (list
-   (format "  Attempts: ~a"
+   (format "    A: ~a"
            (length history))
-   (format "Total time: ~a"
+   (format "Total: ~a"
            (time-format
             (sum (map attempt-length
                       history))))
-   (format "     Score: ~a"
+   (format "    S: ~a"
            (stats-string (map attempt-score
                               history)))
-   (format "      Time: ~a"
+   (format "    T: ~a"
            (stats-string (map attempt-length
                               history)
                          #:fmt time-format))
-   (format "      Last: ~a"
+   (format "    L: ~a"
            (parameterize ([date-display-format
                            'iso-8601])
              (define attempts
@@ -189,8 +189,11 @@
 (require gb/lib/meta-q)
 (define (id->game-info-display id)
   (define g (hash-ref game-code->info id))
-  (append (list (game-info-name g) "")          
-          (meta-q 50 (game-info-desc g))
+  (append (meta-q 48 (list* 
+                      (format "~a - ~a"
+                              (game-info-name g)
+                              (first (game-info-desc g)))
+                      (rest (game-info-desc g))))
           (list "")))
 
 (define (go)
@@ -214,7 +217,7 @@
             (filter attempt-this-session?
                     (append-map card-history these-cards)))
           (menu:status
-           (format "Session: ~a Games: ~a Attempts: ~a Time: ~a (Total: ~a)"
+           (format "S: ~a G: ~a A: ~a T: ~a (Total: ~a)"
                    (current-play-session)
                    (length
                     (remove-duplicates
@@ -254,7 +257,7 @@
                          [#f id]
                          [(ldata game _ _) game]))
                      (list*
-                      (format "      Sort: ~a"
+                      (format "    S: ~a"
                               (real->decimal-string sort-score))
                       (history->info-screen-list history))))
                     (menu:action (λ () (play-card c))))))))))

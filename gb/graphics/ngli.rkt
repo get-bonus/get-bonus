@@ -15,27 +15,27 @@
 (define current-b (make-parameter 0))
 (define current-a (make-parameter 0))
 
-(define (rectangle hw hh [spr #f] [i #f])
+(define (rectangle hw hh [spr #f] [i #f] [pal 0])
   (sprite-info (current-dx) (current-dy)
                hw hh
                (current-r) (current-g) (current-b) (current-a)
                (if (and spr i)
                  (sprited-ref spr i)
                  0)
-               0 ;; xxx set palette
+               pal
                (current-mx) (current-my)
                (current-theta)))
-(define (sprite* r g b a spr i)
+(define (sprite* r g b a spr i pal)
   (sprite-info (current-dx) (current-dy)
                (* 0.5 (sprited-width spr)) (* 0.5 (sprited-height spr))
                r g b a
-               (sprited-ref spr i) 0 ;; xxx set palette
+               (sprited-ref spr i) pal
                (current-mx) (current-my)
                (current-theta)))
-(define (sprite tex i)
-  (sprite* 0 0 0 0 tex i))
-(define (sprite/tint tex i)
-  (sprite* (current-r) (current-g) (current-b) (current-a) tex i))
+(define (sprite tex i pal)
+  (sprite* 0 0 0 0 tex i pal))
+(define (sprite/tint tex i pal)
+  (sprite* (current-r) (current-g) (current-b) (current-a) tex i pal))
 
 (define-syntax (transform stx)
   (syntax-parse stx
@@ -112,11 +112,11 @@
  transform
  (contract-out
   [sprite
-   (-> sprited? sprite-index? sprite-info?)]
+   (-> sprited? sprite-index? palette? sprite-info?)]
   [sprite/tint 
-   (-> sprited? sprite-index? sprite-info?)]
+   (-> sprited? sprite-index? palette? sprite-info?)]
   [rectangle
    ;; XXX not really a flonum, a single-flonum
    (->* (flonum? flonum?)
-        (sprited? sprite-index?)
+        (sprited? sprite-index? palette?)
         sprite-info?)]))

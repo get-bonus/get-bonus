@@ -286,7 +286,7 @@
 
 (define game
   (game-info 'tennis "Tennis!" 
-             (list "Bounce the ball against the back wall by moving the paddle up and down. As you hit the ball more times, it moves faster and spawns child balls that start slightly slower. Your score is a function of how many times you've bounced a ball."
+             (list "Bounce the ball against the wall by moving the paddle. As you hit the ball more times, it moves faster, spawns child balls, and your score goes up."
                    "Compare to Pong(R) by Atari (1972)")
              0
              (random-godel-generate tennis-seq/s)

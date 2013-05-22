@@ -13,11 +13,20 @@
      sprite = width x height x vector(image) [could be homo-vector]
      image = integer [don't bind]
      palette = integer
-** TODO enable the ability to specify palettes
-** TODO rescale menu system because fonts are bigger now
+** DONE enable the ability to specify palettes
+   CLOSED: [2013-05-22 Wed 10:22]
+** TODO delete stuff?
+   font-lib
+   texture-atlas tool
+** DONE rescale menu system because fonts are bigger now
+   CLOSED: [2013-05-22 Wed 10:37]
+** TODO create a new small font for menu
+   http://www.omnimaga.org/index.php?topic=3692.0
+** TODO apse compile - build a tree to get, for example, all items
+** TODO better maze sprites
 ** TODO use palettes, plus animation in maze
 ** TODO find a better set of sprites for tennis
-** TODO apse compile - build a tree to get, for example, all items
+
 ** TODO apse - Make apse purely functional and have better undo system
    (where it goes back to earlier system states)
 ** TODO apse - Add height/normal maps & lighting
