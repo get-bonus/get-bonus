@@ -9,7 +9,12 @@
                   ctype->layout
                   define-cstruct
                   _float
-                  _sint8)
+                  _sint32
+                  _uint32
+                  _sint16
+                  _uint16
+                  _sint8
+                  _uint8)
          ffi/unsafe/cvector
          gb/graphics/gl-util
          racket/function
@@ -44,13 +49,6 @@
  (rename-out
   [create-sprite-info sprite-info]))
 
-(define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
-  (make-sprite-info x y hw hh r g b a
-                    (exact->inexact spr)
-                    (exact->inexact pal)
-                    mx my theta
-                    0.0 0.0))
-
 (define-cstruct _sprite-info
   ([x _float]     ;; 0
    [y _float]     ;; 1
@@ -65,10 +63,17 @@
    [mx _float]    ;; 10
    [my _float]    ;; 11
    [theta _float] ;; 12
-   [horiz _float] ;; 13
-   [vert _float]  ;; 14
+   [horiz _sint8] ;; 13
+   [vert _sint8]  ;; 14
    )
   #:alignment 4)
+
+(define (create-sprite-info x y hw hh r g b a spr pal mx my theta)
+  (make-sprite-info x y hw hh r g b a
+                    (exact->inexact spr)
+                    (exact->inexact pal)
+                    mx my theta
+                    0 0))
 
 (module+ test
   (eprintf "sprite-info is ~a bytes\n"
@@ -78,7 +83,10 @@
 
 (define ctype-name->bytes
   (match-lambda
-   ['sint8 1]
+   ['uint8 1]
+   ['int8 1]
+   ['int16 2]
+   ['int32 4]
    ['float 4]))
 (define (ctype-offset _type offset)
   (sum (map ctype-name->bytes (take (ctype->layout _type) offset))))
@@ -101,7 +109,11 @@
 
 (define ctype->gltype
   (match-lambda
-   ['float GL_FLOAT]))
+   ['uint8 (values #t GL_UNSIGNED_BYTE)]
+   ['int8 (values #t GL_BYTE)]
+   ['int16 (values #t GL_SHORT)]
+   ['int32 (values #t GL_INT)]
+   ['float (values #f GL_FLOAT)]))
 
 (define (make-draw . args)
   (cond
@@ -138,10 +150,10 @@
     ;; I once thought I could use a degenerative triangle strip, but
     ;; that adds 2 additional vertices on all but the first and last
     ;; triangles, which would save me exactly 2 vertices total.
-    (point-install! -1.0 +1.0 0)
-    (point-install! +1.0 +1.0 1 4)
-    (point-install! -1.0 -1.0 2 3)
-    (point-install! +1.0 -1.0 5))
+    (point-install! -1 +1 0)
+    (point-install! +1 +1 1 4)
+    (point-install! -1 -1 2 3)
+    (point-install! +1 -1 5))
 
   ;; Create Shaders
   (define ProgramId (glCreateProgram))
@@ -240,28 +252,32 @@
     (u32vector-ref (glGenVertexArrays 1) 0))
   (glBindVertexArray VaoId)
 
+  (define (glVertexAttribIPointer* index size type normalized stride pointer)
+    (glVertexAttribIPointer index size type stride pointer))
+
   (define-syntax-rule
     (define-vertex-attrib-array
       Index SpriteData-start SpriteData-end)
     (begin
-      (define type
+      (define-values (int? type)
         (ctype->gltype (ctype-range-type _sprite-info SpriteData-start SpriteData-end)))
       (define HowMany
         (add1 (- SpriteData-end SpriteData-start)))
-      (eprintf "~v\n"
-               `(glVertexAttribPointer
-                 ,Index ,HowMany ,type
-                 #f
-                 ,(ctype-sizeof _sprite-info)                 
-                 old
-                 ,(* (gl-type-sizeof type)
-                     SpriteData-start)
-                 old-end
-                 ,(* (gl-type-sizeof type)
-                     SpriteData-end)
-                 new
-                 ,(ctype-offset _sprite-info SpriteData-start)))
-      (glVertexAttribPointer
+      (when debug?
+        (eprintf "~v\n"
+                 `(glVertexAttribPointer
+                   ,Index ,HowMany ,type
+                   #f
+                   ,(ctype-sizeof _sprite-info)
+                   old
+                   ,(* (gl-type-sizeof type)
+                       SpriteData-start)
+                   old-end
+                   ,(* (gl-type-sizeof type)
+                       SpriteData-end)
+                   new
+                   ,(ctype-offset _sprite-info SpriteData-start))))
+      ((if int? glVertexAttribIPointer* glVertexAttribPointer)
        Index HowMany type
        #f
        (ctype-sizeof _sprite-info)
@@ -280,7 +296,8 @@
       (define-vertex-attrib-array AttribId AttribStart AttribEnd)
       ...))
 
-  ;; xxx this is awkward, but ctype-layout might help?
+  ;; XXX This is gross that I can't use names of either the attribute
+  ;; tables or the start/end
   (define-vertex-attrib-array*
     [0  0  3]
     [1  4  7]

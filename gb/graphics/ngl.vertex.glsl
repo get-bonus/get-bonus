@@ -6,7 +6,7 @@ in vec4 in_Position;
 in vec4 in_Color;
 in float in_TexIndex;
 in vec3 in_Transforms;
-in vec2 in_VertexSpecification;
+in ivec2 in_iVertexSpecification;
 in float in_Palette;
 
 uniform float ViewportWidth;
@@ -45,6 +45,7 @@ mat4 glTranslate( float x, float y, float z ) {
 void main(void)
 {
   vec4 in_TexCoord = texelFetch(SpriteIndexTex, ivec2(0, in_TexIndex), 0);
+  vec2 in_VertexSpecification = vec2(in_iVertexSpecification.x, in_iVertexSpecification.y);
 
   // Vertex Shader
   vec4 the_gl_Position;
