@@ -37,11 +37,6 @@
 (define (sprite/tint tex i)
   (sprite* (current-r) (current-g) (current-b) (current-a) tex i))
 
-(define (->float v)
-  (if (zero? v)
-    0.
-    (* 1. v)))
-
 (define-syntax (transform stx)
   (syntax-parse stx
     ;; Color
