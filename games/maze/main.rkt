@@ -111,26 +111,30 @@
    #:d (* scale -.5) (* scale -.5)
    (rectangle
     (* scale 0.5) (* scale 0.5)
-    spr:sos/character/cat 0
-    pal:maze/runner
-    #;
-    (match (rate 3 10 n)
-    [0 maze/player/0]
-    [1 maze/player/1]
-    [2 maze/player/2]))))
+    spr:sos/character/cat
+    ;; xxx ignoring n
+    0
+    pal:maze/runner)))
 (define player-r .499)
 
 (define pellet-r (/ player-r 6))
 (define (pellet-img)
-  (rectangle (* scale pellet-r) (* scale pellet-r)))
-(define (power-up-img)
-  (rectangle (* scale 2 pellet-r) (* scale 2 pellet-r)))
-(define (fruit-img)
+  (sprite spr:sos/font/gold 0
+          pal:maze/runner))
+
+(define food-sprs (fstree-ref sprite-tree "sos/food"))
+(define (power-up-img i)
+  (sprite (list-refm food-sprs i) 0
+          pal:maze/runner))
+
+(define (fruit-img i)
   (let ()
     (define s (* 3 pellet-r))
     (transform
      #:d (* scale (- (* s .5))) (* scale (- (* s .5)))
-     (rectangle (* scale s) (* scale s)))))
+     (rectangle (* scale s) (* scale s))))
+  ;; xxx ignore i
+  (sprite spr:sos/exploration/key/big 0 pal:maze/runner))
 
 (define (quad-power-up-cell q)
   (locate-cell q power-up))
@@ -441,8 +445,8 @@
       #:d (* scale x) (* scale y)
       (match (fmatrix-ref fm r c #f)
         ['pellet (pellet-img)]
-        ['power-up (power-up-img)]
-        ['fruit (fruit-img)]
+        ['power-up (power-up-img (+ (* x height) y))]
+        ['fruit (fruit-img (+ (* x height) y))]
         [#f
          empty])))))
 
@@ -549,25 +553,13 @@
     (pos->cell
      (+ outside-jail 1.)))
   (define (ghost-graphics pos l-target dir power-left-n)
-    (cons
-     (transform
-      #:d (* scale (psn-x pos)) (* scale (psn-y pos))
-      (if (zero? power-left-n)
-        (ghost-animation img-n (current-frame) dir)
-        (scared-ghost-animation
-         img-n (current-frame)
-         (power-left-n . <= . TIME-TO-POWER-WARNING))))
-     (transform
-      #:d (* scale (- (psn-x l-target) .5))
-      (* scale (- (psn-y l-target) .5))
-      #:a 255
-      #:irgbv
-      (match ai-n
-        [0 (vector 169 16 0)]
-        [1 (vector 215 182 247)]
-        [2 (vector 60 189 255)]
-        [3 (vector 230 93 16)])
-      (rectangle (* scale 0.5) (* scale 0.5)))))
+    (transform
+     #:d (* scale (psn-x pos)) (* scale (psn-y pos))
+     (if (zero? power-left-n)
+       (ghost-animation img-n (current-frame) dir)
+       (scared-ghost-animation
+        img-n (current-frame)
+        (power-left-n . <= . TIME-TO-POWER-WARNING)))))
   (let wait-loop ([dot-timer init-timer])
     (unless (dot-timer . <= . 0)
       (define event (os/read* 'event #f))
@@ -725,7 +717,7 @@
              0.0
              (transform
               #:d (* scale (psn-x nnp)) (* scale (psn-y nnp))
-              #:rot actual-dir
+              ;; #:rot actual-dir
               (player-animation (current-frame)))))))
     (loop nnp actual-dir next-dir-n)))
 
