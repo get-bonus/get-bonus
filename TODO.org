@@ -27,6 +27,8 @@
    CLOSED: [2013-05-22 Wed 14:02]
 ** DONE maze - palette broken
    CLOSED: [2013-05-22 Wed 18:26]
+** DONE maze - sometimes the player can be put into a wall and can't move
+   CLOSED: [2013-05-22 Wed 19:12]
 ** TODO better maze sprites
 ** TODO use palettes, plus animation in maze
 ** TODO find a better set of sprites for tennis
@@ -124,7 +126,6 @@
 ** TODO look into google play services
    https://developers.google.com/games/services/web/gettingstarted
 ** TODO find a way to let the games inform which textures are included in atlas
-** TODO maze - sometimes the player can be put into a wall and can't move
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?
 ** TODO SRS - base next generation on past levels

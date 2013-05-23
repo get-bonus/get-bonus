@@ -27,6 +27,8 @@
          (prefix-in cd:
                     (combine-in gb/physics/cd-narrow
                                 gb/physics/cd-broad)))
+(module+ test
+  (require rackunit))
 
 ;; https://s3.amazonaws.com/data.tumblr.com/tumblr_m01c27aYQ91qbw2q1o1_1280.jpg?AWSAccessKeyId=AKIAJ6IHWSU3BX3X7X3Q&Expires=1331014634&Signature=MsCEbwNiXX7J5h%2B%2BeCdDjW11mmc%3D
 
@@ -169,13 +171,13 @@
     quad
     (cond
       [(and (r . < . h-height) (c . < . h-width))
-       'sw]
-      [(and (r . < . h-height) (c . >= . h-width))
-       'se]
-      [(and (r . >= . h-height) (c . < . h-width))
        'nw]
+      [(and (r . < . h-height) (c . >= . h-width))
+       'ne]
+      [(and (r . >= . h-height) (c . < . h-width))
+       'sw]
       [(and (r . >= . h-height) (c . >= . h-width))
-       'ne]))
+       'se]))
   (values quad vr vc))
 
 (define (quad*cell->psn q r*c)
@@ -183,11 +185,21 @@
   (define-values
     (x y)
     (match q
-      ['sw (values            c         (- r 1))]
+      ['sw (values            c               r)]
       ['nw (values            c  (- height r 1))]
-      ['se (values (- width c 1)        (- r 1))]
+      ['se (values (- width c 1)              r)]
       ['ne (values (- width c 1) (- height r 1))]))
   (psn (exact->inexact (+ x .5)) (exact->inexact (+ y .5))))
+
+(module+ test
+  (for* ([x (in-range width)]
+         [y (in-range height)])
+    (define-values (q r c) (xy->quad*r*c x y))
+    (define p (quad*cell->psn q (cons r c)))
+    (check-equal? (cons (psn-x p) (psn-y p))
+                  (cons  (+ x .5)  (+ y .5))
+                  (format "x: ~a y: ~a q: ~a r: ~a c: ~a"
+                          x y q r c))))
 
 (define (r->y r)
   (- height r 1))
