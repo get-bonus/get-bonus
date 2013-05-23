@@ -6,7 +6,7 @@
          racket/list
          racket/match)
 
-(define (make-string-factory tex:font [pal 0])
+(define (make-string-factory tex:font [pal pal:monochrome])
   (λ (some-string
       #:tint? [tint? #f]
       #:hw [hw #f]

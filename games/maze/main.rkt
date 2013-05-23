@@ -24,7 +24,8 @@
          (only-in gb/ai/path-finding
                   manhattan-distance)
          (for-syntax racket/base
-                     racket/syntax)
+                     racket/syntax
+                     syntax/parse)
          (prefix-in cd:
                     (combine-in gb/physics/cd-narrow
                                 gb/physics/cd-broad)))
@@ -128,11 +129,6 @@
           pal:maze/runner))
 
 (define (fruit-img i)
-  (let ()
-    (define s (* 3 pellet-r))
-    (transform
-     #:d (* scale (- (* s .5))) (* scale (- (* s .5)))
-     (rectangle (* scale s) (* scale s))))
   ;; xxx ignore i
   (sprite spr:sos/exploration/key/big 0 pal:maze/runner))
 
@@ -376,18 +372,55 @@
       (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
       s)))
 
+(define-syntax (define-select-wall stx)
+  (syntax-parse stx
+    [(_ name:id spr-base:id)
+     (with-syntax
+         ([((u? d? l? r? spr-base/udlr) ...)
+           (for*/list ([u? (in-list '(#t #f))]
+                       [d? (in-list '(#t #f))]
+                       [l? (in-list '(#t #f))]
+                       [r? (in-list '(#t #f))])
+             (list u? d? l? r?
+                   (format-id #'id "~a/~a~a~a~a"
+                              #'spr-base
+                              (if u? "u" "-")
+                              (if d? "d" "-")
+                              (if l? "l" "-")
+                              (if r? "r" "-"))))])
+       (syntax/loc stx
+         (define name
+           (match-lambda*
+            [(list u? d? l? r?)
+             spr-base/udlr]
+            ...))))]))
+
+(define-select-wall select-wall spr:sos/building/wall)
+
 (define (quads->display qs)
-  (transform
-   #:rgba 0 0 255 255
-   (for*/list
-       ([x (in-range width)]
-        [y (in-range height)])
-     (define-values (q r c) (xy->quad*r*c x y))
-     (if (equal? wall (quad-ref (hash-ref qs q) r c))
-       (transform
-        #:d (* scale x) (* scale y)
-        (rectangle (* scale 0.5) (* scale 0.5)))
-       empty))))
+  (define (xy-ref x y)
+    (cond
+      [(< x 0) #f]
+      [(< y 0) #f]
+      [(<= width x) #f]
+      [(<= height y) #f]
+      [else
+       (define-values (q r c) (xy->quad*r*c x y))
+       (equal? wall (quad-ref (hash-ref qs q) r c))]))
+  (for*/list
+      ([x (in-range width)]
+       [y (in-range height)])
+    (if (xy-ref x y)
+      (transform
+       #:d (* scale x) (* scale y)
+       (rectangle (* scale 0.5) (* scale 0.5)
+                  (select-wall (xy-ref x (add1 y))
+                               (xy-ref x (sub1 y))
+                               (xy-ref (sub1 x) y)
+                               (xy-ref (add1 x) y))
+                  0
+                  pal:blue))
+      empty)))
 
 (struct quad-objs (pellet-count r*c->obj))
 (define (populate-quad q [old-q #f] [old-qo #f])

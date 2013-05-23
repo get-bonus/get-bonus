@@ -1,1 +1,1 @@
-"sos/fauna/snake"
+"sos/building/wall/---r"

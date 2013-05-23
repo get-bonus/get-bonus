@@ -15,7 +15,7 @@
 (define current-b (make-parameter 0))
 (define current-a (make-parameter 0))
 
-(define (rectangle hw hh [spr #f] [i #f] [pal 0])
+(define (rectangle hw hh [spr #f] [i #f] [pal pal:monochrome])
   (sprite-info (current-dx) (current-dy)
                hw hh
                (current-r) (current-g) (current-b) (current-a)
