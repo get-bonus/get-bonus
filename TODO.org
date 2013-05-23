@@ -1,49 +1,4 @@
 * General TODO items
-** DONE use r.bin (should work right now)
-   CLOSED: [2013-05-21 Tue 07:12]
-** DONE use r.idx.bin (should be easy?)
-   wasn't easy
-** DONE use a cstruct for sprite-info and cvector for spritedata [all floats]
-   This cut the frame time down from about 7 or 8 to about 2!
-** DONE try to use optimization ideas
-   CLOSED: [2013-05-22 Wed 09:21]
-   - change cstruct to use integers too
-   - have the size of the data types be generated/derived from atlases
-** DONE rearrange structures greatly
-     sprite = width x height x vector(image) [could be homo-vector]
-     image = integer [don't bind]
-     palette = integer
-** DONE enable the ability to specify palettes
-   CLOSED: [2013-05-22 Wed 10:22]
-** DONE delete stuff?
-   CLOSED: [2013-05-22 Wed 10:52]
-   font-lib
-   texture-atlas tool
-** DONE rescale menu system because fonts are bigger now
-   CLOSED: [2013-05-22 Wed 10:37]
-** DONE apse compile - build a tree to get, for example, all items
-   CLOSED: [2013-05-22 Wed 13:42]
-** DONE apse - palette dir creation broken
-   CLOSED: [2013-05-22 Wed 14:02]
-** DONE maze - palette broken
-   CLOSED: [2013-05-22 Wed 18:26]
-** DONE maze - sometimes the player can be put into a wall and can't move
-   CLOSED: [2013-05-22 Wed 19:12]
-** DONE better maze sprites
-   CLOSED: [2013-05-22 Wed 20:06]
-   X enemies
-   X walls
-   X player
-   X pellets
-   X power ups
-   X switchers
-** DONE use palettes, plus animation in maze
-   CLOSED: [2013-05-22 Wed 20:07]
-** DONE find a better set of sprites for tennis
-   CLOSED: [2013-05-22 Wed 20:23]
-** DONE Change sprites/textures to use lower color depth
-   CLOSED: [2013-05-18 Sat 10:03]
-   Particularly if I go with 1-bit textures :)
 ** TODO create a new small font for menu
    http://www.omnimaga.org/index.php?topic=3692.0
 ** TODO apse - Make apse purely functional and have better undo system
@@ -1142,3 +1097,48 @@
    CLOSED: [2013-02-15 Fri 08:45]
 ** DONE GLFW - Wait for getting the string identifiers of joysticks
    CLOSED: [2013-02-15 Fri 11:37]
+** DONE use r.bin (should work right now)
+   CLOSED: [2013-05-21 Tue 07:12]
+** DONE use r.idx.bin (should be easy?)
+   wasn't easy
+** DONE use a cstruct for sprite-info and cvector for spritedata [all floats]
+   This cut the frame time down from about 7 or 8 to about 2!
+** DONE try to use optimization ideas
+   CLOSED: [2013-05-22 Wed 09:21]
+   - change cstruct to use integers too
+   - have the size of the data types be generated/derived from atlases
+** DONE rearrange structures greatly
+     sprite = width x height x vector(image) [could be homo-vector]
+     image = integer [don't bind]
+     palette = integer
+** DONE enable the ability to specify palettes
+   CLOSED: [2013-05-22 Wed 10:22]
+** DONE delete stuff?
+   CLOSED: [2013-05-22 Wed 10:52]
+   font-lib
+   texture-atlas tool
+** DONE rescale menu system because fonts are bigger now
+   CLOSED: [2013-05-22 Wed 10:37]
+** DONE apse compile - build a tree to get, for example, all items
+   CLOSED: [2013-05-22 Wed 13:42]
+** DONE apse - palette dir creation broken
+   CLOSED: [2013-05-22 Wed 14:02]
+** DONE maze - palette broken
+   CLOSED: [2013-05-22 Wed 18:26]
+** DONE maze - sometimes the player can be put into a wall and can't move
+   CLOSED: [2013-05-22 Wed 19:12]
+** DONE better maze sprites
+   CLOSED: [2013-05-22 Wed 20:06]
+   X enemies
+   X walls
+   X player
+   X pellets
+   X power ups
+   X switchers
+** DONE use palettes, plus animation in maze
+   CLOSED: [2013-05-22 Wed 20:07]
+** DONE find a better set of sprites for tennis
+   CLOSED: [2013-05-22 Wed 20:23]
+** DONE Change sprites/textures to use lower color depth
+   CLOSED: [2013-05-18 Sat 10:03]
+   Particularly if I go with 1-bit textures :)
