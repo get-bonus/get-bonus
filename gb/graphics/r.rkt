@@ -318,13 +318,14 @@
 (define-sprite none 0 0 (0))
 
 ;; palette info
-(define-palette-atlas 8 16)
+(define-palette-atlas 9 16)
 ;; palettes
 (define-palette blue 0)
 (define-palette grayscale 1)
-(define-palette maze/bashful 2)
-(define-palette maze/pokey 3)
-(define-palette maze/runner 4)
-(define-palette maze/shadow 5)
-(define-palette maze/speedy 6)
-(define-palette monochrome 7)
+(define-palette green 2)
+(define-palette maze/bashful 3)
+(define-palette maze/pokey 4)
+(define-palette maze/runner 5)
+(define-palette maze/shadow 6)
+(define-palette maze/speedy 7)
+(define-palette monochrome 8)

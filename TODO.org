@@ -39,8 +39,11 @@
    X switchers
 ** DONE use palettes, plus animation in maze
    CLOSED: [2013-05-22 Wed 20:07]
-** TODO find a better set of sprites for tennis
-
+** DONE find a better set of sprites for tennis
+   CLOSED: [2013-05-22 Wed 20:23]
+** DONE Change sprites/textures to use lower color depth
+   CLOSED: [2013-05-18 Sat 10:03]
+   Particularly if I go with 1-bit textures :)
 ** TODO create a new small font for menu
    http://www.omnimaga.org/index.php?topic=3692.0
 ** TODO apse - Make apse purely functional and have better undo system
@@ -126,9 +129,6 @@
    http://forums.tigsource.com/index.php?topic=8970.0
 ** TODO implement A* + JPS
    http://zerowidth.com/2013/05/05/jump-point-search-explained.html
-** DONE Change sprites/textures to use lower color depth
-   CLOSED: [2013-05-18 Sat 10:03]
-   Particularly if I go with 1-bit textures :)
 ** TODO Look at Texture Packer's options for artifacts
    http://www.codeandweb.com/texturepacker/documentation#layout
 ** TODO look into google play services

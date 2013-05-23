@@ -1,1 +1,1 @@
-"sos/building/wall/---r"
+"sos/overworld/grass"

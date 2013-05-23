@@ -41,19 +41,15 @@
 (define initial-ball-speed
   speed)
 
-(define blocks-in-a-paddle 4)
-
-(define tennis/paddle
-  (sprited-ref spr:sos/font 111))
-(define tennis/ball
-  (sprited-ref spr:sos/face/smile 0))
+(define spr:tennis/paddle spr:sos/font/block/half)
+(define blocks-in-a-paddle 3)
 
 (define paddle-w
-  (sprited-width spr:sos/font))
+  (sprited-width spr:tennis/paddle))
 (define paddle-hw
   (/ paddle-w 2.0))
 (define paddle-h
-  (* blocks-in-a-paddle (sprited-height spr:sos/font)))
+  (* blocks-in-a-paddle (sprited-height spr:tennis/paddle)))
 (define paddle-hh
   (/ paddle-h 2.0))
 
@@ -68,25 +64,41 @@
   (for/list ([i (in-range blocks-in-a-paddle)])
     (transform
      #:dy (* block-h i)
-     (sprite tennis/paddle))))
+     (sprite spr:tennis/paddle 0 pal:blue))))
 
+(define spr:tennis/ball spr:sos/food/pumpkin)
 (define ball-scale
-  (/ 1.0 2.0))
+  1)
 (define ball-hh
-  (* ball-scale (/ (sprited-height spr:sos/face/smile) 2.0)))
+  (* ball-scale (/ (sprited-height spr:tennis/ball ) 2.0)))
 (define ball-r ball-hh)
 (define ball-hw
-  (* ball-scale (/ (sprited-width spr:sos/face/smile) 2.0)))
+  (* ball-scale (/ (sprited-width spr:tennis/ball ) 2.0)))
 
+;; xxx use different fruit for each ball
 (define (ball-sprite)
   (transform
    #:d (- ball-r) (- ball-r)
    #:mxy ball-scale
-   (sprite tennis/ball)))
+   (sprite spr:tennis/ball 0 pal:grayscale)))
 
-(define (bgm)
+(define bgm
   ;; xxx make a background out of overworld bricks
-  empty)
+  (for*/list ([x (in-range 0 (/ width 16))]
+              [y (in-range 0 (/ height 16))])
+    (cond
+      [(zero? (random 4))
+       (transform #:dx (+ (* x 16) .5)
+                  #:dy (+ (* y 16) .5)
+                  ;; xxx better colours, use more sprites
+                  (sprite (match (random 4)
+                            [0 spr:sos/overworld/grass]
+                            [1 spr:sos/overworld/flower]
+                            [2 spr:sos/overworld/tree/pine]
+                            [3 spr:sos/overworld/tree/round])
+                          0 pal:green))]
+      [else
+       empty])))
 
 (define lhs-x
   (- (/ width 32.0) paddle-hw))
@@ -254,11 +266,11 @@
                      (string->sprites
                       score-s)
                      (transform
-                      #:rgba 1. 1. 1. 1.
+                      #:rgba 255 255 255 255
                       (string->sprites
                        #:tint? #t
                        (make-string (string-length score-s) #\space))))))
-                 (bgm))))))
+                 bgm)))))
        (loop score-n)))))
 
 (require gb/lib/godel
@@ -285,7 +297,7 @@
   (infinite-sequence/s tennis/s))
 
 (define game
-  (game-info 'tennis "Tennis!" 
+  (game-info 'tennis "Tennis!"
              (list "Bounce the ball against the wall by moving the paddle. As you hit the ball more times, it moves faster, spawns child balls, and your score goes up."
                    "Compare to Pong(R) by Atari (1972)")
              0
