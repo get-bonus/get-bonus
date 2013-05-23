@@ -111,7 +111,8 @@
       [0 pal:maze/shadow]
       [1 pal:maze/speedy]
       [2 pal:maze/bashful]
-      [3 pal:maze/pokey]))))
+      [3 pal:maze/pokey]
+      [4 pal:maze/shadow]))))
 
 (define (scared-ghost-animation frame-n warning?)
   (ghost-sprite
@@ -182,9 +183,9 @@
   (define-values
     (x y)
     (match q
-      ['sw (values            c         (+ r 1))]
+      ['sw (values            c         (- r 1))]
       ['nw (values            c  (- height r 1))]
-      ['se (values (- width c 1)        (+ r 1))]
+      ['se (values (- width c 1)        (- r 1))]
       ['ne (values (- width c 1) (- height r 1))]))
   (psn (exact->inexact (+ x .5)) (exact->inexact (+ y .5))))
 

@@ -39,7 +39,7 @@ void main(void)
   ivec2 TexCoord_uv = ivec2(clampit(TexCoord.x), clampit(TexCoord.y));
   vec4 SpriteColor = texelFetch(SpriteAtlasTex, TexCoord_uv, 0);
 
-  float PaletteOffset = SpriteColor.r * 255;
+  float PaletteOffset = SpriteColor.r * 256;
   ivec2 PalCoord_uv = ivec2( PaletteOffset, Palette );
   vec4 PaletteColor = texelFetch(PaletteAtlasTex, PalCoord_uv, 0 );
   
