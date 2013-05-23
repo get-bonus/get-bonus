@@ -47,5 +47,3 @@
     [(list-rest this next)
      (define old (hash-ref! (tdir-n->t t) this make-fstree))
      (fstree-insert/path! old next v)]))
-
-

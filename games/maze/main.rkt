@@ -4,6 +4,7 @@
          racket/match
          racket/file
          racket/list
+         gb/lib/fstree
          racket/function
          tests/eli-tester
          gb/gui/world
@@ -70,57 +71,40 @@
   (modulo (floor (/ t how-often)) how-many))
 
 (define (ghost-animation n frame-n dir)
-  (define dir-n
-    (match dir
-      ['right 0]
-      ['left 1]
-      ['up 2]
-      ['down 3]))
-  (ghost-sprite n dir-n frame-n))
+  ;; xxx ignoring direction
+  (ghost-sprite n frame-n #f))
 
-(define-syntax (ghost-match stx)
-  (syntax-case stx ()
-    [(_ ghost-e set-e frame-e)
-     (with-syntax
-         ([((ghost-n set-n frame-n maze/ghost/ghost-n/set-n/frame-n) ...)
-           (for*/list ([ghost-n (in-range 5)]
-                       [set-n (in-range 4)]
-                       [frame-n (in-range 2)])
-             (list ghost-n set-n frame-n
-                   #'spr:sos/fauna/snake
-                   #;
-                   (format-id stx "maze/ghost/~a/~a/~a"
-                              ghost-n set-n frame-n)))])
-       (syntax/loc stx
-         (let ([ghost-v ghost-e]
-               [set-v set-e]
-               [frame-v frame-e])
-           (cond
-             [(and (= ghost-v ghost-n)
-                   (= set-v set-n)
-                   (= frame-v frame-n))
-              maze/ghost/ghost-n/set-n/frame-n]
-             ...))))]))
+(define (list-refm l i)
+  (list-ref l (modulo i (length l))))
 
-(define (ghost-sprite which-ghost which-set frame-n)
+(define ghost-sprs
+  (shuffle
+   (append (fstree-ref sprite-tree "sos/fauna")
+           (fstree-ref sprite-tree "sos/creatures")
+           (fstree-ref sprite-tree "sos/trollkind")
+           (fstree-ref sprite-tree "sos/unliving"))))
+
+(define (ghost-sprite which-ghost frame-n pal)
   (transform
    #:d (* scale -.5) (* scale -.5)
    (rectangle
     (* scale 0.5) (* scale 0.5)
-    (ghost-match which-ghost which-set (rate 2 10 frame-n))
+    (list-refm ghost-sprs which-ghost)
+    ;; xxx ignoring frame-n for animation
     0
-    (match which-ghost
-      [0 pal:maze/shadow]
-      [1 pal:maze/speedy]
-      [2 pal:maze/bashful]
-      [3 pal:maze/pokey]
-      [4 pal:maze/shadow]))))
+    (or pal
+        (match (modulo which-ghost 4)
+          [0 pal:maze/shadow]
+          [1 pal:maze/speedy]
+          [2 pal:maze/bashful]
+          [3 pal:maze/pokey])))))
 
-(define (scared-ghost-animation frame-n warning?)
-  (ghost-sprite
-   4
-   (if (and warning? (even? frame-n)) 1 0)
-   frame-n))
+(define (scared-ghost-animation n frame-n warning?)
+  ;; xxx should use different sprite too
+  (ghost-sprite n frame-n
+                (if (even? frame-n)
+                  pal:grayscale
+                  #f)))
 
 (define (player-animation n)
   (transform
@@ -131,9 +115,9 @@
     pal:maze/runner
     #;
     (match (rate 3 10 n)
-      [0 maze/player/0]
-      [1 maze/player/1]
-      [2 maze/player/2]))))
+    [0 maze/player/0]
+    [1 maze/player/1]
+    [2 maze/player/2]))))
 (define player-r .499)
 
 (define pellet-r (/ player-r 6))
@@ -539,7 +523,8 @@
 ;; XXX Add a slow start-up clock for beginning of game and
 ;;     after death
 
-(define ((ghost ai-n init-timer))
+(define ((ghost img-n init-timer))
+  (define ai-n (modulo img-n 4))
   (define ai-sym
     (match ai-n
       [0 'chaser]
@@ -548,12 +533,12 @@
       [3 'stupid]))
   (define ghost-qid
     (match ai-n
-       [0 'nw]
-       [1 'ne]
-       [2 'sw]
-       [3 'se]))
+      [0 'nw]
+      [1 'ne]
+      [2 'sw]
+      [3 'se]))
   (define ghost-entry-cell
-    (locate-cell/static 
+    (locate-cell/static
      (os/read* 'static)
      ghost-qid ghost-entry))
   (define outside-jail
@@ -568,13 +553,13 @@
      (transform
       #:d (* scale (psn-x pos)) (* scale (psn-y pos))
       (if (zero? power-left-n)
-        (ghost-animation ai-n (current-frame) dir)
+        (ghost-animation img-n (current-frame) dir)
         (scared-ghost-animation
-         (current-frame)
+         img-n (current-frame)
          (power-left-n . <= . TIME-TO-POWER-WARNING))))
      (transform
       #:d (* scale (- (psn-x l-target) .5))
-          (* scale (- (psn-y l-target) .5))
+      (* scale (- (psn-y l-target) .5))
       #:a 255
       #:irgbv
       (match ai-n
@@ -801,7 +786,7 @@
          (cond
            [(zero? dots-to-ghost)
             (os/thread (ghost next-ghost 10))
-            (values (modulo (add1 next-ghost) 4)
+            (values (add1 next-ghost)
                     (- ghost-return 10))]
            [(eq? event 'pellet)
             (values next-ghost (sub1 dots-to-ghost))]

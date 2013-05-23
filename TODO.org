@@ -30,6 +30,12 @@
 ** DONE maze - sometimes the player can be put into a wall and can't move
    CLOSED: [2013-05-22 Wed 19:12]
 ** TODO better maze sprites
+   enemies
+   walls
+   player
+   pellets
+   power ups
+   switchers
 ** TODO use palettes, plus animation in maze
 ** TODO find a better set of sprites for tennis
 
