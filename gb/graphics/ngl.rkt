@@ -46,6 +46,7 @@
   [create-sprite-info sprite-info]))
 
 (define-cstruct _sprite-info
+  ;; xxx why are x/y so big?
   ([x _float]     ;; 0
    [y _float]     ;; 1
    [hw _float]    ;; 2

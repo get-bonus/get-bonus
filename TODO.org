@@ -1,6 +1,9 @@
 * General TODO items
 ** TODO create a new small font for menu
-   http://www.omnimaga.org/index.php?topic=3692.0
+   4x8 - http://www.omnimaga.org/index.php?topic=3692.0
+   8x8 
+
+   http://legendsoflocalization.com/media/final-fantasy-iv/baron/fonts.png
 ** TODO apse - Make apse purely functional and have better undo system
    (where it goes back to earlier system states)
 ** TODO apse - Add height/normal maps & lighting
@@ -82,6 +85,11 @@
    http://oryxdesignlab.com/ultimate
 
    http://forums.tigsource.com/index.php?topic=8970.0
+
+   Tutorials:
+   http://www.pixeljoint.com/pixels/tutorials.asp
+   http://finalbossblues.com/pixel-tutorials/
+
 ** TODO implement A* + JPS
    http://zerowidth.com/2013/05/05/jump-point-search-explained.html
 ** TODO Look at Texture Packer's options for artifacts
@@ -224,13 +232,13 @@
 
    http://robotloveskitty.tumblr.com/post/33164532086/legend-of-dungeon-dynamic-lighting-on-sprites
 ** TODO Winners Don't Do Drugs and other intro screens
+   Let's play money making game
 ** TODO rpswar - render fst graphically
 ** TODO Figure out a way to allow and use palettes effectively
 ** TODO menu - check for more overlaps
 * Tool and related-app ideas
-** TODO Master Grafx2 or aseprite or make my own keyboard based system
-   https://code.google.com/p/grafx2/
-** TODO Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
+** TODO look at textual music markup
+   http://www.reddit.com/r/gamedev/comments/1f9l62/visual_mml_a_text_music_editor/
 ** TODO Add challenges/achievements/training to NES/SNES games
    Hook up with an emulator core to drop into a game with save states
    and then monitor its execution for score, etc
@@ -294,6 +302,11 @@
    This could be based on a block cipher with unbounded key length
    and bounded block size
 * Done
+** DONE Master Grafx2 or aseprite or make my own keyboard based system
+   CLOSED: [2013-05-30 Thu 12:08]
+   https://code.google.com/p/grafx2/
+** DONE Make a better (visual) sprite specifying tool, based on the component/sheet algorithm
+   CLOSED: [2013-05-30 Thu 12:08]
 ** DONE GLFW - Wait for consistent joystick state intra-frame
    CLOSED: [2013-05-02 Thu 13:45]
    2013/03/08 - I submitted this patch
