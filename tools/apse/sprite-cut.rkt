@@ -2,6 +2,7 @@
 (require racket/gui/base
          racket/format
          racket/list
+         gb/lib/math
          racket/class
          "mb-frame.rkt"
          "lib.rkt"

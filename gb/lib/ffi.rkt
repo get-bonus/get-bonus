@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      unstable/syntax
+                     syntax/stx
                      racket/syntax
                      syntax/parse)
          ffi/unsafe
@@ -50,8 +51,8 @@
              ...)
         ...)
      (with-syntax ([(define-ffi ...)
-                    (syntax-map (λ (f) (format-id f "define-~a" f))
-                                #'(ffi ...))])
+                    (stx-map (λ (f) (format-id f "define-~a" f))
+                             #'(ffi ...))])
        (syntax/loc stx
          (begin
            (dup define-ffi [fun (_fun in ... -> out ...)] ...)
