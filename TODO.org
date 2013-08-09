@@ -96,6 +96,11 @@
    http://www.codeandweb.com/texturepacker/documentation#layout
 ** TODO look into google play services
    https://developers.google.com/games/services/web/gettingstarted
+** TODO sound
+   https://www.youtube.com/watch?feature=player_embedded&v=la3coK5pq5w
+** TODO reconsider textures
+   would it be better to just have elementary shapes and no textures
+   ever, except for fonts?
 ** TODO find a way to let the games inform which textures are included in atlas
 ** TODO tennis - make variation where you "drop" paddles based on how many balls there are
    And enable slow-down?

@@ -1,4 +1,21 @@
 #lang setup/infotab
+(define collection 'multi)
 (define deps
   (list "fector"
-        "opengl"))
+        "opengl"
+        "base"
+        "compatibility-lib"
+        "data-lib"
+        "draw-lib"
+        "eli-tester"
+        "gui-lib"
+        "htdp-lib"
+        "math"
+        "pfds"
+        "plot"
+        "rackunit-lib"
+        "redex-lib"
+        "slideshow-lib"
+        "typed-racket-lib"
+        "unstable-contract-lib"
+        "unstable-list-lib"))
