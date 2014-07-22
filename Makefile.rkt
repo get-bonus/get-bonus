@@ -127,4 +127,4 @@
         "tools/apse/compile.rkt"
         "db"
         ATLAS-FILES)
-       (apply system* "/usr/bin/du" "-bhac" ATLAS-FILES)))
+       (apply system* "/usr/bin/du" "-hac" ATLAS-FILES)))

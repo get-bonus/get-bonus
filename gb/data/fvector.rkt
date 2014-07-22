@@ -1,5 +1,5 @@
 #lang racket/base
-(require data/fector/fast
+(require fector/data/fector/fast
          tests/eli-tester)
 
 (define (fvector n)

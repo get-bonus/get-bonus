@@ -12,9 +12,10 @@
     (define-values (infoLen infoLog)
       (glGetShaderInfoLog shader-id 1024))
     (unless (zero? infoLen)
-      (eprintf "~a: ~a\n"
+      (eprintf "Log of shader(~a):\n~a\n"
                shader-name
                (subbytes infoLog 0 infoLen))
+      (eprintf "Exiting...\n")
       (exit 1)))
 
 (define-syntax-rule

@@ -1,1 +1,1 @@
-"sos/overworld/grass"
+"sos/fauna/bat"

@@ -79,7 +79,9 @@
   (define js-ports
     (map open-input-file
          (filter (λ (p) (regexp-match #rx#"^/dev/input/js" (path->bytes p)))
-                 (directory-list "/dev/input/" #:build? #t))))
+                 (if (directory-exists? "/dev/input/")
+                   (directory-list "/dev/input/" #:build? #t)
+                   empty))))
   (define p*state-s
     (filter (λ (x) x)
             (for/list ([p (in-list js-ports)])

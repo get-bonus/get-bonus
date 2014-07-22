@@ -12,14 +12,14 @@ varying float CRTgamma;
 varying float monitorgamma;
 varying vec2 overscan;
 varying vec2 aspect;
-varying float d;
-varying float R;
+float d;
+float R;
 varying float cornersize;
 varying float cornersmooth;
 
-varying vec3 stretch;
-varying vec2 sinangle;
-varying vec2 cosangle;
+vec3 stretch;
+vec2 sinangle;
+vec2 cosangle;
 
 uniform vec2 rubyInputSize;
 uniform vec2 rubyTextureSize;

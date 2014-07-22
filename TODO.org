@@ -1,9 +1,50 @@
 * General TODO items
+** TODO reading
+   http://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
+   http://mrelusive.com/books/books.html
+   http://fabiensanglard.net/Computer_Graphics_Principles_and_Practices/index.php
+   http://gameprogrammingpatterns.com/
+   http://nand2tetris.org/
+   http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
+   http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
+** TODO investigate ECS
+   http://www.reddit.com/r/gamedev/comments/22djip/juice_or_lose_it_entity_component_system_questions/
+   https://github.com/rodrigosetti/azteroids
+   https://github.com/alecthomas/entityx
+** TODO twitter is a pseudo-random number generator
+** TODO 2d shader resources
+   http://www.reddit.com/r/gamedev/comments/238z3e/any_good_resources_for_glsl_shader_techniques/
+** TODO heroquest implementation
+   vassal module has all the images
+
+   http://heroquest.no-ip.com/
+
+   http://heroquest.no-ip.com/advancedheroquest/index.html
+
+   http://www.yeoldeinn.com/na-index.php
+** TODO look into using option contracts
+** TODO constraint based physics
+   http://www.reddit.com/r/gamedev/comments/23c7lx/i_gave_a_lecture_on_constraintbased_physics_and/
+** TODO kanji roguelike
+   http://roguelikeeducation.org/9.html
+** TODO interesting visualization
+   http://bost.ocks.org/mike/algorithms/
+** TODO palette selection
+   http://www.reddit.com/r/gamedev/comments/23l7yx/learn_all_about_color_selection_and_using_color/
+** TODO palettes
+   how big are mine?
+
+   http://www.effectgames.com/demos/canvascycle/?sound=0
+** TODO work on dynamic loading of data files
+   for rapid prototyping
 ** TODO create a new small font for menu
    4x8 - http://www.omnimaga.org/index.php?topic=3692.0
    8x8 
 
    http://legendsoflocalization.com/media/final-fantasy-iv/baron/fonts.png
+   http://www.reddit.com/r/gamedev/comments/1rl412/favorite_free_8bitpixel_font/
+** TODO nes palette
+   http://meatfighter.com/nintendotetrisai/9.png
 ** TODO apse - Make apse purely functional and have better undo system
    (where it goes back to earlier system states)
 ** TODO apse - Add height/normal maps & lighting
@@ -78,6 +119,15 @@
       0 ./gb/meta.rkt
       0 ./gb/main.rkt
 ** TODO good sprite sheet
+   http://www.reddit.com/r/gamedev/comments/1rucwe/150_platformer_bricks_licensed_cc0_to_use_in_your/
+   http://www.reddit.com/r/gamedev/comments/1sb5dd/280_tiles_licensed_cc0_that_go_together_with_350/
+   http://www.reddit.com/r/gamedev/comments/25121d/over_220_tiles_licensed_cc_zero_for_rpgtype_games/
+   http://www.reddit.com/r/gamedev/comments/267kq4/completely_free_to_use_virtual_boardgame_assets/
+
+   (Kenny is amazing)
+
+   http://indiestatik.com/2014/06/03/free-indie-game-ui-resources/
+
    http://quale-art.blogspot.com/p/scroll-o-sprites.html
 
    http://imgur.com/a/uHx4k
@@ -86,18 +136,45 @@
 
    http://forums.tigsource.com/index.php?topic=8970.0
 
+   http://www.fileformat.info/info/unicode/block/miscellaneous_symbols_and_pictographs/images.htm
+
+   New one:
+   http://opengameart.org/content/platformer-art-deluxe
+   http://www.reddit.com/r/gamedev/comments/1kjnj4/380_platformer_tiles_and_sprites_pixelart/
+   http://blogoscoped.com/archive/2006-08-08-n51.html
+   http://www.glitchthegame.com/public-domain-game-art/
+   http://www.reddit.com/r/roguelikedev/comments/1xdlrd/dawnlike_16x16_universal_roguelike_tileset/
+
    Tutorials:
    http://www.pixeljoint.com/pixels/tutorials.asp
    http://finalbossblues.com/pixel-tutorials/
 
 ** TODO implement A* + JPS
    http://zerowidth.com/2013/05/05/jump-point-search-explained.html
+
+   http://www.redblobgames.com/pathfinding/grids/algorithms.html
 ** TODO Look at Texture Packer's options for artifacts
    http://www.codeandweb.com/texturepacker/documentation#layout
+** TODO ascii particle effects
+   http://www.gridsagegames.com/blog/2014/03/particle-effects/
 ** TODO look into google play services
    https://developers.google.com/games/services/web/gettingstarted
+** TODO bitmasking
+   http://www.angryfishstudios.com/2011/04/adventures-in-bitmasking/
 ** TODO sound
    https://www.youtube.com/watch?feature=player_embedded&v=la3coK5pq5w
+
+   http://abcnotation.com/
+
+   https://ccrma.stanford.edu/software/snd/
+   https://ccrma.stanford.edu/software/cmn/
+
+   http://www.reddit.com/r/gamedev/comments/1kurzi/8bitjs_audio_library_write_music_using_8bit/
+
+   http://www.shlzero.com/wordpress/?page_id=4
+
+   http://www.bfxr.net/
+   http://www.gridsagegames.com/blog/2014/05/sound-design-cogmind/?utm_source=rss&utm_medium=rss&utm_campaign=sound-design-cogmind
 ** TODO reconsider textures
    would it be better to just have elementary shapes and no textures
    ever, except for fonts?
@@ -149,6 +226,8 @@
 ** TODO NGL - Figure out the proper way to do texture/color blending
    Right now I only support fully color or fully texture. It would be
    nice to support a tinted texture
+** TODO opengl optimizations
+   http://www.reddit.com/r/programming/comments/2102jt/opengl_approaching_zero_driver_overhead/
 ** TODO NGL - See if I need to set up culling specially
    And perhaps cull slightly wider than that the screen because I
    believe culling happens before geometry shaders (?) so I need to
@@ -236,11 +315,39 @@
    https://www.youtube.com/watch?v=fsbECSpwtig
 
    http://robotloveskitty.tumblr.com/post/33164532086/legend-of-dungeon-dynamic-lighting-on-sprites
+
+   http://www.redblobgames.com/articles/visibility/
+
+   http://www.reddit.com/r/gamedev/comments/205r78/sight_light_how_to_create_a_2d_visibilityshadow/
 ** TODO Winners Don't Do Drugs and other intro screens
    Let's play money making game
 ** TODO rpswar - render fst graphically
 ** TODO Figure out a way to allow and use palettes effectively
+** TODO tetris notes
+   http://meatfighter.com/nintendotetrisai/
 ** TODO menu - check for more overlaps
+** TODO damage roll distributions
+   http://www.redblobgames.com/articles/probability/damage-rolls.html
+** TODO look at #IDARB for inspiration
+** TODO map generation & noise
+   http://www.redblobgames.com/articles/noise/introduction.html
+   http://devmag.org.za/2009/04/25/perlin-noise/
+
+   https://github.com/jpverkamp/noise
+
+   http://www.roguebasin.com/index.php?title=Basic_BSP_Dungeon_generation
+
+   http://www.gamasutra.com/blogs/TanyaXShort/20140204/209176/Level_Design_in_Procedural_Generation.php
+** TODO zelda-style map generation
+   http://www.reddit.com/r/proceduralgeneration/comments/1ztgcc/zelda_or_secret_of_manastyle_world_generation/
+
+   http://bytten.net/devlog/lennas-inception/
+
+   https://github.com/tcoxon/metazelda
+
+   https://github.com/mizipzor/roguelike-dungeon-generator
+** TODO wall jump
+   http://www.reddit.com/r/gamedev/comments/283bs5/an_examination_of_walljump_systems_across_blood/
 * Tool and related-app ideas
 ** TODO look at textual music markup
    http://www.reddit.com/r/gamedev/comments/1f9l62/visual_mml_a_text_music_editor/
@@ -284,6 +391,11 @@
    http://www.cs.cmu.edu/~tom7/mario/
 
    Use A* or BB to discover optimal playthroughs
+
+** TODO Write a NES AI language like Tom7
+** TODO Implement Mega Man All-Stars and Castlevania All-Stars
+   There are very few NES games that are awesome and the SNES is so
+   great.
 ** TODO Write a Wayland interface for Racket
    Plus a tiling manager
    Plus a "video game console" shell

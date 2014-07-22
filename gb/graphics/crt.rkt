@@ -23,6 +23,9 @@
 (define crt-scale 32)
 (define crt-width (* crt-scale 16))
 (define crt-height (* crt-scale 9))
+;; XXX what text terminal dimensions does this give?
+
+;; xxx 400x240 is what shovel knight does
 
 ;; FBO stuff based on: http://www.songho.ca/opengl/gl_fbo.html
 
@@ -94,6 +97,9 @@
              (+ 3 1/8))))
 
 (define (make-draw-on-crt actual-screen-width actual-screen-height)
+  (eprintf "You are using OpenGL ~a\n"
+           (gl-version))
+
   (define texture-width crt-width)
   (define texture-height crt-height)
 
