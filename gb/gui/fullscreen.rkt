@@ -39,6 +39,7 @@
 
     (define config
       (new gl-config%))
+    (send config set-legacy? #f)
     (send config set-double-buffered #t)
 
     (define canvas
