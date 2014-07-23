@@ -7,6 +7,7 @@
     Software Foundation; either version 2 of the License, or (at your option)
     any later version.
 */
+#version 330
 
 // Comment the next line to disable interpolation in linear gamma (and gain speed).
 //#define LINEAR_PROCESSING
@@ -25,9 +26,9 @@
 #define PI 3.141592653589
 
 #ifdef LINEAR_PROCESSING
-#       define TEX2D(c) pow(texture2D(rubyTexture, (c)), vec4(CRTgamma))
+#       define TEX2D(c) pow(texture(rubyTexture, (c)), vec4(CRTgamma))
 #else
-#       define TEX2D(c) texture2D(rubyTexture, (c))
+#       define TEX2D(c) texture(rubyTexture, (c))
 #endif
 
 uniform sampler2D rubyTexture;
@@ -35,26 +36,28 @@ uniform vec2 rubyInputSize;
 uniform vec2 rubyTextureSize;
 uniform int rubyFrameCount;
 
-varying vec2 texCoord;
-varying vec2 one;
-varying float mod_factor;
-varying vec2 ilfac;
+in vec2 texCoord;
+in vec2 one;
+in float mod_factor;
+in vec2 ilfac;
 
-varying float CRTgamma;
-varying float monitorgamma;
+in float CRTgamma;
+in float monitorgamma;
 
-varying vec2 overscan;
-varying vec2 aspect;
+in vec2 overscan;
+in vec2 aspect;
 
-varying float d;
-varying float R;
+in float d;
+in float R;
 
-varying float cornersize;
-varying float cornersmooth;
+in float cornersize;
+in float cornersmooth;
 
-varying vec3 stretch;
-varying vec2 sinangle;
-varying vec2 cosangle;
+in vec3 stretch;
+in vec2 sinangle;
+in vec2 cosangle;
+
+out vec4 oFragColor;
 
 float intersect(vec2 xy)
 {
@@ -234,5 +237,5 @@ void main()
   mul_res = pow(mul_res, vec3(1.0 / monitorgamma));
 
   // Color the texel.
-  gl_FragColor = vec4(mul_res, 1.0);
+  oFragColor = vec4(mul_res, 1.0);
 }

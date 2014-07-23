@@ -7,15 +7,19 @@
     Software Foundation; either version 2 of the License, or (at your option)
     any later version.
 */
+#version 330
 
-varying float CRTgamma;
-varying float monitorgamma;
-varying vec2 overscan;
-varying vec2 aspect;
+in vec4 iPos;
+in vec2 iTexCoord;
+
+out float CRTgamma;
+out float monitorgamma;
+out vec2 overscan;
+out vec2 aspect;
 float d;
 float R;
-varying float cornersize;
-varying float cornersmooth;
+out float cornersize;
+out float cornersmooth;
 
 vec3 stretch;
 vec2 sinangle;
@@ -25,10 +29,10 @@ uniform vec2 rubyInputSize;
 uniform vec2 rubyTextureSize;
 uniform vec2 rubyOutputSize;
 
-varying vec2 texCoord;
-varying vec2 one;
-varying float mod_factor;
-varying vec2 ilfac;
+out vec2 texCoord;
+out vec2 one;
+out float mod_factor;
+out vec2 ilfac;
 
 #define FIX(c) max(abs(c), 1e-5);
 
@@ -109,7 +113,8 @@ void main()
   // END of parameters
 
   // Do the standard vertex processing.
-  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+  mat4 mvpMatrix;
+  gl_Position = mvpMatrix * iPos;
 
   // Precalculate a bunch of useful values we'll need in the fragment
   // shader.
@@ -118,8 +123,7 @@ void main()
   stretch = maxscale();
 
   // Texture coords.
-  texCoord = gl_MultiTexCoord0.xy;
-  
+  texCoord = iTexCoord;
   ilfac = vec2(1.0,floor(rubyInputSize.y/200.0));
 
   // The size of one texel, in texture-coordinates.

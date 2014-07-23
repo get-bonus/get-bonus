@@ -8,6 +8,9 @@
 (module+ test
   (require rackunit))
 
+(define-syntax-rule (log* e ...) (begin (log e) ...))
+(define-syntax-rule (log e) (begin (printf "~v\n" `e) e))
+
 (define-shader-source fragment-source "crt.fragment.glsl")
 (define-shader-source vertex-source "crt.vertex.glsl")
 
@@ -72,24 +75,24 @@
             ((+ 1 1/2 1/4 1/8)
              (+ 1 1/2 1/4 1/8)))
   (check-q* "iPhone 4"
-            (960 640) 
+            (960 640)
             ((+ 1 1/2 1/4 1/8)
              (+ 2 1/8 1/16)))
   (check-q* "Normal laptop"
             (1024 640)
             (2
              (+ 2 1/8 1/16)))
-  (check-q* "iPhone 5" 
+  (check-q* "iPhone 5"
             (1136 640)
             ((+ 2 1/8 1/16)
              (+ 2 1/8 1/16)))
-  (check-q* "720p" 
+  (check-q* "720p"
             (1280 720)
             ((+ 2 1/2)
              (+ 2 1/2)))
   (check-q* "1080p"
             (1920 1080)
-            ((+ 3 1/2 1/4) 
+            ((+ 3 1/2 1/4)
              (+ 3 1/2 1/4)))
   (check-q* "MacBook Pro Retina, Arch"
             (1440 900)
@@ -109,22 +112,20 @@
             (quotient* actual-screen-height crt-height))))
 
   (define screen-width (* scale crt-width))
-  (define screen-height (* scale crt-height))  
+  (define screen-height (* scale crt-height))
 
   (define inset-left (/ (- actual-screen-width screen-width) 2.))
   (define inset-right (+ inset-left screen-width))
   (define inset-bottom (/ (- actual-screen-height screen-height) 2.))
   (define inset-top (+ inset-bottom screen-height))
 
-  (glEnable GL_TEXTURE_2D)
-
   (define myTexture (u32vector-ref (glGenTextures 1) 0))
 
   (glBindTexture GL_TEXTURE_2D myTexture)
   (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST)
   (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
-  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP_TO_EDGE)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP_TO_EDGE)
   (glTexImage2D
    GL_TEXTURE_2D 0 GL_RGBA8 texture-width texture-height 0
    GL_RGBA GL_UNSIGNED_BYTE
@@ -160,8 +161,6 @@
      (exit 1)])
 
   (glBindFramebuffer GL_FRAMEBUFFER 0)
-
-  (glDisable GL_TEXTURE_2D)
 
   (define shader_program (glCreateProgram))
 
@@ -228,7 +227,13 @@
 
     (glUseProgram 0))
 
-  draw-on-crt)
+  (define (fake-draw-on-crt do-the-drawing)
+    (glClearColor 0. 0. 0. 1.)
+    (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+    (glViewport 0 0 crt-width crt-height)
+    (do-the-drawing))
+
+  fake-draw-on-crt)
 
 (provide crt-height
          crt-width

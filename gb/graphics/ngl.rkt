@@ -130,8 +130,8 @@
 
 (define (make-draw . args)
   (cond
-    [(gl-version-at-least? (list 3 0))
-     (apply make-draw/300 args)]
+    [(gl-version-at-least? (list 3 3))
+     (apply make-draw/330 args)]
     [else
      (error 'ngl "Your version of OpenGL ~a is too old to support NGL"
             (gl-version))]))
@@ -141,7 +141,7 @@
 
 (define DrawnMult 6)
 
-(define (make-draw/300 sprite-atlas-path
+(define (make-draw/330 sprite-atlas-path
                        sprite-index-path
                        palette-atlas-path
                        width height)
@@ -170,7 +170,7 @@
   (glBindAttribLocation ProgramId 1 "in_iColor")
   (glBindAttribLocation ProgramId 2 "in_iTexIndex")
   (glBindAttribLocation ProgramId 3 "in_Transforms")
-  (glBindAttribLocation ProgramId 4 "in_VertexSpecification")
+  (glBindAttribLocation ProgramId 4 "in_iVertexSpecification")
   (glBindAttribLocation ProgramId 5 "in_iPalette")
 
   (define&compile-shader VertexShaderId GL_VERTEX_SHADER
@@ -204,8 +204,8 @@
        1]))
 
   (define (2D-defaults)
-    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP)
-    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP)
+    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_S GL_CLAMP_TO_EDGE)
+    (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_WRAP_T GL_CLAMP_TO_EDGE)
     (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR)
     (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR))
 
@@ -221,6 +221,9 @@
                   GL_RED GL_UNSIGNED_BYTE
                   sprite-atlas-bytes))
 
+  ;; XXX load-texture is broken in Core because it uses GL_CLAMP
+  ;; rather than TO_EDGE or TO_BORDER. I hacked around it but should
+  ;; be fixed better.
   (define PaletteAtlasId
     (load-texture palette-atlas-path
                   #:mipmap #f))
@@ -389,15 +392,15 @@
 
     (glUseProgram ProgramId)
 
-    (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+    ;; (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
 
-    (glEnable GL_DEPTH_TEST)
+    ;; (glEnable GL_DEPTH_TEST)
     (glClearColor 1.0 1.0 1.0 0.0)
 
-    (glEnable GL_BLEND)
-    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
-    (glEnable GL_ALPHA_TEST)
-    (glAlphaFunc GL_GREATER 0.0)
+    ;; (glEnable GL_BLEND)
+    ;; (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
+    ;; (glEnable GL_ALPHA_TEST)
+    ;; (glAlphaFunc GL_GREATER 0.0)
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
@@ -408,7 +411,7 @@
 
     (performance-log! drawn-count)
 
-    (glPopAttrib)
+    ;; (glPopAttrib)
 
     ;; This is actually already active
     (glActiveTexture GL_TEXTURE2)
