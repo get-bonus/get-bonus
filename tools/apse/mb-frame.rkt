@@ -158,8 +158,12 @@
         #t)
       (super-new)))
 
+  (define-values (w h) (get-display-size #t))
+  (define-values (x y) (get-display-left-top-inset #t))
   (define mw
     (new apse-frame% [label frame-label]
+         [x 0] [y (* -1 y)]
+         [width w] [height h]
          [style '(no-resize-border
                   no-caption
                   hide-menu-bar
