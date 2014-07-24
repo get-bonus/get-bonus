@@ -392,15 +392,11 @@
 
     (glUseProgram ProgramId)
 
-    ;; (glPushAttrib (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
-
-    ;; (glEnable GL_DEPTH_TEST)
+    (glEnable GL_DEPTH_TEST)
     (glClearColor 1.0 1.0 1.0 0.0)
 
-    ;; (glEnable GL_BLEND)
-    ;; (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
-    ;; (glEnable GL_ALPHA_TEST)
-    ;; (glAlphaFunc GL_GREATER 0.0)
+    (glEnable GL_BLEND)
+    (glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA)
 
     (glClear (bitwise-ior GL_DEPTH_BUFFER_BIT GL_COLOR_BUFFER_BIT))
 
@@ -411,7 +407,8 @@
 
     (performance-log! drawn-count)
 
-    ;; (glPopAttrib)
+    (glDisable GL_DEPTH_TEST)
+    (glDisable GL_BLEND)
 
     ;; This is actually already active
     (glActiveTexture GL_TEXTURE2)

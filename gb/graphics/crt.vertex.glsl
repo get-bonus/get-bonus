@@ -9,8 +9,7 @@
 */
 #version 330
 
-in vec4 iPos;
-in vec2 iTexCoord;
+in vec4 iTexCoordPos;
 
 out float CRTgamma;
 out float monitorgamma;
@@ -81,6 +80,15 @@ vec3 maxscale()
   return vec3((hi+lo)*aspect*0.5,max(hi.x-lo.x,hi.y-lo.y));
 }
 
+mat4 glOrtho( float left, float right, float bottom, float top, float nearVal, float farVal ) {
+  float t_x = - (right + left) / (right - left);
+  float t_y = - (top + bottom) / (top - bottom);
+  float t_z = - (farVal + nearVal) / (farVal - nearVal);
+  return mat4( 2.0 / right - left, 0.0, 0.0, t_x,
+               0.0, 2.0 / top - bottom, 0.0, t_y,
+               0.0, 0.0, -2 / farVal - nearVal, t_z,
+               0.0, 0.0, 0.0, 1.0 );
+}
 
 void main()
 {
@@ -112,9 +120,15 @@ void main()
 
   // END of parameters
 
-  // Do the standard vertex processing.
-  mat4 mvpMatrix;
-  gl_Position = mvpMatrix * iPos;
+  vec2 iPos = iTexCoordPos.zw;
+  vec2 iTexCoord = iTexCoordPos.xy;
+
+  // xxx Do the standard vertex processing.
+  mat4 ViewportMatrix = glOrtho(0.0, rubyOutputSize.x,
+                                0.0, rubyOutputSize.y,
+                                1.0, -1.0);
+
+  gl_Position = vec4(iPos.x, iPos.y, 0.0, 1.0) * ViewportMatrix;
 
   // Precalculate a bunch of useful values we'll need in the fragment
   // shader.

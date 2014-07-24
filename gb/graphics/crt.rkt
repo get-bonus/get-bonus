@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/vector
          ffi/cvector
+         ffi/unsafe/cvector
          ffi/unsafe
          gb/graphics/gl-util
          racket/match
@@ -163,6 +164,7 @@
   (glBindFramebuffer GL_FRAMEBUFFER 0)
 
   (define shader_program (glCreateProgram))
+  (glBindAttribLocation shader_program 0 "iTexCoordPos")
 
   (define&compile-shader fragment_shader
     GL_FRAGMENT_SHADER
@@ -177,6 +179,9 @@
 
   (glUseProgram shader_program)
 
+  (glUniform1i 
+   (glGetUniformLocation shader_program "rubyTexture")
+   0)
   (glUniform2fv
    (glGetUniformLocation shader_program "rubyInputSize")
    1
@@ -184,7 +189,8 @@
   (glUniform2fv
    (glGetUniformLocation shader_program "rubyOutputSize")
    1
-   (f32vector (* 1. screen-width) (* 1. screen-height)))
+   ;; xxx this might have to be without actual-
+   (f32vector (* 1. actual-screen-width) (* 1. actual-screen-height)))
   (glUniform2fv
    (glGetUniformLocation shader_program "rubyTextureSize")
    1
@@ -227,13 +233,74 @@
 
     (glUseProgram 0))
 
-  (define (fake-draw-on-crt do-the-drawing)
-    (glClearColor 0. 0. 0. 1.)
-    (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+  (define VaoId (u32vector-ref (glGenVertexArrays 1) 0))
+  (glBindVertexArray VaoId)
+  (define VboId (u32vector-ref (glGenBuffers 1) 0))
+  (glBindBuffer GL_ARRAY_BUFFER VboId)
+
+  (define DataWidth 4)
+  (define DataSize 4)
+  (define DataCount 6)
+  (glVertexAttribPointer 0 DataSize GL_FLOAT #f 0 0)
+  (glEnableVertexAttribArray 0)
+
+  (glBufferData GL_ARRAY_BUFFER (* DataCount DataWidth DataSize) #f GL_STATIC_DRAW)
+
+  (define DataVec
+    (make-cvector*
+     (glMapBufferRange
+      GL_ARRAY_BUFFER
+      0 
+      (* DataCount DataSize)
+      GL_MAP_WRITE_BIT)
+     _float
+     (* DataWidth
+        DataSize
+        DataCount)))
+  (define (cvector-set*! vec k . vs)
+    (for ([v (in-list vs)]
+          [i (in-naturals)])
+      (cvector-set! vec (+ k i) v)))
+  (cvector-set*! DataVec 0
+                 0.0 0.0 inset-left inset-bottom
+                 1.0 0.0 inset-right inset-bottom
+                 1.0 1.0 inset-right inset-top
+                 
+                 0.0 1.0 inset-left inset-top
+                 1.0 1.0 inset-right inset-top
+                 0.0 0.0 inset-left inset-bottom)
+  (glUnmapBuffer GL_ARRAY_BUFFER)
+  (set! DataVec #f)
+
+  (glBindBuffer GL_ARRAY_BUFFER 0)
+  (glBindVertexArray 0)
+
+  (define (new-draw-on-crt do-the-drawing)
+    (glBindFramebuffer GL_FRAMEBUFFER myFBO)
     (glViewport 0 0 crt-width crt-height)
+    (do-the-drawing)
+    (glBindFramebuffer GL_FRAMEBUFFER 0)
+
+    (glBindVertexArray VaoId)
+    (glEnableVertexAttribArray 0)
+    (glUseProgram shader_program)
+    (glClearColor 0. 0. 0. 0.)
+    (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+    (glViewport 0 0 actual-screen-width actual-screen-height)
+    (glActiveTexture GL_TEXTURE0)
+    (glBindTexture GL_TEXTURE_2D myTexture)
+    (glDrawArrays GL_TRIANGLES 0 DataCount)
+
+    (glActiveTexture GL_TEXTURE0)
+    (glBindTexture GL_TEXTURE_2D 0)
+    (glUseProgram 0)
+    (glDisableVertexAttribArray 0)
+    (glBindVertexArray 0))
+
+  (define (fake-draw-on-crt do-the-drawing)
     (do-the-drawing))
 
-  fake-draw-on-crt)
+  new-draw-on-crt)
 
 (provide crt-height
          crt-width

@@ -45,4 +45,9 @@ void main(void)
   
   // XXX Do proper blending, allow color to set the alpha, etcs
   out_Color = Color + PaletteColor;
+
+  if ( out_Color.a == 0.0 ) {
+    discard;
+  }
+
 }
