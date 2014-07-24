@@ -63,8 +63,8 @@
   (unless (unbox live?-box)
     (error 'sound-context-destory! "Context is not live"))
   (set-box! live?-box #f)
-  (alcCloseDevice d)
-  (alcDestroyContext ctxt)  
+  (alcDestroyContext ctxt)
+  (alcCloseDevice d)  
   (void))
 
 (struct source (srci old-state update-f))
