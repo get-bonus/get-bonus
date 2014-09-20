@@ -7,6 +7,7 @@
    http://nand2tetris.org/
    http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
    http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
+   http://www.reddit.com/r/gamedev/comments/2fkefu/the_software_rendering_club/
 ** TODO investigate ECS
    http://www.reddit.com/r/gamedev/comments/22djip/juice_or_lose_it_entity_component_system_questions/
    https://github.com/rodrigosetti/azteroids
@@ -163,6 +164,8 @@
    http://www.angryfishstudios.com/2011/04/adventures-in-bitmasking/
 ** TODO sound
    https://www.youtube.com/watch?feature=player_embedded&v=la3coK5pq5w
+
+   NES audio channel explanation
 
    http://abcnotation.com/
 

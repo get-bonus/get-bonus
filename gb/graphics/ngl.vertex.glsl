@@ -57,7 +57,6 @@ void main(void)
   the_gl_Position.z = in_Position.z * in_Transforms.x;
   the_gl_Position.w = in_Position.w * in_Transforms.y;
 
-
   float mid_Rotation = in_Transforms.z;
   vec4 mid_Color = in_Color;
   vec4 mid_TexCoord = in_TexCoord;
@@ -66,7 +65,6 @@ void main(void)
   mat4 ViewportMatrix = glOrtho(0.0, ViewportWidth,
                                 0.0, ViewportHeight,
                                 1.0, -1.0);
-
   int i = 0;
 
   vec4 pos = the_gl_Position;
