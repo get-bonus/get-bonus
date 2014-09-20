@@ -24,6 +24,9 @@
 ;; But, it is good to have the resolution always divisible by 8, 16,
 ;; and 32, which are common sprite sizes. (Just 16 would probably be
 ;; okay, but that is smaller than the SNES in height.)
+;;
+;; But, the small SNES size was 256x224, which is very close to scale
+;; 25 or scale 26, which would be nice and pure
 (define crt-scale 32)
 (define crt-width (* crt-scale 16))
 (define crt-height (* crt-scale 9))
