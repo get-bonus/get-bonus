@@ -8,6 +8,12 @@
    http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
    http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
    http://www.reddit.com/r/gamedev/comments/2fkefu/the_software_rendering_club/
+** TODO cleanup and separate OS (and help make other inputs/outputs work)
+   (map-reduce process->next*effects procs empty)
+** TODO cleanup graphics engine and allow arbitrary sprite color data AND pals
+** TODO apply graphics engine to pict and 2htdp/image
+** TODO allow retro-resolution AND full resolution
+** TODO allow portrait vs landscape display/games
 ** TODO investigate ECS
    http://www.reddit.com/r/gamedev/comments/22djip/juice_or_lose_it_entity_component_system_questions/
    https://github.com/rodrigosetti/azteroids
