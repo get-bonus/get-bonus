@@ -199,9 +199,9 @@
 (define (go)
   (big-bang/os
    width height center-pos
-   (λ ()
-     (os/write
-      (list (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))))
+   (λ (env)
+     (win-write
+      'sound (background (λ (w) se:bgm) #:gain 0.1))
 
      (define main
        (list
@@ -283,7 +283,7 @@
                            (history->info-screen-list history)))
                          (menu:action (λ () (play-game g))))))))))))))
 
-     (render-menu #:back (λ () (os/exit 0))
+     (render-menu #:back (λ () (win-exit 'done? #t))
                   main))))
 
 (define current-play-session (make-parameter #f))

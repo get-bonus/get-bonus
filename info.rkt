@@ -1,7 +1,8 @@
-#lang setup/infotab
+#lang info
 (define collection 'multi)
 (define deps
-  (list "fector"
+  (list "dos"
+        "fector"
         "opengl"
         "base"
         "compatibility-lib"

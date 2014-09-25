@@ -248,8 +248,8 @@
          (string->sprites text))))]))
 
 (define (render-menu #:back [back-f #f] m)
-  (let loop ([st (hasheq)])
-    (define c (os/read* 'controller))
+  (let loop ([env (win-write)] [st (hasheq)])
+    (define c (env-read1 env 'controller #f))
 
     (define cm
       (flatten-menu st m))
@@ -263,10 +263,10 @@
     (define right-os
       (draw-menu:info top-offset bot-offset left-offset st cm))
 
-    (os/write
-     (list
-      (cons 'graphics
-            (cons 0 (list* top-os bot-os left-os right-os)))))
+    (define next-env
+      (win-write
+       'graphics
+       (cons 0 (list* top-os bot-os left-os right-os))))
 
     (define new-st
       (react-menu c st cm))
@@ -276,7 +276,7 @@
                    (controller-select-down c)))
       (back-f))
 
-    (loop new-st)))
+    (loop next-env new-st)))
 
 (provide menu:auto
          menu:top

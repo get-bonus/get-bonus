@@ -87,18 +87,18 @@
   (for*/list ([x (in-range 0 (/ width 16))]
               [y (in-range 0 (/ height 16))])
     (cond
-      [(zero? (random 4))
-       (transform #:dx (+ (* x 16) .5)
-                  #:dy (+ (* y 16) .5)
-                  ;; xxx better colours, use more sprites
-                  (sprite (match (random 4)
-                            [0 spr:sos/overworld/grass]
-                            [1 spr:sos/overworld/flower]
-                            [2 spr:sos/overworld/tree/pine]
-                            [3 spr:sos/overworld/tree/round])
-                          0 pal:green))]
-      [else
-       empty])))
+     [(zero? (random 4))
+      (transform #:dx (+ (* x 16) .5)
+                 #:dy (+ (* y 16) .5)
+                 ;; xxx better colours, use more sprites
+                 (sprite (match (random 4)
+                           [0 spr:sos/overworld/grass]
+                           [1 spr:sos/overworld/flower]
+                           [2 spr:sos/overworld/tree/pine]
+                           [3 spr:sos/overworld/tree/round])
+                         0 pal:green))]
+     [else
+      empty])))
 
 (define lhs-x
   (- (/ width 32.0) paddle-hw))
@@ -108,25 +108,25 @@
 (define ball-start-pos
   (psn (+ lhs-x serve-dist) (/ height 2.)))
 
-(define (player-paddle)
-  (let loop ([lhs-y (/ height 2.0)])
+(define (player-paddle env)
+  (let loop ([env env] [lhs-y (/ height 2.0)])
     (define lhs-dy
-      (controller-ldpad-y (os/read* 'controller)))
+      (controller-ldpad-y (env-read1 env 'controller #f)))
     (define lhs-y-n
       (clamp
        min-paddle-y
        (+ lhs-y (* lhs-dy speed))
        max-paddle-y))
-    (os/write
-     (list
-      (cons 'lhs-y lhs-y-n)
-      (cons 'graphics
-            (cons 0
-                  (transform #:d
-                             (+ lhs-x paddle-hw)
-                             (- lhs-y-n paddle-hh)
-                             (lhs-paddle))))))
-    (loop lhs-y-n)))
+    (define next-env
+      (win-write
+       'lhs-y lhs-y-n
+       'graphics
+       (cons 0
+             (transform #:d
+                        (+ lhs-x paddle-hw)
+                        (- lhs-y-n paddle-hh)
+                        (lhs-paddle)))))
+    (loop next-env lhs-y-n)))
 
 (define (ball-bounce dir mx my [dy 0.])
   (define p (make-polar 1.0 dir))
@@ -135,15 +135,16 @@
                      (+ ;;(* -1 dy) ;;; XXX see comment below
                       (* my (imag-part p))))))
 
-(define ((ball dir-seq initial-ball-speed))
-  (let loop ([taps 0]
+(define ((ball dir-seq initial-ball-speed) env)
+  (let loop ([env env]
+             [taps 0]
              [ball-pos ball-start-pos]
              [ball-dir (sequence-first dir-seq)])
     (define (ball-speed taps)
       (* (+ 1 (* .1 taps)) initial-ball-speed))
     (define (ball-in-dir ball-pos dir)
       (+ ball-pos (make-polar (ball-speed taps) dir)))
-    (define lhs-y-n (os/read* 'lhs-y (/ height 2.0)))
+    (define lhs-y-n (env-read1 env 'lhs-y (/ height 2.0)))
     (define lhs-shape
       (cd:aabb (psn (+ lhs-x paddle-hw) lhs-y-n)
                paddle-hw paddle-hh))
@@ -152,72 +153,73 @@
     (define-values
       (ball-pos-n ball-dir-n sounds score?)
       (cond
-        [; The ball has bounced off the lhs
-         (cd:shape-vs-shape ball-shape lhs-shape)
-         (define ball-pos-pushed
-           (psn (max (+ lhs-x (* 4 paddle-hw))
-                     (psn-x ball-pos))
-                (psn-y ball-pos)))
-         (values ball-pos-pushed
-                 ;; XXX Sometimes the ball can bend too far. I need to
-                 ;; tone this done a little.
-                 (ball-bounce ball-dir -1.0 1.0
-                              (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
-                 (list (cons 'sound (sound-at se:bump-lhs ball-pos)))
-                 (add1 taps))]
-        ;; The ball has moved to the left of the lhs paddle
-        [((psn-x ball-pos) . <= . lhs-x)
-         (values ball-start-pos (sequence-first dir-seq)
-                 empty 'right)]
-        ;; The ball hit a horizontal wall
-        [(or
-          ;; The ball hit the top
-          ((psn-y ball-pos) . >= . height)
-          ;; The ball hit the bot
-          ((psn-y ball-pos) . <= . 0))
-         (values ball-pos
-                 (ball-bounce ball-dir 1.0 -1.0)
-                 (list (cons 'sound (sound-at se:bump-wall ball-pos)))
-                 #f)]
-        ;; The ball hit the right vertical wall
-        [((psn-x ball-pos) . >= . width)
-         (values ball-pos
-                 (ball-bounce ball-dir -1.0 1.0)
-                 (list (cons 'sound (sound-at se:bump-wall ball-pos)))
-                 #f)]
-        ;; The ball is inside the frame
-        [else
-         (values ball-pos ball-dir empty #f)]))
+       [; The ball has bounced off the lhs
+        (cd:shape-vs-shape ball-shape lhs-shape)
+        (define ball-pos-pushed
+          (psn (max (+ lhs-x (* 4 paddle-hw))
+                    (psn-x ball-pos))
+               (psn-y ball-pos)))
+        (values ball-pos-pushed
+                ;; XXX Sometimes the ball can bend too far. I need to
+                ;; tone this done a little.
+                (ball-bounce ball-dir -1.0 1.0
+                             (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
+                (list 'sound (sound-at se:bump-lhs ball-pos))
+                (add1 taps))]
+       ;; The ball has moved to the left of the lhs paddle
+       [((psn-x ball-pos) . <= . lhs-x)
+        (values ball-start-pos (sequence-first dir-seq)
+                empty 'right)]
+       ;; The ball hit a horizontal wall
+       [(or
+         ;; The ball hit the top
+         ((psn-y ball-pos) . >= . height)
+         ;; The ball hit the bot
+         ((psn-y ball-pos) . <= . 0))
+        (values ball-pos
+                (ball-bounce ball-dir 1.0 -1.0)
+                (list 'sound (sound-at se:bump-wall ball-pos))
+                #f)]
+       ;; The ball hit the right vertical wall
+       [((psn-x ball-pos) . >= . width)
+        (values ball-pos
+                (ball-bounce ball-dir -1.0 1.0)
+                (list 'sound (sound-at se:bump-wall ball-pos))
+                #f)]
+       ;; The ball is inside the frame
+       [else
+        (values ball-pos ball-dir empty #f)]))
     (define taps-n
       (if (number? score?)
-        (add1 taps)
-        taps))
-    (define new-ball?
+          (add1 taps)
+          taps))
+    (define new-balls
       (if (= taps taps-n)
-        #f
-        (if (zero? (modulo taps-n 5))
-          (begin (os/thread
-                  (ball dir-seq
-                        (ball-speed (/ taps 2))))
-                 #t)
-          #f)))
-    (os/write
-     (list*
-      (cons 'score? score?)
-      (cons 'graphics
-            (cons 0
-                  (transform #:d (psn-x ball-pos-n) (psn-y ball-pos-n)
-                             #:rot ball-dir-n
-                             (ball-sprite))))
-      (append
-       sounds
-       (if new-ball?
-         (list (cons 'sound (sound-at se:applause center-pos)))
-         empty))))
-    (unless (eq? score? 'right)
-      (loop taps-n
-            (ball-in-dir ball-pos-n ball-dir-n)
-            ball-dir-n))))
+          empty
+          (if (zero? (modulo taps-n 5))
+              (list (ball dir-seq
+                          (ball-speed (/ taps 2))))
+              empty)))
+    (define next-env
+      (apply
+       win-write
+       #:threads new-balls
+       'score? score?
+       'graphics
+       (cons 0
+             (transform #:d (psn-x ball-pos-n) (psn-y ball-pos-n)
+                        #:rot ball-dir-n
+                        (ball-sprite)))
+       (append
+        sounds
+        (if (cons? new-balls)
+            (list 'sound (sound-at se:applause center-pos))
+            empty))))
+    (if (eq? score? 'right)
+        (win-exit)
+        (loop next-env taps-n
+              (ball-in-dir ball-pos-n ball-dir-n)
+              ball-dir-n))))
 
 (define char-height
   (sprited-height spr:sos/font))
@@ -231,47 +233,47 @@
   (big-bang/os
    width height center-pos
    #:sound-scale width-h
-   (λ ()
-     (os/thread player-paddle)
-     (os/thread (ball dir-seq initial-ball-speed))
-     (os/write
-      (list
-       (cons 'sound (background (λ (w) se:bgm) #:gain 0.1))
-       (cons 'listener center-pos)))
-     (let loop ([score 0])
-       (define score?s (os/read 'score?))
+   (λ (env)
+     (win-write
+      #:threads (cons player-paddle (ball dir-seq initial-ball-speed))
+      'sound (background (λ (w) se:bgm) #:gain 0.1)
+      'listener center-pos)
+     (define next-env
+       (win-write))
+     (let loop ([env next-env] [score 0])
+       (define score?s (env-read env 'score?))
        (define balls (length score?s))
        (define score-n (+ score (apply + (filter number? score?s))))
-       (os/write
-        (list
-         (cons 'done? (zero? balls))
-         (cons 'return score-n)
-         (cons 'graphics
+       (define next-env
+         (win-write
+          'done? (zero? balls)
+          'return score-n
+          'graphics
+          (cons
+           10.0
+           (cons
+            (let ()
+              (define score-s
+                (format "~a" score-n))
+              (define score-h
+                char-height)
+              (define score-w
+                (* char-width (string-length score-s)))
+              (transform
+               #:d
+               (- (psn-x center-pos)
+                  (/ score-w 2.0))
+               (- height score-h)
                (cons
-                10.0
-                (cons
-                 (let ()
-                   (define score-s
-                     (format "~a" score-n))
-                   (define score-h
-                     char-height)
-                   (define score-w
-                     (* char-width (string-length score-s)))
-                   (transform
-                    #:d
-                    (- (psn-x center-pos)
-                       (/ score-w 2.0))
-                    (- height score-h)
-                    (cons
-                     (string->sprites
-                      score-s)
-                     (transform
-                      #:rgba 255 255 255 255
-                      (string->sprites
-                       #:tint? #t
-                       (make-string (string-length score-s) #\space))))))
-                 bgm)))))
-       (loop score-n)))))
+                (string->sprites
+                 score-s)
+                (transform
+                 #:rgba 255 255 255 255
+                 (string->sprites
+                  #:tint? #t
+                  (make-string (string-length score-s) #\space))))))
+            bgm))))
+       (loop next-env score-n)))))
 
 (require gb/lib/godel
          gb/lib/godel-seq)

@@ -8,7 +8,6 @@
          racket/function
          tests/eli-tester
          gb/gui/world
-         gb/gui/os
          gb/graphics/ngl-main
          gb/data/mvector
          gb/gui/os
@@ -104,8 +103,8 @@
   ;; xxx should use different sprite too
   (ghost-sprite n frame-n
                 (if (even? frame-n)
-                  pal:grayscale
-                  #f)))
+                    pal:grayscale
+                    #f)))
 
 (define (player-animation n)
   (transform
@@ -145,23 +144,23 @@
   (define c x)
   (define vc
     (if (c . < . h-width)
-      c
-      (- width c 1)))
+        c
+        (- width c 1)))
   (define vr
     (if (r . < . h-height)
-      r
-      (- height r 1)))
+        r
+        (- height r 1)))
   (define
     quad
     (cond
-      [(and (r . < . h-height) (c . < . h-width))
-       'nw]
-      [(and (r . < . h-height) (c . >= . h-width))
-       'ne]
-      [(and (r . >= . h-height) (c . < . h-width))
-       'sw]
-      [(and (r . >= . h-height) (c . >= . h-width))
-       'se]))
+     [(and (r . < . h-height) (c . < . h-width))
+      'nw]
+     [(and (r . < . h-height) (c . >= . h-width))
+      'ne]
+     [(and (r . >= . h-height) (c . < . h-width))
+      'sw]
+     [(and (r . >= . h-height) (c . >= . h-width))
+      'se]))
   (values quad vr vc))
 
 (define (quad*cell->psn q r*c)
@@ -199,12 +198,12 @@
 
 (define (wrap-at top n)
   (cond
-    [(n . < . 0)
-     (+ top n)]
-    [(top . <= . n)
-     (- n top)]
-    [else
-     n]))
+   [(n . < . 0)
+    (+ top n)]
+   [(top . <= . n)
+    (- n top)]
+   [else
+    n]))
 (module+ test
   (test
    (wrap-at width 5) => 5
@@ -218,12 +217,12 @@
 
 (define (angle-direction a)
   (cond
-    [(= right a) 'right]
-    [(=    up a) 'up]
-    [(=  left a) 'left]
-    [else        'down]
-    ;; [else (error 'angle-direction "bad direction: ~e" a)]
-    ))
+   [(= right a) 'right]
+   [(=    up a) 'up]
+   [(=  left a) 'left]
+   [else        'down]
+   ;; [else (error 'angle-direction "bad direction: ~e" a)]
+   ))
 
 (define INIT-SPEED
   (* 5. RATE))
@@ -263,8 +262,8 @@
             [nc (cons nx* ny*)])
        (if (or (equal? last-cell nc)
                (= wall (static-map-ref st nx ny)))
-         empty
-         (list nc)))
+           empty
+           (list nc)))
      ...))
   (try [left (sub1 x) y]
        [up x (add1 y)]
@@ -289,28 +288,28 @@
      (define dist-to-center
        (- (+ .5 y0) (psn-y p0)))
      (if (= 0. dist-to-center)
-       (make-polar speed
-                   (if (> (psn-x dir) 0)
-                     right
-                     left))
-       (make-polar
-        (min* dist-to-center speed)
-        (if (dist-to-center . < . 0)
-          down
-          up)))]
+         (make-polar speed
+                     (if (> (psn-x dir) 0)
+                         right
+                         left))
+         (make-polar
+          (min* dist-to-center speed)
+          (if (dist-to-center . < . 0)
+              down
+              up)))]
     [(app psn-x 0.)
      (define dist-to-center
        (- (+ .5 x0) (psn-x p0)))
      (if (= 0. dist-to-center)
-       (make-polar speed
-                   (if (> (psn-y dir) 0)
-                     up
-                     down))
-       (make-polar
-        (min* dist-to-center speed)
-        (if (dist-to-center . < . 0)
-          left
-          right)))]))
+         (make-polar speed
+                     (if (> (psn-y dir) 0)
+                         up
+                         down))
+         (make-polar
+          (min* dist-to-center speed)
+          (if (dist-to-center . < . 0)
+              left
+              right)))]))
 
 (define (posn-in-dir speed p mdir)
   (posn->v p (make-polar speed mdir)))
@@ -322,14 +321,14 @@
        (cd:space-collisions?
         (static-map-space st)
         (cd:aabb mp player-r player-r)))
-    p
-    mp))
+      p
+      mp))
 
 ;; Returns the first without calling the measure
 (define (argmin* m l)
   (if (pair? (rest l))
-    (argmin m l)
-    (first l)))
+      (argmin m l)
+      (first l)))
 
 (define TIME-TO-POWER-WARNING (/ 2 RATE))
 (define TIME-TO-POWER (/ 7 RATE))
@@ -363,14 +362,14 @@
 
 (define (quads->space qs)
   (for*/fold ([s (cd:space width height 1. 1.)])
-      ([x (in-range width)]
-       [y (in-range height)])
+             ([x (in-range width)]
+              [y (in-range height)])
     (define-values (q r c) (xy->quad*r*c x y))
     (define cx (+ x .5))
     (define cy (+ y .5))
     (if (equal? wall (quad-ref (hash-ref qs q) r c))
-      (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
-      s)))
+        (cd:space-insert s (cd:aabb (psn cx cy) .5 .5) 'map)
+        s)))
 
 (define-syntax (define-select-wall stx)
   (syntax-parse stx
@@ -400,41 +399,41 @@
 (define (quads->display qs)
   (define (xy-ref x y)
     (cond
-      [(< x 0) #f]
-      [(< y 0) #f]
-      [(<= width x) #f]
-      [(<= height y) #f]
-      [else
-       (define-values (q r c) (xy->quad*r*c x y))
-       (equal? wall (quad-ref (hash-ref qs q) r c))]))
+     [(< x 0) #f]
+     [(< y 0) #f]
+     [(<= width x) #f]
+     [(<= height y) #f]
+     [else
+      (define-values (q r c) (xy->quad*r*c x y))
+      (equal? wall (quad-ref (hash-ref qs q) r c))]))
   (for*/list
       ([x (in-range width)]
        [y (in-range height)])
     (if (xy-ref x y)
-      (transform
-       #:d (* scale x) (* scale y)
-       (rectangle (* scale 0.5) (* scale 0.5)
-                  (select-wall (xy-ref x (add1 y))
-                               (xy-ref x (sub1 y))
-                               (xy-ref (sub1 x) y)
-                               (xy-ref (add1 x) y))
-                  0
-                  pal:blue))
-      empty)))
+        (transform
+         #:d (* scale x) (* scale y)
+         (rectangle (* scale 0.5) (* scale 0.5)
+                    (select-wall (xy-ref x (add1 y))
+                                 (xy-ref x (sub1 y))
+                                 (xy-ref (sub1 x) y)
+                                 (xy-ref (add1 x) y))
+                    0
+                    pal:blue))
+        empty)))
 
 (struct quad-objs (pellet-count r*c->obj))
 (define (populate-quad q [old-q #f] [old-qo #f])
   (define-values
     (pc fm)
     (for*/fold ([ct 0] [fm (fmatrix h-height h-width)])
-        ([r (in-range h-height)]
-         [c (in-range h-width)])
+               ([r (in-range h-height)]
+                [c (in-range h-width)])
       (cond
-        [(= hall (quad-ref q r c))
-         (values (add1 ct)
-                 (fmatrix-set fm r c 'pellet))]
-        [else
-         (values ct fm)])))
+       [(= hall (quad-ref q r c))
+        (values (add1 ct)
+                (fmatrix-set fm r c 'pellet))]
+       [else
+        (values ct fm)])))
   (define im1 (quad-objs pc fm))
   (define im2 (place-power-up q im1))
   (define im3
@@ -444,8 +443,8 @@
                (fmatrix-ref (quad-objs-r*c->obj old-qo)
                             (car old-fruit-cell) (cdr old-fruit-cell)
                             #f)))
-      (place-fruit q im2)
-      im2))
+        (place-fruit q im2)
+        im2))
   im3)
 
 (define (make-static maze-seq)
@@ -461,7 +460,7 @@
 
   (define objs
     (for/hasheq ([(n q) (in-hash quads)])
-                (values n (populate-quad q))))
+      (values n (populate-quad q))))
 
   (static quads map-display map-space
           objs (quad-objs->display objs)))
@@ -501,49 +500,49 @@
   (define obj
     (fmatrix-ref fm r c #f))
   (if obj
-    (let ()
-      (define fm-n
-        (fmatrix-set fm r c #f))
-      (define qc-n (sub1 qc))
-      (define im
-        (hash-set quad->objs q
-                  (quad-objs qc-n fm-n)))
+      (let ()
+        (define fm-n
+          (fmatrix-set fm r c #f))
+        (define qc-n (sub1 qc))
+        (define im
+          (hash-set quad->objs q
+                    (quad-objs qc-n fm-n)))
 
-      (define quad->objs-p
-        (if (zero? qc-n)
-          (let ()
-            (define oq (opposite-quad q))
-            (hash-update im oq (curry place-fruit (hash-ref quads oq))))
-          im))
-      (if (eq? obj 'fruit)
-        (let ()
-          (define oq (opposite-quad q))
-          (define nq
-            (sequence-first maze-seq))
-          (define quads-n
-            (hash-set quads oq nq))
-          (define old-objs
-            (hash-ref quad->objs-p oq))
-          (define quad->objs-n
-            (hash-set quad->objs-p oq
-                      (populate-quad nq (hash-ref quads oq) old-objs)))
-          (values (struct-copy
-                   static st
-                   [quads quads-n]
-                   [map-display (quads->display quads-n)]
-                   [map-space (quads->space quads-n)]
-                   [quad->objs quad->objs-n]
-                   [objs-display
-                    (quad-objs->display
-                     quad->objs-n)])
-                  obj))
-        (values (struct-copy static st
-                             [quad->objs quad->objs-p]
-                             [objs-display
-                              (quad-objs->display
-                               quad->objs-p)])
-                obj)))
-    (values st obj)))
+        (define quad->objs-p
+          (if (zero? qc-n)
+              (let ()
+                (define oq (opposite-quad q))
+                (hash-update im oq (curry place-fruit (hash-ref quads oq))))
+              im))
+        (if (eq? obj 'fruit)
+            (let ()
+              (define oq (opposite-quad q))
+              (define nq
+                (sequence-first maze-seq))
+              (define quads-n
+                (hash-set quads oq nq))
+              (define old-objs
+                (hash-ref quad->objs-p oq))
+              (define quad->objs-n
+                (hash-set quad->objs-p oq
+                          (populate-quad nq (hash-ref quads oq) old-objs)))
+              (values (struct-copy
+                       static st
+                       [quads quads-n]
+                       [map-display (quads->display quads-n)]
+                       [map-space (quads->space quads-n)]
+                       [quad->objs quad->objs-n]
+                       [objs-display
+                        (quad-objs->display
+                         quad->objs-n)])
+                      obj))
+            (values (struct-copy static st
+                                 [quad->objs quad->objs-p]
+                                 [objs-display
+                                  (quad-objs->display
+                                   quad->objs-p)])
+                    obj)))
+      (values st obj)))
 
 (define (scatter-tile)
   (psn (round (* (random) width))
@@ -560,7 +559,7 @@
 ;; XXX Add a slow start-up clock for beginning of game and
 ;;     after death
 
-(define ((ghost img-n init-timer))
+(define ((ghost img-n init-timer) 1st-env)
   (define ai-n (modulo img-n 4))
   (define ai-sym
     (match ai-n
@@ -576,7 +575,7 @@
       [3 'se]))
   (define ghost-entry-cell
     (locate-cell/static
-     (os/read* 'static)
+     (env-read1 1st-env 'static 'uninit:578)
      ghost-qid ghost-entry))
   (define outside-jail
     (quad*cell->psn
@@ -589,89 +588,95 @@
     (transform
      #:d (* scale (psn-x pos)) (* scale (psn-y pos))
      (if (zero? power-left-n)
-       (ghost-animation img-n (current-frame) dir)
-       (scared-ghost-animation
-        img-n (current-frame)
-        (power-left-n . <= . TIME-TO-POWER-WARNING)))))
-  (let wait-loop ([dot-timer init-timer])
-    (unless (dot-timer . <= . 0)
-      (define event (os/read* 'event #f))
-      (os/write
-       (list
-        (cons 'graphics
-              (cons 0
-                    (if (even? (current-frame))
-                      empty
-                      (ghost-graphics outside-jail outside-jail 'left
-                                      (os/read* 'power-left)))))))
-      (wait-loop (if (eq? event 'pellet)
-                   ;; XXX Add a sound effect when the activate?
-                   (max 0 (sub1 dot-timer))
-                   dot-timer))))
-  (let loop ([pos outside-jail]
+         (ghost-animation img-n (current-frame) dir)
+         (scared-ghost-animation
+          img-n (current-frame)
+          (power-left-n . <= . TIME-TO-POWER-WARNING)))))
+  (define post-wait-env
+    (let wait-loop ([env 1st-env] [dot-timer init-timer])
+      (cond
+       [(not (dot-timer . <= . 0))
+        (define event (env-read1 env 'event #f))
+        (define next-env
+          (win-write
+           'graphics
+           (cons 0
+                 (if (even? (current-frame))
+                     empty
+                     (ghost-graphics outside-jail outside-jail 'left
+                                     (env-read1 env 'power-left 0))))))
+        (wait-loop next-env
+                   (if (eq? event 'pellet)
+                       ;; XXX Add a sound effect when the activate?
+                       (max 0 (sub1 dot-timer))
+                       dot-timer))]
+       [else
+        env])))
+  (let loop ([env post-wait-env]
+             [pos outside-jail]
              [l-target (scatter-tile)]
              [dir 'left]
              [lc outside-jail-right-of]
              [scatter? #t]
              [switch-n TIME-TO-SCATTER])
-    (define power-left-n (os/read* 'power-left))
+    (define power-left-n (env-read1 env 'power-left 0))
     (define frightened? (not (zero? power-left-n)))
     (define speed
       (if frightened?
-        (/ INIT-SPEED 2.)
-        INIT-SPEED))
+          (/ INIT-SPEED 2.)
+          INIT-SPEED))
     (define c (pos->cell pos))
     (define n-switch-n*
       (if frightened?
-        ;; Don't count frightened time on clocks
-        switch-n
-        (sub1 switch-n)))
+          ;; Don't count frightened time on clocks
+          switch-n
+          (sub1 switch-n)))
     (define-values (n-scatter? n-switch-n)
       (if (zero? n-switch-n*)
-        (if scatter?
-          (values #f TIME-TO-CHASE)
-          (values #t TIME-TO-SCATTER))
-        (values scatter? n-switch-n*)))
+          (if scatter?
+              (values #f TIME-TO-CHASE)
+              (values #t TIME-TO-SCATTER))
+          (values scatter? n-switch-n*)))
     (define same-mode?
       (equal? scatter? n-scatter?))
-    (define st (os/read* 'static))
+    (define st (env-read1 env 'static 'uninit:642))
     (define nps*
       (cell-neighbors/no-reverse st c lc))
     (define nps
       ;; This makes them allowed, but not obligated,
       ;; to switch directions.
       (if (not same-mode?)
-        (list* lc nps*)
-        nps*))
+          (list* lc nps*)
+          nps*))
     (define pp
-      (os/read* 'player-pos))
+      (env-read1 env 'player-pos #f))
     (define target
       (cond
-        [(or frightened?
-             (and l-target same-mode?
-                  (if (not n-scatter?) (= (length nps) 1) #t)))
-         l-target]
-        [n-scatter?
-         (scatter-tile)]
-        [else
-         (match ai-n
-           [0
-            pp]
-           [1
-            (+ pp
-               (make-polar
-                4
-                (os/read* 'player-dir)))]
-           [2
-            (define v
-              (- pp
-                 (os/read* 'ambusher pp)))
-            (+ pp (make-polar (* 2 (magnitude v))
-                              (angle v)))]
-           [3
-            (if (<= (pos->pos-distance pp pos) 8)
-              l-target
-              pp)])]))
+       [(or frightened?
+            (and l-target same-mode?
+                 (if (not n-scatter?) (= (length nps) 1) #t)))
+        l-target]
+       [n-scatter?
+        (scatter-tile)]
+       [else
+        (match ai-n
+          [0
+           pp]
+          [1
+           (+ pp
+              (make-polar
+               4
+               (env-read1 env 'player-dir #f)))]
+          [2
+           (define v
+             (- pp
+                (env-read1 env 'ambusher pp)))
+           (+ pp (make-polar (* 2 (magnitude v))
+                             (angle v)))]
+          [3
+           (if (<= (pos->pos-distance pp pos) 8)
+               l-target
+               pp)])]))
     (define next-cell
       (argmin* (curry pos->cell-distance target)
                nps))
@@ -683,113 +688,117 @@
       (angle-direction (angle mv)))
     (define p-cell
       (pos->cell
-       (os/read* 'player-pos)))
+       (env-read1 env 'player-pos #f)))
     (define g-cell
       (pos->cell pos))
     (define-values (events death?)
       (if (equal?
            p-cell
            g-cell)
-        (if (power-left-n . > . 0)
-          ;; XXX reset dot-timer to ghost-return and jail
-          (values (list (cons 'dp2 ghost-pts)) #t)
-          ;; XXX Add sound effect
-          (values (list (cons 'lives-p -1)) #f))
-        (values empty #f)))
-    (os/write
-     (append
-      events
-      (list
-       (cons ai-sym pos)
-       (cons 'graphics
-             (cons
-              1.0
-              (ghost-graphics pos l-target dir power-left-n))))))
+          (if (power-left-n . > . 0)
+              ;; XXX reset dot-timer to ghost-return and jail
+              (values (list 'dp2 ghost-pts) #t)
+              ;; XXX Add sound effect
+              (values (list 'lives-p -1) #f))
+          (values empty #f)))
+    (define next-env
+      (apply
+       win-write
+       ai-sym pos
+       'graphics
+       (cons
+        1.0
+        (ghost-graphics pos l-target dir power-left-n))
+       events))
     (if death?
-      (os/exit ai-n)
-      (loop np target ndir
-            (if (equal? c (pos->cell np))
-              lc
-              c)
-            n-scatter?
-            n-switch-n))))
+        (win-exit)
+        (loop next-env np target ndir
+              (if (equal? c (pos->cell np))
+                  lc
+                  c)
+              n-scatter?
+              n-switch-n))))
 
-(define (player)
+(define (player 1st-env)
   (define player-entry-cell
-    (locate-cell/static (os/read* 'static) 'sw player-entry))
-  (let loop ([p (quad*cell->psn 'sw player-entry-cell)]
+    (locate-cell/static (env-read1 1st-env 'static 'uninit:726) 'sw player-entry))
+  (let loop ([env 1st-env]
+             [p (quad*cell->psn 'sw player-entry-cell)]
              [dir up]
              [next-dir up])
     (define speed INIT-SPEED)
-    (define c (os/read* 'controller))
-    (define st (os/read* 'static))
+    (define c (env-read1 env 'controller #f))
+    (define st (env-read1 env 'static 'uninit:733))
     (define stick (controller-ldpad c))
     (define next-dir-n
       ;; If the stick is stable, then don't change the direction
       (if (= stick 0.+0.i)
-        next-dir
-        (angle (cardinate stick))))
+          next-dir
+          (angle (cardinate stick))))
     ;; The coorridors used to feel too "tight" and easy to get stuck
     ;; on an edge, but I think this got fixed
     (define np (try-direction st speed p next-dir-n))
     ;; Don't change the direction if we couldn't move in it
     (define actual-dir
       (if (= np p)
-        dir
-        next-dir-n))
+          dir
+          next-dir-n))
     (define nnp
       (if (= np p)
-        (try-direction st speed p dir)
-        np))
-    (os/write
-     (list
-      (cons 'player-pos nnp)
-      (cons 'player-dir actual-dir)
-      (cons 'graphics
-            (cons
-             0.0
-             (transform
-              #:d (* scale (psn-x nnp)) (* scale (psn-y nnp))
-              ;; #:rot actual-dir
-              (player-animation (current-frame)))))))
-    (loop nnp actual-dir next-dir-n)))
+          (try-direction st speed p dir)
+          np))
+    (define next-env
+      (win-write
+       'player-pos nnp
+       'player-dir actual-dir
+       'graphics
+       (cons
+        0.0
+        (transform
+         #:d (* scale (psn-x nnp)) (* scale (psn-y nnp))
+         ;; #:rot actual-dir
+         (player-animation (current-frame))))))
+    (loop next-env nnp actual-dir next-dir-n)))
 
 (define (game-start maze-seq)
   (big-bang/os
    width (+ height 2) center-pos
    #:sound-scale (/ width 2.)
-   (λ ()
+   (λ (1st-env)
      (define init-st (make-static maze-seq))
-     (os/write
-      (list (cons 'static init-st)
-            (cons 'player-pos 0.)
-            (cons 'power-left 0)
-            (cons 'sound
-                  (background (λ (w) se:bgm)
-                              #:gain 0.5
-                              #:pause-f
-                              (compose positive?
-                                       (os-sound-reader 'power-left 0))))
-            (cons 'sound
-                  (background (λ (w) se:power-up)
-                              #:gain 1.0
-                              #:pause-f
-                              (compose zero?
-                                       (os-sound-reader 'power-left 0))))))
-     (os/thread player)
-     (os/write (list (cons 'static init-st)
-                     (cons 'power-left 0)))
-     (let loop ([score 0]
+     (define 2nd-env
+       (win-write
+        'static init-st
+        'player-pos 0.
+        'power-left 0
+        'sound
+        (background (λ (w) se:bgm)
+                    #:gain 0.5
+                    #:pause-f
+                    (compose positive?
+                             (os-sound-reader 'power-left 0)))
+        'sound
+        (background (λ (w) se:power-up)
+                    #:gain 1.0
+                    #:pause-f
+                    (compose zero?
+                             (os-sound-reader 'power-left 0)))))
+     (define 3rd-env
+       (win-write #:threads player
+                  'static init-st
+                  'power-left 0))
+     (let loop ([env (win-write 'static init-st)]
+                [score 0]
                 [lives 1]
                 [power-left 0]
                 [st init-st]
                 [next-ghost 0]
                 [dots-to-ghost 0])
-       (define c (os/read* 'controller))
+       (define c (env-read1 env 'controller #f))
        (define power-left-p (max 0 (sub1 power-left)))
        (match-define
         (cons x y)
-        (pos->cell (os/read* 'player-pos)))
+        (pos->cell (env-read1 env 'player-pos #f)))
        (define-values
          (st-n event)
          (static-chomp maze-seq st x y))
@@ -801,54 +810,57 @@
            [#f 0]))
        (define power-left-n
          (if (eq? event 'power-up)
-           (+ power-left-p TIME-TO-POWER)
-           power-left-p))
-       (define lives-p (+ lives (sum (os/read 'lives-p))))
-       (define dp2 (sum (os/read 'dp2)))
+             (+ power-left-p TIME-TO-POWER)
+             power-left-p))
+       (define lives-p (+ lives (sum (env-read env 'lives-p))))
+       (define dp2 (sum (env-read env 'dp2)))
        (define score-n (+ score dp1 dp2))
        (define-values
-         (next-ghost-n dots-to-ghost-n)
+         (ghost-threads next-ghost-n dots-to-ghost-n)
          (cond
-           [(zero? dots-to-ghost)
-            (os/thread (ghost next-ghost 10))
-            (values (add1 next-ghost)
-                    (- ghost-return 10))]
-           [(eq? event 'pellet)
-            (values next-ghost (sub1 dots-to-ghost))]
-           [else
-            (values next-ghost dots-to-ghost)]))
-       (os/write
-        (list*
-         (cons 'event event)
-         (cons 'done?
-               (zero? lives-p))
-         (cons 'return
-               score-n)
-         (cons 'graphics
-               (cons
-                10.
-                (list
-                 (transform
-                  #:rgba 255 255 255 255
-                  (transform
-                   #:d (* scale (/ width 2.)) (* scale (+ height 0.5))
-                   (string->sprites
-                    (format "~a" score-n))))
-                 (static-objs-display st)
-                 (static-map-display st)
-                 (transform #:a 255
-                            #:dx (* scale (/ width 2.))
-                            #:dy (* scale (/ height 2.))
-                            (rectangle (* scale (/ width 2.))
-                                       (* scale (/ height 2.)))))))
-         (cons 'static
-               st-n)
-         (cons 'power-left
-               power-left-n)
-         (if (eq? event 'pellet)
-           (list (cons 'sound (sound-at se:crunch center-pos #:gain 0.8)))
-           empty)))
+          [(zero? dots-to-ghost)
+           (values (list (ghost next-ghost 10))
+                   (add1 next-ghost)
+                   (- ghost-return 10))]
+          [(eq? event 'pellet)
+           (values empty next-ghost (sub1 dots-to-ghost))]
+          [else
+           (values empty next-ghost dots-to-ghost)]))
+       (define next-env
+         (apply
+          win-write
+          #:threads ghost-threads
+          'event event
+          'done?
+          (zero? lives-p)
+          'return
+          score-n
+          'graphics
+          (cons
+           10.
+           (list
+            (transform
+             #:rgba 255 255 255 255
+             (transform
+              #:d (* scale (/ width 2.)) (* scale (+ height 0.5))
+              (string->sprites
+               (format "~a" score-n))))
+            (static-objs-display st)
+            (static-map-display st)
+            (transform #:a 255
+                       #:dx (* scale (/ width 2.))
+                       #:dy (* scale (/ height 2.))
+                       (rectangle (* scale (/ width 2.))
+                                  (* scale (/ height 2.))))))
+          'static
+          st-n
+          'power-left
+          power-left-n
+          (if (eq? event 'pellet)
+              (list 'sound (sound-at se:crunch center-pos #:gain 0.8))
+              empty)))
        (loop
+        next-env
         score-n lives-p
         power-left-n st-n
         next-ghost-n dots-to-ghost-n)))))

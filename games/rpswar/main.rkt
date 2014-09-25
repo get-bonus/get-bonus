@@ -60,8 +60,8 @@
        (list* (menu:status status)
               (menu:action (λ () (return next)))
               (if auto
-                (list (menu:auto 'next (λ () (return next))))
-                empty)))))
+                  (list (menu:auto 'next (λ () (return next))))
+                  empty)))))
   (define (next-menu next)
     (menu:list 'nextm (list (string next "Next    " "Advance to next message." 'next))))
   (match w
@@ -110,8 +110,8 @@
     [(resolved match# ai round# wins state ui ci outcome)
      (define total-wins
        (if (eq? 'user outcome)
-         (add1 wins)
-         wins))
+           (add1 wins)
+           wins))
      (define next
        (if (or (= round# (* 2 (fst-states ai)))
                (and (> round# 3)
@@ -119,15 +119,15 @@
                            1/2)
                         (> (/ (- round# total-wins) round#)
                            1/2))))
-         (end match# ai round# total-wins state)
-         (let ()
-           (define next-state
-             (fst-next ai state ui))
-           (user-input match# ai
-                       (if (eq? outcome 'draw)
-                         round#
-                         (add1 round#))
-                       total-wins next-state))))
+           (end match# ai round# total-wins state)
+           (let ()
+             (define next-state
+               (fst-next ai state ui))
+             (user-input match# ai
+                         (if (eq? outcome 'draw)
+                             round#
+                             (add1 round#))
+                         total-wins next-state))))
      (list
       (menu:info (list (format "Match: ~a" match#)
                        (format "Round: ~a" round#)
@@ -147,27 +147,26 @@
 
 (define (repeat-n n f a)
   (if (zero? n)
-    a
-    (repeat-n (sub1 n) f (f a))))
+      a
+      (repeat-n (sub1 n) f (f a))))
 
 (define (game-start final-ai)
   (big-bang/os
    crt-width crt-height (psn (/ crt-width 2.) (/ crt-height 2.0))
    #:sound-scale (/ crt-width 2.)
-   (λ ()
+   (λ (env)
      (let loop ([s (start 1 final-ai)])
        (define ns
          (let/ec return
            (render-menu (state->menu return s))))
 
        (when (end? ns)
-         (os/write
-          (list
-           (cons 'done?
-                 #t)
-           (cons 'return
-                 (/ (round-wins ns)
-                    (round-round-number ns))))))
+         (win-write
+          'done?
+          #t
+          'return
+          (/ (round-wins ns)
+             (round-round-number ns))))
 
        (loop ns)))))
 
@@ -178,8 +177,8 @@
     (let loop ([ai start-fst])
       (define next-ai (repeat-n (random-integer 1 10) mutate-fst ai))
       (if (zero? (random 2))
-        next-ai
-        (loop next-ai))))
+          next-ai
+          (loop next-ai))))
 
   final-ai)
 
