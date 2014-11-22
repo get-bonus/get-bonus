@@ -276,6 +276,7 @@
        (loop next-env score-n)))))
 
 (require data/enumerate
+         data/enumerate/lib
          gb/lib/godel-seq)
 
 (define 0..90->radians

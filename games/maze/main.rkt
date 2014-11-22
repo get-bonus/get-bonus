@@ -866,6 +866,7 @@
         next-ghost-n dots-to-ghost-n)))))
 
 (require data/enumerate
+         data/enumerate/lib
          gb/lib/godel-seq)
 
 (define maze-seq/e

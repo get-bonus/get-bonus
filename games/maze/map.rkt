@@ -6,6 +6,7 @@
                     permutations)
          gb/lib/random
          data/enumerate
+         data/enumerate/lib
          gb/lib/godel-seq
          math/number-theory
          (only-in gb/ai/path-finding
