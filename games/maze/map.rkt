@@ -5,7 +5,8 @@
          (except-in racket/list
                     permutations)
          gb/lib/random
-         gb/lib/godel
+         data/enumerate
+         gb/lib/godel-seq
          math/number-theory
          (only-in gb/ai/path-finding
                   manhattan-distance)
@@ -43,13 +44,13 @@
       (let loop ([i 2] [which 0])
         (unless (= i 15)
           (cond
-            [(= which doubled)
-             (quad-set! t row (+ 0 i) wall)
-             (quad-set! t row (+ 1 i) wall)
-             (loop (+ i 3) (+ 1 which))]
-            [else
-             (quad-set! t row (+ 0 i) wall)
-             (loop (+ i 2) (+ 1 which))]))))
+           [(= which doubled)
+            (quad-set! t row (+ 0 i) wall)
+            (quad-set! t row (+ 1 i) wall)
+            (loop (+ i 3) (+ 1 which))]
+           [else
+            (quad-set! t row (+ 0 i) wall)
+            (loop (+ i 2) (+ 1 which))]))))
     t))
 
 (define (locate-cell quad value)
@@ -88,8 +89,8 @@
   (define (quad-cell-ref r*c)
     (match-define (cons r c) r*c)
     (if (inside-maze? r*c)
-      (quad-ref new-quad r c)
-      hall))
+        (quad-ref new-quad r c)
+        hall))
   (define (quad-cell-set! r*c v)
     (match-define (cons r c) r*c)
     (quad-set! new-quad r c v))
@@ -167,10 +168,10 @@
             (define c (heap-min h))
             (heap-remove-min! h)
             (if (hash-has-key? seen? c)
-              (done c)
-              (begin
-                (add-neighbors! c)
-                (loop))))))
+                (done c)
+                (begin
+                  (add-neighbors! c)
+                  (loop))))))
       (let loop ([c last-c])
         (define next-c (hash-ref came-from c #f))
         (when (= wall (quad-cell-ref c))
@@ -198,16 +199,16 @@
 
   new-quad)
 
-(define maze/s
-  (wrap/s (cons/s
-           (enum/s quad:templates)
-           (permutations/s wall-visit-order))
-          (match-lambda
-           [(cons template visit-order)
-            (generate-quad/template template visit-order)])
-          (match-lambda
-           [_
-            (error 'maze/s "Encoding not supported")])))
+(define maze/e
+  (map/e (match-lambda
+          [(cons template visit-order)
+           (generate-quad/template template visit-order)])
+         (match-lambda
+          [_
+           (error 'maze/s "Encoding not supported")])
+         (cons/e
+          (from-list/e quad:templates)
+          (permutations-of-n/e (length wall-visit-order)))))
 
 (module+ main
   (define (display-maze q)
@@ -249,26 +250,26 @@
 
   ;; 8 is the first time you notice
   ;; 9 is tough
-  (define s (permutations/s '(0 1 2 3 4 5 6 7 8 9)))
+  (define s (permutations/e '(0 1 2 3 4 5 6 7 8 9)))
   (for ([i (in-range 10)])
-    (printf "~a = ~a\n" i (decode s i)))
+    (printf "~a = ~a\n" i (from-nat s i)))
   (newline)
   ;;(error 'done)
 
   (printf "k: ~a (~a)\n"
-          (spec-k maze/s)
-          (/ (log (spec-k maze/s))
+          (size maze/e)
+          (/ (log (size maze/e))
              (log 10)))
   (for ([i (in-range 1)])
-    (define m (decode maze/s i))
+    (define m (from-nat maze/e i))
     (printf "~a =\n" i)
     (display-maze m))
 
   (require racket/generator gb/lib/pi)
   (define last (current-seconds))
-  (for ([i (10-sequence->K-sequence (spec-k maze/s) (in-generator (BPP-digits 100)))]
+  (for ([i (10-sequence->K-sequence (size maze/e) (in-generator (BPP-digits 100)))]
         [n (in-range 10)])
-    (define m (decode maze/s i))
+    (define m (from-nat maze/e i))
     (define now (current-seconds))
     (printf "(~a) ~a =\n" (- now last) i)
     (set! last now)

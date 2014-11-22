@@ -183,7 +183,7 @@
   final-ai)
 
 (define fst-spec
-  (fst/s input output))
+  (fst/e input output))
 
 (define game
   (game-info 'rpswar "RPS War"

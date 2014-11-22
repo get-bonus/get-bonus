@@ -1,4 +1,6 @@
 * General TODO items
+** TODO use reloadable
+   https://github.com/tonyg/racket-reloadable/tree/master
 ** TODO reading
    http://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
    http://mrelusive.com/books/books.html
@@ -9,11 +11,31 @@
    http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
    http://www.reddit.com/r/gamedev/comments/2fkefu/the_software_rendering_club/
 ** TODO make an 8bit plt logo for start screen
-** TODO cleanup graphics engine and allow arbitrary sprite color data AND pals
-** TODO apply graphics engine to pict and 2htdp/image
+   I like old and new Treasure. I like Cave. Konami and Capcom are
+   classic. Have a "Get Bonus" sound like an old game. I like the idea
+   of referencing Ultra Games.
+
+     GET
+       B0NUS
+   -----------
+   Video Games
+
+   when 0 is the icon/lambda coin. It spins and has a highlight as the
+   "Get Bonus" sound plays.
+** TODO make a get-bonus icon
+   gold coin with a lambda on it
 ** TODO allow retro-resolution AND full resolution
+** TODO multiplayer through input sharing
+** TODO generalize controller to input adapter (in lux)
+   abstract controllers for things like menus in ff/dq
+** TODO connect lux to retroarch
+** TODO opengl perf notes
+   https://developer.apple.com/library/mac/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_designstrategies/opengl_designstrategies.html#//apple_ref/doc/uid/TP40001987-CH2-SW7
+
+   http://www.reddit.com/r/gamedev/comments/2j17wk/a_slightly_faster_bufferless_vertex_shader_trick/
 ** TODO allow portrait vs landscape display/games
 ** TODO investigate ECS
+   the art of screenshake
    http://www.reddit.com/r/gamedev/comments/22djip/juice_or_lose_it_entity_component_system_questions/
    https://github.com/rodrigosetti/azteroids
    https://github.com/alecthomas/entityx
@@ -55,7 +77,6 @@
    (where it goes back to earlier system states)
 ** TODO apse - Add height/normal maps & lighting
 ** TODO write more tests
-    582 ./gb/lib/godel.rkt
      60 ./gb/physics/cd-narrow.rkt
      45 ./gb/ai/path-finding.rkt
      39 ./games/maze/main.rkt
@@ -293,9 +314,11 @@
 ** TODO Return achievements (to dashboard)
 ** TODO Make the 'Home' button in games bring up a dashboard menu (to quit the game, give a ranking, etc)
 ** TODO Read about and implement juiciness
+   the art of screen shake
    http://indiegames.com/2012/05/juice_it_or_lose_it_-_a_talk_b.html
    
    https://github.com/grapefrukt/juicy-breakout
+   http://grapefrukt.com/f/games/juicy-breakout/
 
    http://www.youtube.com/watch?v=tVLb-I5i5ys&feature=youtu.be&a
 

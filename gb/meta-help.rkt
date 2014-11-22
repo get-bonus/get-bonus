@@ -1,18 +1,18 @@
 #lang racket/base
 (require racket/contract
          math/base
-         gb/lib/godel
+         data/enumerate
          gb/meta)
 
 (provide/contract
  [godel-generate
-  (-> (spec/c any/c) (-> any/c)
+  (-> enum? (-> any/c)
       (-> level?))]
  [godel-start
-  (-> (spec/c any/c) (-> any/c result/c)
+  (-> enum? (-> any/c result/c)
       start/c)]
  [random-godel-generate
-  (-> (spec/c any/c)
+  (-> enum?
       (-> level?))]
  [random-generate
   (-> level?)]
@@ -21,38 +21,37 @@
       (-> level? score?))])
 
 (define (godel-generate s f)
-  (λ () (encode s (f))))
+  (λ () (to-nat s (f))))
 
 (define (random-godel-generate s)
   (λ ()
-    (define K (spec-k s))
+    (define K (size s))
     (if (= +inf.0 K)
-      (random-bits 32)
-      (random-natural K))))
+        (random-bits 32)
+        (random-natural K))))
 
 (define (godel-start s f)
-  (λ (n) (f (decode s n))))
+  (λ (n) (f (from-nat s n))))
 
 (define prng-first-three 4294967086)
 (define prng-last-three 4294944442)
 ;; XXX Missing constraint that one of each is not 0
-(define prng-state/s
-  (hetero-vector/s
-   (vector (nat-range/s prng-first-three)
-           (nat-range/s prng-first-three)
-           (nat-range/s prng-first-three)
-           (nat-range/s prng-last-three)
-           (nat-range/s prng-last-three)
-           (nat-range/s prng-last-three))))
+(define prng-state/e
+  (vec/e (below/e prng-first-three)
+         (below/e prng-first-three)
+         (below/e prng-first-three)
+         (below/e prng-last-three)
+         (below/e prng-last-three)
+         (below/e prng-last-three)))
 (define random-generate
   (godel-generate
-   prng-state/s
+   prng-state/e
    (λ ()
      (define prng (make-pseudo-random-generator))
      (pseudo-random-generator->vector prng))))
 (define (random-start inner-start)
   (godel-start
-   prng-state/s
+   prng-state/e
    (λ (state)
      (define prng (vector->pseudo-random-generator state))
      (parameterize ([current-pseudo-random-generator prng])

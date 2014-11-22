@@ -865,18 +865,18 @@
         power-left-n st-n
         next-ghost-n dots-to-ghost-n)))))
 
-(require gb/lib/godel
+(require data/enumerate
          gb/lib/godel-seq)
 
-(define maze-seq/s
-  (infinite-sequence/s maze/s))
+(define maze-seq/e
+  (infinite-sequence/e maze/e))
 
 (define game
   (game-info 'maze "Maze"
              (list "Avoid ghosts while collecting points in a randomly-generated maze. Eat a power pellet to turn the tables and eat the ghosts. After you clear each quadrant, eat the fruit to respawn it and continue."
                    "Compare to Pac-Man(R) by Namco (1980)")
              0
-             (random-godel-generate maze-seq/s)
-             (godel-start maze-seq/s game-start)))
+             (random-godel-generate maze-seq/e)
+             (godel-start maze-seq/e game-start)))
 
 (provide game)

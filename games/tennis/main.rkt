@@ -275,7 +275,7 @@
             bgm))))
        (loop next-env score-n)))))
 
-(require gb/lib/godel
+(require data/enumerate
          gb/lib/godel-seq)
 
 (define 0..90->radians
@@ -284,26 +284,26 @@
 (define radians->0..90
   (compose1 (λ (n) (+ n 45)) radians->degrees))
 
-(define tennis/s
-  (wrap/s
-   (nat-range/s 91)
+(define tennis/e
+  (map/e
    0..90->radians
-   radians->0..90))
+   radians->0..90
+   (below/e 91)))
 
 (module+ test
   (for ([i (in-naturals)]
         [x (in-range 10)])
-    (printf "~a. ~v\n" i (decode tennis/s i))))
+    (printf "~a. ~v\n" i (from-nat tennis/e i))))
 
-(define tennis-seq/s
-  (infinite-sequence/s tennis/s))
+(define tennis-seq/e
+  (infinite-sequence/e tennis/e))
 
 (define game
   (game-info 'tennis "Tennis!"
              (list "Bounce the ball against the wall by moving the paddle. As you hit the ball more times, it moves faster, spawns child balls, and your score goes up."
                    "Compare to Pong(R) by Atari (1972)")
              0
-             (random-godel-generate tennis-seq/s)
-             (godel-start tennis-seq/s game-start)))
+             (random-godel-generate tennis-seq/e)
+             (godel-start tennis-seq/e game-start)))
 
 (provide game)

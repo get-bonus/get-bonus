@@ -1,23 +1,12 @@
 #lang racket/base
 (require racket/match
-         gb/lib/godel
+         data/enumerate
          "random.rkt")
 
 (struct fst (states input-alpha output-alpha start delta state->output) #:transparent)
 
-(define (fst/s input output)
-  (wrap/s (inf*k-bind/s
-           nat/s
-           (λ (how-many-states)
-             (hetero-vector/s
-              (vector (nat-range/s how-many-states)
-                      (flist/s how-many-states
-                               (flist/s (length input)
-                                        (nat-range/s
-                                         how-many-states)))
-                      (flist/s how-many-states
-                               (enum/s output))))))
-          (match-lambda
+(define (fst/e input output)
+  (map/e  (match-lambda
            [(cons how-many-states
                   (vector start
                           (list (list next ...) ...)
@@ -42,20 +31,30 @@
                             (for/list ([i (in-list input)])
                               (hash-ref input->next i)))
                           (for/list ([s (in-range how-many-states)])
-                            (hash-ref state->output s))))])))
+                            (hash-ref state->output s))))])
+          (dep/e
+           nat/e
+           (λ (how-many-states)
+             (vec/e (below/e how-many-states)
+                    (many/e (many/e (below/e
+                                     how-many-states)
+                                    (length input))
+                            how-many-states)
+                    (many/e (from-list/e output)
+                            how-many-states))))))
 
 (module+ test
   (define alpha '(r p s))
   (define ai
     (for/fold ([ai (random-one-state-fst alpha alpha)])
-        ([i (in-range 20)])
+              ([i (in-range 20)])
       (mutate-fst ai)))
 
-  (define ai/s fst/s)
+  (define ai/e fst/e)
 
-  (define n (encode (ai/s alpha alpha) ai))
+  (define n (to-nat (ai/e alpha alpha) ai))
   (printf "[ ~v ] = ~v\n" ai n)
-  (define v (decode (ai/s alpha alpha) n))
+  (define v (from-nat (ai/e alpha alpha) n))
   (printf "[ ~v ]^-1 = ~v\n" n v)
   (printf "~v\n" (equal? v ai))
 
@@ -66,8 +65,8 @@
   (define-runtime-path here ".")
 
   (pretty-print
-   (decode (ai/s alpha alpha)
-           (bytes->integer (file->bytes (build-path here "fst.rkt"))))))
+   (from-nat (ai/e alpha alpha)
+             (bytes->integer (file->bytes (build-path here "fst.rkt"))))))
 
 (define (format-fst f current)
   (format "~a of ~a"

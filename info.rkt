@@ -7,6 +7,7 @@
         "base"
         "compatibility-lib"
         "data-lib"
+        "data-enumerate-lib"
         "draw-lib"
         "eli-tester"
         "gui-lib"
