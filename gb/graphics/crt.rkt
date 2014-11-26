@@ -103,25 +103,12 @@
             ((+ 2 1/2 1/4 1/16)
              (+ 3 1/8))))
 
-(define (make-draw-on-crt actual-screen-width actual-screen-height)
+(define (make-draw-on-crt)
   (eprintf "You are using OpenGL ~a\n"
            (gl-version))
 
   (define texture-width crt-width)
   (define texture-height crt-height)
-
-  (define scale
-    (* 1.
-       (min (quotient* actual-screen-width crt-width)
-            (quotient* actual-screen-height crt-height))))
-
-  (define screen-width (* scale crt-width))
-  (define screen-height (* scale crt-height))
-
-  (define inset-left (/ (- actual-screen-width screen-width) 2.))
-  (define inset-right (+ inset-left screen-width))
-  (define inset-bottom (/ (- actual-screen-height screen-height) 2.))
-  (define inset-top (+ inset-bottom screen-height))
 
   (define myTexture (u32vector-ref (glGenTextures 1) 0))
 
@@ -182,7 +169,7 @@
 
   (glUseProgram shader_program)
 
-  (glUniform1i 
+  (glUniform1i
    (glGetUniformLocation shader_program "rubyTexture")
    0)
   (glUniform2fv
@@ -190,95 +177,81 @@
    1
    (f32vector (* 1. crt-width) (* 1. crt-height)))
   (glUniform2fv
-   (glGetUniformLocation shader_program "rubyOutputSize")
-   1
-   ;; xxx this might have to be without actual-
-   (f32vector (* 1. actual-screen-width) (* 1. actual-screen-height)))
-  (glUniform2fv
    (glGetUniformLocation shader_program "rubyTextureSize")
    1
    (f32vector (* 1. texture-width) (* 1. texture-height)))
 
   (glUseProgram 0)
 
-  ;; xxx turn this entirely into a shader
-  (define (draw-on-crt do-the-drawing)
-    (glBindFramebuffer GL_FRAMEBUFFER myFBO)
+  (define VaoId (u32vector-ref (glGenVertexArrays 1) 0))
+  (define VboId (u32vector-ref (glGenBuffers 1) 0))
 
-    (glPushAttrib GL_CURRENT_BIT)
-    (glPushMatrix)
-    (glViewport 0 0 crt-width crt-height)
-    (do-the-drawing)
-    (glPopMatrix)
-    (glPopAttrib)
+  (define (new-draw-on-crt actual-screen-width actual-screen-height do-the-drawing)
+    ;; Init
+    
+    ;; xxx save the old actual-screen-width actual-screen-height and
+    ;; only run this if they change
+    (define scale
+      (* 1.
+         (min (quotient* actual-screen-width crt-width)
+              (quotient* actual-screen-height crt-height))))
 
-    (glBindFramebuffer GL_FRAMEBUFFER 0)
+    (define screen-width (* scale crt-width))
+    (define screen-height (* scale crt-height))
+
+    (define inset-left (/ (- actual-screen-width screen-width) 2.))
+    (define inset-right (+ inset-left screen-width))
+    (define inset-bottom (/ (- actual-screen-height screen-height) 2.))
+    (define inset-top (+ inset-bottom screen-height))
 
     (glUseProgram shader_program)
-    (glClearColor 0. 0. 0. 1.)
-    (glClear (bitwise-ior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
-    (glMatrixMode GL_PROJECTION)
-    (glLoadIdentity)
-    (glEnable GL_TEXTURE_2D)
-    (glMatrixMode GL_MODELVIEW)
-    (glLoadIdentity)
-    (glOrtho 0 actual-screen-width 0 actual-screen-height 0. -10.)
-    (glViewport 0 0 actual-screen-width actual-screen-height)
-    (glBindTexture GL_TEXTURE_2D myTexture)
-    (glBegin GL_QUADS)
-    (glTexCoord2i 0 0) (glVertex2f inset-left inset-bottom)
-    (glTexCoord2i 1 0) (glVertex2f inset-right inset-bottom)
-    (glTexCoord2i 1 1) (glVertex2f inset-right inset-top)
-    (glTexCoord2i 0 1) (glVertex2f inset-left inset-top)
-    (glEnd)
-    (glBindTexture GL_TEXTURE_2D 0)
-    (glDisable GL_TEXTURE_2D)
+    (glUniform2fv
+     (glGetUniformLocation shader_program "rubyOutputSize")
+     1
+     ;; xxx this might have to be without actual-
+     (f32vector (* 1. actual-screen-width) (* 1. actual-screen-height)))
+    (glUseProgram 0)
+    (glBindVertexArray VaoId)
+    (glBindBuffer GL_ARRAY_BUFFER VboId)
 
-    (glUseProgram 0))
+    (define DataWidth 4)
+    (define DataSize 4)
+    (define DataCount 6)
+    (glVertexAttribPointer 0 DataSize GL_FLOAT #f 0 0)
+    (glEnableVertexAttribArray 0)
 
-  (define VaoId (u32vector-ref (glGenVertexArrays 1) 0))
-  (glBindVertexArray VaoId)
-  (define VboId (u32vector-ref (glGenBuffers 1) 0))
-  (glBindBuffer GL_ARRAY_BUFFER VboId)
+    (glBufferData GL_ARRAY_BUFFER (* DataCount DataWidth DataSize) #f GL_STATIC_DRAW)
 
-  (define DataWidth 4)
-  (define DataSize 4)
-  (define DataCount 6)
-  (glVertexAttribPointer 0 DataSize GL_FLOAT #f 0 0)
-  (glEnableVertexAttribArray 0)
+    (define DataVec
+      (make-cvector*
+       (glMapBufferRange
+        GL_ARRAY_BUFFER
+        0
+        (* DataCount DataSize)
+        GL_MAP_WRITE_BIT)
+       _float
+       (* DataWidth
+          DataSize
+          DataCount)))
+    (define (cvector-set*! vec k . vs)
+      (for ([v (in-list vs)]
+            [i (in-naturals)])
+        (cvector-set! vec (+ k i) v)))
+    (cvector-set*! DataVec 0
+                   0.0 0.0 inset-left inset-bottom
+                   1.0 0.0 inset-right inset-bottom
+                   1.0 1.0 inset-right inset-top
 
-  (glBufferData GL_ARRAY_BUFFER (* DataCount DataWidth DataSize) #f GL_STATIC_DRAW)
+                   0.0 1.0 inset-left inset-top
+                   1.0 1.0 inset-right inset-top
+                   0.0 0.0 inset-left inset-bottom)
+    (glUnmapBuffer GL_ARRAY_BUFFER)
+    (set! DataVec #f)
 
-  (define DataVec
-    (make-cvector*
-     (glMapBufferRange
-      GL_ARRAY_BUFFER
-      0 
-      (* DataCount DataSize)
-      GL_MAP_WRITE_BIT)
-     _float
-     (* DataWidth
-        DataSize
-        DataCount)))
-  (define (cvector-set*! vec k . vs)
-    (for ([v (in-list vs)]
-          [i (in-naturals)])
-      (cvector-set! vec (+ k i) v)))
-  (cvector-set*! DataVec 0
-                 0.0 0.0 inset-left inset-bottom
-                 1.0 0.0 inset-right inset-bottom
-                 1.0 1.0 inset-right inset-top
-                 
-                 0.0 1.0 inset-left inset-top
-                 1.0 1.0 inset-right inset-top
-                 0.0 0.0 inset-left inset-bottom)
-  (glUnmapBuffer GL_ARRAY_BUFFER)
-  (set! DataVec #f)
+    (glBindBuffer GL_ARRAY_BUFFER 0)
+    (glBindVertexArray 0)
 
-  (glBindBuffer GL_ARRAY_BUFFER 0)
-  (glBindVertexArray 0)
-
-  (define (new-draw-on-crt do-the-drawing)
+    ;; Draw
     (glBindFramebuffer GL_FRAMEBUFFER myFBO)
     (glViewport 0 0 crt-width crt-height)
     (do-the-drawing)
@@ -299,9 +272,6 @@
     (glUseProgram 0)
     (glDisableVertexAttribArray 0)
     (glBindVertexArray 0))
-
-  (define (fake-draw-on-crt do-the-drawing)
-    (do-the-drawing))
 
   new-draw-on-crt)
 

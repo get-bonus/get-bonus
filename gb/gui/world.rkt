@@ -58,14 +58,8 @@
               (send glctx call-as-current
                     (λ ()
                       (performance-log! 'before-memory (current-memory-use))
-                      ;; xxx just make it take w x h
-                      (unless (and (unbox draw-on-crt-b)
-                                   (= w (vector-ref (unbox draw-on-crt-b) 1))
-                                   (= h (vector-ref (unbox draw-on-crt-b) 2)))
-                        (define doc (make-draw-on-crt w h))
-                        (set-box!
-                         draw-on-crt-b
-                         (vector doc w h)))
+                      (unless (unbox draw-on-crt-b)
+                        (set-box! draw-on-crt-b (make-draw-on-crt)))
                       (unless (unbox draw-sprites-b)
                         (set-box!
                          draw-sprites-b
@@ -76,7 +70,8 @@
                           crt-width
                           crt-height)))
                       (when last-sprites
-                        ((vector-ref (unbox draw-on-crt-b) 0)
+                        ((unbox draw-on-crt-b)
+                         w h
                          (λ () ((unbox draw-sprites-b)
                                 last-sprites))))
                       (send glctx swap-buffers)
