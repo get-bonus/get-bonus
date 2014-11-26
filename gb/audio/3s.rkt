@@ -68,11 +68,11 @@
   (void))
 
 (struct source (srci old-state update-f))
-(struct system-state (dead?-box listener-posn-f srcs))
-(define (initial-system-state ctxt-obj lpf)
+(struct system-state (dead?-box srcs))
+(define (initial-system-state ctxt-obj)
   (unless (unbox (sound-context-live?-box ctxt-obj))
     (error 'initial-system-state "Context is not live"))
-  (system-state (box #f) lpf empty))
+  (system-state (box #f) empty))
 
 (define (sound->source-vector s)
   (list->vector (map source-srci (system-state-srcs s))))
@@ -83,7 +83,7 @@
   (sound-dead-error s 'sound-unpause!)
   (alSourcePlayv (sound->source-vector s)))
 (define (sound-destroy! s)
-  (match-define (system-state dead-box _ _) s)
+  (match-define (system-state dead-box _) s)
   (sound-dead-error s 'sound-destroy!)
   (set-box! dead-box #t)
   (alDeleteSources (sound->source-vector s)))
@@ -92,8 +92,8 @@
   (when (unbox (system-state-dead?-box s))
     (error sym "Sound already dead")))
 
-(define (render-sound scale sst cmds w)
-  (match-define (system-state db lpf srcs) sst)
+(define (render-sound sst scale lp w cmds)
+  (match-define (system-state db srcs) sst)
   (sound-dead-error sst 'render-sound)
   (define all-srcs
     (append
@@ -103,7 +103,6 @@
           cmds)
      srcs))
 
-  (define lp (lpf w))
   (alListener3f AL_POSITION
                 (/ (psn-x lp) scale)
                 (/ (psn-y lp) scale)
@@ -151,7 +150,7 @@
          (alDeleteSources (vector srci))
          srcs*])))
 
-  (system-state db lpf srcs*))
+  (system-state db srcs*))
 
 (provide/contract
  [audio? contract?]
@@ -189,11 +188,11 @@
       void?)]
  [system-state? contract?]
  [initial-system-state
-  (-> sound-context? (-> any/c psn?)
+  (-> sound-context?
       system-state?)]
  [sound-pause! (-> system-state? void)]
  [sound-unpause! (-> system-state? void)]
  [sound-destroy! (-> system-state? void)]
  [render-sound
-  (-> real? system-state? sound-scape/c any/c
+  (-> system-state? real? psn? any/c sound-scape/c
       system-state?)])

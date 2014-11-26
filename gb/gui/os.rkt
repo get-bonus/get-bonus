@@ -47,6 +47,9 @@
 
 (provide
  (all-from-out dos/win)
+ RATE
+ current-frame
+ call-with-gb
  (contract-out
   [big-bang/os
    (->* (number? number? psn? (-> any/c any))

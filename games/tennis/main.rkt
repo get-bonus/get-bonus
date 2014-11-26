@@ -4,7 +4,6 @@
          racket/function
          racket/math
          racket/list
-         gb/gui/world
          gb/gui/os
          gb/graphics/ngl-main
          gb/data/mvector

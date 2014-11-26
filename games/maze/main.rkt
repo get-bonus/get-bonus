@@ -7,7 +7,6 @@
          gb/lib/fstree
          racket/function
          tests/eli-tester
-         gb/gui/world
          gb/graphics/ngl-main
          gb/data/mvector
          gb/gui/os

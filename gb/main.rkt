@@ -314,13 +314,15 @@
    #:args maybe-game
    (parameterize ([current-srs the-srs]
                   [current-play-session play-session])
-     (match maybe-game
-       [(list)
-        (go)]
-       [(list (app string->symbol some-game))
-        (define gi
-          (hash-ref game-code->info some-game
-                    (λ ()
-                      (error 'get-bonus "We know nothing about the game ~e"
-                             some-game))))
-        (play-game gi)]))))
+     (call-with-gb
+      (λ ()
+        (match maybe-game
+          [(list)
+           (go)]
+          [(list (app string->symbol some-game))
+           (define gi
+             (hash-ref game-code->info some-game
+                       (λ ()
+                         (error 'get-bonus "We know nothing about the game ~e"
+                                some-game))))
+           (play-game gi)]))))))
