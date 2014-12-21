@@ -1,6 +1,214 @@
 * General TODO items
 ** TODO use reloadable
    https://github.com/tonyg/racket-reloadable/tree/master
+** TODO metanet collision detection tutorial
+   http://www.metanetsoftware.com/technique.html
+** TODO snomaN Gaming - Good Game Design - Volgarr The Viking - The 'Isolation' Principle
+   Introduce a new enemy in a controlled environment, so they can
+   learn about how it behaves before being forced to deal with it in a
+   painful way.   
+
+   Each level has three difficulties of enemies:
+   - green is easy
+   - blue is medium
+   - red is hardest.
+
+   They always appear in this order. And they always appear by
+   themselves so you can focus on just one at the beginning. Sometimes
+   it even shows you the way one attacks in a way that can't
+   possibly hurt you.
+
+   The same thing can happen with environmental effects, like bouncing
+   off glowing balls by doing a down-slash, which you discover by
+   making it unavoidable in a vertical corridor and using a ladder
+   that you have to press down to traverse.
+
+   The final levels of the game are difficult because they combine
+   enemies of each type together at the same time.
+
+   --
+
+   This can be done algorithmically by ensuring to generate them in
+   certain orders and to track what the player has done before. You
+   can also (boringly?) create little tutorial spaces where the
+   enemies appear by themselves. This is a fair but "meaningless" and
+   "artificial" way to do it. 
+** TODO snomaN Gaming - Good Game Design - The Legend of Zelda - The 'Growing Stronger' Principle
+   The game blocks a path and makes sure you see what you can't do,
+   and makes you go back with more skills. This makes you feel
+   stronger because you can do things that you wanted to do
+   before. Also, it can make the game feel more connected and
+   interesting because these blockages go somewhere and it makes a
+   "Hard" area connected to an "Easy" area.
+
+   Normally we think of this related to Movements skills (like
+   Metroid), but you can do the same thing with difficult enemies and
+   bosses.
+
+   --
+
+   This can be done by designing the map with overlapping paths and
+   placing "gates" with a variant of graph-coloring.
+** TODO snomaN Gaming - Good Game Design - Shovel Knight - The 'Teaching Without Teaching' Principle
+   Annoying unskip-able teaching tutorials and text boxes.
+
+   An intro level where you have to do each thing in the game in order
+   and a safe way.
+
+   This can help you discover new movement mechanics, like locking the
+   "bounce" animation when you barely press the down in Shovel
+   Knight.
+
+   Progressive levels, rather than throwing everything at you at the
+   same time.
+
+   --
+
+   The key idea is to make the tutorial Fun, so you want to play and
+   learn how to play more.
+** TODO UI effects - analog meter of range of connections with alpha fading
+   Rather than something binary.
+
+   (World of Goo)
+** TODO visual effects - stretch objects along the velocity vector to emphasize and show movements
+   (World of Goo)
+** TODO visual effects - have elements look different before and while they behave differently
+   140 has static things as rectangles, moving things as triangles
+   pointing in the direction they will go, and when something is about
+   to change it turns into static that gets more staticy as its gets
+   closer to moving.
+
+   In "* Souls" the enemies have "tells" that they do before they are
+   about to act. In older games, this can be just a "blink" by
+   switching the palette for a little bit.
+
+   [This is different than just having nice animations, because it is
+   about training the player's expectations.]
+** TODO Juice it or Lose It notes
+   - Maximum output for minimum output
+   
+   Effects
+   - Add color
+   - Tweening/easing functions (lots of little functions)
+     + Start Point -> End Point with Time and equation
+     + x += (target - x) * .1 [move 10%... slows down over time]
+     + Good for things appearing on screen
+     + If you go passed your target, then you bounce back
+     + If you go backwards, then you also bounce during the process
+     + If you add a random delay to each instance, then things look
+       different and interesting
+   - Stretch the paddle based on the movement
+   - Add scaling when the ball interacts
+   - Add rotation in the direction of movement
+   - If you use a sin wave on the scaling, then it wobbles
+   - If you change color when you interact, then you feel the
+     interaction
+   - Add a tweening effect to everything when there is any
+     interacted. This is like screen-shake, but for the elements in
+     the scene.
+   - Sound effects for everything
+   - You can't ever have too many particles
+     + Smoke and other particles when you hit something
+     + Animate when things are removed (scaling to nothing, fall off
+       screen, spin, shatter)
+   - Draw a line over where the ball has been
+     + Change the color of this on some circumstances
+   - Slow motion when something cool happens
+   - Screen shake! The ball is now a comet
+   - Personality
+     + Add eyes to anything (make them react... winking, blinking,
+       look towards the ball)
+     + Add a smile when it hits something
+     + Frown when the ball is far away
+     + Big eyes are always better
+   - Flash the background color
+** TODO The Art of Screenshake notes
+   Starting from a lame run-and-gun game. Make it amazing in 30 simple
+   steps.
+
+   1. Basic animations and sound (SFXR)
+      The sound makes shooting feel better
+   2. Lower enemy HP - It's more fun to kill
+   3. Higher rate of fun - It's more fun to shoot
+   4. Put more enemies - So you can shoot more
+   5. Bigger bullets - Make it so you can see the bullet. It's
+      fun. The size of your chest
+   6. Muzzle flash - The first frame of bullet sprite is a circle.
+   7. Faster bullets - Feels better
+   8. Less accuracy - The bullets look more real and it's fun to see
+      something different (influences gameplay a little)
+   9. Impact effects - Draw something on the wall so the bullet
+      doesn't just disappear, but something happens. (A little "pff"
+      thing.)
+   10. Hit animation - Make the enemy flash when you hurt them
+   11. Enemy knockback - Push the enemy a few pixels back when they
+       get hit
+   12. Permanence - Make it so the enemy stays on the screen in a dead
+       form, and falls back in a cool way. There was combat
+       here. Memory is big. Movies always have shoot-outs in bars so
+       that misses hit something. You can put stuff in the game just
+       so that something happens even when you miss.
+   13. Camera Lerp - Have the camera slightly lag behind the player,
+       so the screen isn't so fake
+   14. Camera Position - Show more around you. The game is about
+       shooting, so show mainly in front of you so you can see more
+       stuff to shoot. Dynamic camera could go near the source of
+       danger or something.
+   15. Screen Shake - On action
+   16. Player knockback - When you shoot, push yourself back a tiny
+       bit. Gives a good feel. Makes you go slower. If a game has a
+       button, give a reason not to press it all the time.
+   17. Sleep - Pause the game for a few milliseconds when something
+       important happens to emphasize that something cool is about to
+       happen.
+   18. Gun Delay - Make the gun (attachment)'s position slightly lag
+       the player's posn so it moves around cooler
+   19. Gun kick - Make the gun posn respond to shooting so it feels
+       cooler.
+   20. Strafe - Walk backwards while shooting, rather than turning.
+   21. More permanence - Put shells in that stay around forever
+   22. More bass - Add bass to sound effects so it is cooler.
+   23. Super Machinegun - Spread shot, so why not? It's fun
+   24. Random Explosion - Every once in a while, make an enemy's
+       death cause an explosion that hurts everyone. Explosion is
+       black circle then white circle.
+   25. Faster Enemies - It feels like more action
+   26. More enemies - It's more fun!
+   27. Even higher rate of fire and more camera kick - Because you
+       can. When you fire, move the camera back a little.
+   28. Bigger explosion - Always have bigger explosions
+   29. Even more permanence - The explosion has smoke that is fading
+       away. This is just scratching the surface of what you could do.
+   30. Gameplay & Meaning - Make it so that you get hit and it
+       matters. (The guy gets hit, flies into the air in slow-mo, and
+       it says "You were the monster the whole time.)
+** TODO Remove the get-bonus menu
+   I find the menu concept to be inelegant and ugly. I'd like to
+   replace it with something that is more natural. One idea is to have
+   each game level have an ending that connects to the next game. For
+   instance, in a Mario level, you would go through a pipe and you may
+   come out in a different game. I could still use an SRS database,
+   but I would produce little connections between the games.
+
+   For arcade/puzzle games (like Tennis), I could show the character
+   you are controlling playing the game pressing buttons or something
+   in the bottom, like Bust-a-Move.
+
+   For games with configurations, like Final Fantasy or changing
+   character attributes, I could use a Pause menu that resets the
+   level.
+
+   The biggest problem (and this is really a problem anyways) would be
+   communicating that even though before you were playing Mario and
+   even though the sprite is the same, you are now playing Castlevania
+   and have different rules/physics/etc.
+** TODO board game menu like Mario Party / Smash Tour
+   connected to the above, it would possible to have a mario
+   party-style board game to connect the various games together and
+   provide multiplayer. you could play games simultaneously and
+   compare scores or even add stuff to harass the other person.
+** TODO multiplayer platformers like NSMBW
+   it's annoying that the camera doesn't go to split-screen
 ** TODO reading
    http://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
    http://mrelusive.com/books/books.html
@@ -33,6 +241,10 @@
    https://developer.apple.com/library/mac/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_designstrategies/opengl_designstrategies.html#//apple_ref/doc/uid/TP40001987-CH2-SW7
 
    http://www.reddit.com/r/gamedev/comments/2j17wk/a_slightly_faster_bufferless_vertex_shader_trick/
+** TODO VISUALSHOCK! SPEEDSHOCK! SOUNDSHOCK! NOW IS TIME TO THE 68000 HEART ON FIRE!
+** TODO Do Press Kit
+   http://dopresskit.com/
+** TODO Umihara Kawase has good backgrounds and platforms that are generic
 ** TODO allow portrait vs landscape display/games
 ** TODO investigate ECS
    the art of screenshake
@@ -63,8 +275,22 @@
    how big are mine?
 
    http://www.effectgames.com/demos/canvascycle/?sound=0
+** TODO inventing on principle
+   - record input commands and replay them with new code so you can
+     experiment
+   - even better, make it show you the whole future/past of the
+     sequence and let you fiddle with the numbers so you can get the
+     result you want quickly
+   - save the input sequence / choose the time region and "play it"
+   - change the code and have the state of the game update instantly
+   - this would be particular cool with enumerations so you can see
+     things changing
+   - show the data, show the comparisons
+   - make sure everything is always deterministic (or ensure the same
+     random seed)
+   - don't simulate things in your head
 ** TODO work on dynamic loading of data files
-   for rapid prototyping
+   for rapid prototyping and live refresh
 ** TODO create a new small font for menu
    4x8 - http://www.omnimaga.org/index.php?topic=3692.0
    8x8 
