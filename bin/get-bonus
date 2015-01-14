@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd $(dirname $(grealpath $0))
+rk ../gb/main.rkt

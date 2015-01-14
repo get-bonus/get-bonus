@@ -207,8 +207,24 @@
    party-style board game to connect the various games together and
    provide multiplayer. you could play games simultaneously and
    compare scores or even add stuff to harass the other person.
+
 ** TODO multiplayer platformers like NSMBW
-   it's annoying that the camera doesn't go to split-screen
+   it's annoying that the camera doesn't go to split-screen or expand
+
+** TODO multiplayer modes
+   parallel vs sequential/hot-seat -- do you play at the same time?
+
+   interacting vs non-interacting -- do you interact when you play?
+   (tetris can send blocks over, mario can bounce off each other)
+
+   coop vs versus -- are you cooperating or fighting in your
+   play/interaction? (this makes sense in sequential/non-interacting
+   too because you could imagine comparing scores or continuing where
+   the last one left off or sharing things)
+
+   asymmetric vs symmetric -- are you doing the same thing (mario) or
+   very similar (mario 2/3d world) or different things (planning
+   attacks versus executing them / laying out stage / etc)
 ** TODO reading
    http://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
    http://mrelusive.com/books/books.html
@@ -218,6 +234,10 @@
    http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
    http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
    http://www.reddit.com/r/gamedev/comments/2fkefu/the_software_rendering_club/
+** TODO record fun amples
+   Get Bonus
+   Game Over (in whiny voice)
+   Please Continue (in a whiny voice)
 ** TODO make an 8bit plt logo for start screen
    I like old and new Treasure. I like Cave. Konami and Capcom are
    classic. Have a "Get Bonus" sound like an old game. I like the idea
@@ -251,6 +271,12 @@
    http://www.reddit.com/r/gamedev/comments/22djip/juice_or_lose_it_entity_component_system_questions/
    https://github.com/rodrigosetti/azteroids
    https://github.com/alecthomas/entityx
+** TODO interpolation methods
+   http://inloop.github.io/interpolator/
+** TODO ai pattern ideas
+   http://www.reddit.com/r/gamedev/comments/2qytgn/big_bang_for_your_development_buck_a_quick_look/
+** TODO line drawing with interpolation
+   http://simblob.blogspot.com/2014/12/line-drawing-on-grid-maps.html
 ** TODO twitter is a pseudo-random number generator
 ** TODO 2d shader resources
    http://www.reddit.com/r/gamedev/comments/238z3e/any_good_resources_for_glsl_shader_techniques/
@@ -442,6 +468,8 @@
 ** TODO SRS - have games return custom attempt information
    Like what the equipment/etc configuration was in JRPGs, so it can
    be re-presented if it needs to be modified
+** TODO old-school 3d racing
+   http://www.extentofthejam.com/pseudo/
 ** TODO Implement pausing and quitting
 ** TODO make pi sequences functional
    Using streams
@@ -522,6 +550,8 @@
 ** TODO SRS - Don't play a level/game more than X times in a row
 ** TODO SRS - Don't play a level/game for longer than X minutes in a row
 ** TODO Include workrave like system in dashboard
+** TODO markov chain level gen
+   https://github.com/mackstann/markovio
 ** TODO Make icons for dashboards vs text
    Or mimic the Wii interface
 ** TODO Make games in dashboard have capabilities

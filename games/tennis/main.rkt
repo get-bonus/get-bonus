@@ -284,6 +284,11 @@
 (define radians->0..90
   (compose1 (λ (n) (+ n 45)) radians->degrees))
 
+(module+ test
+  (require rackunit)
+  (check-= .1 (radians->0..90 (0..90->radians .1)) .00001)
+  (check-= 15 (radians->0..90 (0..90->radians 15)) .00001))
+
 (define tennis/e
   (map/e
    0..90->radians
