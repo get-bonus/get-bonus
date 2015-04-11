@@ -97,6 +97,7 @@
      + If you go backwards, then you also bounce during the process
      + If you add a random delay to each instance, then things look
        different and interesting
+     http://www.robertpenner.com/easing/
    - Stretch the paddle based on the movement
    - Add scaling when the ball interacts
    - Add rotation in the direction of movement
@@ -172,6 +173,8 @@
    24. Random Explosion - Every once in a while, make an enemy's
        death cause an explosion that hurts everyone. Explosion is
        black circle then white circle.
+
+       http://ansimuz.com/site/archives/916
    25. Faster Enemies - It feels like more action
    26. More enemies - It's more fun!
    27. Even higher rate of fire and more camera kick - Because you
@@ -182,6 +185,12 @@
    30. Gameplay & Meaning - Make it so that you get hit and it
        matters. (The guy gets hit, flies into the air in slow-mo, and
        it says "You were the monster the whole time.)
+** TODO Axiom Verge influence
+   Distortion field after shot/explosion
+
+   Random color values when damaged... looks really cool
+
+   Awesome new items and weapons
 ** TODO Remove the get-bonus menu
    I find the menu concept to be inelegant and ugly. I'd like to
    replace it with something that is more natural. One idea is to have
@@ -639,6 +648,8 @@
 ** TODO look at textual music markup
    http://www.reddit.com/r/gamedev/comments/1f9l62/visual_mml_a_text_music_editor/
 ** TODO Add challenges/achievements/training to NES/SNES games
+   retroachievements.org
+
    Hook up with an emulator core to drop into a game with save states
    and then monitor its execution for score, etc
 
