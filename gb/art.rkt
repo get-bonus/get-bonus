@@ -21,6 +21,10 @@
 (add-cw! (color-wheel cw-slots #:s 0.67 #:b 0.6) "med~a")
 (add-apse-palette! sd)
 
+;; xxx make the apse palette (3 tone + 4 hilight) wheel
+
+;; xxx make some templates of different sizes
+
 (define-sprite sd 'block
   $$$$$$$$
   $qqqqqq$
@@ -33,4 +37,4 @@
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite 'block 'hi0)))
+    (apse-sprite 'block 'hi7)))
