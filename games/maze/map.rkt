@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/runtime-path
          racket/match
+         racket/contract
          racket/file
          (except-in racket/list
                     permutations)
@@ -201,15 +202,13 @@
   new-quad)
 
 (define maze/e
-  (map/e (match-lambda
+  (pam/e (match-lambda
           [(cons template visit-order)
            (generate-quad/template template visit-order)])
-         (match-lambda
-          [_
-           (error 'maze/s "Encoding not supported")])
          (cons/e
-          (from-list/e quad:templates)
-          (permutations-of-n/e (length wall-visit-order)))))
+          (apply fin/e quad:templates)
+          (permutations-of-n/e (length wall-visit-order)))
+         #:contract bytes?))
 
 (module+ main
   (define (display-maze q)
@@ -258,8 +257,8 @@
   ;;(error 'done)
 
   (printf "k: ~a (~a)\n"
-          (size maze/e)
-          (/ (log (size maze/e))
+          (enum-count maze/e)
+          (/ (log (enum-count maze/e))
              (log 10)))
   (for ([i (in-range 1)])
     (define m (from-nat maze/e i))
@@ -268,7 +267,7 @@
 
   (require racket/generator gb/lib/pi)
   (define last (current-seconds))
-  (for ([i (10-sequence->K-sequence (size maze/e) (in-generator (BPP-digits 100)))]
+  (for ([i (10-sequence->K-sequence (enum-count maze/e) (in-generator (BPP-digits 100)))]
         [n (in-range 10)])
     (define m (from-nat maze/e i))
     (define now (current-seconds))

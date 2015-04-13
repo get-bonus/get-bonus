@@ -168,7 +168,8 @@
           (/ (round-wins ns)
              (round-round-number ns))))
 
-       (loop ns)))))
+       (loop ns))))
+  0.0)
 
 (define (generate-ai)
   (define start-fst (random-one-state-fst input output))

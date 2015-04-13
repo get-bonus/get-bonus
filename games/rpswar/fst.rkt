@@ -1,12 +1,14 @@
 #lang racket/base
 (require racket/match
          data/enumerate
+         data/enumerate/lib
          "random.rkt")
 
 (struct fst (states input-alpha output-alpha start delta state->output) #:transparent)
 
 (define (fst/e input output)
-  (map/e  (match-lambda
+  (map/e #:contract fst?
+         (match-lambda
            [(cons how-many-states
                   (vector start
                           (list (list next ...) ...)
@@ -21,7 +23,7 @@
                  (for/hash ([s (in-range how-many-states)]
                             [ov (in-list output-v)])
                    (values s ov)))])
-          (match-lambda
+         (match-lambda
            [(fst how-many-states (== input) (== output)
                  start delta state->output)
             (cons how-many-states
@@ -32,16 +34,17 @@
                               (hash-ref input->next i)))
                           (for/list ([s (in-range how-many-states)])
                             (hash-ref state->output s))))])
-          (dep/e
-           nat/e
-           (λ (how-many-states)
-             (vec/e (below/e how-many-states)
-                    (many/e (many/e (below/e
-                                     how-many-states)
-                                    (length input))
-                            how-many-states)
-                    (many/e (from-list/e output)
-                            how-many-states))))))
+         (dep/e
+          #:f-range-finite? #t
+          natural/e
+          (λ (how-many-states)
+            (vector/e (below/e how-many-states)
+                      (listof-n/e (listof-n/e (below/e
+                                               how-many-states)
+                                              (length input))
+                                  how-many-states)
+                      (listof-n/e (apply fin/e output)
+                                  how-many-states))))))
 
 (module+ test
   (define alpha '(r p s))

@@ -282,7 +282,7 @@
   (compose1 degrees->radians (λ (n) (- n 45))))
 
 (define radians->0..90
-  (compose1 (λ (n) (+ n 45)) radians->degrees))
+  (compose1 inexact->exact (λ (n) (+ n 45)) round radians->degrees))
 
 (module+ test
   (require rackunit)
@@ -291,6 +291,7 @@
 
 (define tennis/e
   (map/e
+   #:contract real?
    0..90->radians
    radians->0..90
    (below/e 91)))

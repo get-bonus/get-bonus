@@ -2,6 +2,7 @@
 (require racket/contract
          math/base
          data/enumerate
+         data/enumerate/lib
          gb/meta)
 
 (provide/contract
@@ -24,11 +25,7 @@
   (λ () (to-nat s (f))))
 
 (define (random-godel-generate s)
-  (λ ()
-    (define K (size s))
-    (if (= +inf.0 K)
-        (random-bits 32)
-        (random-natural K))))
+  (λ () (random-index s)))
 
 (define (godel-start s f)
   (λ (n) (f (from-nat s n))))
@@ -37,12 +34,12 @@
 (define prng-last-three 4294944442)
 ;; XXX Missing constraint that one of each is not 0
 (define prng-state/e
-  (vec/e (below/e prng-first-three)
-         (below/e prng-first-three)
-         (below/e prng-first-three)
-         (below/e prng-last-three)
-         (below/e prng-last-three)
-         (below/e prng-last-three)))
+  (vector/e (below/e prng-first-three)
+            (below/e prng-first-three)
+            (below/e prng-first-three)
+            (below/e prng-last-three)
+            (below/e prng-last-three)
+            (below/e prng-last-three)))
 (define random-generate
   (godel-generate
    prng-state/e
