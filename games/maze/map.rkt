@@ -263,16 +263,6 @@
   (for ([i (in-range 1)])
     (define m (from-nat maze/e i))
     (printf "~a =\n" i)
-    (display-maze m))
-
-  (require racket/generator gb/lib/pi)
-  (define last (current-seconds))
-  (for ([i (10-sequence->K-sequence (enum-count maze/e) (in-generator (BPP-digits 100)))]
-        [n (in-range 10)])
-    (define m (from-nat maze/e i))
-    (define now (current-seconds))
-    (printf "(~a) ~a =\n" (- now last) i)
-    (set! last now)
     (display-maze m)))
 
 (provide (all-defined-out))
