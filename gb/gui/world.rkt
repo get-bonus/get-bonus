@@ -10,21 +10,21 @@
          lux/chaos
          lux/chaos/gui
          lux/chaos/gui/key
+         mode-lambda
+         mode-lambda/backend/gl
          gb/input/keyboard
          gb/data/psn
          gb/audio/3s
-         gb/graphics/crt
-         gb/graphics/ngl-main
-         gb/lib/performance-log
+         racket/flonum
+         racket/fixnum
+         gb/graphics/main
          gb/input/controller)
 
-(define-runtime-path texture-atlas-path "../../r.bin.gz")
-(define-runtime-path texture-index-path "../../r.idx.bin.gz")
-(define-runtime-path palette-atlas-path "../../pal.png")
-(define-runtime-path performance-log-path "../../log")
-(struct gbchaos (gui sndctx
-                     [sndst #:mutable]
-                     draw-on-crt-b draw-sprites-b)
+(define the-layer-config
+  (vector (layer (fl/ (fx->fl crt-width) 2.0)
+                 (fl/ (fx->fl crt-height) 2.0))))
+
+(struct gbchaos (gui sndctx [sndst #:mutable] draw)
         #:methods gen:chaos
         [(define/generic super-start! chaos-start!)
          (define/generic super-yield chaos-yield)
@@ -40,8 +40,6 @@
          (define (chaos-event c)
            (super-event (gbchaos-gui c)))
          (define (chaos-output! c o)
-           (define draw-on-crt-b (gbchaos-draw-on-crt-b c))
-           (define draw-sprites-b (gbchaos-draw-sprites-b c))
            (match-define (vector scale lp w cmds last-sprites) o)
            ;; XXX This is implies that we could switch sounds while
            ;; rendering the next sound... which is bad.
@@ -49,34 +47,7 @@
            (set-gbchaos-sndst! c stp)
            (super-output!
             (gbchaos-gui c)
-            (λ (w h dc)
-              (define glctx (send dc get-gl-context))
-              (unless glctx
-                (error 'on-paint "Could not initialize OpenGL!")
-                ;; XXX should bring down the whole thing
-                (exit 1))
-              (send glctx call-as-current
-                    (λ ()
-                      (performance-log! 'before-memory (current-memory-use))
-                      (unless (unbox draw-on-crt-b)
-                        (set-box! draw-on-crt-b (make-draw-on-crt)))
-                      (unless (unbox draw-sprites-b)
-                        (set-box!
-                         draw-sprites-b
-                         (make-draw
-                          texture-atlas-path
-                          texture-index-path
-                          palette-atlas-path
-                          crt-width
-                          crt-height)))
-                      (when last-sprites
-                        ((unbox draw-on-crt-b)
-                         w h
-                         (λ () ((unbox draw-sprites-b)
-                                last-sprites))))
-                      (send glctx swap-buffers)
-                      (performance-log! 'after-memory (current-memory-use))
-                      (performance-log-done!))))))
+            (gbchaos-draw the-layer-config #f last-sprites)))
          (define (chaos-label! c l)
            (super-label! (gbchaos-gui c) l))
          (define (chaos-swap! c t)
@@ -99,13 +70,11 @@
            (super-stop! (gbchaos-gui c))
            (sound-context-destroy! (gbchaos-sndctx c)))])
 (define (make-gbchaos)
-  (performance-log-init! performance-log-path)
-  (gbchaos (make-gui #:mode 'gl-core
+  (gbchaos (make-gui #:mode gui-mode
                      #:start-fullscreen? #t)
            (make-sound-context)
            #f
-           (box #f)
-           (box #f)))
+           (stage-draw/dc gb-csd crt-width crt-height)))
 
 (define current-frame (make-parameter 0))
 (define RATE 1/60)
@@ -117,7 +86,6 @@
         [(define (word-fps gbw)
            60.0)
          (define (word-label gbw ft)
-           (performance-log! ft)
            (lux-standard-label "Get Bonus!" ft))
          (define (word-event gbw e)
            (cond
@@ -184,7 +152,7 @@
  [big-bang
   (->* (any/c
         #:tick (-> any/c (listof controller?)
-                   (values any/c sprite-tree/c sound-scape/c)))
+                   (values any/c any/c sound-scape/c)))
        (#:sound-scale real?
                       #:listener (-> any/c psn?)
                       #:done? (-> any/c boolean?)

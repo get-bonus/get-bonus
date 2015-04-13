@@ -6,7 +6,7 @@
          gb/gui/os
          gb/sys/menu-lib
          gb/input/controller
-         gb/graphics/ngl-main)
+         gb/graphics/main)
 (module+ test
   (require rackunit))
 
@@ -19,11 +19,11 @@
 (struct menu:auto (code fun) #:transparent)
 
 (define char-height
-  (sprited-height spr:sos/font))
+  (sprited-height 'spr:sos/font))
 (define char-width
-  (sprited-width spr:sos/font))
+  (sprited-width 'spr:sos/font))
 (define string->sprites
-  (make-string-factory spr:sos/font))
+  (make-string-factory 'spr:sos/font))
 (define cursor ">>")
 (define padding 2)
 

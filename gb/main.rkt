@@ -10,9 +10,9 @@
          gb/gui/os
          gb/meta
          gb/input/controller
-         gb/graphics/ngl-main
          gb/lib/srs
-         gb/sys/menu)
+         gb/sys/menu
+         gb/graphics/main)
 
 (begin-for-syntax
   (require racket/runtime-path)

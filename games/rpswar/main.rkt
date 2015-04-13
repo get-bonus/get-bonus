@@ -3,7 +3,7 @@
          racket/match
          racket/list
          gb/gui/os
-         gb/graphics/ngl-main
+         gb/graphics/main
          gb/data/mvector
          gb/input/keyboard
          gb/input/controller

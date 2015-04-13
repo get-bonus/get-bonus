@@ -1,9 +1,27 @@
 #lang racket/base
-(require gb/graphics/ngl
-         gb/graphics/r
+(require mode-lambda
          racket/contract
+         racket/list
+         racket/match
          (for-syntax racket/base
                      syntax/parse))
+
+(define crt-scale 32)
+(define crt-width (* crt-scale 16))
+(define crt-height (* crt-scale 9))
+
+(define gb-sd
+  (make-sprite-db))
+
+(define gb-csd
+  (compile-sprite-db gb-sd))
+
+(define (sprited-height s)
+  (error 'sprited-height))
+(define (sprited-width s)
+  (error 'sprited-width))
+(define (sprited-ref s i)
+  (error 'sprited-ref))
 
 (define current-dx (make-parameter 0.0))
 (define current-dy (make-parameter 0.0))
@@ -15,27 +33,27 @@
 (define current-b (make-parameter 0))
 (define current-a (make-parameter 0))
 
-(define (rectangle hw hh [spr #f] [i #f] [pal pal:grayscale])
-  (sprite-info (current-dx) (current-dy)
-               hw hh
-               (current-r) (current-g) (current-b) (current-a)
-               (if (and spr i)
-                 (sprited-ref spr i)
-                 0)
-               pal
-               (current-mx) (current-my)
-               (current-theta)))
-(define (sprite* r g b a spr i pal)
-  (sprite-info (current-dx) (current-dy)
-               (* 0.5 (sprited-width spr)) (* 0.5 (sprited-height spr))
-               r g b a
-               (sprited-ref spr i) pal
-               (current-mx) (current-my)
-               (current-theta)))
-(define (sprite tex i pal)
-  (sprite* 0 0 0 0 tex i pal))
-(define (sprite/tint tex i pal)
-  (sprite* (current-r) (current-g) (current-b) (current-a) tex i pal))
+(define (rectangle hw hh [spr #f] [i #f] [pal 'pal:grayscale])
+  (sprite (current-dx) (current-dy)
+          hw hh
+          (current-r) (current-g) (current-b) (current-a)
+          (if (and spr i)
+              (sprited-ref spr i)
+              0)
+          pal
+          (current-mx) (current-my)
+          (current-theta)))
+(define (!sprite* r g b a spr i pal)
+  (sprite (current-dx) (current-dy)
+          (* 0.5 (sprited-width spr)) (* 0.5 (sprited-height spr))
+          r g b a
+          (sprited-ref spr i) pal
+          (current-mx) (current-my)
+          (current-theta)))
+(define (!sprite tex i pal)
+  (!sprite* 0 0 0 0 tex i pal))
+(define (!sprite/tint tex i pal)
+  (!sprite* (current-r) (current-g) (current-b) (current-a) tex i pal))
 
 (define-syntax (transform stx)
   (syntax-parse stx
@@ -108,15 +126,31 @@
      (syntax/loc stx
        (let () . body))]))
 
+(define (make-string-factory tex:font [pal 'pal:grayscale])
+  (λ (some-string
+      #:tint? [tint? #f]
+      #:hw [hw #f]
+      #:hh [hh #f])
+    (define maker
+      (cond
+        [(and hw hh)
+         (λ (tex i pal)
+           (rectangle hw hh tex i))]
+        [tint?
+         !sprite/tint]
+        [else
+         !sprite]))
+    (define tex-offset
+      (if (and hw hh)
+          (* 2.0 hw)
+          (sprited-width tex:font)))
+
+    (for/list ([c (in-string some-string)]
+               [i (in-naturals)])
+      (transform #:dx (* i tex-offset)
+                 (maker tex:font (char->integer c) pal)))))
+
+(define sprite-tree #f)
+
 (provide
- transform
- (contract-out
-  [sprite
-   (-> sprited? sprite-index? palette? sprite-info?)]
-  [sprite/tint 
-   (-> sprited? sprite-index? palette? sprite-info?)]
-  [rectangle
-   ;; XXX not really a flonum, a single-flonum
-   (->* (flonum? flonum?)
-        (sprited? sprite-index? palette?)
-        sprite-info?)]))
+ (all-defined-out))

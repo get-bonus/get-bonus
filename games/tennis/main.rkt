@@ -5,7 +5,7 @@
          racket/math
          racket/list
          gb/gui/os
-         gb/graphics/ngl-main
+         gb/graphics/main
          gb/data/mvector
          gb/input/controller
          gb/audio/3s
@@ -40,7 +40,7 @@
 (define initial-ball-speed
   speed)
 
-(define spr:tennis/paddle spr:sos/font/block/half)
+(define spr:tennis/paddle 'spr:sos/font/block/half)
 (define blocks-in-a-paddle 3)
 
 (define paddle-w
@@ -63,9 +63,9 @@
   (for/list ([i (in-range blocks-in-a-paddle)])
     (transform
      #:dy (* block-h i)
-     (sprite spr:tennis/paddle 0 pal:blue))))
+     (!sprite spr:tennis/paddle 0 'pal:blue))))
 
-(define spr:tennis/ball spr:sos/food/pumpkin)
+(define spr:tennis/ball 'spr:sos/food/pumpkin)
 (define ball-scale
   1)
 (define ball-hh
@@ -79,25 +79,25 @@
   (transform
    #:d (- ball-r) (- ball-r)
    #:mxy ball-scale
-   (sprite spr:tennis/ball 0 pal:grayscale)))
+   (!sprite spr:tennis/ball 0 'pal:grayscale)))
 
 (define bgm
   ;; xxx make a background out of overworld bricks
   (for*/list ([x (in-range 0 (/ width 16))]
               [y (in-range 0 (/ height 16))])
     (cond
-     [(zero? (random 4))
-      (transform #:dx (+ (* x 16) .5)
-                 #:dy (+ (* y 16) .5)
-                 ;; xxx better colours, use more sprites
-                 (sprite (match (random 4)
-                           [0 spr:sos/overworld/grass]
-                           [1 spr:sos/overworld/flower]
-                           [2 spr:sos/overworld/tree/pine]
-                           [3 spr:sos/overworld/tree/round])
-                         0 pal:green))]
-     [else
-      empty])))
+      [(zero? (random 4))
+       (transform #:dx (+ (* x 16) .5)
+                  #:dy (+ (* y 16) .5)
+                  ;; xxx better colours, use more sprites
+                  (!sprite (match (random 4)
+                             [0 'spr:sos/overworld/grass]
+                             [1 'spr:sos/overworld/flower]
+                             [2 'spr:sos/overworld/tree/pine]
+                             [3 'spr:sos/overworld/tree/round])
+                           0 'pal:green))]
+      [else
+       empty])))
 
 (define lhs-x
   (- (/ width 32.0) paddle-hw))
@@ -152,42 +152,42 @@
     (define-values
       (ball-pos-n ball-dir-n sounds score?)
       (cond
-       [; The ball has bounced off the lhs
-        (cd:shape-vs-shape ball-shape lhs-shape)
-        (define ball-pos-pushed
-          (psn (max (+ lhs-x (* 4 paddle-hw))
-                    (psn-x ball-pos))
-               (psn-y ball-pos)))
-        (values ball-pos-pushed
-                ;; XXX Sometimes the ball can bend too far. I need to
-                ;; tone this done a little.
-                (ball-bounce ball-dir -1.0 1.0
-                             (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
-                (list 'sound (sound-at se:bump-lhs ball-pos))
-                (add1 taps))]
-       ;; The ball has moved to the left of the lhs paddle
-       [((psn-x ball-pos) . <= . lhs-x)
-        (values ball-start-pos (sequence-first dir-seq)
-                empty 'right)]
-       ;; The ball hit a horizontal wall
-       [(or
-         ;; The ball hit the top
-         ((psn-y ball-pos) . >= . height)
-         ;; The ball hit the bot
-         ((psn-y ball-pos) . <= . 0))
-        (values ball-pos
-                (ball-bounce ball-dir 1.0 -1.0)
-                (list 'sound (sound-at se:bump-wall ball-pos))
-                #f)]
-       ;; The ball hit the right vertical wall
-       [((psn-x ball-pos) . >= . width)
-        (values ball-pos
-                (ball-bounce ball-dir -1.0 1.0)
-                (list 'sound (sound-at se:bump-wall ball-pos))
-                #f)]
-       ;; The ball is inside the frame
-       [else
-        (values ball-pos ball-dir empty #f)]))
+        [; The ball has bounced off the lhs
+         (cd:shape-vs-shape ball-shape lhs-shape)
+         (define ball-pos-pushed
+           (psn (max (+ lhs-x (* 4 paddle-hw))
+                     (psn-x ball-pos))
+                (psn-y ball-pos)))
+         (values ball-pos-pushed
+                 ;; XXX Sometimes the ball can bend too far. I need to
+                 ;; tone this done a little.
+                 (ball-bounce ball-dir -1.0 1.0
+                              (/ (- lhs-y-n (psn-y ball-pos)) paddle-h))
+                 (list 'sound (sound-at se:bump-lhs ball-pos))
+                 (add1 taps))]
+        ;; The ball has moved to the left of the lhs paddle
+        [((psn-x ball-pos) . <= . lhs-x)
+         (values ball-start-pos (sequence-first dir-seq)
+                 empty 'right)]
+        ;; The ball hit a horizontal wall
+        [(or
+          ;; The ball hit the top
+          ((psn-y ball-pos) . >= . height)
+          ;; The ball hit the bot
+          ((psn-y ball-pos) . <= . 0))
+         (values ball-pos
+                 (ball-bounce ball-dir 1.0 -1.0)
+                 (list 'sound (sound-at se:bump-wall ball-pos))
+                 #f)]
+        ;; The ball hit the right vertical wall
+        [((psn-x ball-pos) . >= . width)
+         (values ball-pos
+                 (ball-bounce ball-dir -1.0 1.0)
+                 (list 'sound (sound-at se:bump-wall ball-pos))
+                 #f)]
+        ;; The ball is inside the frame
+        [else
+         (values ball-pos ball-dir empty #f)]))
     (define taps-n
       (if (number? score?)
           (add1 taps)
@@ -221,11 +221,11 @@
               ball-dir-n))))
 
 (define char-height
-  (sprited-height spr:sos/font))
+  (sprited-height 'spr:sos/font))
 (define char-width
-  (sprited-width spr:sos/font))
+  (sprited-width 'spr:sos/font))
 (define string->sprites
-  (make-string-factory spr:sos/font))
+  (make-string-factory 'spr:sos/font))
 
 (require racket/generator)
 (define (game-start dir-seq)
