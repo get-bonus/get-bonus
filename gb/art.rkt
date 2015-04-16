@@ -15,8 +15,8 @@
 (define W (* GB-SNES-SCALE 16))
 (define H (* GB-SNES-SCALE 9))
 
-;; NES had about 12 colors, plus some tones/shades
-(define cw-slots 12)
+;; NES had about 12 colors, plus some tones/shades, the SNES had 16
+(define cw-slots 16)
 (define cw:hi (color-wheel cw-slots))
 (define cw:med (color-wheel cw-slots #:s 0.67 #:b 0.6))
 
@@ -48,7 +48,13 @@
 
 ;; xxx make the apse palette (3 tone + 4 hilight) wheel
 
-;; xxx make some templates of different sizes
+;; 12x16: Little Mario (SMB1): 
+;; 16x32: Big Mario (SMB1), Simon (CV1)
+;; 16x16: Link (Z1), Bomberman, Bub & Bob (Bubble Bobble), Pacman
+;; 24x36: Bill (Contra)
+;; 24x32: Alex (RCR)
+;; 24x24: Mega Man
+;; 32x36: Mega Man X
 
 ;; Some blocks
 (define-sprite sd spr:block0
@@ -164,18 +170,14 @@
   $zzaaaaa$___$zzaaaqq$___
   $$$$$$$$$___$$$$$$$$$___)
 
-(module+ apse
-  (with-apse-params [sd W H]
-    (apse-sprite spr:megaman2 'pal:ana:11)))
-
 ;; xxx make "flashing" sprites, that assign everything to black/white/red/etc
 
 ;; xxx build a list of things i should draw
 
 ;; Characters
-;; TODO Frog (a Frog)
-;; TODO Peach
-;; TODO Hazel
+;; TODO Frog - Frog - Carried by a Robot
+;; TODO Peach - Cat (Princess Super Kitty) - Carried by an Octopus
+;; TODO Hazel - Duck - Riding a Hippo
 ;;
 ;; Sizes: Mario, Megaman, Link, Samus, Simon Belmont, Secret of Mana,
 ;; Pacman, Bomberman, Bubble Bobble, Mega Man X, River City Ransom
@@ -186,6 +188,25 @@
 ;; Running (3 frames)
 ;;
 ;; Each character also gets a vehicle for shooters and a kart for racing
+
+(define-sprite sd spr:frog:16x16
+  #:w 16 #:h 16
+  ___$$$____$$$___
+  __$!!!$__$!!!$__
+  _$$!$!$$$$!$!$$_
+  _$a!!!aaaa!!!a$_
+  _$aaaaaaaaaaaa$_
+  _$aaaaaaaaaaaa$_
+  _$aaaaaaaaaaaa$_
+  _$aaaa$aa$aaaa$_
+  __$$aaaaaaaa$$__
+  __$d$$aaaa$$d$__
+  __$ddd$$$$ddd$__
+  __$ddd$ss$ddd$__
+  __$dddd$$dddd$__
+  _$ddd$$$$$$ddd$_
+  $ddd$______$ddd$
+  _$$$________$$$_)
 
 ;; Attacks
 ;; TODO Fireball
@@ -211,6 +232,24 @@
 ;; TODO Puzzle Fighter Gems
 ;; TODO Symbols for 10x8, Tetris Attack (5)
 ;; TODO Stars
+(define-sprite sd spr:puzzle:star
+  #:w 16 #:h 16
+  ______$$$$______
+  _____$$qq$$_____
+  _____$aaaq$_____
+  ____$$aaaq$$____
+  $$$$$aaaaaq$$$$$
+  $aaaaaaaaaqqqqq$
+  $zaaa$aaaa$aaaa$
+  $$zaa$aaaa$aaz$$
+  _$$za$aaaa$az$$_
+  __$$aaaaaaaa$$__
+  _$$$aaaaaaaa$$$_
+  _$aaaaaaaaaaaq$_
+  $$aaaz$$$zaaaq$$
+  $aaaz$$$$$$zaaq$
+  $zzz$$____$$zaq$
+  $$$$$______$$$$$)
 ;; TODO Junk (Dr. Mario, etc)
 ;; TODO Coins (Money Puzzle Exchanger)
 
@@ -250,6 +289,16 @@
 ;; TODO Monkey
 ;; TODO Snake
 ;; TODO Cute cat things (Gimmick)
+(define-sprite sd spr:monster:starguy
+  #:w 8 #:h 8
+  _ss$$ss_
+  _s$ss$s_
+  $$ssss$$
+  $aaaaaa$
+  $$assa$$
+  $_$aa$_$
+  _$d$$d$_
+  $$$__$$$)
 
 ;; Racing Game
 ;; TODO Car with different turns (See Retro Game Challenge)
@@ -257,3 +306,13 @@
 ;; TODO Strategy Games (Advance Wars)
 
 ;; TODO Pinball
+
+;; xxx allow a drawing mode (already this is very hard)
+;; xxx show a grid overlay
+;; xxx show the current palette
+;; xxx show all the sprites somehow
+;; xxx show all the palettes somehow
+
+(module+ apse
+  (with-apse-params [sd W H]
+    (apse-sprite spr:frog:16x16 'pal:ana:5)))
