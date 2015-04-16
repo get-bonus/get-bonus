@@ -5,6 +5,7 @@
          apse)
 
 (define sd (make-sprite-db))
+(initialize-apse! sd)
 
 ;; SNES is 256x224, 26 = 416x234, 24 = 384x216, 32 = 512x288
 ;;
@@ -19,24 +20,21 @@
 (define cw:hi (color-wheel cw-slots))
 (define cw:med (color-wheel cw-slots #:s 0.67 #:b 0.6))
 
+;; xxx need to come up with a different way to do this
 ;; xxx change -idxs to return all rotations
 (for ([ccc (in-list
-            #;(split-complementary-idxs cw-slots)
+            (split-complementary-idxs cw-slots)
             #;(triadic-idxs cw-slots)
-            (analogous-idxs cw-slots))]
+            #;(analogous-idxs cw-slots))]
       [i (in-naturals)])
   (define id (string->symbol (format "pal:ana:~a" i)))
-  (printf "pal ~v\n" id)
   (match-define (vector lefti middlei righti) ccc)
   (define left (list-ref cw:hi lefti))
   (define middle (list-ref cw:hi middlei))
+  (define hi (argb 255 255 228 172))
   (define right (list-ref cw:hi righti))
   (add-palette! sd id
-                (apse-palette left middle right
-                              (list-ref cw:med 0)
-                              (list-ref cw:med 1)
-                              (list-ref cw:med 2)
-                              (list-ref cw:med 3))))
+                (apse-palette left middle right hi hi hi hi)))
 
 (define color-schemes (polygon-idxs 7 cw-slots))
 (define (add-cw! CW fmt)
@@ -47,7 +45,6 @@
 (add-palette! sd 'grayscale (color->palette GRAY))
 (add-cw! cw:hi "hi~a")
 (add-cw! cw:med "med~a")
-(add-apse-palette! sd)
 
 ;; xxx make the apse palette (3 tone + 4 hilight) wheel
 
@@ -55,6 +52,7 @@
 
 ;; Some blocks
 (define-sprite sd spr:block0
+  #:w 8 #:h 8
   $$$$$$$$
   $qqqqqq$
   $zaaaaq$
@@ -64,6 +62,7 @@
   $zzzzzq$
   $$$$$$$$)
 (define-sprite sd spr:block1
+  #:w 8 #:h 8
   $$$$$$$$
   $qzzzzz$
   $zqqqqz$
@@ -73,6 +72,7 @@
   $zzzzzz$
   $$$$$$$$)
 (define-sprite sd spr:block2
+  #:w 8 #:h 8
   $$$$$$$$
   $qzzzzz$
   $zqqzzz$
@@ -84,86 +84,176 @@
 
 ;; Megaman
 (define-sprite sd spr:megaman
-  ________________________
-  __________ggg___________
-  ________gggqqg__________
-  _______gzzzgqqg_________
-  ______gzzzzzgggg________
-  ______gzzzzzgqqzg_______
-  _____gqzzzzzzggzg_______
-  _____gqzzf!!!zz!g_______
-  _____gqzf!!$$f$!g_______
-  ______gzf!!$$f$!g_______
-  _____ggzff!!!f!fg_______
-  ___ggqqgzf$$$$fggg______
-  __gzqqqqgfffffgqqzg_____
-  __gzzqqqqgggggqqzzg_____
-  _gzzzqgqqqqqqqgqzzzg____
-  _gzzgggqqqqqqqgggzzg____
-  _gzzzggqqqqqqqggzzzg____
-  _gzzzggzzzzzzzggzzzg____
-  __ggg_gzzzzzzzg_ggg_____
-  _____gqqzzzzzqqg________
-  ____gqqqqzzzqqqqg_______
-  ___ggzqqqqgqqqzzgg______
-  _ggzzzzzqg_gqzzzzzgg____
-  gzzzzzzzg___gzzzzzzzg___
-  ggggggggg___ggggggggg___)
+  #:w 24 #:h 24
+  __________$$$___________
+  ________$$$qq$__________
+  _______$zzz$qq$_________
+  ______$zzzzz$$$$________
+  ______$zzzzz$qqz$_______
+  _____$qzzzzzz$$z$_______
+  _____$qzzf!!!zz!$_______
+  _____$qzf!!$$f$!$_______
+  ______$zf!!$$f$!$_______
+  _____$$zff!!!f!f$_______
+  ___$$qq$zf$$$$f$$$______
+  __$zqqqq$fffff$qqz$_____
+  __$zzqqqq$$$$$qqzz$_____
+  _$zzzq$qqqqqqq$qzzz$____
+  _$zz$$$qqqqqqq$$$zz$____
+  _$zzz$$qqqqqqq$$zzz$____
+  _$zzz$$zzzzzzz$$zzz$____
+  __$$$_$zzzzzzz$_$$$_____
+  _____$qqzzzzzqq$________
+  ____$qqqqzzzqqqq$_______
+  ___$$zqqqq$qqqzz$$______
+  _$$zzzzzq$_$qzzzzz$$____
+  $zzzzzzz$___$zzzzzzz$___
+  $$$$$$$$$___$$$$$$$$$___)
 
 (define-sprite sd spr:megaman1
-  ________________________
-  __________ggg___________
-  ________gggddg__________
-  _______gaaagddg_________
-  ______gaaaaagggg________
-  ______gaaaaagddag_______
-  _____gdaaaaaaggag_______
-  _____gdaaf!!!aa!g_______
-  _____gdaf!!$$f$!g_______
-  ______gaf!!$$f$!g_______
-  _____ggaff!!!f!fg_______
-  ___ggddgaf$$$$fggg______
-  __gaddddgfffffgddag_____
-  __gaaddddgggggddaag_____
-  _gaaadgdddddddgdaaag____
-  _gaagggdddddddgggaag____
-  _gaaaggdddddddggaaag____
-  _gaaaggaaaaaaaggaaag____
-  __ggg_gaaaaaaag_ggg_____
-  _____gddaaaaaddg________
-  ____gddddaaaddddg_______
-  ___ggaddddgdddaagg______
-  _ggaaaaadg_gdaaaaagg____
-  gaaaaaaag___gaaaaaaag___
-  ggggggggg___ggggggggg___)
+  #:w 24 #:h 24
+  __________$$$___________
+  ________$$$dd$__________
+  _______$aaa$dd$_________
+  ______$aaaaa$$$$________
+  ______$aaaaa$dda$_______
+  _____$daaaaaa$$a$_______
+  _____$daaf!!!aa!$_______
+  _____$daf!!$$f$!$_______
+  ______$af!!$$f$!$_______
+  _____$$aff!!!f!f$_______
+  ___$$dd$af$$$$f$$$______
+  __$adddd$fffff$dda$_____
+  __$aadddd$$$$$ddaa$_____
+  _$aaad$ddddddd$daaa$____
+  _$aa$$$ddddddd$$$aa$____
+  _$aaa$$ddddddd$$aaa$____
+  _$aaa$$aaaaaaa$$aaa$____
+  __$$$_$aaaaaaa$_$$$_____
+  _____$ddaaaaadd$________
+  ____$ddddaaadddd$_______
+  ___$$adddd$dddaa$$______
+  _$$aaaaad$_$daaaaa$$____
+  $aaaaaaa$___$aaaaaaa$___
+  $$$$$$$$$___$$$$$$$$$___)
 
 (define-sprite sd spr:megaman2
-  ________________________
-  __________ggg___________
-  ________gggddg__________
-  _______gaaqgddg_________
-  ______gaaaqqgggg________
-  ______gaaaaqgddag_______
-  _____gdaaaaaqggqg_______
-  _____gdaaf!!!qq!g_______
-  _____gdzf!!$$f$!g_______
-  ______gzf!!$$f$!g_______
-  _____ggzff!!!f!fg_______
-  ___ggddgzf$$$$fggg______
-  __gaddddgfffffgddqg_____
-  __gaaddddgggggddaqg_____
-  _gaaadgdddddddgdaaqg____
-  _gzagggdddddddgggaqg____
-  _gzaaggdddddddggaaag____
-  _gzaaggaaaaaaaggzaag____
-  __ggg_gzaaaaaag_ggg_____
-  _____gdezaaaadeg________
-  ____gdddezaadddeg_______
-  ___ggzdddegdddaqgg______
-  _ggzaaaadg_gdaaaqqgg____
-  gzzaaaaag___gzzaaaqqg___
-  ggggggggg___ggggggggg___)
+  #:w 24 #:h 24
+  __________$$$___________
+  ________$$$dd$__________
+  _______$aaq$dd$_________
+  ______$aaaqq$$$$________
+  ______$aaaaq$dda$_______
+  _____$daaaaaq$$q$_______
+  _____$daaf!!!qq!$_______
+  _____$dzf!!$$f$!$_______
+  ______$zf!!$$f$!$_______
+  _____$$zff!!!f!f$_______
+  ___$$dd$zf$$$$f$$$______
+  __$adddd$fffff$ddq$_____
+  __$aadddd$$$$$ddaq$_____
+  _$aaad$ddddddd$daaq$____
+  _$za$$$ddddddd$$$aq$____
+  _$zaa$$ddddddd$$aaa$____
+  _$zaa$$aaaaaaa$$zaa$____
+  __$$$_$zaaaaaa$_$$$_____
+  _____$dezaaaade$________
+  ____$dddezaaddde$_______
+  ___$$zddde$dddaq$$______
+  _$$zaaaad$_$daaaqq$$____
+  $zzaaaaa$___$zzaaaqq$___
+  $$$$$$$$$___$$$$$$$$$___)
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:megaman2 'pal:ana:6)))
+    (apse-sprite spr:megaman2 'pal:ana:11)))
+
+;; xxx make "flashing" sprites, that assign everything to black/white/red/etc
+
+;; xxx build a list of things i should draw
+
+;; Characters
+;; TODO Frog (a Frog)
+;; TODO Peach
+;; TODO Hazel
+;;
+;; Sizes: Mario, Megaman, Link, Samus, Simon Belmont, Secret of Mana,
+;; Pacman, Bomberman, Bubble Bobble, Mega Man X, River City Ransom
+;;
+;; Animations: Jumping (1 frame), Ducking (1 frame), Standing (1
+;; frame), Walking Right (3 frames), Turning around (1 frame),
+;; Climbing, Stairs (1 up, 1 down), Attack (3 frame), Shooting while
+;; Running (3 frames)
+;;
+;; Each character also gets a vehicle for shooters and a kart for racing
+
+;; Attacks
+;; TODO Fireball
+;; TODO Bullet
+;; TODO Weapons: Sword
+;; TODO Weapons: Whip
+;; TODO Bomb
+
+;; Effects
+;; TODO Explosions (see Retro Game Challenge)
+;; TODO Lightning
+;; TODO Hearts
+;; TODO Ice
+;; TODO Flame
+
+;; Fonts
+;; TODO For scores
+;; TODO For instructions
+
+;; Puzzle
+;; TODO Tetris Blocks (see above)
+;; TODO Poyo Poyo Blobs
+;; TODO Puzzle Fighter Gems
+;; TODO Symbols for 10x8, Tetris Attack (5)
+;; TODO Stars
+;; TODO Junk (Dr. Mario, etc)
+;; TODO Coins (Money Puzzle Exchanger)
+
+;; SMB
+;; TODO Coin
+;; TODO Tree
+;; TODO Block
+;; TODO Pipe
+;; TODO Turtle
+;; TODO Wood block
+
+;; Tiles (Zelda style)
+
+;; Tiles (SMB style)
+;; TODO Grass
+;; TODO Rock
+;; TODO Bubble Bobble
+
+;; Tiles (Top-down)
+;; TODO Walls w/ corners
+
+;; Enemies
+;; TODO Ghost
+;; TODO Turtle
+;; TODO Cute aliens (Space Invaders 95)
+;; TODO Abstract alians (Space Invaders Part II)
+;; TODO Slimes
+;; TODO Mushroom
+;; TODO Wind monster
+;; TODO Cute enemies (Kirby)
+;; TODO Dinosaur
+;; TODO Bee
+;; TODO Asteroid
+;; TODO Bob-omb
+;; TODO Bullet Bill
+;; TODO Robot guy
+;; TODO Monkey
+;; TODO Snake
+;; TODO Cute cat things (Gimmick)
+
+;; Racing Game
+;; TODO Car with different turns (See Retro Game Challenge)
+
+;; TODO Strategy Games (Advance Wars)
+
+;; TODO Pinball

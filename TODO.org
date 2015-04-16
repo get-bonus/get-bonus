@@ -243,7 +243,7 @@
    http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
    http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
    http://www.reddit.com/r/gamedev/comments/2fkefu/the_software_rendering_club/
-** TODO record fun amples
+** TODO record fun samples
    Get Bonus
    Game Over (in whiny voice)
    Please Continue (in a whiny voice)
@@ -265,6 +265,8 @@
 ** TODO multiplayer through input sharing
 ** TODO generalize controller to input adapter (in lux)
    abstract controllers for things like menus in ff/dq
+** TODO new gamepad code
+   https://github.com/creationix/lit-gamepad
 ** TODO connect lux to retroarch
 ** TODO opengl perf notes
    https://developer.apple.com/library/mac/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_designstrategies/opengl_designstrategies.html#//apple_ref/doc/uid/TP40001987-CH2-SW7
