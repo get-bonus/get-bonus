@@ -231,6 +231,35 @@
 ;; TODO Poyo Poyo Blobs
 ;; TODO Puzzle Fighter Gems
 ;; TODO Symbols for 10x8, Tetris Attack (5)
+(define-sprite sd spr:puzzle:x
+  #:w 16 #:h 16
+  $$$$$______$$$$$
+  $qqq$$____$$qqq$
+  $qaaq$$__$$qaaq$
+  $zaaaq$$$$qaaaz$
+  $$zaaaaaaaaaaz$$
+  _$$za!!aa!!az$$_
+  __$$a!$aa$!a$$__
+  ___$aaaaaaaa$___
+  ___$aaaaaaaa$___
+  __$$aaa$$aaa$$__
+  _$$qaaaaaaaaq$$_
+  $$qaaaaaaaaaaq$$
+  $qaaaz$$$$zaaaq$
+  $aaaz$$__$$zaaa$
+  $aaz$$____$$zaa$
+  $$$$$______$$$$$)
+;; TODO Ball
+(define-sprite sd spr:puzzle:ball
+  #:w 8 #:h 8
+  __$$$$__
+  _$$qq$$_
+  $$aaqq$$
+  $aaaaaa$
+  $zaaaaa$
+  $$zaaa$$
+  _$$za$$_
+  __$$$$__)
 ;; TODO Stars
 (define-sprite sd spr:puzzle:star
   #:w 16 #:h 16
@@ -239,7 +268,7 @@
   _____$aaaq$_____
   ____$$aaaq$$____
   $$$$$aaaaaq$$$$$
-  $aaaaaaaaaqqqqq$
+  $aaaaaaaaaaqqqq$
   $zaaa$aaaa$aaaa$
   $$zaa$aaaa$aaz$$
   _$$za$aaaa$az$$_
@@ -312,7 +341,8 @@
 ;; xxx show the current palette
 ;; xxx show all the sprites somehow
 ;; xxx show all the palettes somehow
+;; xxx emacs - save on every keystroke
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:frog:16x16 'pal:ana:5)))
+    (apse-sprite spr:puzzle:x 'pal:ana:13)))
