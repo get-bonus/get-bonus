@@ -250,7 +250,7 @@
   $aaz$$____$$zaa$
   $$$$$______$$$$$)
 ;; TODO Ball
-(define-sprite sd spr:puzzle:ball
+(define-sprite sd spr:puzzle:ball8
   #:w 8 #:h 8
   __$$$$__
   _$$qq$$_
@@ -260,6 +260,24 @@
   $$zaaa$$
   _$$za$$_
   __$$$$__)
+(define-sprite sd spr:puzzle:ball
+  #:w 16 #:h 16
+  _____$$$$$$_____
+  ____$$aaqq$$____
+  ___$$aaaaqq$$___
+  __$$aaaaaaqq$$__
+  _$$aaaaaaaaqq$$_
+  $$aaaaaaaaaaqq$$
+  $aaaa!!aa!!aaqq$
+  $aaaa!!aa!!aaaa$
+  $zaaa!$aa$!aaaa$
+  $zzaaaaaaaaaaaa$
+  $$zzaaaaaaaaaa$$
+  _$$zzaa$$$$aa$$_
+  __$$zzaaaaaa$$__
+  ___$$zzaaaa$$___
+  ____$$zzzz$$____
+  _____$$$$$$_____)
 ;; TODO Stars
 (define-sprite sd spr:puzzle:star
   #:w 16 #:h 16
@@ -345,4 +363,4 @@
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:puzzle:x 'pal:ana:13)))
+    (apse-sprite spr:puzzle:ball 'pal:ana:13)))
