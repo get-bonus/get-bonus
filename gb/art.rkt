@@ -4,6 +4,8 @@
          racket/match
          apse)
 
+;; XXX artist-mode, artist-select-op-flood-fill, and C-a C-c C-f is awesome
+
 (define sd (make-sprite-db))
 (initialize-apse! sd)
 
@@ -48,7 +50,7 @@
 
 ;; xxx make the apse palette (3 tone + 4 hilight) wheel
 
-;; 12x16: Little Mario (SMB1): 
+;; 12x16: Little Mario (SMB1):
 ;; 16x32: Big Mario (SMB1), Simon (CV1)
 ;; 16x16: Link (Z1), Bomberman, Bub & Bob (Bubble Bobble), Pacman
 ;; 24x36: Bill (Contra)
@@ -219,6 +221,28 @@
 ;; TODO Explosions (see Retro Game Challenge)
 ;; TODO Lightning
 ;; TODO Hearts
+(define-sprite sd spr:heart8
+  #:w 8 #:h 8
+  _$$__$$_
+  $$a$$a$$
+  $aaaaqa$
+  $aaaaaa$
+  $$aaaa$$
+  _$$aa$$_
+  __$$$$__
+  ___$$___)
+
+;; Libby thinks it looks like a praying mantis
+(define-sprite sd spr:beat
+  #:w 8 #:h 8
+  _$$__$$_
+  __$__$__
+  $$$$$$$$
+  $aaaaaa$
+  $$zzzz$$
+  _$$aa$$_
+  __$$$$__
+  ___$$___)
 ;; TODO Ice
 ;; TODO Flame
 
@@ -229,6 +253,24 @@
 ;; Puzzle
 ;; TODO Tetris Blocks (see above)
 ;; TODO Poyo Poyo Blobs
+(define-sprite sd spr:puzzle:blob
+  #:w 16 #:h 16
+  _________$$$$$$_
+  ________$$qqqq$_
+  _______$$qq$$$$_
+  ____$$$$qq$$____
+  ___$$qaaaaa$$___
+  __$$qaaaaaaz$$__
+  _$$qaaaaaaaaz$$_
+  $$qa!!aaaa!!az$$
+  $aaa!$aaaa$!aaa$
+  $aaaaaaaaaaaaaa$
+  $aaaaaaaaaaaaaa$
+  $aaa$$aaaa$$aaa$
+  $aaaa$$$$$$aaaa$
+  $aaaaaaaaaaaazz$
+  $$aaaaaaaaaazz$$
+  _$$$$$$$$$$$$$$_)
 ;; TODO Puzzle Fighter Gems
 ;; TODO Symbols for 10x8, Tetris Attack (5)
 (define-sprite sd spr:puzzle:x
@@ -298,7 +340,65 @@
   $zzz$$____$$zaq$
   $$$$$______$$$$$)
 ;; TODO Junk (Dr. Mario, etc)
+(define-sprite sd spr:puzzle:ghost
+  #:w 16 #:h 16
+  ________________
+  ________________
+  ________________
+  _______$$$$$____
+  _____$$$aaa$$___
+  ____$$qaaa!!$___
+  ___$$qaaaa!$$___
+  __$$qaaaaa!!$___
+  __$qaaaaaaaa$$$_
+  _$$aaaaaaaaaaa$$
+  $$aaaaaaaaaaaaa$
+  $zaaaaaaaaa$aaa$
+  $$$aaaaaaaa$$aa$
+  __$$aaaaaaaa$$$$
+  ___$za$$$$az$___
+  ___$$$$__$$$$___)
 ;; TODO Coins (Money Puzzle Exchanger)
+
+(define-sprite sd spr:puzzle:bomb-guy
+  #:w 16 #:h 16
+  _______$$$$$____
+  _______$___$$___
+  _______$$___$$__
+  _____$$$$$$__$$_
+  ____$$aaaa$$____
+  ___$$aaaaaa$$___
+  _$$$aaaaaaaa$$$_
+  $$aaa!!aa!!aaa$$
+  $a$aa!$aa!$aa$a$
+  $a$aaaaaaaaaa$a$
+  $$$aa$aaaa$aa$$$
+  __$aaa$$$$aaa$__
+  __$$aaaaaaaa$$__
+  ___$$a$$$$a$$___
+  ____$a$__$a$____
+  ____$$$__$$$____)
+
+;; xxx make bomb guy with long arms
+;; xxx work on this guy
+(define-sprite sd spr:puzzle:elephant
+  #:w 16 #:h 16
+  ________________
+  ________________
+  _______$$$$$____
+  _____$$$aaa$$___
+  ____$$aaaaaa$$__
+  ___$$aaaaaaaa$__
+  _$$$aaaaaaaaa$$$
+  $$aaaaaaaaaaaaa$
+  $a$aaaaaaaaaaaa$
+  $a$aaaaaaaaaa$a$
+  $$$aaaaaaaaaa$a$
+  __$aaaaaaaaaa$a$
+  __$$aaaaaaa$$$a$
+  ___$$a$$$$a$_$a$
+  ____$a$__$a$_$$$
+  ____$$$__$$$____)
 
 ;; SMB
 ;; TODO Coin
@@ -363,4 +463,4 @@
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:puzzle:ball 'pal:ana:13)))
+    (apse-sprite spr:puzzle:elephant 'pal:ana:10)))
