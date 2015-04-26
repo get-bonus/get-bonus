@@ -24,19 +24,21 @@
 
 ;; xxx need to come up with a different way to do this
 ;; xxx change -idxs to return all rotations
-(for ([ccc (in-list
-            (split-complementary-idxs cw-slots)
-            #;(triadic-idxs cw-slots)
-            #;(analogous-idxs cw-slots))]
-      [i (in-naturals)])
-  (define id (string->symbol (format "pal:ana:~a" i)))
-  (match-define (vector lefti middlei righti) ccc)
-  (define left (list-ref cw:hi lefti))
-  (define middle (list-ref cw:hi middlei))
-  (define hi (argb 255 255 228 172))
-  (define right (list-ref cw:hi righti))
-  (add-palette! sd id
-                (apse-palette left middle right hi hi hi hi)))
+(define cw:hi:pals
+  (for/list ([ccc (in-list
+                   (split-complementary-idxs cw-slots)
+                   #;(triadic-idxs cw-slots)
+                   #;(analogous-idxs cw-slots))]
+             [i (in-naturals)])
+    (define id (string->symbol (format "pal:ana:~a" i)))
+    (match-define (vector lefti middlei righti) ccc)
+    (define left (list-ref cw:hi lefti))
+    (define middle (list-ref cw:hi middlei))
+    (define hi (argb 255 255 228 172))
+    (define right (list-ref cw:hi righti))
+    (add-palette! sd id
+                  (apse-palette left middle right hi hi hi hi))
+    id))
 
 (define color-schemes (polygon-idxs 7 cw-slots))
 (define (add-cw! CW fmt)
@@ -345,16 +347,16 @@
   ________________
   ________________
   ________________
-  _______$$$$$____
-  _____$$$aaa$$___
+  ________$$$$____
+  _____$$$qaa$$___
   ____$$qaaa!!$___
   ___$$qaaaa!$$___
   __$$qaaaaa!!$___
   __$qaaaaaaaa$$$_
-  _$$aaaaaaaaaaa$$
-  $$aaaaaaaaaaaaa$
-  $zaaaaaaaaa$aaa$
-  $$$aaaaaaaa$$aa$
+  __$aaaaazaaaaa$$
+  _$aaaaaazzaaaaa$
+  $aaaaaaaaaa$aaa$
+  $$$aaaaaaaa$$az$
   __$$aaaaaaaa$$$$
   ___$za$$$$az$___
   ___$$$$__$$$$___)
@@ -366,37 +368,53 @@
   _______$___$$___
   _______$$___$$__
   _____$$$$$$__$$_
-  ____$$aaaa$$____
-  ___$$aaaaaa$$___
-  _$$$aaaaaaaa$$$_
-  $$aaa!!aa!!aaa$$
+  ____$$aaaq$$____
+  ___$$aaaaaq$$___
+  _$$$aaaaaaaq$$$_
+  $$aaa!!aa!!aaq$$
   $a$aa!$aa!$aa$a$
   $a$aaaaaaaaaa$a$
   $$$aa$aaaa$aa$$$
-  __$aaa$$$$aaa$__
-  __$$aaaaaaaa$$__
+  __$zaa$$$$aaa$__
+  __$$zaaaaaaz$$__
   ___$$a$$$$a$$___
   ____$a$__$a$____
   ____$$$__$$$____)
+(define-sprite sd spr:puzzle:bomb-guy:long-arms
+  #:w 16 #:h 16
+  _______$$$$$____
+  _______$___$$___
+  _______$$___$$aq
+  _____$$$$$$__$$a
+  ____$$aaaq$$__aa
+  ___$$aaaaaq$$___
+  _$$$aaaaaaaq$$$_
+  $$qaa!!aa!!aaq$$
+  $aaaa!$aa!$aaaq$
+  $a$aaaaaaaaaa$a$
+  $a$aa$aaaa$aa$a$
+  $a$zaa$$$$aaa$a$
+  $a$$$zaaaaz$$$a$
+  $$$_$$$$$$$$_$$$
+  ____$a$__$a$____
+  ____$$$__$$$____)
 
-;; xxx make bomb guy with long arms
-;; xxx work on this guy
 (define-sprite sd spr:puzzle:elephant
   #:w 16 #:h 16
   ________________
   ________________
-  _______$$$$$____
-  _____$$$aaa$$___
-  ____$$aaaaaa$$__
-  ___$$aaaaaaaa$__
-  _$$$aaaaaaaaa$$$
-  $$aaaaaaaaaaaaa$
-  $a$aaaaaaaaaaaa$
-  $a$aaaaaaaaaa$a$
-  $$$aaaaaaaaaa$a$
-  __$aaaaaaaaaa$a$
-  __$$aaaaaaa$$$a$
-  ___$$a$$$$a$_$a$
+  _________$$_____
+  ________$aq$$___
+  _$_____$aaaaq$__
+  $q$___$aaa!!a$__
+  $aa$$$zaaa!$aq$_
+  _$aaaazaaa!!aaq$
+  __$aaaazaaaaaaa$
+  __$aaaaaa$aaa$a$
+  __$zaaaaaa$$$$a$
+  ___$zaaaaaaaa$a$
+  ___$zzzaaaz$$$a$
+  ____$$$$$$$$_$a$
   ____$a$__$a$_$$$
   ____$$$__$$$____)
 
@@ -463,4 +481,5 @@
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:puzzle:elephant 'pal:ana:10)))
+    (apse-sprite spr:puzzle:ghost 'pal:ana:10)
+    (apse-all-sprites cw:hi:pals)))
