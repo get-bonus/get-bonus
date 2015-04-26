@@ -36,7 +36,12 @@
        (regexp-replace #rx".png$" (path->string f) "")
        "/"))
     (define n (string->symbol (format "spr:~a" ns)))
-    (fstree-insert! sprite-tree ns n)
+    (local-require racket/string)
+    (with-handlers ([exn:fail? void])
+      ;; xxx really gross
+      (fstree-insert! sprite-tree
+                      (string-join (reverse (rest (reverse (string-split ns "/")))) "/")
+                      (string->symbol (string-join (reverse (rest (reverse (string-split (symbol->string n) "/")))) "/"))))
     (add-sprite!/file gb-sd n (build-path sos-dir-p f))))
 
 (let ()
@@ -46,7 +51,13 @@
                       BLACK BLACK BLACK
                       BLACK BLACK BLACK
                       BLACK BLACK BLACK
-                      BLACK BLACK BLACK)))
+                      BLACK BLACK BLACK))
+  (add-palette! gb-sd 'pal:white
+                (list TRANSPARENT WHITE WHITE
+                      WHITE WHITE WHITE
+                      WHITE WHITE WHITE
+                      WHITE WHITE WHITE
+                      WHITE WHITE WHITE)))
 
 (define gb-csd (compile-sprite-db gb-sd))
 

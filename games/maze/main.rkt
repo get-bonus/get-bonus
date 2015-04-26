@@ -66,15 +66,20 @@
 ;; XXX ghost train
 ;; XXX bomb
 
+(define (modulo* info x y)
+  (if (zero? y)
+      (error 'modulo "undefined for 0: ~v ~v ~v" info x y)
+      (modulo x y)))
+
 (define (rate how-many how-often t)
-  (modulo (floor (/ t how-often)) how-many))
+  (modulo* `(rate ,how-many ,how-often ,t) (floor (/ t how-often)) how-many))
 
 (define (ghost-animation n frame-n dir)
   ;; xxx ignoring direction
   (ghost-sprite n frame-n #f))
 
 (define (list-refm l i)
-  (list-ref l (modulo i (length l))))
+  (list-ref l (modulo* `(list-refm ,l ,i) i (length l))))
 
 (define ghost-sprs
   (shuffle
@@ -86,49 +91,50 @@
 (define (ghost-sprite which-ghost frame-n pal)
   (transform
    #:d (* scale -.5) (* scale -.5)
-   (rectangle
-    (* scale 0.5) (* scale 0.5)
+   (!sprite*
+    ;; xxx should determine color 
+    #;(match (modulo which-ghost 4)
+      [0 'pal:maze/shadow]
+      [1 'pal:maze/speedy]
+      [2 'pal:maze/bashful]
+      [3 'pal:maze/pokey])
+    255 0 0 255
     (list-refm ghost-sprs which-ghost)
     ;; xxx ignoring frame-n for animation
     0
-    (or pal
-        (match (modulo which-ghost 4)
-          [0 'pal:maze/shadow]
-          [1 'pal:maze/speedy]
-          [2 'pal:maze/bashful]
-          [3 'pal:maze/pokey])))))
+    pal)))
 
 (define (scared-ghost-animation n frame-n warning?)
   ;; xxx should use different sprite too
   (ghost-sprite n frame-n
                 (if (even? frame-n)
-                    'pal:grayscale
+                    'pal:white
                     #f)))
 
 (define (player-animation n)
   (transform
    #:d (* scale -.5) (* scale -.5)
-   (rectangle
-    (* scale 0.5) (* scale 0.5)
+   (!sprite*
+    200 125 0 255
     'spr:sos/character/cat
     ;; xxx ignoring n
-    0
-    'pal:maze/runner)))
+    0 #f)))
 (define player-r .499)
 
 (define pellet-r (/ player-r 6))
 (define (pellet-img)
-  (!sprite 'spr:sos/font/gold 0
-           'pal:maze/runner))
+  (!sprite* 200 125 0 255
+            'spr:sos/font/gold 0 #f))
 
 (define food-sprs (fstree-ref sprite-tree "sos/food"))
 (define (power-up-img i)
-  (!sprite (list-refm food-sprs i) 0
-           'pal:maze/runner))
+  (!sprite* 200 125 0 255
+            (list-refm food-sprs i) 0 #f))
 
 (define (fruit-img i)
   ;; xxx ignore i
-  (!sprite 'spr:sos/exploration/key/big 0 'pal:maze/runner))
+  (!sprite* 200 125 0 255
+            'spr:sos/exploration/key/big 0 #f))
 
 (define (quad-power-up-cell q)
   (locate-cell q power-up))
@@ -411,13 +417,12 @@
     (if (xy-ref x y)
         (transform
          #:d (* scale x) (* scale y)
-         (rectangle (* scale 0.5) (* scale 0.5)
+         (!sprite* 0 0 255 255
                     (select-wall (xy-ref x (add1 y))
                                  (xy-ref x (sub1 y))
                                  (xy-ref (sub1 x) y)
                                  (xy-ref (add1 x) y))
-                    0
-                    'pal:blue))
+                    0 #f))
         empty)))
 
 (struct quad-objs (pellet-count r*c->obj))
@@ -559,7 +564,7 @@
 ;;     after death
 
 (define ((ghost img-n init-timer) 1st-env)
-  (define ai-n (modulo img-n 4))
+  (define ai-n (modulo* `(ghost ,img-n) img-n 4))
   (define ai-sym
     (match ai-n
       [0 'chaser]

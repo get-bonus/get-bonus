@@ -118,8 +118,8 @@
                [else                   0.0]))
            (define (controller-ldpad-y cs)
              (cond
-               [(controller-down cs)  -1.0]
-               [(controller-up cs)    +1.0]
+               [(controller-down cs)  +1.0]
+               [(controller-up cs)    -1.0]
                [else                   0.0]))
            (define (controller-ldpad cs)
              (psn (controller-ldpad-x cs)

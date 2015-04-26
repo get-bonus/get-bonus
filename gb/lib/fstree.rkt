@@ -4,7 +4,7 @@
          racket/contract
          racket/string)
 
-(struct tdir ([f #:mutable] n->t))
+(struct tdir ([f #:mutable] n->t) #:transparent)
 
 (define (make-fstree)
   (tdir #f (make-hash)))
