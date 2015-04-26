@@ -38,7 +38,7 @@
     (define n (string->symbol (format "spr:~a" ns)))
     (local-require racket/string)
     (with-handlers ([exn:fail? void])
-      ;; xxx really gross
+      ;; xxx really gross (this removes the /0 from the end to simulate apse)
       (fstree-insert! sprite-tree
                       (string-join (reverse (rest (reverse (string-split ns "/")))) "/")
                       (string->symbol (string-join (reverse (rest (reverse (string-split (symbol->string n) "/")))) "/"))))
