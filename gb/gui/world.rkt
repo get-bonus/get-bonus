@@ -21,8 +21,9 @@
          gb/input/controller)
 
 (define the-layer-config
-  (vector (layer (fl/ (fx->fl crt-width) 2.0)
-                 (fl/ (fx->fl crt-height) 2.0))))
+  (make-vector LAYERS
+               (layer (fl/ (fx->fl crt-width) 2.0)
+                      (fl/ (fx->fl crt-height) 2.0))))
 
 (struct gbchaos (gui sndctx [sndst #:mutable] draw)
         #:methods gen:chaos
@@ -47,7 +48,7 @@
            (set-gbchaos-sndst! c stp)
            (super-output!
             (gbchaos-gui c)
-            (gbchaos-draw the-layer-config #f last-sprites)))
+            ((gbchaos-draw c) the-layer-config #f last-sprites)))
          (define (chaos-label! c l)
            (super-label! (gbchaos-gui c) l))
          (define (chaos-swap! c t)

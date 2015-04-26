@@ -1,8 +1,10 @@
 #lang racket/base
 (require mode-lambda
          racket/contract
+         racket/runtime-path
          racket/list
          racket/match
+         gb/lib/fstree
          (for-syntax racket/base
                      syntax/parse))
 
@@ -10,18 +12,64 @@
 (define crt-width (* crt-scale 16))
 (define crt-height (* crt-scale 9))
 
-(define gb-sd
-  (make-sprite-db))
+(define gb-sd (make-sprite-db))
+(define sprite-tree (make-fstree))
 
-(define gb-csd
-  (compile-sprite-db gb-sd))
+(define-runtime-path sos.tgz-p "../../sos.tgz")
+(let ()
+  (local-require file/untar
+                 file/gunzip
+                 racket/path)
+  (define sos-dir-p (path-replace-suffix sos.tgz-p #""))
+  (unless (directory-exists? sos-dir-p)
+    (define-values (in-bytes out-bytes) (make-pipe))
+    (call-with-input-file sos.tgz-p
+      (λ (in-file)
+        (gunzip-through-ports in-file out-bytes)))
+    (close-output-port out-bytes)
+    (untar in-bytes
+           #:dest (path-only sos-dir-p)))
+  (for ([f (in-list (directory-list sos-dir-p))])
+    (define ns
+      (regexp-replace*
+       (regexp-quote ".")
+       (regexp-replace #rx".png$" (path->string f) "")
+       "/"))
+    (define n (string->symbol (format "spr:~a" ns)))
+    (fstree-insert! sprite-tree ns n)
+    (add-sprite!/file gb-sd n (build-path sos-dir-p f))))
+
+(let ()
+  (local-require gfx/color)
+  (add-palette! gb-sd 'pal:green
+                (list TRANSPARENT (argb 255 0 255 0) BLACK
+                      BLACK BLACK BLACK
+                      BLACK BLACK BLACK
+                      BLACK BLACK BLACK
+                      BLACK BLACK BLACK))
+  (add-palette! gb-sd 'pal:grayscale
+                (list TRANSPARENT BLACK BLACK
+                      BLACK BLACK BLACK
+                      BLACK BLACK BLACK
+                      BLACK BLACK BLACK
+                      BLACK BLACK BLACK)))
+
+(define gb-csd (compile-sprite-db gb-sd))
 
 (define (sprited-height s)
-  (error 'sprited-height))
+  (sprite-height gb-csd (sprited-ref s 0)))
 (define (sprited-width s)
-  (error 'sprited-width))
+  (sprite-width gb-csd (sprited-ref s 0)))
 (define (sprited-ref s i)
-  (error 'sprited-ref))
+  (define id
+    (string->symbol
+     (format "~a/~a" s i)))
+  (or (sprite-idx gb-csd id)
+      (error 'sprited-ref "Can't find sprite ~v" id)))
+
+(define (palette-ref pal)
+  (or (palette-idx gb-csd pal)
+      (error 'palette-ref "Can't find palette ~v" pal)))
 
 (define current-dx (make-parameter 0.0))
 (define current-dy (make-parameter 0.0))
@@ -35,21 +83,23 @@
 
 (define (rectangle hw hh [spr #f] [i #f] [pal 'pal:grayscale])
   (sprite (current-dx) (current-dy)
-          hw hh
-          (current-r) (current-g) (current-b) (current-a)
           (if (and spr i)
               (sprited-ref spr i)
+              ;; xxx i think this should be some default sprite
               0)
-          pal
-          (current-mx) (current-my)
-          (current-theta)))
+          ;; xxx I think these should turn into mx/my some how
+          ;; hw hh
+          #:r (current-r) #:g (current-g) #:b (current-b)
+          #:a (exact->inexact (/ (current-a) 255))
+          #:pal-idx (palette-ref pal)
+          #:mx (current-mx) #:my (current-my)
+          #:theta (current-theta)))
 (define (!sprite* r g b a spr i pal)
-  (sprite (current-dx) (current-dy)
-          (* 0.5 (sprited-width spr)) (* 0.5 (sprited-height spr))
-          r g b a
-          (sprited-ref spr i) pal
-          (current-mx) (current-my)
-          (current-theta)))
+  (sprite (current-dx) (current-dy) (sprited-ref spr i)
+          #:r r #:g g #:b b #:a (exact->inexact (/ a 255))
+          #:pal-idx (palette-ref pal)
+          #:mx (current-mx) #:my (current-my)
+          #:theta (current-theta)))
 (define (!sprite tex i pal)
   (!sprite* 0 0 0 0 tex i pal))
 (define (!sprite/tint tex i pal)
@@ -149,8 +199,6 @@
                [i (in-naturals)])
       (transform #:dx (* i tex-offset)
                  (maker tex:font (char->integer c) pal)))))
-
-(define sprite-tree #f)
 
 (provide
  (all-defined-out))
