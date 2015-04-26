@@ -41,12 +41,6 @@
 
 (let ()
   (local-require gfx/color)
-  (add-palette! gb-sd 'pal:green
-                (list TRANSPARENT (argb 255 0 255 0) BLACK
-                      BLACK BLACK BLACK
-                      BLACK BLACK BLACK
-                      BLACK BLACK BLACK
-                      BLACK BLACK BLACK))
   (add-palette! gb-sd 'pal:grayscale
                 (list TRANSPARENT BLACK BLACK
                       BLACK BLACK BLACK
@@ -79,9 +73,9 @@
 (define current-r (make-parameter 0))
 (define current-g (make-parameter 0))
 (define current-b (make-parameter 0))
-(define current-a (make-parameter 0))
+(define current-a (make-parameter 255))
 
-(define (rectangle hw hh [spr #f] [i #f] [pal 'pal:grayscale])
+(define (rectangle hw hh [spr #f] [i #f] [pal #f])
   (sprite (current-dx) (current-dy)
           (if (and spr i)
               (sprited-ref spr i)
@@ -91,17 +85,17 @@
           ;; hw hh
           #:r (current-r) #:g (current-g) #:b (current-b)
           #:a (exact->inexact (/ (current-a) 255))
-          #:pal-idx (palette-ref pal)
+          #:pal-idx (or (and pal (palette-ref pal)) 0)
           #:mx (current-mx) #:my (current-my)
           #:theta (current-theta)))
 (define (!sprite* r g b a spr i pal)
   (sprite (current-dx) (current-dy) (sprited-ref spr i)
           #:r r #:g g #:b b #:a (exact->inexact (/ a 255))
-          #:pal-idx (palette-ref pal)
+          #:pal-idx (or (and pal (palette-ref pal)) 0)
           #:mx (current-mx) #:my (current-my)
           #:theta (current-theta)))
 (define (!sprite tex i pal)
-  (!sprite* 0 0 0 0 tex i pal))
+  (!sprite* 0 0 0 255 tex i pal))
 (define (!sprite/tint tex i pal)
   (!sprite* (current-r) (current-g) (current-b) (current-a) tex i pal))
 
@@ -176,7 +170,7 @@
      (syntax/loc stx
        (let () . body))]))
 
-(define (make-string-factory tex:font [pal 'pal:grayscale])
+(define (make-string-factory tex:font [pal #f])
   (λ (some-string
       #:tint? [tint? #f]
       #:hw [hw #f]
@@ -189,7 +183,8 @@
         [tint?
          !sprite/tint]
         [else
-         !sprite]))
+         (λ (tex i pal)
+           (!sprite* 255 255 255 255 tex i pal))]))
     (define tex-offset
       (if (and hw hh)
           (* 2.0 hw)

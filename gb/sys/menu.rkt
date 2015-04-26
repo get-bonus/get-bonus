@@ -105,7 +105,7 @@
      (values 0 empty)]
     ;; XXX check that doesn't go off the right
     [(list (menu:top code options))
-     (define top-dy (- crt-height char-height))
+     (define top-dy char-height)
      (transform
       #:dy top-dy
       (define-values (final-offset l)
@@ -148,7 +148,7 @@
     (match m
       [(menu:status text)
        (define this-dy
-         (+ bot-offset char-height))
+         (- bot-offset char-height))
        (values this-dy
                (cons (transform
                       #:dy this-dy
@@ -181,7 +181,7 @@
                                   current-option))
 
      (define (option-entry-height pos)
-       (* -1 (+ (* char-height (+ padding pos)))))
+       (* +1 (+ (* char-height (+ padding pos)))))
      (define longest-option-len
        (+ (string-length cursor)
           (apply max
@@ -194,7 +194,7 @@
          (+ padding
             longest-option-len))
       (transform
-       #:dy (- crt-height top-offset)
+       #:dy top-offset
        #:dx (* padding char-width)
        (cons (for/list ([di (in-list display-indexes)]
                         [i (in-naturals)])
@@ -238,12 +238,12 @@
     ;; XXX make sure don't go off the screen to right
     [(list (menu:info texts))
      (transform
-      #:dy (- crt-height top-offset)
+      #:dy top-offset
       #:dx (+ left-offset (* char-width padding))
       (for/list ([text (in-list texts)]
                  [i (in-naturals)])
         (transform
-         #:dy (* -1 char-height (+ padding i))
+         #:dy (* +1 char-height (+ padding i))
          #:dx (* char-width padding)
          (string->sprites text))))]))
 

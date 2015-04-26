@@ -63,7 +63,7 @@
   (for/list ([i (in-range blocks-in-a-paddle)])
     (transform
      #:dy (* block-h i)
-     (!sprite spr:tennis/paddle 0 'pal:blue))))
+     (!sprite* 0 0 255 255 spr:tennis/paddle 0 #f))))
 
 (define spr:tennis/ball 'spr:sos/food/pumpkin)
 (define ball-scale
@@ -79,7 +79,7 @@
   (transform
    #:d (- ball-r) (- ball-r)
    #:mxy ball-scale
-   (!sprite spr:tennis/ball 0 'pal:grayscale)))
+   (!sprite* 255 255 255 255 spr:tennis/ball 0 #f)))
 
 (define bgm
   ;; xxx make a background out of overworld bricks
@@ -90,12 +90,13 @@
        (transform #:dx (+ (* x 16) .5)
                   #:dy (+ (* y 16) .5)
                   ;; xxx better colours, use more sprites
-                  (!sprite (match (random 4)
-                             [0 'spr:sos/overworld/grass]
-                             [1 'spr:sos/overworld/flower]
-                             [2 'spr:sos/overworld/tree/pine]
-                             [3 'spr:sos/overworld/tree/round])
-                           0 'pal:green))]
+                  (!sprite* 0 255 0 255
+                            (match (random 4)
+                              [0 'spr:sos/overworld/grass]
+                              [1 'spr:sos/overworld/flower]
+                              [2 'spr:sos/overworld/tree/pine]
+                              [3 'spr:sos/overworld/tree/round])
+                            0 #f))]
       [else
        empty])))
 
@@ -110,7 +111,7 @@
 (define (player-paddle env)
   (let loop ([env env] [lhs-y (/ height 2.0)])
     (define lhs-dy
-      (controller-ldpad-y (env-read1 env 'controller #f)))
+      (* -1 (controller-ldpad-y (env-read1 env 'controller #f))))
     (define lhs-y-n
       (clamp
        min-paddle-y
@@ -262,7 +263,7 @@
                #:d
                (- (psn-x center-pos)
                   (/ score-w 2.0))
-               (- height score-h)
+               score-h
                (cons
                 (string->sprites
                  score-s)
