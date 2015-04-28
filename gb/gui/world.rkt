@@ -99,10 +99,17 @@
              gbw]))
          (define (word-output gbw)
            (define wp (gbword-world gbw))
+           (define ss-b (gbword-last-sound gbw))
+           (define ss-v (unbox ss-b))
+           ;; xxx this is a hack to make sure a sound command is only
+           ;; sent once. it may be bad because the sound is still
+           ;; messed up. i used to get two main menu bgm tracks, now
+           ;; the maze music doesn't turn off
+           (set-box! ss-b '())
            (vector (gbword-sound-scale gbw)
                    ((gbword-world->listener gbw) wp)
                    wp
-                   (gbword-last-sound gbw)
+                   ss-v
                    (gbword-last-sprites gbw)))
          (define (word-tick gbw)
            (define frame (gbword-frame gbw))
@@ -118,7 +125,7 @@
                             [frame (add1 frame)]
                             [world wp]
                             [last-sprites cmd]
-                            [last-sound ss])))
+                            [last-sound (box ss)])))
          (define (word-return gbw)
            ((gbword-return gbw)
             (gbword-world gbw)))])

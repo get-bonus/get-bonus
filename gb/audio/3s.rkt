@@ -67,7 +67,7 @@
   (alcCloseDevice d)  
   (void))
 
-(struct source (srci old-state update-f))
+(struct source (srci old-state update-f) #:transparent)
 (struct system-state (dead?-box srcs))
 (define (initial-system-state ctxt-obj)
   (unless (unbox (sound-context-live?-box ctxt-obj))
@@ -110,7 +110,8 @@
 
   (define srcs*
     (for/fold ([srcs* empty])
-        ([src (in-list all-srcs)])
+              ([src (in-list all-srcs)]
+               [i (in-naturals)])
       (match-define (source srci old f) src)
       (define src-st
         (alGetSourcei srci AL_SOURCE_STATE))

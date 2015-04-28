@@ -111,7 +111,7 @@
 (define (player-paddle env)
   (let loop ([env env] [lhs-y (/ height 2.0)])
     (define lhs-dy
-      (* -1 (controller-ldpad-y (env-read1 env 'controller #f))))
+      (controller-ldpad-y (env-read1 env 'controller #f)))
     (define lhs-y-n
       (clamp
        min-paddle-y
