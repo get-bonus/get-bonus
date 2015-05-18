@@ -1,4 +1,6 @@
 * General TODO items
+** TODO awesome path finding
+   https://github.com/mikolalysenko/l1-path-finder
 ** TODO sys/menu is organized as the bottom being at 0 (and doesn't look perfect in mode-lambda)
 ** TODO old games are written in a natural mode-lambda way
 ** TODO use reloadable

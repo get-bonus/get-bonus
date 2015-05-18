@@ -481,5 +481,6 @@
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:puzzle:ghost 'pal:ana:10)
-    (apse-all-sprites cw:hi:pals)))
+    (apse-all-sprites cw:hi:pals)
+    (apse-sprite spr:megaman2 'pal:ana:6)
+    ))

@@ -18,6 +18,8 @@
         "plot"
         "rackunit-lib"
         "redex-lib"
+        "mode-lambda"
+        "apse"
         "slideshow-lib"
         "typed-racket-lib"
         "unstable-contract-lib"
