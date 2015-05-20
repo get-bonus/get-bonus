@@ -454,6 +454,25 @@
 ;; Tiles (Top-down)
 ;; TODO Walls w/ corners
 
+(define-sprite sd spr:tile:top-down:grass
+  #:w 16 #:h 16
+  aaaaaaaaaaaaaaaa
+  aaazaaaaaaaaaaqa
+  aaaazaaaaaaaaqaa
+  aaaaaaaaaaaaaaaa
+  aqaaaaaaazaaaaaa
+  aaqaaaaaaazaaaaa
+  aaaaazaaaaaaaaaa
+  aaaaaazaaaaaaaaa
+  aaaaaaaaaaqaaaaa
+  aaaaaaaaaaaqaaaa
+  aqaaaaaaaaaaaaaa
+  aaqaaaaaaaaaazaa
+  aaaaaaaaaaaazaaa
+  aaaqaaaaaaaaaaaa
+  aaqaaaaaaqaaaaaa
+  aaaaaaaaqaaaaaaa)
+
 ;; Enemies
 ;; TODO Ghost
 ;; TODO Turtle
@@ -492,11 +511,7 @@
 
 ;; xxx allow a drawing mode (already this is very hard)
 ;; xxx show a grid overlay
-;; xxx show the current palette
-;; xxx show all the palettes somehow
-;; xxx emacs - save on every keystroke
-
-;; xxx show animations
+;; xxx emacs - save on every keystroke: http://emacs.stackexchange.com/questions/12459/save-buffer-at-each-modification
 
 ;; xxx help make borderless tiles
 ;; xxx show scenes or combinations of sprites (like tetris blocks)
@@ -511,8 +526,12 @@
                  #:palettes cw:hi:pals)
     (apse-all-sprites 2.0 cw:hi:pals)
     (apse-animation
+     ;; xxx move up
      (animation (list spr:puzzle:elephant:0 spr:puzzle:elephant:1))
      #:fps 5.0
      #:palettes cw:hi:pals)
-    
+    (apse-palettes cw:hi:pals)
+    (apse-tile spr:tile:top-down:grass
+               #:scale 2.0
+               #:pal (list-ref cw:hi:pals 9))
     ))
