@@ -399,7 +399,7 @@
   ____$a$__$a$____
   ____$$$__$$$____)
 
-(define-sprite sd spr:puzzle:elephant
+(define-sprite sd spr:puzzle:elephant:0
   #:w 16 #:h 16
   ________________
   ________________
@@ -415,7 +415,25 @@
   ___$zaaaaaaaa$a$
   ___$zzzaaaz$$$a$
   ____$$$$$$$$_$a$
-  ____$a$__$a$_$$$
+  _____$a$$a$__$$$
+  _____$$$$$$_____)
+(define-sprite sd spr:puzzle:elephant:1
+  #:w 16 #:h 16
+  ________________
+  ________________
+  _________$$_____
+  ________$aq$$___
+  __$____$aaaaq$__
+  _$q$__$aaa!!a$__
+  $aa$$$zaaa!$aq$_
+  _$aaaazaaa!!aaq$
+  __$aaaazaaaaaaa$
+  __$aaaaaa$aaa$a$
+  __$zaaaaaa$$$$a$
+  ___$zaaaaaaaa$a$
+  ___$zzzaaaz$$$a$
+  ____$$$$$$$$_$$$
+  ____$a$__$a$____
   ____$$$__$$$____)
 
 ;; SMB
@@ -475,14 +493,26 @@
 ;; xxx allow a drawing mode (already this is very hard)
 ;; xxx show a grid overlay
 ;; xxx show the current palette
-;; xxx show all the sprites somehow
 ;; xxx show all the palettes somehow
 ;; xxx emacs - save on every keystroke
+
+;; xxx show animations
+
+;; xxx help make borderless tiles
+;; xxx show scenes or combinations of sprites (like tetris blocks)
+
+;; xxx allow shading vs diffuse separation
 
 ;; xxx look at http://i.imgur.com/T30sdI1.png
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-all-sprites cw:hi:pals)
-    (apse-sprite spr:megaman2 'pal:ana:6)
+    (apse-sprite spr:megaman2
+                 #:palettes cw:hi:pals)
+    (apse-all-sprites 2.0 cw:hi:pals)
+    (apse-animation
+     (animation (list spr:puzzle:elephant:0 spr:puzzle:elephant:1))
+     #:fps 5.0
+     #:palettes cw:hi:pals)
+    
     ))
