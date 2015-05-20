@@ -479,6 +479,8 @@
 ;; xxx show all the palettes somehow
 ;; xxx emacs - save on every keystroke
 
+;; xxx look at http://i.imgur.com/T30sdI1.png
+
 (module+ apse
   (with-apse-params [sd W H]
     (apse-all-sprites cw:hi:pals)

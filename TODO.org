@@ -195,6 +195,10 @@
    Random color values when damaged... looks really cool
 
    Awesome new items and weapons
+** TODO camera in 2d scrolling
+   https://docs.google.com/document/d/1iNSQIyNpVGHeak6isbP6AHdHD50gs8MNXF1GCf08efg/pub
+** TODO awesome sprite sheet
+   http://i.imgur.com/T30sdI1.png
 ** TODO Remove the get-bonus menu
    I find the menu concept to be inelegant and ugly. I'd like to
    replace it with something that is more natural. One idea is to have
