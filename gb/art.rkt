@@ -46,11 +46,31 @@
         [i (in-naturals)])
     (define n (string->symbol (format fmt i)))
     (add-palette! sd n (color->palette c))))
-(add-palette! sd 'grayscale (color->palette GRAY))
 (add-cw! cw:hi "hi~a")
 (add-cw! cw:med "med~a")
 
 ;; xxx make the apse palette (3 tone + 4 hilight) wheel
+
+(define-syntax-rule (define-palette sd id colors)
+  (begin (define id 'id)
+         (add-palette! sd 'id colors)))
+
+(define (single-color-palette BLACK)
+  (list TRANSPARENT BLACK
+        BLACK BLACK BLACK
+        BLACK BLACK BLACK
+        BLACK BLACK BLACK
+        BLACK BLACK BLACK BLACK
+        BLACK))
+
+(define-palette sd pal:grayscale
+  (color->palette GRAY))
+(define-palette sd pal:black
+  (single-color-palette BLACK))
+(define-palette sd pal:white
+  (single-color-palette WHITE))
+(define-palette sd pal:red
+  (single-color-palette (argb 255 255 0 0)))
 
 ;; 12x16: Little Mario (SMB1):
 ;; 16x32: Big Mario (SMB1), Simon (CV1)
@@ -173,8 +193,6 @@
   _$$zaaaad$_$daaaqq$$____
   $zzaaaaa$___$zzaaaqq$___
   $$$$$$$$$___$$$$$$$$$___)
-
-;; xxx make "flashing" sprites, that assign everything to black/white/red/etc
 
 ;; xxx build a list of things i should draw
 
@@ -435,6 +453,9 @@
   ____$$$$$$$$_$$$
   ____$a$__$a$____
   ____$$$__$$$____)
+(define ani:elephant:walking
+  ;; Looks good at 5 FPS (incorporate that into the structure?)
+  (animation (list spr:puzzle:elephant:0 spr:puzzle:elephant:1)))
 
 ;; SMB
 ;; TODO Coin
@@ -454,7 +475,8 @@
 ;; Tiles (Top-down)
 ;; TODO Walls w/ corners
 
-(define-sprite sd spr:tile:top-down:grass
+;; Paletter #9 looks good for this
+(define-sprite sd spr:tile:top-down:waves
   #:w 16 #:h 16
   aaaaaaaaaaaaaaaa
   aaazaaaaaaaaaaqa
@@ -472,6 +494,25 @@
   aaaqaaaaaaaaaaaa
   aaqaaaaaaqaaaaaa
   aaaaaaaaqaaaaaaa)
+
+(define-sprite sd spr:tile:top-down:grass
+  #:w 16 #:h 16
+  qzqqqzaqqaqqazaa
+  qqzzaazqzzzqazzz
+  zzazaqzqaaazazzq
+  qazaaqqzazqazqqz
+  aqaqaaqzzzazazqa
+  qazqazaqaaqqazqq
+  zaqaazqzzqzaaaqa
+  azazzqzazazqqzqa
+  qaqzaazqqzzazqzq
+  aaqaazaqazqaaqaz
+  qqazzazqqaqzzqzq
+  zqqzaaqaaazqqaza
+  zaqqzqazaqzqaaqq
+  zqzzqzqaqzazaqaa
+  zzaaqazaaqqzzaqa
+  azaazqqqazzzazaa)
 
 ;; Enemies
 ;; TODO Ghost
@@ -513,7 +554,6 @@
 ;; xxx show a grid overlay
 ;; xxx emacs - save on every keystroke: http://emacs.stackexchange.com/questions/12459/save-buffer-at-each-modification
 
-;; xxx help make borderless tiles
 ;; xxx show scenes or combinations of sprites (like tetris blocks)
 
 ;; xxx allow shading vs diffuse separation
@@ -525,13 +565,16 @@
     (apse-sprite spr:megaman2
                  #:palettes cw:hi:pals)
     (apse-all-sprites 2.0 cw:hi:pals)
-    (apse-animation
-     ;; xxx move up
-     (animation (list spr:puzzle:elephant:0 spr:puzzle:elephant:1))
-     #:fps 5.0
-     #:palettes cw:hi:pals)
     (apse-palettes cw:hi:pals)
     (apse-tile spr:tile:top-down:grass
-               #:scale 2.0
-               #:pal (list-ref cw:hi:pals 9))
+               #:scale 1.0
+               #:pal (list-ref cw:hi:pals 4))
+    (apse-animation
+     ani:elephant:walking
+     #:fps 5.0
+     #:palettes cw:hi:pals)
+    (apse-animation
+     ani:elephant:walking
+     #:fps 5.0
+     #:palettes (list pal:grayscale))
     ))
