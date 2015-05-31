@@ -45,7 +45,7 @@
     (add-sprite!/file gb-sd n (build-path sos-dir-p f))))
 
 (let ()
-  (local-require gfx/color)
+  (local-require mode-lambda/color)
   (add-palette! gb-sd 'pal:grayscale
                 (list TRANSPARENT BLACK BLACK
                       BLACK BLACK BLACK

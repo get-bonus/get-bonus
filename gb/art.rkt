@@ -1,6 +1,6 @@
 #lang racket/base
 (require mode-lambda
-         gfx/color
+         mode-lambda/color
          racket/match
          apse)
 
