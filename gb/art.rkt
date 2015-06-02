@@ -72,6 +72,19 @@
 (define-palette sd pal:red
   (single-color-palette (argb 255 255 0 0)))
 
+(define (monotone-palette COLOR)
+  (list TRANSPARENT BLACK
+        COLOR COLOR COLOR
+        COLOR COLOR COLOR
+        COLOR COLOR COLOR
+        COLOR COLOR COLOR COLOR
+        WHITE))
+
+(define-palette sd pal:mono:white
+  (monotone-palette WHITE))
+(define-palette sd pal:mono:black
+  (monotone-palette BLACK))
+
 ;; 12x16: Little Mario (SMB1):
 ;; 16x32: Big Mario (SMB1), Simon (CV1)
 ;; 16x16: Link (Z1), Bomberman, Bub & Bob (Bubble Bobble), Pacman
@@ -543,6 +556,21 @@
   _$d$$d$_
   $$$__$$$)
 
+(define-sprite sd spr:box-border
+  #:w 12 #:h 12
+  _$$$$$$$$$$_
+  $$aaaaaaaa$$
+  $aa$$$$$$aa$
+  $a$______$a$
+  $a$______$a$
+  $a$______$a$
+  $a$______$a$
+  $a$______$a$
+  $a$______$a$
+  $aa$$$$$$aa$
+  $$aaaaaaaa$$
+  _$$$$$$$$$$_)
+
 ;; Racing Game
 ;; TODO Car with different turns (See Retro Game Challenge)
 
@@ -577,4 +605,6 @@
      ani:elephant:walking
      #:fps 5.0
      #:palettes (list pal:grayscale))
+    (apse-sprite spr:box-border
+                 #:palettes (list* pal:mono:white pal:mono:black cw:hi:pals))
     ))
