@@ -146,8 +146,7 @@
   (visit player-entry-cell)
 
   (let ()
-    (local-require data/heap
-                   unstable/function)
+    (local-require data/heap)
     (define (dig-until-seen c0)
       (define h
         (make-heap (λ (c1 c2)
