@@ -2,9 +2,13 @@
 ** TODO awesome path finding
    https://github.com/mikolalysenko/l1-path-finder
 ** TODO sys/menu is organized as the bottom being at 0 (and doesn't look perfect in mode-lambda)
+** TODO localization
+   https://docs.google.com/spreadsheets/d/17f0dQawb-s_Fd7DHgmVvJoEGDMH_yoSd8EYigrb0zmM/edit#gid=3
 ** TODO old games are written in a natural mode-lambda way
 ** TODO use reloadable
    https://github.com/tonyg/racket-reloadable/tree/master
+** TODO cool NES game style article
+   http://gamasutra.com/blogs/DaniloDias/20150707/247880/Odallus_and_NES_a_graphic_love_letter.php?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+GamasutraFeatureArticles+%28Gamasutra+Feature+Articles%29
 ** TODO metanet collision detection tutorial
    http://www.metanetsoftware.com/technique.html
 ** TODO snomaN Gaming - Good Game Design - Volgarr The Viking - The 'Isolation' Principle
