@@ -590,8 +590,6 @@
 
 (module+ apse
   (with-apse-params [sd W H]
-    (apse-sprite spr:megaman2
-                 #:palettes cw:hi:pals)
     (apse-all-sprites 2.0 cw:hi:pals)
     (apse-palettes cw:hi:pals)
     (apse-tile spr:tile:top-down:grass
@@ -607,4 +605,6 @@
      #:palettes (list pal:grayscale))
     (apse-sprite spr:box-border
                  #:palettes (list* pal:mono:white pal:mono:black cw:hi:pals))
+    (apse-sprite spr:megaman2
+                 #:palettes cw:hi:pals)
     ))
