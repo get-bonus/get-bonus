@@ -598,13 +598,13 @@
     (apse-animation
      ani:elephant:walking
      #:fps 5.0
-     #:palettes cw:hi:pals)
-    (apse-animation
-     ani:elephant:walking
-     #:fps 5.0
      #:palettes (list pal:grayscale))
     (apse-sprite spr:box-border
                  #:palettes (list* pal:mono:white pal:mono:black cw:hi:pals))
     (apse-sprite spr:megaman2
                  #:palettes cw:hi:pals)
+    (apse-animation
+     ani:elephant:walking
+     #:fps 5.0
+     #:palettes cw:hi:pals)
     ))
