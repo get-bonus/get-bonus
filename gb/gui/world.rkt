@@ -149,7 +149,7 @@
    (gbword tick sound-scale world->listener done? return
            km cm
            0 initial-world
-           #f #f)))
+           #f (box '()))))
 
 (provide/contract
  [RATE number?]
