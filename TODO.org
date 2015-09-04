@@ -1,6 +1,9 @@
 * General TODO items
 ** TODO awesome path finding
    https://github.com/mikolalysenko/l1-path-finder
+** TODO inspiration: PICO-8 & Voxatron
+   http://www.lexaloffle.com/pico-8.php
+** TODO "Mario Maker" everything just like "multiplayer" everything
 ** TODO sys/menu is organized as the bottom being at 0 (and doesn't look perfect in mode-lambda)
 ** TODO localization
    https://docs.google.com/spreadsheets/d/17f0dQawb-s_Fd7DHgmVvJoEGDMH_yoSd8EYigrb0zmM/edit#gid=3
