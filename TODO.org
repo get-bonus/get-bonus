@@ -1,4 +1,6 @@
 * General TODO items
+** TODO switch to different pi digits system
+   https://github.com/logc/pidec
 ** TODO awesome path finding
    https://github.com/mikolalysenko/l1-path-finder
 ** TODO inspiration: PICO-8 & Voxatron
