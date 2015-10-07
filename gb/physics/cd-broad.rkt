@@ -5,7 +5,6 @@
          racket/contract
          racket/function
          racket/match
-         unstable/contract
          tests/eli-tester
          gb/lib/math
          gb/data/psn
