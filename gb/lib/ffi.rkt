@@ -1,6 +1,5 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     unstable/syntax
                      syntax/stx
                      racket/syntax
                      syntax/parse)
