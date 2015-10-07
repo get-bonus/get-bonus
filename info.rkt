@@ -23,5 +23,4 @@
         "slideshow-lib"
         "typed-racket-lib"
         "unstable-contract-lib"
-        "unstable-list-lib"
         "racket-doc"))
