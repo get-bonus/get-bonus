@@ -22,5 +22,4 @@
         "apse"
         "slideshow-lib"
         "typed-racket-lib"
-        "unstable-contract-lib"
         "racket-doc"))
