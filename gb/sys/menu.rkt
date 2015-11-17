@@ -2,7 +2,6 @@
 (require (for-syntax racket/base)
          racket/list
          racket/match
-         gb/audio/3s
          gb/gui/os
          gb/sys/menu-lib
          gb/input/controller

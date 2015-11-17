@@ -5,7 +5,7 @@
          racket/match
          racket/date
          math/base
-         gb/audio/3s
+         3s
          gb/data/psn
          gb/gui/os
          gb/meta

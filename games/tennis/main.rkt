@@ -8,8 +8,8 @@
          gb/graphics/main
          gb/data/mvector
          gb/input/controller
-         gb/audio/3s
          gb/lib/math
+         3s
          gb/lib/random
          gb/data/psn
          gb/meta

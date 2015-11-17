@@ -14,7 +14,7 @@
          mode-lambda/backend/gl
          gb/input/keyboard
          gb/data/psn
-         gb/audio/3s
+         3s
          racket/flonum
          racket/fixnum
          gb/graphics/main

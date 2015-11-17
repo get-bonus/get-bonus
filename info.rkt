@@ -1,7 +1,8 @@
 #lang info
 (define collection 'multi)
 (define deps
-  (list "openal"
+  (list "3s"
+        "openal"
         "lux"
         "dos"
         "fector"

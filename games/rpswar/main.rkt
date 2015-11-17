@@ -7,7 +7,6 @@
          gb/data/mvector
          gb/input/keyboard
          gb/input/controller
-         gb/audio/3s
          gb/lib/math
          gb/lib/random
          gb/data/psn

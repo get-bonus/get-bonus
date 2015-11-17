@@ -11,8 +11,8 @@
          gb/data/mvector
          gb/gui/os
          gb/input/controller
-         gb/audio/3s
          gb/data/psn
+         3s
          gb/lib/math
          math/base
          gb/lib/random

@@ -1,6 +1,6 @@
 #lang racket/base
-(require gb/audio/3s
-         gb/data/mvector
+(require gb/data/mvector
+         3s
          gb/data/psn
          gb/gui/world
          gb/lib/math

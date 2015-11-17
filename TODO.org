@@ -403,9 +403,6 @@
       0 ./gb/lib/pi.rkt
       0 ./gb/lib/random.rkt
       0 ./gb/lib/lagrange.rkt
-      0 ./gb/audio/3s.rkt
-      0 ./gb/audio/openal-path.rkt
-      0 ./gb/audio/openal.rkt
       0 ./gb/gui/os.rkt
       0 ./gb/gui/world.rkt
       0 ./gb/gui/fullscreen.rkt
