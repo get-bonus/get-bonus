@@ -1,8 +1,12 @@
 * General TODO items
 ** TODO switch to different pi digits system
    https://github.com/logc/pidec
+** TODO look at Downwell for graphics inspiration
+   Only uses 3 colors (black, white, and red)
 ** TODO awesome path finding
    https://github.com/mikolalysenko/l1-path-finder
+** TODO fun article on input delay
+   http://gamasutra.com/blogs/RyanJuckett/20151028/257556/Reducing_perceived_attack_delay_in_INVERSUS.php?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+GamasutraFeatureArticles+%28Gamasutra+Feature+Articles%29
 ** TODO inspiration: PICO-8 & Voxatron
    http://www.lexaloffle.com/pico-8.php
 ** TODO "Mario Maker" everything just like "multiplayer" everything
@@ -640,6 +644,8 @@
 ** TODO Figure out a way to allow and use palettes effectively
 ** TODO tetris notes
    http://meatfighter.com/nintendotetrisai/
+** TODO fun maze generation
+   https://www.reddit.com/r/gamedev/comments/3r02qw/mazes_with_blockwise_geometry/
 ** TODO menu - check for more overlaps
 ** TODO damage roll distributions
    http://www.redblobgames.com/articles/probability/damage-rolls.html

@@ -60,6 +60,8 @@
                       WHITE WHITE WHITE)))
 
 (define gb-csd (compile-sprite-db gb-sd))
+(module+ test
+  (save-csd! gb-csd "/tmp/gb-csd"))
 
 (define (sprited-height s)
   (sprite-height gb-csd (sprited-ref s 0)))

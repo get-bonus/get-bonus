@@ -3,8 +3,8 @@
          racket/match
          racket/list
          gb/data/psn
-         gb/audio/openal
-         gb/audio/openal-path)
+         openal
+         openal/path)
 
 ;; xxx gc buffers some how
 (struct audio (path loaded? buffer) #:mutable)
