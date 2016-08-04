@@ -1,5 +1,6 @@
 #lang racket/base
 (require mode-lambda
+         mode-lambda/static
          racket/contract
          racket/runtime-path
          racket/list

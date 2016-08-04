@@ -1,12 +1,84 @@
 * General TODO items
+** TODO makin' stuff look good
+   really cool shader case study for pokemon battle transitions
+** TODO finding good infinite sequences
+   If I generate a finite number of levels (like the maze
+   configurations) then I may want to explore them in some particular
+   sequence.
+
+   The "digits of pi" idea is one way to do that that I've already
+   implemented. There's no guarantee, however, that they will be
+   explored in exhaustively or in any particular way.
+
+   On the other hand, just incrementing by 1 starting from 0 seems
+   likely to produce configurations that are very close and thus
+   potentially boring.
+
+   I already have a mapping from the set to N_k where k is the number
+   of elements in the set. The "increment by 1" idea is really based
+   on the idea of using {0,1} as a generating set for the group and
+   then assigning the elements in the sequence they appear
+   (i.e. index(x) = i s.t. 0 + 1*i = x).
+
+   This idea can be generalized to any two-element generating set
+   {a,b}: index(x) = i s.t. a + b*i = x.
+
+   I'm pretty sure that a=0 combined with any b s.t. k and b are
+   coprime will be a generating set. I wrote this little test:
+
+   --
+
+   #lang racket/base
+(require math/number-theory)
+
+(define (test-group k a b)
+  (define seen? (make-hasheq))
+  (printf "k(~a) a(~a) b(~a)\n"
+          k a b)
+  (for ([i (in-range k)])
+    (define x (modulo (+ a (* b i)) k))
+    (printf "~a => ~a\n" i x)
+    (hash-set! seen? x #t))
+  (for/and ([i (in-range k)])
+    (hash-has-key? seen? i)))
+
+(module+ test
+  (require chk)
+  (chk
+   #:t (test-group 5 0 1)
+   #:t (test-group 100 0 3)
+   #:t (test-group 100 0 7)
+   #:t (test-group 100 0 51)
+   #:t (coprime? 100 49)
+   #:t (test-group 100 0 49)
+   ))
+
+
 ** TODO scrolling at gdc 2015
    http://www.gdcvault.com/play/1022243/Scroll-Back-The-Theory-and
 
    http://gamasutra.com/blogs/ItayKeren/20150511/243083/Scroll_Back_The_Theory_and_Practice_of_Cameras_in_SideScrollers.php
+** TODO sparklinlabs/superpowers-asset-pack (in ~/Dev/dist)
+** TODO lighting
+   http://fluxscopic.com/dev-blog/the-darkside-and-the-light-the-anatomy-of-a-room-in-mayhem-in-single-valley/
+** TODO jumping in 2d on mechanically speaking
+** TODO interesting idea about difficulty ramping
+   http://www.gamasutra.com/view/news/268401/Platinum_Games_guide_to_action_game_design.php?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+GamasutraFeatureArticles+%28Gamasutra+Feature+Articles%29
+
+   By dropping in difficulty and then returning to the same level, it
+   appears to be more intense than it is and when you actually go up
+   it feels even MORE intense, rather than a constant increase which
+   is just numbing
+** TODO collision detection
+   http://0fps.net/2015/01/07/collision-detection-part-1/
+** TODO encounter/level generation rules
+   read megaman interview: http://shmuplations.com/megaman/
 ** TODO how to make fighting games advice
    lots of nice stuff about UI
 
    https://www.youtube.com/watch?v=gpXganAM_qA
+** TODO herring bone tiles
+   http://nothings.org/gamedev/herringbone/more_herringbone_tiles.html
 ** TODO switch to different pi digits system
    https://github.com/logc/pidec
 ** TODO study aseprite more
