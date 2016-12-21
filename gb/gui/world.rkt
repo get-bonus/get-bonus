@@ -23,7 +23,7 @@
          gb/input/controller)
 
 (define the-layer-config
-  (make-vector LAYERS
+  (make-vector 8
                (layer (fl/ (fx->fl crt-width) 2.0)
                       (fl/ (fx->fl crt-height) 2.0))))
 
@@ -96,7 +96,7 @@
                          #:start-fullscreen? #t)
                (make-3s)))
   (define the-gb-draw
-    (stage-draw/dc gb-csd crt-width crt-height))
+    (stage-draw/dc gb-csd crt-width crt-height 8))
   (call-with-chaos the-chaos
                    (λ ()
                      (parameterize ([current-gb-draw the-gb-draw])

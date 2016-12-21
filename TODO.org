@@ -1,4 +1,11 @@
 * General TODO items
+** TODO xorshift for randomness
+** TODO speedrunning
+   https://kb.speeddemosarchive.com/User:Ais523/Making_your_game_speedrunner-friendly
+** TODO crazy backgrounds
+   http://functional-art.org/2016/epimorphism.html
+** TODO art pack
+   http://ansimuz.com/site/resources
 ** TODO makin' stuff look good
    really cool shader case study for pokemon battle transitions
 ** TODO finding good infinite sequences
@@ -53,7 +60,6 @@
    #:t (test-group 100 0 49)
    ))
 
-
 ** TODO scrolling at gdc 2015
    http://www.gdcvault.com/play/1022243/Scroll-Back-The-Theory-and
 
@@ -84,6 +90,8 @@
 ** TODO study aseprite more
    https://github.com/aseprite/aseprite/
 ** TODO amazing color palette ideas
+   http://grafxkid.tumblr.com/grafxkidpalettes
+
    It has some amazing color palette links
    http://androidarts.com/palette/Famicube.htm
 
@@ -357,6 +365,8 @@
    http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
    http://blogs.msdn.com/b/davrous/archive/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript.aspx
    http://www.reddit.com/r/gamedev/comments/2fkefu/the_software_rendering_club/
+** TODO nanogui
+   https://github.com/wjakob/nanogui
 ** TODO record fun samples
    Get Bonus
    Game Over (in whiny voice)
