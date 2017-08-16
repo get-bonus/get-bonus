@@ -1,5 +1,6 @@
 #lang racket/base
 (require mode-lambda
+         mode-lambda/static
          mode-lambda/color
          racket/match
          apse)
