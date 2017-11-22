@@ -5,6 +5,8 @@
          racket/match
          apse)
 
+;; https://www.reddit.com/r/gamedev/comments/79a93x/50_bite_sized_pixel_art_tutorials_and_tips_by/
+
 ;; XXX artist-mode, artist-select-op-flood-fill, and C-a C-c C-f is awesome
 
 (define sd (make-sprite-db))
@@ -602,10 +604,10 @@
      #:palettes (list pal:grayscale))
     (apse-sprite spr:box-border
                  #:palettes (list* pal:mono:white pal:mono:black cw:hi:pals))
-    (apse-sprite spr:megaman2
-                 #:palettes cw:hi:pals)
     (apse-animation
      ani:elephant:walking
      #:fps 5.0
      #:palettes cw:hi:pals)
+    (apse-sprite spr:megaman2
+                 #:palettes cw:hi:pals)    
     ))
