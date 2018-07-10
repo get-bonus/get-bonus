@@ -293,6 +293,8 @@
            racket/file)
 
   (define-runtime-path user "../user")
+  (unless (directory-exists? user)
+    (make-directory user))
 
   (define the-srs (srs (build-path user "srs.db")))
 
