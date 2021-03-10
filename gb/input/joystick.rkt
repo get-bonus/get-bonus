@@ -21,7 +21,7 @@
 (define (js-event-axis? bs)
   (not (zero? (bitwise-and (js-event-type bs) #x02))))
 
-(require ffi/unsafe)
+(require ffi/unsafe ffi/unsafe/port)
 
 (define c-lib (ffi-lib #f))
 
@@ -30,14 +30,11 @@
 (define JSIOCGBUTTONS #x80016a12)
 (define JSIOCGNAME_128 #x80806a13)
 
-(define scheme_get_port_fd
-  (get-ffi-obj "scheme_get_port_fd" c-lib
-               (_fun _scheme -> _int)))
 (define ioctl_char
   (get-ffi-obj
    "ioctl" c-lib
    (_fun (p code) ::
-         (fd : _int = (scheme_get_port_fd p))
+         (fd : _int = (unsafe-port->file-descriptor p))
          (code : _intptr)
          (char : (_ptr o _byte))
          ->
@@ -50,7 +47,7 @@
   (get-ffi-obj
    "ioctl" c-lib
    (_fun (p code) ::
-         (fd : _int = (scheme_get_port_fd p))
+         (fd : _int = (unsafe-port->file-descriptor p))
          (code : _intptr)
          (bs : (_bytes o 128))
          ->
@@ -90,7 +87,7 @@
               (define name (ioctl_str128 p JSIOCGNAME_128))
               (and (not (member name IGNORED-JOYSTICKS))
                    (cons p
-                         (joystick-state name 
+                         (joystick-state name
                                          (make-vector axes 0.0)
                                          (make-vector buttons 0)))))))
   (define state-ports (map car p*state-s))
